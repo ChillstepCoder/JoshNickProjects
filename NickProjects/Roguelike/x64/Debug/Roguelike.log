@@ -1,0 +1,5 @@
+﻿  GameSystem.cpp
+  Level.cpp
+C:\Users\Nicholas\source\repos\Roguelike\Roguelike\Level.cpp(109,10): warning C4101: 'moveTile': unreferenced local variable
+  Generating Code...
+  Roguelike.vcxproj -> C:\Users\Nicholas\source\repos\Roguelike\x64\Debug\Roguelike.exe
