@@ -1,0 +1,7 @@
+﻿  IItem.cpp
+  Inventory.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\InventoryProject\InventoryProject\Inventory.cpp(51,23): warning C4267: 'return': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\InventoryProject\InventoryProject\Inventory.cpp(138,20): warning C4267: 'return': conversion from 'size_t' to 'const int', possible loss of data
+  main.cpp
+  Generating Code...
+  InventoryProject.vcxproj -> C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\InventoryProject\x64\Debug\InventoryProject.exe

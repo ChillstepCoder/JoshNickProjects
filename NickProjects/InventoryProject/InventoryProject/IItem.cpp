@@ -9,51 +9,52 @@ IItem::IItem(std::string Name, int Value, float Weight) {
 }
 
 
-virtual void IItem::print() {
+void IItem::print() {
 	std::cout << "Name: " << Name << " Gold: " << Value << " lbs: " << Weight << std::endl;
 }
 
 
-//Weapon//////////////////////////////
+//Sword//////////////////////////////
 
-Weapon::Weapon(std::string Name, int Value, float Weight) {
+Sword::Sword(std::string Name, int Value, float Weight) : IItem(Name, Value, Weight) {
 	IItem::Name = Name; // IItem::    = scope resolution operator
 	IItem::Value = Value;
 	IItem::Weight = Weight;
 }
 
-void Weapon::print() {
+void Sword::print() {
 	std::cout << Name << " Sword\n" << "Gold: " << Value << "   lbs: " << Weight << std::endl;
 }
 
-void Weapon::use() {
-	std::cout << "Would you like to equip " << Name << "?\n";
+void Sword::use() {
+	std::cout << "You have equipped " << Name << " Sword.\n";
 	//implement equip weapon
 }
 
 //Armor///////////////////////////////
 
-Armor::Armor(std::string Name, int Value, float Weight) {
+Armor::Armor(std::string Name, int Value, float Weight) : IItem(Name, Value, Weight) {
 	IItem::Name = Name; // IItem::    = scope resolution operator
 	IItem::Value = Value;
 	IItem::Weight = Weight;
 }
 
 void Armor::print() {
-	std::cout << Name << " Armor\n" << "Gold: " << Value << "    lbs: " << Weight << std::endl;
+	std::cout << Name << " Armor\n" << "Gold: " << Value << "   lbs: " << Weight << std::endl;
 }
 
 void Armor::use() {
-	std::cout << "Would you like to equip " << Name << "?\n";
+	std::cout << "You have equipped " << Name << " Armor.\n";
 	//implement equip armor
 }
 
 //Potion//////////////////////////////
 
-Potion::Potion(std::string Name, int Value, float Weight) {
+Potion::Potion(std::string Name, int Value, float Weight, int Charges) : IItem(Name, Value, Weight) {
 	IItem::Name = Name; // IItem::    = scope resolution operator
 	IItem::Value = Value;
 	IItem::Weight = Weight;
+	_Charges = Charges;
 }
 
 void Potion::print() {
@@ -61,16 +62,25 @@ void Potion::print() {
 }
 
 void Potion::use() {
-	std::cout << "Glug glug glug\n";
-	//implement count decrease
+	if (_Charges > 0) {
+		std::cout << "Glug glug glug\n";
+		std::cout << "Your hp has been restored!\n";
+		_Charges--;
+		std::cout << "Charges remaining: " << _Charges << std::endl;
+	}
+	else {
+		std::cout << "This potion is empty.\n";
+	}
+
 }
 
 //Scroll//////////////////////////////
 
-Scroll::Scroll(std::string Name, int Value, float Weight) {
+Scroll::Scroll(std::string Name, int Value, float Weight, int Charges) : IItem(Name, Value, Weight) {
 	IItem::Name = Name; // IItem::    = scope resolution operator
 	IItem::Value = Value;
 	IItem::Weight = Weight;
+	_Charges = Charges;
 }
 
 void Scroll::print() {
@@ -78,8 +88,14 @@ void Scroll::print() {
 }
 
 void Scroll::use() {
-	std::cout << "You recite the scripture and the scroll burns up in the atmosphere.\n";
-	//implement buff/spell
-}
+	if (_Charges > 0) {
+		std::cout << "You recite the scripture on the scroll.\n";
+		std::cout << "The blessing of the goddess of protection envelops you!\n";
+		_Charges--;
+	}
+	else {
+		std::cout << "This scroll has already been used.\n";
+	}
 
+}
 
