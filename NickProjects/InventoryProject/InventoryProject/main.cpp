@@ -1,13 +1,14 @@
 #include "Inventory.h"
-
+#include "ItemType.h"
 
 int main()
 {
+
     Inventory Inventory;
-    Inventory.AddItem("Bronze", 100, 2.0f, 0, "Sword");    //(Name, Value(g), Weight(lbs), charges, itemType)
-    Inventory.AddItem("Bronze", 150, 65.0f, 0, "Armor");   //(Name, Value(g), Weight(lbs), charges, itemType)
-    Inventory.AddItem("Healing", 50, 0.5f, 3, "Potion");   //(Name, Value(g), Weight(lbs), charges, itemType)
-    Inventory.AddItem("Protection", 25, 0.1f, 1, "Scroll");//(Name, Value(g), Weight(lbs), charges, itemType)
+    Inventory.AddItem("Bronze", 100, 2.0f, 0, ItemType::Weapon);    //(Name, Value(g), Weight(lbs), charges, itemType)
+    Inventory.AddItem("Bronze", 150, 65.0f, 0, ItemType::Armor);   //(Name, Value(g), Weight(lbs), charges, itemType)
+    Inventory.AddItem("Healing", 50, 0.5f, 3, ItemType::Potion);   //(Name, Value(g), Weight(lbs), charges, itemType)
+    Inventory.AddItem("Protection", 25, 0.1f, 1, ItemType::Scroll);//(Name, Value(g), Weight(lbs), charges, itemType)
     Inventory.PrintInventory();
     Inventory.RemoveItem(1);
     Inventory.PrintInventory();

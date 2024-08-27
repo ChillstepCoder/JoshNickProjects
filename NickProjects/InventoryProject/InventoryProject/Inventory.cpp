@@ -24,22 +24,23 @@ void Inventory::PrintInventory() {
 	std::cout << "--------------------------------\n";
 }
 
-int Inventory::AddItem(std::string Name, int Value, float Weight, int Charges, std::string ItemType) {
+int Inventory::AddItem(std::string Name, int Value, float Weight, int Charges, ItemType itemType) {
 	IItem* newItem = nullptr; //creates new item
 
-	if (ItemType == "Sword") { //sets item to its correct type
-		newItem = new Sword(Name, Value, Weight);
-	}
-	else if (ItemType == "Armor") {
+	switch (itemType) {
+	case ItemType::Weapon:
+		newItem = new Weapon(Name, Value, Weight);
+		break;
+	case ItemType::Armor:
 		newItem = new Armor(Name, Value, Weight);
-	}
-	else if (ItemType == "Potion") {
+		break;
+	case ItemType::Potion:
 		newItem = new Potion(Name, Value, Weight, Charges);
-	}
-	else if (ItemType == "Scroll") {
+		break;
+	case ItemType::Scroll:
 		newItem = new Scroll(Name, Value, Weight, Charges);
-	}
-	else {
+		break;
+	default:
 		std::cout << "Invalid item type!\n";
 		return -1;
 	}
@@ -62,8 +63,8 @@ void Inventory::RemoveItem(int index) {
 
 
 	std::string itemType;
-	if (dynamic_cast<Sword*>(_items[index])) { //uses dynamic cast to store the item type
-		itemType = "Sword";
+	if (dynamic_cast<Weapon*>(_items[index])) { //uses dynamic cast to store the item type
+		itemType = "Weapon";
 	}
 	else if (dynamic_cast<Armor*>(_items[index])) {
 		itemType = "Armor";
@@ -85,7 +86,7 @@ void Inventory::RemoveItem(int index) {
 
 	_numItems--; //decrement the number of items
 
-	if (itemType == "Sword" || itemType == "Armor") {
+	if (itemType == "Weapon" || itemType == "Armor") {
 		std::cout << removedItemName << " " << itemType << " removed successfully.\n";
 	}
 	else if (itemType == "Potion" || itemType == "Scroll") {
@@ -134,12 +135,15 @@ void Inventory::UseItem(int index) {
 }
 
 const int Inventory::GetItems() {
-	//Implement
 	return _items.size();
 }
 
 bool Inventory::HasWeapon() {
-	//Implement
-
-	return true;
+	
+	for (const auto& item : _items) { //iterates through the vector of items.
+		if (dynamic_cast<Weapon*>(item) != nullptr) {
+			return true; //found a weapon
+		}
+	}
+	return false; //no weapon found
 }

@@ -14,21 +14,24 @@ void IItem::print() {
 }
 
 
-//Sword//////////////////////////////
+//Weapon//////////////////////////////
 
-Sword::Sword(std::string Name, int Value, float Weight) : IItem(Name, Value, Weight) {
+Weapon::Weapon(std::string Name, int Value, float Weight) : IItem(Name, Value, Weight) {
 	IItem::Name = Name; // IItem::    = scope resolution operator
 	IItem::Value = Value;
 	IItem::Weight = Weight;
+
 }
 
-void Sword::print() {
-	std::cout << Name << " Sword\n" << "Gold: " << Value << "   lbs: " << Weight << std::endl;
+void Weapon::print() {
+	//make an if statement to determine which type of sword to print. currently everything will print as a sword even if u want one to be a longsword or shortsword
+	std::cout << Name << " " << Sword << std::endl << "Gold: " << Value << "   lbs: " << Weight << std::endl;
 }
 
-void Sword::use() {
-	std::cout << "You have equipped " << Name << " Sword.\n";
-	//implement equip weapon
+void Weapon::use() {
+	//make an if statement to determine which type of sword to print. currently everything will print as a sword even if u want one to be a longsword or shortsword
+	std::cout << "You have equipped " << Name << " " << Sword << ".\n";
+
 }
 
 //Armor///////////////////////////////

@@ -10,6 +10,7 @@ public:
     friend class Inventory;
 
     IItem(std::string Name, int Value, float Weight);
+    virtual ~IItem() = default;
 
     std::string getName() const { return Name; }
     int getValue() const { return Value; }
@@ -32,18 +33,23 @@ protected:
 
 //////////POLYMORPHIC CLASSES/////////
 
-//Sword//////////////////////////////
-class Sword : public IItem {
+//Weapon//////////////////////////////
+class Weapon : public IItem {
 public:
+    enum class WeaponType { Sword, LongSword, ShortSword};
+    //need to figure out how to determine what WeaponType a weapon is when the weapon is created. this aint doin shit rn fr fr
+    std::string Sword = "Sword";
+    std::string LongSword = "LongSword";
+    std::string ShortSword = "ShortSword";
 
-    Sword(std::string Name, int Value, float Weight);
+    Weapon(std::string Name, int Value, float Weight);
 
     void print(); //prints name + custom info
 
     void use(); //equips weapon
 
 private:
-
+    WeaponType _type;
 };
 
 //Armor///////////////////////////////
