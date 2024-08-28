@@ -36,17 +36,15 @@ protected:
 //Weapon//////////////////////////////
 class Weapon : public IItem {
 public:
-    enum class WeaponType { Sword, LongSword, ShortSword};
-    //need to figure out how to determine what WeaponType a weapon is when the weapon is created. this aint doin shit rn fr fr
-    std::string Sword = "Sword";
-    std::string LongSword = "LongSword";
-    std::string ShortSword = "ShortSword";
+    enum class WeaponType { Sword, LongSword, ShortSword };
 
-    Weapon(std::string Name, int Value, float Weight);
+    Weapon(std::string Name, int Value, float Weight, WeaponType type);
 
     void print(); //prints name + custom info
-
     void use(); //equips weapon
+
+    WeaponType getWeaponType() const { return _type; }
+    std::string getWeaponTypeName(WeaponType type) const;
 
 private:
     WeaponType _type;
@@ -72,7 +70,9 @@ private:
 class Potion : public IItem {
 public:
 
-    Potion(std::string Name, int Value, float Weight, int Charges);
+    enum class PotionSize { Small, Medium, Large, Grand };
+
+    Potion(std::string Name, int Value, float Weight, int Charges, PotionSize size);
 
     void print(); //prints name + custom info
 
@@ -82,8 +82,12 @@ public:
 
     int getCharges() const { return _Charges; } //getter
 
+    PotionSize getPotionSize() const { return _size; }//getter
+    std::string getPotionSizeName(PotionSize size) const;
+
 private:
     int _Charges; //amount of times you can drink
+    PotionSize _size;
 };
 
 //Scroll//////////////////////////////

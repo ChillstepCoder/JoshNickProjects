@@ -24,18 +24,18 @@ void Inventory::PrintInventory() {
 	std::cout << "--------------------------------\n";
 }
 
-int Inventory::AddItem(std::string Name, int Value, float Weight, int Charges, ItemType itemType) {
+int Inventory::AddItem(std::string Name, int Value, float Weight, int Charges, ItemType itemType, Weapon::WeaponType weaponType, Potion::PotionSize potionSize) {
 	IItem* newItem = nullptr; //creates new item
 
 	switch (itemType) {
 	case ItemType::Weapon:
-		newItem = new Weapon(Name, Value, Weight);
+		newItem = new Weapon(Name, Value, Weight, weaponType);
 		break;
 	case ItemType::Armor:
 		newItem = new Armor(Name, Value, Weight);
 		break;
 	case ItemType::Potion:
-		newItem = new Potion(Name, Value, Weight, Charges);
+		newItem = new Potion(Name, Value, Weight, Charges, potionSize);
 		break;
 	case ItemType::Scroll:
 		newItem = new Scroll(Name, Value, Weight, Charges);
@@ -134,8 +134,10 @@ void Inventory::UseItem(int index) {
 	}
 }
 
-const int Inventory::GetItems() {
-	return _items.size();
+const std::vector<IItem*>& Inventory::GetItems() const {
+
+	return _items;
+
 }
 
 bool Inventory::HasWeapon() {
