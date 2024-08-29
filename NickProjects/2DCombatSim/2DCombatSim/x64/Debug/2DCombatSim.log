@@ -1,0 +1,8 @@
+﻿  GameSystem.cpp
+  Level.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\2DCombatSim\2DCombatSim\Level.cpp(79,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  main.cpp
+  Soldier.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\2DCombatSim\2DCombatSim\Soldier.cpp(29,56): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Generating Code...
+  2DCombatSim.vcxproj -> C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\2DCombatSim\x64\Debug\2DCombatSim.exe
