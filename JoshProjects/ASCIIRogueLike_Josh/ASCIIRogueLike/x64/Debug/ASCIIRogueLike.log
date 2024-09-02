@@ -1,0 +1,3 @@
+﻿  Level.cpp
+C:\Users\jaydo\Documents\Visual Studio 2022\Projects\ASCIIRogueLike\ASCIIRogueLike\Level.cpp(444,57): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  ASCIIRogueLike.vcxproj -> C:\Users\jaydo\Documents\Visual Studio 2022\Projects\ASCIIRogueLike\x64\Debug\ASCIIRogueLike.exe
