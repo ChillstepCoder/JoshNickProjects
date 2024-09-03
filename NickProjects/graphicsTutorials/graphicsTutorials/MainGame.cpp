@@ -1,24 +1,18 @@
 #include "MainGame.h"
-
-#include "Sprite.h"
+#include "Errors.h"
 
 #include <iostream>
 #include <string>
 
-void fatalError(std::string errorString) {
-    std::cout << errorString << std::endl;
-    std::cout << "Enter any key to quit...";
-    int tmp;
-    std::cin >> tmp;
-    SDL_Quit();
-}
 
-MainGame::MainGame()
+MainGame::MainGame() : 
+    _screenWidth(1540),
+    _screenHeight(1024),
+    _time(0.0f),
+    _window(nullptr),
+    _gameState(GameState::PLAY)
 {
-    _window = nullptr;
-    _screenWidth = 1024;
-    _screenHeight = 768;
-    _gameState = GameState::PLAY;
+
 }
 
 MainGame::~MainGame()
@@ -28,11 +22,14 @@ MainGame::~MainGame()
 void MainGame::run() {
     initSystems();
 
-    _sprite.init(-1.0f, -1.0f, 1.0f, 1.0f);
+    //Initialize our sprite. (temporary)
+    _sprite.init(-1.0f, -1.0f, 2.0f, 2.0f);
 
+    //This only returns when the game ends
     gameLoop();
 }
 
+//Initialize SDL and OpenGL and whatever else we need
 void MainGame::initSystems() {
     //Initialize SDL
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -58,14 +55,24 @@ void MainGame::initSystems() {
     //Tell SDL that we want a double buffered window so we dont get any flickering
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    //Set the background color to purple
-    glClearColor(0.2f, 0.0f, 0.5f, 1.0);
+    //Set the background color
+    glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
+
+    initShaders();
+}
+
+void MainGame::initShaders() {
+    _colorProgram.compileShaders("Shaders/colorShadingVert.txt", "Shaders/colorShadingFrag.txt");
+    _colorProgram.addAttribute("vertexPosition");
+    _colorProgram.addAttribute("vertexColor");
+    _colorProgram.linkShaders();
 }
 
 void MainGame::gameLoop() {
 
     while (_gameState != GameState::EXIT) {
         processInput();
+        _time += 0.05f;
         drawGame();
     }
 }
@@ -85,12 +92,22 @@ void MainGame::processInput() {
 
 //Draws the game using the almighty OpenGL
 void MainGame::drawGame() {
+
+
     //Set the base depth to 1.0
     glClearDepth(1.0);
     //Clear the color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    _colorProgram.use();
+
+    GLuint timeLocation = _colorProgram.getUniformLocation("time");
+    glUniform1f(timeLocation, _time);
+
+    //Draw our sprite!
     _sprite.draw();
+
+    _colorProgram.unuse();
 
     //Swap our buffer and draw everything to the screen!
     SDL_GL_SwapWindow(_window);
