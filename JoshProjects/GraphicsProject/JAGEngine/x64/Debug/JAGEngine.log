@@ -1,0 +1,2 @@
+﻿SDL2main.lib(SDL_windows_main.obj) : error LNK2019: unresolved external symbol SDL_main referenced in function main_getcmdline
+C:\Users\jaydo\source\repos\GraphicsProject\x64\Debug\JAGEngine.exe : fatal error LNK1120: 1 unresolved externals

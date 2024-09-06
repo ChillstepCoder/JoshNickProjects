@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)deps/include/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir)JAGEngine/;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)deps/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -113,7 +113,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;JAGEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -134,17 +134,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Errors.cpp" />
-    <ClCompile Include="GLSLProgram.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainGame.cpp" />
-    <ClCompile Include="Sprite.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Errors.h" />
-    <ClInclude Include="GLSLProgram.h" />
     <ClInclude Include="MainGame.h" />
-    <ClInclude Include="Sprite.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

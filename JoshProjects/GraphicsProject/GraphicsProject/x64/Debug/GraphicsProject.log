@@ -1,7 +1,6 @@
-﻿  Errors.cpp
-  GLSLProgram.cpp
-  Main.cpp
-  MainGame.cpp
-  Sprite.cpp
-  Generating Code...
+﻿  MainGame.cpp
+C:\Users\jaydo\source\repos\GraphicsProject\GraphicsProject\MainGame.cpp(78,22): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
+C:\Users\jaydo\source\repos\GraphicsProject\GraphicsProject\MainGame.cpp(96,35): warning C4244: 'argument': conversion from 'float' to 'Uint32', possible loss of data
+C:\Users\jaydo\source\repos\GraphicsProject\GraphicsProject\MainGame.cpp(158,26): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
+C:\Users\jaydo\source\repos\GraphicsProject\GraphicsProject\MainGame.cpp(161,30): warning C4244: '=': conversion from 'Uint32' to 'float', possible loss of data
   GraphicsProject.vcxproj -> C:\Users\jaydo\source\repos\GraphicsProject\x64\Debug\GraphicsProject.exe
