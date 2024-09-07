@@ -1,0 +1,23 @@
+﻿  Errors.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\Errors.cpp(4,10): error C1083: Cannot open include file: 'SDL/SDL.h': No such file or directory
+  GLSLProgram.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\GLSLProgram.h(5,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'GLSLProgram.cpp')
+  
+  ImageLoader.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\GLTexture.h(3,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'ImageLoader.cpp')
+  
+  ResourceManager.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\GLTexture.h(3,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'ResourceManager.cpp')
+  
+  Sprite.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\Sprite.h(2,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'Sprite.cpp')
+  
+  TextureCache.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\GLTexture.h(3,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'TextureCache.cpp')
+  
+  Generating Code...

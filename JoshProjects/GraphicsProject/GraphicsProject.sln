@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35219.272
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GraphicsProject", "GraphicsProject\GraphicsProject.vcxproj", "{F06D9044-9CA8-4A51-91C9-725A0E98C205}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JAGEngine", "JAGEngine\JAGEngine.vcxproj", "{D62C5BC1-F241-41DB-AE92-A0555B15D10C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{F06D9044-9CA8-4A51-91C9-725A0E98C205}.Release|x64.Build.0 = Release|x64
 		{F06D9044-9CA8-4A51-91C9-725A0E98C205}.Release|x86.ActiveCfg = Release|Win32
 		{F06D9044-9CA8-4A51-91C9-725A0E98C205}.Release|x86.Build.0 = Release|Win32
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Debug|x64.ActiveCfg = Debug|x64
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Debug|x64.Build.0 = Debug|x64
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Debug|x86.ActiveCfg = Debug|Win32
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Debug|x86.Build.0 = Debug|Win32
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Release|x64.ActiveCfg = Release|x64
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Release|x64.Build.0 = Release|x64
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Release|x86.ActiveCfg = Release|Win32
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

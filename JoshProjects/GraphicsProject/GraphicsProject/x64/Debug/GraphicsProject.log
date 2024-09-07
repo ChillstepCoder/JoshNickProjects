@@ -1,7 +1,18 @@
-﻿  Errors.cpp
-  GLSLProgram.cpp
-  Main.cpp
+﻿  Main.cpp
   MainGame.cpp
-  Sprite.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(52,24): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(70,37): warning C4244: 'argument': conversion from 'float' to 'Uint32', possible loss of data
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(132,28): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(135,32): warning C4244: '=': conversion from 'Uint32' to 'float', possible loss of data
   Generating Code...
-  GraphicsProject.vcxproj -> C:\Users\jaydo\source\repos\GraphicsProject\x64\Debug\GraphicsProject.exe
+JAGEngine.lib(GLSLProgram.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(GLSLProgram.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(Sprite.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(Sprite.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(Window.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(Window.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(JAGEngine.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(JAGEngine.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(Errors.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(Errors.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(ResourceManager.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(ResourceManager.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(TextureCache.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(TextureCache.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(ImageLoader.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(ImageLoader.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(picoPNG.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(picoPNG.obj)' or at ''; linking object as if no debug info
+JAGEngine.lib(IOManager.obj) : warning LNK4099: PDB '' was not found with 'JAGEngine.lib(IOManager.obj)' or at ''; linking object as if no debug info
+  GraphicsProject.vcxproj -> C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\x64\Debug\GraphicsProject.exe
