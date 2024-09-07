@@ -1,4 +1,39 @@
-﻿  main.cpp
-  MainGame.cpp
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.h(3,10): error C1083: Cannot open include file: 'SDL/SDL.h': No such file or directory
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.h(3,10): error C1083: Cannot open include file: 'SDL/SDL.h': No such file or directory
+﻿  ImageLoader.cpp
+  IOManager.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\IOManager.cpp(17,18): warning C4244: 'initializing': conversion from 'std::streamoff' to 'int', possible loss of data
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\IOManager.cpp(21,27): warning C4244: '-=': conversion from 'std::streamoff' to 'int', possible loss of data
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewEnableVertexAttribArray
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewUseProgram
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewGetShaderiv
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewCompileShader
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewCreateShader
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewBindAttribLocation
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewCreateProgram
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewGetShaderInfoLog
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewGetProgramiv
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewGetUniformLocation
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewAttachShader
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewDeleteProgram
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewShaderSource
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewDisableVertexAttribArray
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewDetachShader
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewGetProgramInfoLog
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewDeleteShader
+GLSLProgram.obj : error LNK2001: unresolved external symbol __imp___glewLinkProgram
+ImageLoader.obj : error LNK2001: unresolved external symbol __imp_glBindTexture
+ImageLoader.obj : error LNK2001: unresolved external symbol __imp_glGenTextures
+ImageLoader.obj : error LNK2001: unresolved external symbol __imp_glTexParameteri
+ImageLoader.obj : error LNK2001: unresolved external symbol __imp_glTexImage2D
+ImageLoader.obj : error LNK2001: unresolved external symbol __imp___glewGenerateMipmap
+MainGame.obj : error LNK2001: unresolved external symbol __imp_glClear
+MainGame.obj : error LNK2001: unresolved external symbol __imp___glewUniform1f
+MainGame.obj : error LNK2001: unresolved external symbol __imp_glClearColor
+MainGame.obj : error LNK2001: unresolved external symbol __imp_glClearDepth
+MainGame.obj : error LNK2001: unresolved external symbol __imp_glewInit
+Sprite.obj : error LNK2001: unresolved external symbol __imp___glewVertexAttribPointer
+Sprite.obj : error LNK2001: unresolved external symbol __imp___glewBindBuffer
+Sprite.obj : error LNK2001: unresolved external symbol __imp___glewBufferData
+Sprite.obj : error LNK2001: unresolved external symbol __imp_glDrawArrays
+Sprite.obj : error LNK2001: unresolved external symbol __imp___glewGenBuffers
+Sprite.obj : error LNK2001: unresolved external symbol __imp___glewDeleteBuffers
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\x64\Release\graphicsTutorials.exe : fatal error LNK1120: 34 unresolved externals
