@@ -2,5 +2,6 @@
 
 #pragma once
 #include <string>
-
-extern void fatalError(std::string errorString);
+namespace JAGEngine {
+  extern void fatalError(std::string errorString);
+}

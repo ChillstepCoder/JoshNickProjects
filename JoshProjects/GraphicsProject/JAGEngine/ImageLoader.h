@@ -2,9 +2,11 @@
 #include "GLTexture.h"
 #include <string>
 
-class ImageLoader
-{
-public:
-  static GLTexture loadPNG(std::string filePath);
-};
+namespace JAGEngine {
+  class ImageLoader
+  {
+  public:
+    static GLTexture loadPNG(std::string filePath);
+  };
+}
 

@@ -3,30 +3,32 @@
 #pragma once
 #include <string>
 #include <GL/glew.h>
-class GLSLProgram
-{
-public:
-  GLSLProgram();
-  ~GLSLProgram();
-  void compileShaders(const std::string vertexShaderFilePath, const std::string fragmentShaderFilepath);
-  
-  void linkShaders();
 
-  void addAttribute(const std::string& attributeName);
+namespace JAGEngine {
+  class GLSLProgram
+  {
+  public:
+    GLSLProgram();
+    ~GLSLProgram();
+    void compileShaders(const std::string vertexShaderFilePath, const std::string fragmentShaderFilepath);
 
-  GLint getUniformLocation(const std::string& uniformName);
+    void linkShaders();
 
-  void use();
-  void unuse();
+    void addAttribute(const std::string& attributeName);
 
-private:
-  int _numAttributes;
+    GLint getUniformLocation(const std::string& uniformName);
 
-  void compileShader(const std::string& filePath, GLuint id);
+    void use();
+    void unuse();
 
-  GLuint _programID;
+  private:
+    int _numAttributes;
 
-  GLuint _vertexShaderID;
-  GLuint _fragmentShaderID;
-};
+    void compileShader(const std::string& filePath, GLuint id);
 
+    GLuint _programID;
+
+    GLuint _vertexShaderID;
+    GLuint _fragmentShaderID;
+  };
+}

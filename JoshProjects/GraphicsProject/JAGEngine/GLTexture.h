@@ -2,8 +2,10 @@
 
 #include <GL/glew.h>
 
-struct GLTexture {
-  GLuint id;
-  int width;
-  int height;
-};
+namespace JAGEngine {
+  struct GLTexture {
+    GLuint id;
+    int width;
+    int height;
+  };
+}
