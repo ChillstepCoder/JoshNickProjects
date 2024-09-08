@@ -2,6 +2,7 @@
 
 #include "MainGame.h"
 #include "Errors.h"
+#include <JAGEngine/ResourceManager.h>
 #include <iostream>
 #include <string>
 
@@ -23,23 +24,21 @@ MainGame::MainGame() :
 
   void MainGame::run() {
     initSystems();
-
-    _sprites.push_back(new JAGEngine::Sprite());
-    _sprites.back()->init(-_screenWidth / 4.0f, -_screenHeight / 4.0f, _screenWidth / 2, _screenHeight / 2, "Textures/JimmyJump_Pack/PNG/HappyCLoud.png");
-    _sprites.push_back(new JAGEngine::Sprite());
-    _sprites.back()->init(_screenWidth / 4.0f, _screenHeight / 4.0f, _screenWidth / 2, _screenHeight / 2, "Textures/JimmyJump_Pack/PNG/HappyCLoud.png");
-
-
     // _playerTexture = ImageLoader::loadPNG("Textures/JimmyJump_Pack/PNG/HappyCLoud.png");
         
     gameLoop();
   }
 
   void MainGame::initSystems() {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0.0f, 0.0f, 0.3f, 1.0f);  // Dark blue background
+
     JAGEngine::init();
     glViewport(0, 0, _screenWidth, _screenHeight);
     _window.create("Game Engine", _screenWidth, _screenHeight, 0);
     initShaders();
+    _spriteBatch.init();
   }
 
   void MainGame::gameLoop() {
@@ -132,6 +131,7 @@ MainGame::MainGame() :
     _colorProgram.use();
 
     glActiveTexture(GL_TEXTURE0);
+
     GLint textureLocation = _colorProgram.getUniformLocation("mySampler");
     glUniform1i(textureLocation, 0);
 
@@ -140,11 +140,30 @@ MainGame::MainGame() :
 
     GLuint pLocation = _colorProgram.getUniformLocation("P");
     glm::mat4 cameraMatrix = _camera.getCameraMatrix();
+
     glUniformMatrix4fv(pLocation, 1, GL_FALSE, &(cameraMatrix[0][0]));
 
-    for (int i = 0; i < _sprites.size(); i++) {
-      _sprites[i]->draw();
-    }
+    _spriteBatch.begin();
+    glm::vec4 pos(0.0f, 0.0f, 50.0f, 50.0f);
+    glm::vec4 uv(0.0f, 0.0f, 1.0f, 1.0f);
+
+    JAGEngine::GLTexture texture = JAGEngine::ResourceManager::getTexture("Textures/jimmyjump_pack/PNG/HappyCloud.png");
+    std::cout << "Texture ID: " << texture.id << std::endl;
+
+    JAGEngine::Color color;
+    color.r = 255;
+    color.g = 255;
+    color.b = 255;
+    color.a = 255;
+
+    _spriteBatch.draw(pos, uv, texture.id, 0.1f, color);
+    _spriteBatch.draw(pos + glm::vec4(50, 0, 0, 0), uv, texture.id, 0.1f, color);
+
+
+    _spriteBatch.end();
+    _spriteBatch.renderBatch();
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     _colorProgram.unuse();
 

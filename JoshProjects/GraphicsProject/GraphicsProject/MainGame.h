@@ -12,6 +12,7 @@
 #include "JAGEngine/Window.h"
 #include "JAGEngine/JAGEngine.h"
 #include "JAGEngine/Camera2D.h"
+#include "JAGEngine/SpriteBatch.h"
 #include <vector>
 #include <cmath>
 
@@ -37,10 +38,11 @@ private:
   int _screenHeight;
   GameState _gameState;
 
-  std::vector <JAGEngine::Sprite*> _sprites;
   JAGEngine::Sprite _sprite;
   JAGEngine::GLSLProgram _colorProgram;
   JAGEngine::Camera2D _camera;
+
+  JAGEngine::SpriteBatch _spriteBatch;
 
   float _fps;
   float _maxFPS;

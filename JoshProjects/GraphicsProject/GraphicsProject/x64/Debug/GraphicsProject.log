@@ -1,10 +1,8 @@
-﻿  MainGame.cpp
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(28,104): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(28,85): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(30,102): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(30,83): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(48,24): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(70,37): warning C4244: 'argument': conversion from 'float' to 'Uint32', possible loss of data
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(159,28): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
-C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(162,32): warning C4244: '=': conversion from 'Uint32' to 'float', possible loss of data
+﻿  Main.cpp
+  MainGame.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(47,24): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(69,37): warning C4244: 'argument': conversion from 'float' to 'Uint32', possible loss of data
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(178,28): warning C4244: 'initializing': conversion from 'Uint32' to 'float', possible loss of data
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\GraphicsProject\MainGame.cpp(181,32): warning C4244: '=': conversion from 'Uint32' to 'float', possible loss of data
+  Generating Code...
   GraphicsProject.vcxproj -> C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\x64\Debug\GraphicsProject.exe
