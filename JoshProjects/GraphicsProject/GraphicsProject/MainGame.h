@@ -11,7 +11,9 @@
 #include "JAGEngine/GLTexture.h"
 #include "JAGEngine/Window.h"
 #include "JAGEngine/JAGEngine.h"
+#include "JAGEngine/Camera2D.h"
 #include <vector>
+#include <cmath>
 
 enum class GameState {PLAY, EXIT};
 
@@ -37,8 +39,8 @@ private:
 
   std::vector <JAGEngine::Sprite*> _sprites;
   JAGEngine::Sprite _sprite;
-
   JAGEngine::GLSLProgram _colorProgram;
+  JAGEngine::Camera2D _camera;
 
   float _fps;
   float _maxFPS;

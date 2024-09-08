@@ -37,13 +37,7 @@ void main() {
     vec3 spiralColor = vec3(0.0, 0.8, 0.0); // Bright green
     vec3 bgColor = vec3(0.1, 0.05, 0.0); // Dark background
     
-    // Mix colors based on the spiral
-    vec3 finalColor = mix(bgColor, spiralColor, spiral);
+    vec3 finalColor = mix(textureColor.rgb, spiralColor, spiral * 0.5);
     
-    // Apply distance-based darkening for depth effect
-    float depthFactor = 1.0 / (1.0 + distance * 0.3);
-    finalColor *= depthFactor;
-    
-    // Apply fragment color and create final output
-    color = vec4(finalColor * fragmentColor.rgb, fragmentColor.a) * textureColor;
+    color = vec4(finalColor * fragmentColor.rgb, textureColor.a);
 }
