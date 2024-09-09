@@ -58,12 +58,12 @@ namespace JAGEngine {
   }
 
   void SpriteBatch::renderBatch() {
-    std::cout << "Rendering batch with " << _renderBatches.size() << " batches" << std::endl;
+    /*std::cout << "Rendering batch with " << _renderBatches.size() << " batches" << std::endl;*/
     glBindVertexArray(_vao);
     for (int i = 0; i < _renderBatches.size(); i++) {
-      std::cout << "  Batch " << i << ": Texture " << _renderBatches[i].texture
+      /*std::cout << "  Batch " << i << ": Texture " << _renderBatches[i].texture
         << " Offset " << _renderBatches[i].offset
-        << " NumVertices " << _renderBatches[i].numVertices << std::endl;
+        << " NumVertices " << _renderBatches[i].numVertices << std::endl;*/
       glBindTexture(GL_TEXTURE_2D, _renderBatches[i].texture);
       glDrawArrays(GL_TRIANGLES, _renderBatches[i].offset, _renderBatches[i].numVertices);
     }

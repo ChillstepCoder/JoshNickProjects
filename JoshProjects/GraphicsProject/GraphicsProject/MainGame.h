@@ -13,6 +13,9 @@
 #include "JAGEngine/JAGEngine.h"
 #include "JAGEngine/Camera2D.h"
 #include "JAGEngine/SpriteBatch.h"
+#include "JAGEngine/InputManager.h"
+#include "JAGEngine/Timing.h"
+#include "Bullet.h"
 #include <vector>
 #include <cmath>
 
@@ -31,7 +34,6 @@ private:
   void gameLoop();
   void processInput();
   void drawGame();
-  void calculateFPS();
 
   JAGEngine::Window _window;
   int _screenWidth;
@@ -44,10 +46,13 @@ private:
 
   JAGEngine::SpriteBatch _spriteBatch;
 
+  JAGEngine::InputManager _inputManager;
+  JAGEngine::FpsLimiter _fpsLimiter;
+
+  std::vector<Bullet> _bullets;
+
   float _fps;
   float _maxFPS;
-  float _frameTime;
-
   float _time;
 };
 

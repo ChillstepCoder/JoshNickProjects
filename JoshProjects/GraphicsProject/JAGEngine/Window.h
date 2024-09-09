@@ -5,6 +5,8 @@
 #include <SDL/SDL.h>
 #include <GL/glew.h>
 #include <string>
+#include <sstream>
+#include <Windows.h>
 
 namespace JAGEngine {
 
@@ -17,6 +19,7 @@ namespace JAGEngine {
     ~Window();
 
     SDL_Window* getSDLWindow() const { return _sdlWindow; }
+    void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message, const void* userParam);
 
     int create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);
     void swapBuffer();

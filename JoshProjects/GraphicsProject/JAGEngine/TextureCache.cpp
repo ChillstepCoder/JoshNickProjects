@@ -19,10 +19,10 @@ namespace JAGEngine {
       GLTexture newTexture = ImageLoader::loadPNG(texturePath);
       _textureMap.insert(make_pair(texturePath, newTexture));
 
-      std::cout << "Loaded Texture!\n";
+      //std::cout << "Loaded Texture!\n";
       return newTexture;
     }
-    std::cout << "Used Cached Texture!\n";
+    //std::cout << "Used Cached Texture!\n";
 
 
     return mit->second;
