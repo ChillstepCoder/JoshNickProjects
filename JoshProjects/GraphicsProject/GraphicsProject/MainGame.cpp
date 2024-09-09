@@ -30,14 +30,17 @@ MainGame::MainGame() :
   }
 
   void MainGame::initSystems() {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glClearColor(0.0f, 0.0f, 0.3f, 1.0f);  // Dark blue background
 
     JAGEngine::init();
     glViewport(0, 0, _screenWidth, _screenHeight);
     _window.create("Game Engine", _screenWidth, _screenHeight, 0);
+
+    // Do all of this AFTER creating the window / OpenGL context
     initShaders();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glClearColor(0.0f, 0.0f, 0.3f, 1.0f);  // Dark blue background
+
     _spriteBatch.init();
   }
 
@@ -139,6 +142,7 @@ MainGame::MainGame() :
     glUniform1f(timeLocation, _time);
 
     GLuint pLocation = _colorProgram.getUniformLocation("P");
+    // TODO: Josh - camera matrix is broken
     glm::mat4 cameraMatrix = _camera.getCameraMatrix();
 
     glUniformMatrix4fv(pLocation, 1, GL_FALSE, &(cameraMatrix[0][0]));

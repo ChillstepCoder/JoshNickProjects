@@ -11,6 +11,8 @@
 *.idb
 *.log
 *.lastbuildstate
+*.ilk
+*.exe.recipe
 
 # Precompiled Headers
 *.gch

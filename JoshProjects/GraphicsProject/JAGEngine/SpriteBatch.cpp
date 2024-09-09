@@ -68,6 +68,8 @@ namespace JAGEngine {
       glDrawArrays(GL_TRIANGLES, _renderBatches[i].offset, _renderBatches[i].numVertices);
     }
     glBindVertexArray(0);
+
+    checkGlError("SpriteBatch::renderBatch");
   }
 
   void SpriteBatch::createRenderBatches() {
@@ -122,6 +124,8 @@ namespace JAGEngine {
     if (_vao == 0) {
       glGenVertexArrays(1, &_vao);
     }
+    glBindVertexArray(_vao);
+
     if (_vbo == 0) {
       glGenBuffers(1, &_vbo);
     }
