@@ -10,6 +10,7 @@
 *.pdb
 *.idb
 *.log
+*.lastbuildstate
 
 # Precompiled Headers
 *.gch
@@ -25,3 +26,4 @@
 *.app
 
 .vs/
+JoshProjects/GraphicsProject/x64/Debug/JAGEngine.lib
