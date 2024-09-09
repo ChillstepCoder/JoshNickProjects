@@ -1,0 +1,20 @@
+﻿  Errors.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\Errors.cpp(6,10): error C1083: Cannot open include file: 'SDL/SDL.h': No such file or directory
+  GLSLProgram.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\GLSLProgram.h(4,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  ImageLoader.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\GLTexture.h(2,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  IOManager.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\IOManager.h(7,39): error C2039: 'string': is not a member of 'std'
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\IOManager.h(7,39): error C2061: syntax error: identifier 'string'
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\IOManager.cpp(6,17): error C2511: 'bool IOManager::readFileToBuffer(std::string,std::vector<unsigned char,std::allocator<unsigned char>> &)': overloaded member function not found in 'IOManager'
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\IOManager.cpp(17,18): warning C4244: 'initializing': conversion from 'std::streamoff' to 'int', possible loss of data
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\IOManager.cpp(21,27): warning C4244: '-=': conversion from 'std::streamoff' to 'int', possible loss of data
+  main.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.h(3,10): error C1083: Cannot open include file: 'SDL/SDL.h': No such file or directory
+  MainGame.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.h(3,10): error C1083: Cannot open include file: 'SDL/SDL.h': No such file or directory
+  picoPNG.cpp
+  Sprite.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\Sprite.h(2,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  Generating Code...

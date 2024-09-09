@@ -1,7 +1,11 @@
 #include "ResourceManager.h"
+#include <iostream>
 
-TextureCache ResourceManager::_textureCache;
+namespace JAGEngine {
 
-GLTexture ResourceManager::getTexture(std::string texturePath) {
-  return _textureCache.getTexture(texturePath);
+  TextureCache ResourceManager::_textureCache;
+
+  GLTexture ResourceManager::getTexture(std::string texturePath) {
+    return _textureCache.getTexture(texturePath);
+  }
 }

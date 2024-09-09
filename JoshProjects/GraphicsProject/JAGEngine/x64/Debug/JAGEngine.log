@@ -1,2 +1,16 @@
-﻿SDL2main.lib(SDL_windows_main.obj) : error LNK2019: unresolved external symbol SDL_main referenced in function main_getcmdline
-C:\Users\jaydo\source\repos\GraphicsProject\x64\Debug\JAGEngine.exe : fatal error LNK1120: 1 unresolved externals
+﻿  Camera2D.cpp
+  Errors.cpp
+  GLSLProgram.cpp
+  ImageLoader.cpp
+  IOManager.cpp
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\IOManager.cpp(17,18): warning C4244: 'initializing': conversion from 'std::streamoff' to 'int', possible loss of data
+C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\JAGEngine\IOManager.cpp(21,27): warning C4244: '-=': conversion from 'std::streamoff' to 'int', possible loss of data
+  JAGEngine.cpp
+  picoPNG.cpp
+  ResourceManager.cpp
+  Sprite.cpp
+  SpriteBatch.cpp
+  TextureCache.cpp
+  Window.cpp
+  Generating Code...
+  JAGEngine.vcxproj -> C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\x64\Debug\JAGEngine.lib

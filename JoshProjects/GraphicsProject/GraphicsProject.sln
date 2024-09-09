@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.11.35219.272
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GraphicsProject", "GraphicsProject\GraphicsProject.vcxproj", "{F06D9044-9CA8-4A51-91C9-725A0E98C205}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C} = {D62C5BC1-F241-41DB-AE92-A0555B15D10C}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JAGEngine", "JAGEngine\JAGEngine.vcxproj", "{D62C5BC1-F241-41DB-AE92-A0555B15D10C}"
 EndProject

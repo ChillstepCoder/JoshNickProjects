@@ -4,12 +4,17 @@
 
 #include <SDL/SDL.h>
 #include <windows.h>
-#include "GLSLProgram.h"
-#include "Sprite.h"
-#include <GL/glew.h>
+#include "JAGEngine/GLSLProgram.h"
+#include "JAGEngine/Sprite.h"
+#include <GL/glew.h> 
 #include <stdio.h>
-#include "GLTexture.h"
+#include "JAGEngine/GLTexture.h"
+#include "JAGEngine/Window.h"
+#include "JAGEngine/JAGEngine.h"
+#include "JAGEngine/Camera2D.h"
+#include "JAGEngine/SpriteBatch.h"
 #include <vector>
+#include <cmath>
 
 enum class GameState {PLAY, EXIT};
 
@@ -28,15 +33,16 @@ private:
   void drawGame();
   void calculateFPS();
 
-  SDL_Window* _window;
+  JAGEngine::Window _window;
   int _screenWidth;
   int _screenHeight;
   GameState _gameState;
 
-  std::vector <Sprite*> _sprites;
-  Sprite _sprite;
+  JAGEngine::Sprite _sprite;
+  JAGEngine::GLSLProgram _colorProgram;
+  JAGEngine::Camera2D _camera;
 
-  GLSLProgram _colorProgram;
+  JAGEngine::SpriteBatch _spriteBatch;
 
   float _fps;
   float _maxFPS;
