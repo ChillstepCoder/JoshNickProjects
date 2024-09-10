@@ -2,47 +2,51 @@
 
 #include <GL/glew.h>
 
-struct Position {
-    float x;
-    float y;
-};
+namespace Bengine {
 
-struct Color {
-    GLubyte r;
-    GLubyte g;
-    GLubyte b;
-    GLubyte a;
-};
+    struct Position {
+        float x;
+        float y;
+    };
 
-struct UV {
-    float u;
-    float v;
-};
+    struct Color {
+        GLubyte r;
+        GLubyte g;
+        GLubyte b;
+        GLubyte a;
+    };
 
-struct Vertex {
+    struct UV {
+        float u;
+        float v;
+    };
 
-    Position position;
+    struct Vertex {
 
-    //4 bytes for r g b a color
-    Color color;
+        Position position;
 
-    //UV texture coordinates.
-    UV uv;
+        //4 bytes for r g b a color
+        Color color;
 
-    void setPosition(float x, float y) {
-        position.x = x;
-        position.y = y;
-    }
+        //UV texture coordinates.
+        UV uv;
 
-    void setColor(GLubyte r, GLubyte g, GLubyte b, GLubyte a) {
-        color.r = r;
-        color.g = g;
-        color.b = b;
-        color.a = a;
-    }
+        void setPosition(float x, float y) {
+            position.x = x;
+            position.y = y;
+        }
 
-    void setUV(float u, float v) {
-        uv.u = u;
-        uv.v = v;
-    }
-};
+        void setColor(GLubyte r, GLubyte g, GLubyte b, GLubyte a) {
+            color.r = r;
+            color.g = g;
+            color.b = b;
+            color.a = a;
+        }
+
+        void setUV(float u, float v) {
+            uv.u = u;
+            uv.v = v;
+        }
+    };
+
+}

@@ -4,23 +4,26 @@
 
 #include <string>
 
-class Sprite
-{
-public:
-    Sprite();
-    ~Sprite();
+namespace Bengine {
 
-    void init(float x, float y, float width, float height, std::string texturePath);
+    class Sprite
+    {
+    public:
+        Sprite();
+        ~Sprite();
 
-    void draw();
+        void init(float x, float y, float width, float height, std::string texturePath);
 
-private:
-    float _x;
-    float _y;
-    float _width;
-    float _height;
-    GLuint _vboID;
-    GLTexture _texture;
+        void draw();
 
-};
+    private:
+        float _x;
+        float _y;
+        float _width;
+        float _height;
+        GLuint _vboID;
+        GLTexture _texture;
 
+    };
+
+}

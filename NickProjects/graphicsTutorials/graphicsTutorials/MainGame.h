@@ -3,10 +3,20 @@
 #include <SDL/SDL.h>
 #include <GL/glew.h>
 
-#include "GLSLProgram.h"
-#include "GLTexture.h"
+#include <Bengine/Bengine.h>
+#include <Bengine/GLSLProgram.h>
+#include <Bengine/GLTexture.h>
+#include <Bengine/Sprite.h>
+#include <Bengine/Window.h>
+#include <Bengine/InputManager.h>
+#include <Bengine/Timing.h>
 
-#include "Sprite.h"
+#include <Bengine/SpriteBatch.h>
+
+#include <Bengine/Camera2D.h>
+
+#include "Bullet.h"
+
 #include <vector>
 
 enum class GameState {PLAY, EXIT};
@@ -25,21 +35,24 @@ private:
     void gameLoop();
     void processInput();
     void drawGame();
-    void calculateFPS();
     
-    SDL_Window* _window;
+    Bengine::Window _window;
     int _screenWidth;
     int _screenHeight;
     GameState _gameState;
 
-    std::vector <Sprite*> _sprites;
+    Bengine::GLSLProgram _colorProgram;
+    Bengine::Camera2D _camera;
 
-    GLSLProgram _colorProgram;
+    Bengine::SpriteBatch _spriteBatch;
 
-    float _fps;
+    Bengine::InputManager _inputManager;
+    Bengine::FpsLimiter _fpsLimiter;
+
+    std::vector<Bullet> _bullets;
+
     float _maxFPS;
-    float _frameTime;
-
+    float _fps;
     float _time;
 };
 
