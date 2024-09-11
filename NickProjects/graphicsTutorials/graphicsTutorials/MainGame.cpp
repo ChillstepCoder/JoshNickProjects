@@ -61,7 +61,7 @@ void MainGame::gameLoop() {
         _camera.update();
 
         //Update all bullets
-        for (int i = 0; i < _bullets.size(); i++) {
+        for (int i = 0; i < _bullets.size();) {
             if (_bullets[i].update() == true) {
                 _bullets[i] = _bullets.back();
                 _bullets.pop_back();
@@ -169,7 +169,7 @@ void MainGame::drawGame() {
 
     _spriteBatch.begin();
 
-    glm::vec4 pos(0.0f, 0.0f, 50.0f, 50.0f);
+    glm::vec4 pos(-20.0f, -20.0f, 50.0f, 50.0f);
     glm::vec4 uv(0.0f, 0.0f, 1.0f, 1.0f);
     static Bengine::GLTexture texture = Bengine::ResourceManager::getTexture("Textures/jimmyJump_pack/PNG/CharacterRight_Standing.png");
     Bengine::Color color;

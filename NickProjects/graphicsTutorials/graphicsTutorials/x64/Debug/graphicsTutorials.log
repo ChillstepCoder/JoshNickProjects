@@ -1,2 +1,4 @@
-﻿  Bullet.cpp
+﻿  MainGame.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,68): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,53): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
   graphicsTutorials.vcxproj -> C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\x64\Debug\graphicsTutorials.exe
