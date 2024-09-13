@@ -1,5 +1,6 @@
 #include "MainGame.h"
-#include "Errors.h"
+#include <Bengine/Errors.h>
+#include <Bengine/ResourceManager.h>
 
 #include <iostream>
 #include <string>
@@ -9,11 +10,10 @@ MainGame::MainGame() :
     _screenWidth(1540),
     _screenHeight(1024),
     _time(0.0f),
-    _window(nullptr),
     _gameState(GameState::PLAY),
     _maxFPS(60.0f)
 {
-
+    _camera.init(_screenWidth, _screenHeight);
 }
 
 MainGame::~MainGame()
@@ -23,56 +23,23 @@ MainGame::~MainGame()
 void MainGame::run() {
     initSystems();
 
-    //Initialize our sprite. (temporary)
-    _sprites.push_back(new Sprite());
-    _sprites.back()->init(-1.0f, -1.0f, 1.0f, 1.0f, "Textures/jimmyJump_pack/PNG/CharacterRight_Standing.png");
 
-    _sprites.push_back(new Sprite());
-    _sprites.back()->init(0.0f, -1.0f, 1.0f, 1.0f, "Textures/jimmyJump_pack/PNG/CharacterRight_Standing.png");
-
-    _sprites.push_back(new Sprite());
-    _sprites.back()->init(-1.0f, 0.0f, 1.0f, 1.0f, "Textures/jimmyJump_pack/PNG/CharacterRight_Standing.png");
     //This only returns when the game ends
     gameLoop();
 }
 
 //Initialize SDL and OpenGL and whatever else we need
 void MainGame::initSystems() {
-    //Initialize SDL
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_HAPTIC);
+    
+    Bengine::init();
 
-    //Tell SDL that we want a double buffered window so we dont get any flickering
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-    //Open an SDL window
-    _window = SDL_CreateWindow("Game Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, _screenWidth, _screenHeight, SDL_WINDOW_OPENGL);
-    if (_window == nullptr) {
-        fatalError("SDL Window could not be created!");
-    }
-
-    //Set up our OpenGL context
-    SDL_GLContext glContext = SDL_GL_CreateContext(_window);
-    if (glContext == nullptr) {
-        fatalError("SDL_GL context could not be created!");
-    }
-
-    //Set up glew (optional but recommended)
-    GLenum error = glewInit();
-    if (error != GLEW_OK) {
-        fatalError("Could not initialize glew!");
-    }
-
-    //Check the OpenGL version
-    std::printf("***   OpenGL Version: %s  ***", glGetString(GL_VERSION));
-
-
-    //Set the background color
-    glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
-
-    //Set Vsync to on. Unneeded code tho since it was on already by default
-    SDL_GL_SetSwapInterval(1);
+    _window.create("Game Engine", _screenWidth, _screenHeight, 0);
 
     initShaders();
+
+    _spriteBatch.init();
+    _fpsLimiter.init(_maxFPS);
+
 }
 
 void MainGame::initShaders() {
@@ -84,34 +51,43 @@ void MainGame::initShaders() {
 }
 
 void MainGame::gameLoop() {
-    //Used for frame time measuring
-    float startTicks = SDL_GetTicks();
-
 
     while (_gameState != GameState::EXIT) {
+        _fpsLimiter.begin();
+
         processInput();
         _time += 0.05f;
-        drawGame();
-        calculateFPS();
 
-        //print only once every 10 frames
+        _camera.update();
+
+        //Update all bullets
+        for (int i = 0; i < _bullets.size();) {
+            if (_bullets[i].update() == true) {
+                _bullets[i] = _bullets.back();
+                _bullets.pop_back();
+            } else {
+                i++;
+            }
+        }
+
+        drawGame();
+
+        _fps = _fpsLimiter.end(); 
+
+        //print only once every 10000 frames
         static int frameCounter = 0;
         frameCounter++;
-        if (frameCounter == 10) {
+        if (frameCounter == 10000) {
             std::cout << _fps << std::endl;
             frameCounter = 0;
         }
-
-        float frameTicks = SDL_GetTicks() - startTicks;
-        //Limit the FPS to the max FPS
-        if (1000.0f / _maxFPS > frameTicks) {
-            SDL_Delay(1000.0f / _maxFPS - frameTicks);
-        }
-        
     }
 }
 void MainGame::processInput() {
     SDL_Event evnt;
+
+    const float CAMERA_SPEED = 2.0f;
+    const float SCALE_SPEED = 0.1f;
 
     while (SDL_PollEvent(&evnt)) {
         switch (evnt.type) {
@@ -119,10 +95,53 @@ void MainGame::processInput() {
             _gameState = GameState::EXIT;
             break;
         case SDL_MOUSEMOTION:
-            //std::cout << evnt.motion.x << " " << evnt.motion.y << std::endl;
+            _inputManager.setMouseCoords(evnt.motion.x, evnt.motion.y);
+            break;
+        case SDL_KEYDOWN:
+            _inputManager.pressKey(evnt.key.keysym.sym);
+            break;
+        case SDL_KEYUP:
+            _inputManager.releaseKey(evnt.key.keysym.sym);
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            _inputManager.pressKey(evnt.button.button);
+            break;
+        case SDL_MOUSEBUTTONUP:
+            _inputManager.releaseKey(evnt.button.button);
             break;
         }
     }
+
+    if (_inputManager.isKeyPressed(SDLK_w)) {
+        _camera.setPosition(_camera.getPosition() + glm::vec2(0.0f, -CAMERA_SPEED));
+    }
+    if (_inputManager.isKeyPressed(SDLK_s)) {
+        _camera.setPosition(_camera.getPosition() + glm::vec2(0.0f, CAMERA_SPEED));
+    }
+    if (_inputManager.isKeyPressed(SDLK_a)) {
+        _camera.setPosition(_camera.getPosition() + glm::vec2(CAMERA_SPEED, 0.0f));
+    }
+    if (_inputManager.isKeyPressed(SDLK_d)) {
+        _camera.setPosition(_camera.getPosition() + glm::vec2(-CAMERA_SPEED, 0.0f));
+    }
+    if (_inputManager.isKeyPressed(SDLK_q)) {
+        _camera.setScale(_camera.getScale() + SCALE_SPEED);
+    }
+    if (_inputManager.isKeyPressed(SDLK_e)) {
+        _camera.setScale(_camera.getScale() - SCALE_SPEED);
+    }
+
+    if (_inputManager.isKeyPressed(SDL_BUTTON_LEFT)) {
+        glm::vec2 mouseCoords = _inputManager.getMouseCoords();
+        mouseCoords = _camera.convertScreenToWorld(mouseCoords);
+
+        glm::vec2 playerPosition(0.0f);
+        glm::vec2 direction = mouseCoords - playerPosition;
+        direction = glm::normalize(direction);
+
+        _bullets.emplace_back(playerPosition, direction, 5.00f, 100);
+    }
+    
 }
 
 //Draws the game using the almighty OpenGL
@@ -142,54 +161,39 @@ void MainGame::drawGame() {
     //Tell the shader that the texture is in texture unit 0
     glUniform1i(textureLocation, 0);
 
-    //GLint timeLocation = _colorProgram.getUniformLocation("time");
-    //glUniform1f(timeLocation, _time);
+    //Set the camera matrix
+    GLint pLocation = _colorProgram.getUniformLocation("P");
+    glm::mat4 cameraMatrix = _camera.getCameraMatrix();
 
-    //Draw our sprite!
-    for (int i = 0; i < _sprites.size(); i++) {
-        _sprites[i]->draw();
+    glUniformMatrix4fv(pLocation, 1, GL_FALSE, &(cameraMatrix[0][0]));
+
+    _spriteBatch.begin();
+
+    glm::vec4 pos(-20.0f, -20.0f, 50.0f, 50.0f);
+    glm::vec4 uv(0.0f, 0.0f, 1.0f, 1.0f);
+    static Bengine::GLTexture texture = Bengine::ResourceManager::getTexture("Textures/jimmyJump_pack/PNG/CharacterRight_Standing.png");
+    Bengine::Color color;
+    color.r = 255;
+    color.g = 255;
+    color.b = 255;
+    color.a = 255;
+
+    _spriteBatch.draw(pos, uv, texture.id, 0.0f, color);
+    
+    for (int i = 0; i < _bullets.size(); i++) {
+        _bullets[i].draw(_spriteBatch);
     }
 
+    _spriteBatch.end();
+
+    _spriteBatch.renderBatch();
+
+    //unbind the texture
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    //disable the shader
     _colorProgram.unuse();
 
     //Swap our buffer and draw everything to the screen!
-    SDL_GL_SwapWindow(_window);
-}
-
-void MainGame::calculateFPS() {
-    static const int NUM_SAMPLES = 10;
-    static float frameTimes[NUM_SAMPLES];
-    static int currentFrame = 0;
-
-    static float prevTicks = SDL_GetTicks();
-    float currentTicks;
-    currentTicks = SDL_GetTicks();
-
-    _frameTime = currentTicks - prevTicks;
-    frameTimes[currentFrame % NUM_SAMPLES] = _frameTime;
-
-    prevTicks = currentTicks;
-
-    int count;
-
-    currentFrame++;
-    if (currentFrame < NUM_SAMPLES) {
-        count = currentFrame;
-    } else {
-        count = NUM_SAMPLES;
-    }
-
-    float frameTimeAverage = 0;
-    for (int i = 0; i < count; i++) {
-        frameTimeAverage += frameTimes[i];
-    }
-    frameTimeAverage /= count;
-
-    if (frameTimeAverage > 0) {
-        _fps = 1000.0f / frameTimeAverage;
-    } else {
-        _fps = 60.0f;
-    }
-
+    _window.swapBuffer();
 }
