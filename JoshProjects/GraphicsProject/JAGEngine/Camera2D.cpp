@@ -9,8 +9,8 @@ namespace JAGEngine {
     _orthoMatrix(1.0f),
     _scale(1.0f),
     _needsMatrixUpdate(true),
-    _screenWidth(5000),
-    _screenHeight(5000)
+    _screenWidth(1000),
+    _screenHeight(1000)
   {
 
   }
@@ -63,5 +63,6 @@ namespace JAGEngine {
 
     return screenCoords;
   }
+
 
 }

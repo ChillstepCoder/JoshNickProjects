@@ -10,21 +10,19 @@ namespace JAGEngine {
   public:
     Camera2D();
     ~Camera2D();
-
     void init(int screenWidth, int screenHeight);
     void update();
-
     glm::vec2 convertScreenToWorld(glm::vec2 screenCoords);
 
-    //setters
+    // Setters
     void setPosition(const glm::vec2& newPosition) { _position = newPosition; _needsMatrixUpdate = true; }
     void setScale(float newScale) { _scale = newScale; _needsMatrixUpdate = true; }
 
-    //getters
-    glm::vec2 getPosition() { return _position; }
+    // Getters
+    glm::vec2 getPosition() const { return _position; }
     float getScale() const { return _scale; }
-    glm::mat4 getOrthoMatrix() { return _orthoMatrix; }
-    glm::mat4 getCameraMatrix() { return _cameraMatrix; }
+    glm::mat4 getOrthoMatrix() const { return _orthoMatrix; }
+    glm::mat4 getCameraMatrix() const { return _cameraMatrix; }
 
   private:
     int _screenWidth, _screenHeight;
@@ -34,5 +32,4 @@ namespace JAGEngine {
     glm::mat4 _cameraMatrix;
     glm::mat4 _orthoMatrix;
   };
-
 }
