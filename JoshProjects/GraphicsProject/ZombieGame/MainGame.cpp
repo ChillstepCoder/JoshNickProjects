@@ -233,7 +233,7 @@ void MainGame::initLevel() {
   _levels.push_back(new Level("Levels/Level1.txt"));
   _currentLevel = 0;
   _player = new Player();
-  _player->init(1.0f, _levels[_currentLevel]->getStartPlayerPos(),&_inputManager);
+  _player->init(4.0f, _levels[_currentLevel]->getStartPlayerPos(),&_inputManager);
 
   _humans.push_back(_player);
 }
