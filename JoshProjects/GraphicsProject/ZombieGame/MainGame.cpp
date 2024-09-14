@@ -2,12 +2,18 @@
 
 #include "MainGame.h"
 #include <JAGEngine/JAGEngine.h>
-#include "Errors.h"
+#include <JAGEngine/Errors.h>
 #include <JAGEngine/ResourceManager.h>
 #include <iostream>
 #include <string>
 #include "Level.h"
 #include "Zombie.h"
+#include <random>
+#include <ctime>
+
+const float HUMAN_SPEED = 2.5f;
+const float ZOMBIE_SPEED = 1.5f;
+const float PLAYER_SPEED = 3.5f;
 
 MainGame::MainGame() :
   _screenWidth(1024),
@@ -97,6 +103,45 @@ void MainGame::updateAgents() {
       _humans,
       _zombies);
   }
+  //update all zombies
+  for (int i = 0; i < _zombies.size(); i++) {
+    _zombies[i]->update(_levels[_currentLevel]->getLevelData(),
+      _humans,
+      _zombies);
+  }
+
+  //zombie collision
+  for (int i = 0; i < _zombies.size(); i++) {
+    //collide with zombies
+    for (int j = i + 1; j < _zombies.size(); j++) {
+      _zombies[i]->collideWithAgent(_zombies[j]);
+    }
+    //collide with humans
+    for (int j = 1; j < _humans.size(); j++) {
+      if (_zombies[i]->collideWithAgent(_humans[j])) {
+        //add the new zombie
+        _zombies.push_back(new Zombie);
+        _zombies.back()->init(ZOMBIE_SPEED, _humans[j]->getPosition());
+        //delete the human
+        delete _humans[j];
+        _humans[j] = _humans.back();
+        _humans.pop_back();
+      }
+    }
+
+    //collide with the player
+    if (_zombies[i]->collideWithAgent(_player)) {
+      JAGEngine::fatalError("YOU LOSE");
+    }
+  }
+
+  //human collision
+  for (int i = 0; i < _humans.size(); i++) {
+    for (int j = i + 1; j < _humans.size(); j++) {
+      _humans[i]->collideWithAgent(_humans[j]);
+    }
+  }
+
   //dont forget to update zombies
 }
 
@@ -221,6 +266,11 @@ void MainGame::drawGame() {
   for (int i = 0; i < _humans.size(); i++) {
     _humans[i]->draw(_agentSpriteBatch);
   }
+  // draw the zombies
+  for (int i = 0; i < _zombies.size(); i++) {
+    _zombies[i]->draw(_agentSpriteBatch);
+  }
+
   _agentSpriteBatch.end();
   _agentSpriteBatch.renderBatch();
 
@@ -233,7 +283,29 @@ void MainGame::initLevel() {
   _levels.push_back(new Level("Levels/Level1.txt"));
   _currentLevel = 0;
   _player = new Player();
-  _player->init(4.0f, _levels[_currentLevel]->getStartPlayerPos(),&_inputManager);
+  _player->init(PLAYER_SPEED, _levels[_currentLevel]->getStartPlayerPos(),&_inputManager);
 
   _humans.push_back(_player);
+
+  std::mt19937 randomEngine;
+  randomEngine.seed(time(nullptr));
+  std::uniform_int_distribution<int> randX(2, _levels[_currentLevel]->getWidth()-2);
+  std::uniform_int_distribution<int> randY(2, _levels[_currentLevel]->getHeight()-2);
+
+  //Add all the random humans
+  for (int i = 0; i < _levels[_currentLevel]->getNumHumans(); i++) {
+    _humans.push_back(new Human);
+    glm::vec2 pos(randX(randomEngine) * TILE_WIDTH, randY(randomEngine) * TILE_WIDTH);
+    _humans.back()->init(HUMAN_SPEED, pos);
+
+  }
+
+  //add the zombies
+  const std::vector<glm::vec2>& zombiePositions = _levels[_currentLevel]->getZombieStartPositions();
+  
+  for (int i = 0; i < zombiePositions.size(); i++) {
+    _zombies.push_back(new Zombie);
+    _zombies.back()->init(ZOMBIE_SPEED, zombiePositions[i]);
+
+  }
 }
