@@ -1,47 +1,27 @@
-//Agent.cpp
-
 #include "Agent.h"
 #include "Level.h"
 #include "JAGEngine/ResourceManager.h"
 #include <algorithm>
+#include <cmath>
 
-Agent::Agent() {
-
-}
-
-Agent::~Agent() {
-
-}
+Agent::Agent() {}
+Agent::~Agent() {}
 
 void Agent::draw(JAGEngine::SpriteBatch& _spriteBatch) {
-
   static int textureID = JAGEngine::ResourceManager::getTexture("Textures/zombie_game/spr_npc.png").id;
-
   const glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-
-  glm::vec4 destRect;
-  destRect.x = _position.x;
-  destRect.y = _position.y;
-  destRect.z = AGENT_WIDTH;
-
-  destRect.w = AGENT_WIDTH;
-
+  glm::vec4 destRect(_position.x - AGENT_WIDTH / 2, _position.y - AGENT_WIDTH / 2, AGENT_WIDTH, AGENT_WIDTH);
   _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color);
-}
-
-void Agent::update(const std::vector<std::string>& levelData,
-  std::vector<Human*>& humans,
-  std::vector<Zombie*>& zombies) {
-
 }
 
 void Agent::collideWithLevel(const std::vector<std::string>& levelData) {
   std::vector<glm::vec2> collideTilePositions;
 
-  checkTilePosition(levelData, collideTilePositions, _position.x, _position.y);
-  checkTilePosition(levelData, collideTilePositions, _position.x + AGENT_WIDTH, _position.y);
-  checkTilePosition(levelData, collideTilePositions, _position.x, _position.y + AGENT_WIDTH);
-  checkTilePosition(levelData, collideTilePositions, _position.x + AGENT_WIDTH, _position.y + AGENT_WIDTH);
+  // Check the four corners of the agent
+  checkTilePosition(levelData, collideTilePositions, _position.x - AGENT_WIDTH / 2, _position.y - AGENT_WIDTH / 2);
+  checkTilePosition(levelData, collideTilePositions, _position.x + AGENT_WIDTH / 2, _position.y - AGENT_WIDTH / 2);
+  checkTilePosition(levelData, collideTilePositions, _position.x - AGENT_WIDTH / 2, _position.y + AGENT_WIDTH / 2);
+  checkTilePosition(levelData, collideTilePositions, _position.x + AGENT_WIDTH / 2, _position.y + AGENT_WIDTH / 2);
 
   for (int i = 0; i < collideTilePositions.size(); i++) {
     collideWithTile(collideTilePositions[i]);
@@ -63,13 +43,12 @@ void Agent::checkTilePosition(const std::vector<std::string>& levelData,
   }
 }
 
-//AABB collision
 void Agent::collideWithTile(glm::vec2 tilePos) {
   const float AGENT_RADIUS = AGENT_WIDTH / 2.0f;
   const float TILE_RADIUS = TILE_WIDTH / 2.0f;
   const float MIN_DISTANCE = AGENT_RADIUS + TILE_RADIUS;
 
-  glm::vec2 centerAgentPos = _position + glm::vec2(AGENT_RADIUS);
+  glm::vec2 centerAgentPos = _position;
   glm::vec2 distVec = centerAgentPos - tilePos;
 
   float xDepth = MIN_DISTANCE - std::abs(distVec.x);

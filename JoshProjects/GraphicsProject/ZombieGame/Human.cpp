@@ -27,5 +27,5 @@ void Human::init(float speed, glm::vec2 pos) {
 
   _speed = speed;
   _position = pos;
-  _direction =
+  //_direction =
 }

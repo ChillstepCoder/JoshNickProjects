@@ -23,7 +23,7 @@ namespace JAGEngine {
   void Camera2D::init(int screenWidth, int screenHeight) {
     _screenWidth = screenWidth;
     _screenHeight = screenHeight;
-    _orthoMatrix = glm::ortho(0.0f, static_cast<float>(_screenWidth), 0.0f, static_cast<float>(_screenHeight));
+    _orthoMatrix = glm::ortho(-static_cast<float>(_screenWidth / 2.0f), static_cast<float>(_screenWidth / 2.0f), -static_cast<float>(_screenWidth / 2.0f), static_cast<float>(_screenHeight / 2.0f));
   }
 
 
@@ -34,17 +34,17 @@ namespace JAGEngine {
 
       // Scale around the center of the screen
       glm::vec3 scale(_scale, _scale, 1.0f);
-      glm::vec3 centerScreen(_screenWidth / 2.0f, _screenHeight / 2.0f, 0.0f);
-      _cameraMatrix = glm::translate(_cameraMatrix, centerScreen);
-      _cameraMatrix = glm::scale(_cameraMatrix, scale);
-      _cameraMatrix = glm::translate(_cameraMatrix, -centerScreen);
+      ////glm::vec3 centerScreen(_screenWidth / 2.0f, _screenHeight / 2.0f, 0.0f);
+      //_cameraMatrix = glm::translate(_cameraMatrix, centerScreen);
+      //_cameraMatrix = glm::scale(_cameraMatrix, scale);
+      //_cameraMatrix = glm::translate(_cameraMatrix, -centerScreen);
 
       // Translate the camera
       glm::vec3 translate(-_position.x, -_position.y, 0.0f);
       _cameraMatrix = glm::translate(_cameraMatrix, translate);
 
       // Apply orthographic projection
-      _cameraMatrix = _orthoMatrix * _cameraMatrix;
+      _cameraMatrix = glm::scale(_orthoMatrix, scale) * _cameraMatrix;
 
       _needsMatrixUpdate = false;
     }
