@@ -3,6 +3,8 @@
 #pragma once
 #include "Agent.h"
 
+const float FLEE_DISTANCE = 150.0f;
+
 class Human : public Agent
 {
 public:
@@ -16,6 +18,7 @@ public:
     std::vector<Zombie*>& zombies);
 
 private:
+  Zombie* getNearestZombie(std::vector<Zombie*>& zombies);
   glm::vec2 _direction;
   int _frames;
 };

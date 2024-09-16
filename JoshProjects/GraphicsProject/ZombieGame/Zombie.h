@@ -4,6 +4,8 @@
 
 #include "Agent.h"
 
+const float CHASE_DISTANCE = 400.0f;
+
 class Zombie : public Agent
 {
 public:
@@ -18,4 +20,6 @@ public:
 
 private:
   Human* getNearestHuman(std::vector<Human*>& humans);
+  glm::vec2 _direction;
+  int _frames;
 };

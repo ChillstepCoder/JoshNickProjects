@@ -28,6 +28,14 @@ void Agent::collideWithLevel(const std::vector<std::string>& levelData) {
   }
 }
 
+bool Agent::applyDamage(float damage) {
+  _health -= damage;
+  if (_health <= 0) {
+    return true;
+  }
+  return false;
+}
+
 bool Agent::collideWithAgent(Agent* agent) {
 
   const float MIN_DISTANCE = AGENT_RADIUS * 2.0f;

@@ -91,7 +91,7 @@ MainGame::MainGame() :
     SDL_Event evnt;
     const double MIN_ZOOM = 1e-10;
     const double MAX_ZOOM = 1e10;
-    const double ZOOM_FACTOR = 1.08; 
+    const double ZOOM_FACTOR = 1.001; 
     const double BASE_MOVE_SPEED = 8.0;
 
     while (SDL_PollEvent(&evnt)) {

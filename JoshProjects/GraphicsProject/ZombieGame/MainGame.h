@@ -18,6 +18,7 @@
 #include "JAGEngine/ResourceManager.h"
 #include "Player.h"
 #include "Level.h"
+#include "Bullet.h"
 #include <vector>
 #include <cmath>
 
@@ -41,6 +42,9 @@ private:
   void gameLoop();
 
   void updateAgents();
+  void updateBullets();
+
+  void checkVictory();
 
   void processInput();
   void drawGame();
@@ -66,6 +70,7 @@ private:
   Player* _player;
   std::vector<Human*> _humans;
   std::vector<Zombie*> _zombies;
+  std::vector<Bullet> _bullets;
 
   JAGEngine::ResourceManager _resourceManager;
 
@@ -73,6 +78,9 @@ private:
   float _maxFPS;
   float _time;
   int _currentLevel;
+
+  int _numHumansKilled; //humans killed by player
+  int _numZombiesKilled;
 
 
 };

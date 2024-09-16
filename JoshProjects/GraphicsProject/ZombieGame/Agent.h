@@ -27,6 +27,8 @@ public:
 
   void draw(JAGEngine::SpriteBatch& _spriteBatch);
 
+  bool applyDamage(float damage); //retun true if we die
+
   glm::vec2 getPosition() const { return _position; }
   
 protected:
@@ -39,5 +41,6 @@ protected:
   JAGEngine::Color _color;
   float _speed;
 
+  float _health;
 };
 
