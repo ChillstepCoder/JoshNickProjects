@@ -10,7 +10,7 @@ Agent::~Agent() {
 
 }
 
-void Agent::collideWithLevel(const std::vector<std::string>& levelData) {
+bool Agent::collideWithLevel(const std::vector<std::string>& levelData) {
 
     std::vector<glm::vec2> collideTilePositions;
 
@@ -36,44 +36,61 @@ void Agent::collideWithLevel(const std::vector<std::string>& levelData) {
                       _position.x + AGENT_WIDTH,
                       _position.y + AGENT_WIDTH);
 
+    if (collideTilePositions.size() == 0) {
+        return false;
+    }
+
     // Do the collision
     for (int i = 0; i < collideTilePositions.size(); i++) {
         collideWithTile(collideTilePositions[i]);
     }
-
+    return true;
 }
 
-void Agent::draw(Bengine::SpriteBatch& _spriteBatch) {
+bool Agent::collideWithAgent(Agent* agent) {
 
-    static int textureID = Bengine::ResourceManager::getTexture("Textures/Zombie/skeleton-attack_0.png").id;
+    const float MIN_DISTANCE = AGENT_RADIUS * 2.0f;
 
-    const glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
+    glm::vec2 centerPosA = _position + glm::vec2(AGENT_RADIUS);
+    glm::vec2 centerPosB = agent->getPosition() + glm::vec2(AGENT_RADIUS);
 
-    glm::vec4 destRect;
-    destRect.x = _position.x;
-    destRect.y = _position.y;
-    destRect.z = AGENT_WIDTH;
-    destRect.w = AGENT_WIDTH;
+    glm::vec2 distVec = centerPosA - centerPosB;
 
-    _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color);
+    float distance = glm::length(distVec);
+
+    float collisionDepth = MIN_DISTANCE - distance;
+    if (collisionDepth > 0) {
+
+        glm::vec2 collisionDepthVec = glm::normalize(distVec) * collisionDepth;
+
+        _position += collisionDepthVec / 2.0f;
+        agent->_position -= collisionDepthVec / 2.0f;
+        return true;
+    }
+    return false;
 }
 
-void Agent::checkTilePosition(const std::vector<std::string>& levelData, 
-                              std::vector<glm::vec2>& collideTilePositions,
-                              float x,
-                              float y) {
+void Agent::checkTilePosition(const std::vector<std::string>& levelData,
+    std::vector<glm::vec2>& collideTilePositions,
+    float x,
+    float y) {
 
     glm::vec2 cornerPos = glm::vec2(floor(x / (float)TILE_WIDTH),
-                                    floor(y / (float)TILE_WIDTH));
-    if (levelData[cornerPos.y][cornerPos.x] != '.') {
-        collideTilePositions.push_back(cornerPos * (float)TILE_WIDTH + glm::vec2((float)TILE_WIDTH / 2.0f));
+        floor(y / (float)TILE_WIDTH));
+
+    // Make sure we are inside the world
+    if (cornerPos.x >= 0 && cornerPos.x < levelData[0].size() &&
+        cornerPos.y >= 0 && cornerPos.y < levelData.size()) {
+
+        if (levelData[cornerPos.y][cornerPos.x] != '.') {
+            collideTilePositions.push_back(cornerPos * (float)TILE_WIDTH + glm::vec2((float)TILE_WIDTH / 2.0f));
+        }
     }
 }
 
 // AABB Collision
 void Agent::collideWithTile(glm::vec2 tilePos) {
 
-    const float AGENT_RADIUS = (float)AGENT_WIDTH / 2.0f;
     const float TILE_RADIUS = (float)TILE_WIDTH / 2.0f;
     const float MIN_DISTANCE = AGENT_RADIUS + TILE_RADIUS;
 

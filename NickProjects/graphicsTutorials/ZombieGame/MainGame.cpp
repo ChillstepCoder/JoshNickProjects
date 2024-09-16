@@ -2,11 +2,19 @@
 
 #include <Bengine/Bengine.h>
 #include <Bengine/Timing.h>
+#include <random>
+#include <ctime>
+#include "Bengine/Errors.h"
 
 #include <SDL/SDL.h>
 #include <iostream>
 
+#include "Gun.h"
 #include "Zombie.h"
+
+const float HUMAN_SPEED = 1.0f;
+const float ZOMBIE_SPEED = 1.3f;
+const float PLAYER_SPEED = 5.0f;
 
 MainGame::MainGame()  : 
     _screenWidth(1024), 
@@ -52,10 +60,36 @@ void MainGame::initLevel() {
     _currentLevel = 0;
 
     _player = new Player();
-    _player->init(4.0f, _levels[_currentLevel]->getStartPlayerPos(), &_inputManager);
+    _player->init(PLAYER_SPEED, _levels[_currentLevel]->getStartPlayerPos(), &_inputManager, &_camera, &_bullets);
 
     _humans.push_back(_player);
 
+    std::mt19937 randomEngine;
+    randomEngine.seed(time(nullptr));
+
+
+    std::uniform_int_distribution<int> randX(3, _levels[_currentLevel]->getWidth() - 3);
+    std::uniform_int_distribution<int> randY(3, _levels[_currentLevel]->getHeight() - 3);
+
+    // Add all the random humans
+    for (int i = 0; i < _levels[_currentLevel]->getNumHumans(); i++) {
+        _humans.push_back(new Human);
+        glm::vec2 pos(randX(randomEngine) * TILE_WIDTH, randY(randomEngine) * TILE_WIDTH);
+        _humans.back()->init(HUMAN_SPEED, pos);
+    }
+
+    // Add the zombies
+    const std::vector<glm::vec2>& zombiePositions = _levels[_currentLevel]->getZombieStartPositions();
+    for (int i = 0; i < zombiePositions.size(); i++) {
+        _zombies.push_back(new Zombie);
+        _zombies.back()->init(ZOMBIE_SPEED, zombiePositions[i]);
+    }
+
+    // Set up the player's guns
+    const float BULLET_SPEED = 20.0f;
+    _player->addGun(new Gun("Magnum", 15, 1, 0.1f, 30, BULLET_SPEED));
+    _player->addGun(new Gun("Shotgun", 35, 20, 0.4f, 4, BULLET_SPEED));
+    _player->addGun(new Gun("AK-47", 4, 1, 0.15f, 20, BULLET_SPEED));
 }
 
 void MainGame::initShaders() {
@@ -80,6 +114,8 @@ void MainGame::gameLoop() {
 
         updateAgents();
 
+        updateBullets();
+
         _camera.setPosition(_player->getPosition());
 
         _camera.update();
@@ -98,12 +134,52 @@ void MainGame::updateAgents() {
                            _zombies);
     }
 
-    //Dont forget to update zombies
+    // Update all zombies
+    for (int i = 0; i < _zombies.size(); i++) {
+        _zombies[i]->update(_levels[_currentLevel]->getLevelData(),
+            _humans,
+            _zombies);
+    }
+    // Update Zombie collisions
+    for (int i = 0; i < _zombies.size(); i++) {
+        // Collide with other zombies
+        for (int j = i + 1; j < _zombies.size(); j++) {
+            _zombies[i]->collideWithAgent(_zombies[j]);
+        }
+        // Collide with humans
+        for (int j = 1; j < _humans.size(); j++) {
+            if (_zombies[i]->collideWithAgent(_humans[j])) {
+                // Add the new zombie
+                _zombies.push_back(new Zombie);
+                _zombies.back()->init(ZOMBIE_SPEED, _humans[j]->getPosition());
+                // Delete the human
+                delete _humans[j];
+                _humans[j] = _humans.back();
+                _humans.pop_back();
+            }
+        }
+
+        // Collide with player
+        if (_zombies[i]->collideWithAgent(_player)) {
+            Bengine::fatalError("YOU LOSE");
+        }
+    }
+
+    // Update Human collisions
+    for (int i = 0; i < _humans.size(); i++) {
+        // Collide with other humans
+        for (int j = i + 1; j < _humans.size(); j++) {
+            _humans[i]->collideWithAgent(_humans[j]);
+        }
+    }
 
 
+}
 
-
-
+void MainGame::updateBullets() {
+    for (int i = 0; i < _bullets.size(); i++) {
+        _bullets[i].update(_humans, _zombies);
+    }
 }
 
 void MainGame::processInput() {
@@ -162,6 +238,16 @@ void MainGame::drawGame() {
     // Draw the humans
     for (int i = 0; i < _humans.size(); i++) {
         _humans[i]->draw(_agentSpriteBatch);
+    }
+
+    // Draw the zombies
+    for (int i = 0; i < _zombies.size(); i++) {
+        _zombies[i]->draw(_agentSpriteBatch);
+    }
+
+    // Draw the bullets
+    for (int i = 0; i < _bullets.size(); i++) {
+        _bullets[i].draw(_agentSpriteBatch);
     }
 
     _agentSpriteBatch.end();
