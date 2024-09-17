@@ -27,6 +27,9 @@ public:
 
     virtual void draw(Bengine::SpriteBatch& _spriteBatch) = 0;
 
+    // Return true if we died
+    bool applyDamage(float damage);
+
     glm::vec2 getPosition() const { return _position; }
 
 protected:
@@ -41,6 +44,7 @@ protected:
     glm::vec2 _position;
     Bengine::Color _color;
     float _speed;
+    float _health;
 
 };
 

@@ -1,11 +1,12 @@
 #include "Player.h"
 #include <SDL/SDL.h>
 #include <Bengine/ResourceManager.h>
+#include <iostream>
 
 #include "Gun.h"
 
 Player::Player() :
-    _currentGunIndex(-1) {
+    _currentGunIndex(-1), _rotation(0.0f) {
     // Empty
 }
 Player::~Player() {
@@ -22,6 +23,7 @@ void Player::init(float speed, glm::vec2 pos, Bengine::InputManager* inputManage
     _color.g = 255;
     _color.b = 255;
     _color.a = 255;
+    _health = 150;
 }
 
 void Player::addGun(Gun* gun) {
@@ -38,6 +40,7 @@ void Player::update(const std::vector<std::string>& levelData,
                     std::vector<Human*>& humans,
                     std::vector<Zombie*>& zombies) {
 
+    // Movement controls
     if (_inputManager->isKeyPressed(SDLK_w)) {
         _position.y += _speed;
     } else if (_inputManager->isKeyPressed(SDLK_s)) {
@@ -50,6 +53,7 @@ void Player::update(const std::vector<std::string>& levelData,
         _position.x += _speed;
     }
 
+    // Weapon switching
     if (_inputManager->isKeyPressed(SDLK_1) && _guns.size() >= 0) {
         _currentGunIndex = 0;
     } else if (_inputManager->isKeyPressed(SDLK_2) && _guns.size() >= 1) {
@@ -67,6 +71,7 @@ void Player::update(const std::vector<std::string>& levelData,
 
         glm::vec2 direction = glm::normalize(mouseCoords - centerPosition);
 
+        // Update gun
         _guns[_currentGunIndex]->update(_inputManager->isKeyPressed(SDL_BUTTON_LEFT),
                 centerPosition,
                 direction,
@@ -74,6 +79,13 @@ void Player::update(const std::vector<std::string>& levelData,
     }
 
     collideWithLevel(levelData);
+
+    // Calculate the rotation angle of the character
+    glm::vec2 mouseCoords = _inputManager->getMouseCoords();
+    mouseCoords = _camera->convertScreenToWorld(mouseCoords);
+
+    glm::vec2 direction = glm::normalize(mouseCoords - _position);
+    _rotation = atan2f(direction.y, direction.x); // Angle in radians
 }
 
 void Player::draw(Bengine::SpriteBatch& _spriteBatch) {
@@ -88,5 +100,6 @@ void Player::draw(Bengine::SpriteBatch& _spriteBatch) {
     destRect.z = AGENT_WIDTH;
     destRect.w = AGENT_WIDTH;
 
-    _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color);
+    std::cout << "Player Rotation: " << _rotation << std::endl; // Debug
+    _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color, 45.0f);
 }

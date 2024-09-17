@@ -70,6 +70,15 @@ bool Agent::collideWithAgent(Agent* agent) {
     return false;
 }
 
+bool Agent::applyDamage(float damage) {
+    _health -= damage;
+    if (_health <= 0) {
+        return true;
+    }
+    return false;
+}
+
+
 void Agent::checkTilePosition(const std::vector<std::string>& levelData,
     std::vector<glm::vec2>& collideTilePositions,
     float x,

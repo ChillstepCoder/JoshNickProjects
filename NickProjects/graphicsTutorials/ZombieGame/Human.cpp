@@ -19,6 +19,8 @@ void Human::init(float speed, glm::vec2 pos) {
 
     static std::mt19937 randomEngine(time(nullptr));
     static std::uniform_real_distribution<float> randDir(-1.0f, 1.0f);
+
+    _health = 20;
     
     _color.r = 255;
     _color.g = 255;
@@ -33,6 +35,7 @@ void Human::init(float speed, glm::vec2 pos) {
     if (_direction.length() == 0) _direction = glm::vec2(1.0f, 0.0f);
 
     _direction = glm::normalize(_direction);
+    _rotation = 0.0f;
 }
 
 void Human::update(const std::vector<std::string>& levelData,
@@ -45,8 +48,8 @@ void Human::update(const std::vector<std::string>& levelData,
 
     _position += _direction * _speed;
 
-    // Randomly change direction every 40 frames
-    if (_frames == 40) {
+    // Randomly change direction every 80 frames
+    if (_frames == 80) {
         _direction = glm::rotate(_direction, randRotate(randomEngine));
         _frames = 0;
     } else {
@@ -56,6 +59,7 @@ void Human::update(const std::vector<std::string>& levelData,
     if (collideWithLevel(levelData)) {
         _direction = glm::rotate(_direction, randRotate(randomEngine));
     }
+    _rotation = glm::degrees(atan2(_direction.y, _direction.x));
 }
 
 void Human::draw(Bengine::SpriteBatch& _spriteBatch) {
@@ -70,5 +74,5 @@ void Human::draw(Bengine::SpriteBatch& _spriteBatch) {
     destRect.z = AGENT_WIDTH;
     destRect.w = AGENT_WIDTH;
 
-    _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color);
+    _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color, _rotation);
 }

@@ -21,7 +21,9 @@ MainGame::MainGame()  :
     _screenHeight(768),
     _gameState(GameState::PLAY),
     _fps(0.0f),
-    _player(nullptr) {
+    _player(nullptr),
+    _numHumansKilled(0),
+    _numZombiesKilled(0) {
     // Empty
 }
 
@@ -110,6 +112,8 @@ void MainGame::gameLoop() {
     while (_gameState == GameState::PLAY) {
         fpsLimiter.begin();
 
+        checkVictory();
+
         processInput();
 
         updateAgents();
@@ -177,8 +181,91 @@ void MainGame::updateAgents() {
 }
 
 void MainGame::updateBullets() {
+    // Update and collide with world
+    for (int i = 0; i < _bullets.size();) {
+        // If update returns true, the bullet collided with a wall
+        if (_bullets[i].update(_levels[_currentLevel]->getLevelData())) {
+            _bullets[i] = _bullets.back();
+            _bullets.pop_back();
+        } else {
+            i++;
+        }
+    }
+    
+    bool wasBulletRemoved;
+
+    // Collide with humans and zombies
     for (int i = 0; i < _bullets.size(); i++) {
-        _bullets[i].update(_humans, _zombies);
+        wasBulletRemoved = false;
+        // Loop through zombies
+        for (int j = 0; j < _zombies.size(); ) {
+            // Check collision
+            if (_bullets[i].collideWithAgent(_zombies[j])) {
+                // Damage zombie, and kill it if its out of health
+                if (_zombies[j]->applyDamage(_bullets[i].getDamage())) {
+                    // If the zombie died, remove him
+                    delete _zombies[j];
+                    _zombies[j] = _zombies.back();
+                    _zombies.pop_back();
+                    _numZombiesKilled++;
+                } else {
+                    j++;
+                }
+
+                // Remove the bullet
+                _bullets[i] = _bullets.back();
+                _bullets.pop_back();
+                wasBulletRemoved = true;
+                i--; //< Make sure we dont skip a bullet
+                // Since the bullet died, no need to loop through any more zombies
+                break;
+            } else {
+                j++;
+            }
+        }
+        // Loop through humans
+        if (wasBulletRemoved == false) {
+            for (int j = 1; j < _humans.size(); ) {
+                // Check collision
+                if (_bullets[i].collideWithAgent(_humans[j])) {
+                    // Damage human, and kill it if its out of health
+                    if (_humans[j]->applyDamage(_bullets[i].getDamage())) {
+                        // If the human died, remove him
+                        delete _humans[j];
+                        _humans[j] = _humans.back();
+                        _humans.pop_back();
+                        _numHumansKilled++;
+                    }
+                    else {
+                        j++;
+                    }
+
+                    // Remove the bullet
+                    _bullets[i] = _bullets.back();
+                    _bullets.pop_back();
+                    i--; //< Make sure we dont skip a bullet
+                    // Since the bullet died, no need to loop through any more zombies
+                    break;
+                }
+                else {
+                    j++;
+                }
+            }
+        }
+
+    }
+}
+
+void MainGame::checkVictory() {
+    // TODO: Support for multiple levels!
+    // _currentLevel++; initlevel(...);
+    // If all zombies are dead, we win!
+    if (_zombies.empty()) {
+
+        std::printf("*** You win! ***\n You killed %d humans and %d zombies. There are %d/%d humans remaining."
+            , _numHumansKilled, _numZombiesKilled, _humans.size() - 1, _levels[_currentLevel]->getNumHumans());
+
+        Bengine::fatalError("");
     }
 }
 

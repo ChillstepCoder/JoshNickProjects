@@ -54,21 +54,21 @@ Level::Level(const std::string& fileName) {
                                   uvRect,
                                   Bengine::ResourceManager::getTexture("Textures/Tiles/Tiny Top Down 32x32.png").id,
                                   0.0f,
-                                  whiteColor);
+                                  whiteColor, 0.0f);
                 break;
             case 'G': // Glass
                 _spriteBatch.draw(destRect,
                     uvRect,
                     Bengine::ResourceManager::getTexture("Textures/Tiles/Tiny Top Down 32x32.png").id,
                     0.0f,
-                    whiteColor);
+                    whiteColor, 0.0f);
                 break;
             case 'L': // Light Brick Wall
                 _spriteBatch.draw(destRect,
                     uvRect,
                     Bengine::ResourceManager::getTexture("Textures/Tiles/Tiny Top Down 32x32.png").id,
                     0.0f,
-                    whiteColor);
+                    whiteColor, 0.0f);
                 break;
             case '@': // Player
                 _levelData[y][x] = '.'; // So we dont collide with a @

@@ -17,5 +17,7 @@ public:
 private:
 
     Human* getNearestHuman(std::vector<Human*>& humans);
+
+    float _rotation; // Rotation in degrees
 };
 

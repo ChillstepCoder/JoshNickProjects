@@ -28,6 +28,7 @@ private:
 
     std::vector<Gun*> _guns;
     int _currentGunIndex;
+    float _rotation; // Rotation in radians
 
     Bengine::Camera2D* _camera;
     std::vector<Bullet>* _bullets;
