@@ -36,7 +36,9 @@ MainGame::~MainGame() {
 void MainGame::run() {
     initSystems();
 
-    initLevel();
+    initLevels(); // Initializes all levels
+
+    initLevel(); // Initialize the first level
 
     gameLoop();
 
@@ -56,42 +58,64 @@ void MainGame::initSystems() {
 
 }
 
-void MainGame::initLevel() {
-    // Level 1
+void MainGame::initLevels() {
     _levels.push_back(new Level("Levels/level1.txt"));
-    _currentLevel = 0;
+    _levels.push_back(new Level("Levels/level2.txt"));
+    _levels.push_back(new Level("Levels/level3.txt"));
+    _levels.push_back(new Level("Levels/level4.txt"));
+    _levels.push_back(new Level("Levels/level5.txt"));
+    _levels.push_back(new Level("Levels/level6.txt"));
+    // Add more levels as needed
+}
 
-    _player = new Player();
-    _player->init(PLAYER_SPEED, _levels[_currentLevel]->getStartPlayerPos(), &_inputManager, &_camera, &_bullets);
-
-    _humans.push_back(_player);
-
-    std::mt19937 randomEngine;
-    randomEngine.seed(time(nullptr));
-
-
-    std::uniform_int_distribution<int> randX(3, _levels[_currentLevel]->getWidth() - 3);
-    std::uniform_int_distribution<int> randY(3, _levels[_currentLevel]->getHeight() - 3);
-
-    // Add all the random humans
-    for (int i = 0; i < _levels[_currentLevel]->getNumHumans(); i++) {
-        _humans.push_back(new Human);
-        glm::vec2 pos(randX(randomEngine) * TILE_WIDTH, randY(randomEngine) * TILE_WIDTH);
-        _humans.back()->init(HUMAN_SPEED, pos);
+void MainGame::initLevel() {
+    // Clean up previous level data
+    for (auto human : _humans) {
+        delete human;
     }
+    _humans.clear();
 
-    // Add the zombies
-    const std::vector<glm::vec2>& zombiePositions = _levels[_currentLevel]->getZombieStartPositions();
-    for (int i = 0; i < zombiePositions.size(); i++) {
-        _zombies.push_back(new Zombie);
-        _zombies.back()->init(ZOMBIE_SPEED, zombiePositions[i]);
+    for (auto zombie : _zombies) {
+        delete zombie;
     }
+    _zombies.clear();
 
-    // Set up the player's guns
-    const float BULLET_SPEED = 20.0f;
-    _player->addGun(new Gun("Magnum", 15, 1, 0.1f, 30, BULLET_SPEED));
-    _player->addGun(new Gun("Shotgun", 35, 20, 0.4f, 4, BULLET_SPEED));
-    _player->addGun(new Gun("AK-47", 4, 1, 0.15f, 20, BULLET_SPEED));
+    _bullets.clear();
+
+    // Load the current level
+    if (_currentLevel < _levels.size()) {
+        _player = new Player();
+        _player->init(PLAYER_SPEED, _levels[_currentLevel]->getStartPlayerPos(), &_inputManager, &_camera, &_bullets);
+        _humans.push_back(_player);
+
+        std::mt19937 randomEngine;
+        randomEngine.seed(time(nullptr));
+
+
+        std::uniform_int_distribution<int> randX(3, _levels[_currentLevel]->getWidth() - 3);
+        std::uniform_int_distribution<int> randY(3, _levels[_currentLevel]->getHeight() - 3);
+
+        // Add all the random humans
+        for (int i = 0; i < _levels[_currentLevel]->getNumHumans(); i++) {
+            _humans.push_back(new Human);
+            glm::vec2 pos(randX(randomEngine) * TILE_WIDTH, randY(randomEngine) * TILE_WIDTH);
+            _humans.back()->init(HUMAN_SPEED, pos);
+        }
+
+        // Add the zombies
+        const std::vector<glm::vec2>& zombiePositions = _levels[_currentLevel]->getZombieStartPositions();
+        for (int i = 0; i < zombiePositions.size(); i++) {
+            _zombies.push_back(new Zombie);
+            _zombies.back()->init(ZOMBIE_SPEED, zombiePositions[i]);
+        }
+
+        // Set up the player's guns
+        const float BULLET_SPEED = 20.0f;
+        _player->addGun(new Gun("Magnum", 15, 1, 0.1f, 30, BULLET_SPEED));
+        _player->addGun(new Gun("Shotgun", 35, 20, 0.4f, 4, BULLET_SPEED));
+        _player->addGun(new Gun("AK-47", 4, 1, 0.15f, 20, BULLET_SPEED));
+        _player->addGun(new Gun("Hose of Doom", 1, 100, 0.35f, 40, 30.0f)); // Name, firerate, # of shots, spread, damage, bullet speed
+    }
 }
 
 void MainGame::initShaders() {
@@ -257,15 +281,20 @@ void MainGame::updateBullets() {
 }
 
 void MainGame::checkVictory() {
-    // TODO: Support for multiple levels!
-    // _currentLevel++; initlevel(...);
-    // If all zombies are dead, we win!
     if (_zombies.empty()) {
 
         std::printf("*** You win! ***\n You killed %d humans and %d zombies. There are %d/%d humans remaining."
             , _numHumansKilled, _numZombiesKilled, _humans.size() - 1, _levels[_currentLevel]->getNumHumans());
 
-        Bengine::fatalError("");
+        // Move to the next level
+        _currentLevel++;
+        if (_currentLevel < _levels.size()) {
+            initLevel(); //Initialize the new level
+        }
+        else {
+            //when all levels are complete
+            Bengine::fatalError("All levels completed! Game over.");
+        }
     }
 }
 

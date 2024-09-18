@@ -30,6 +30,8 @@ private:
     //Initializes the core systems
     void initSystems();
 
+    void initLevels();
+
     //Initializes the level and sets up everything
     void initLevel();
 

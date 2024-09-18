@@ -32,7 +32,7 @@ namespace Bengine {
     }
 
     void SpriteBatch::draw(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint texture, float depth, const Color& color, float rotation) {
-        
+
         Glyph* newGlyph = new Glyph;
         newGlyph->texture = texture;
         newGlyph->depth = depth;
@@ -90,17 +90,8 @@ namespace Bengine {
 
         int offset = 0;
         int cv = 0; //current vertex
-        _renderBatches.emplace_back(offset, 6, _glyphs[0]->texture);
-        vertices[cv++] = _glyphs[0]->topLeft;
-        vertices[cv++] = _glyphs[0]->bottomLeft;
-        vertices[cv++] = _glyphs[0]->bottomRight;
-        vertices[cv++] = _glyphs[0]->bottomRight;
-        vertices[cv++] = _glyphs[0]->topRight;
-        vertices[cv++] = _glyphs[0]->topLeft;
 
-        offset += 6;
-
-        for (int cg = 1; cg < _glyphs.size(); cg++) {
+        for (int cg = 0; cg < _glyphs.size(); cg++) {
             Glyph* glyph = _glyphs[cg];
 
             // Calculate the center of the sprite
@@ -120,7 +111,7 @@ namespace Bengine {
             glyph->bottomRight.position = { br.x, br.y };
             glyph->topRight.position = { tr.x, tr.y };
 
-            if (_glyphs[cg]->texture != _glyphs[cg - 1]->texture) {
+            if (cg == 0 || _glyphs[cg]->texture != _glyphs[cg - 1]->texture) {
                 _renderBatches.emplace_back(offset, 6, _glyphs[cg]->texture);
             } else {
                 _renderBatches.back().numVertices += 6;

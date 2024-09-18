@@ -60,6 +60,8 @@ void Player::update(const std::vector<std::string>& levelData,
         _currentGunIndex = 1;
     } else if (_inputManager->isKeyPressed(SDLK_3) && _guns.size() >= 2) {
         _currentGunIndex = 2;
+    } else if (_inputManager->isKeyPressed(SDLK_4) && _guns.size() >= 3) {
+        _currentGunIndex = 3;
     }
 
     if (_currentGunIndex != -1) {
@@ -101,5 +103,5 @@ void Player::draw(Bengine::SpriteBatch& _spriteBatch) {
     destRect.w = AGENT_WIDTH;
 
     std::cout << "Player Rotation: " << _rotation << std::endl; // Debug
-    _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color, 45.0f);
+    _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color, glm::degrees(_rotation));
 }
