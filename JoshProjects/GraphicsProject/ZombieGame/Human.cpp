@@ -4,13 +4,17 @@
 #include "Zombie.h"
 #include <random>
 #include <ctime>
+#include <SDL/SDL.h>
+#include <GL/glew.h>
+#include <glm/glm.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/gtx/rotate_vector.hpp>
 
 Human::Human() :
-  _frames(0)
+  _frames(0),
+  _nextUpdateFrame(0)
 {
 
 }
@@ -23,13 +27,11 @@ void Human::update(const std::vector<std::string>& levelData,
   std::vector<Human*>& humans,
   std::vector<Zombie*>& zombies,
   float deltaTime) {
-
-  const int UPDATE_CAP = 120;
+  const int UPDATE_CAP = 60;
   Zombie* closestZombie = getNearestZombie(zombies);
   float closestDistance = 99999.0f;
   static std::mt19937 randomEngine(time(nullptr));
-  static std::uniform_int_distribution<int> randCap(1, UPDATE_CAP - 1);
-  static std::uniform_real_distribution<float> randRotate(-45.0f, 45.0f);
+  static std::uniform_real_distribution<float> randRotate(-90.0f, 90.0f);
 
   // Calculate the distance to the closest zombie if one exists
   if (closestZombie != nullptr) {
@@ -40,21 +42,26 @@ void Human::update(const std::vector<std::string>& levelData,
   // flee
   if (closestZombie != nullptr && closestDistance < FLEE_DISTANCE) {
     glm::vec2 direction = glm::normalize(_position - closestZombie->getPosition());
-    _position += direction * _speed;
+    _position += direction * _speed * deltaTime;
   }
   else {
     // random movement
     _position += _direction * _speed * deltaTime;
-    int cap = UPDATE_CAP;
-    if (_frames == UPDATE_CAP) {
-      cap = randCap(randomEngine);
-      _direction = glm::rotate(_direction, randRotate(randomEngine) * ((float)cap / (float)UPDATE_CAP));
-      _frames = cap;
-    }
-    else {
-      _frames++;
+
+    _frames++;
+    if (_frames >= UPDATE_CAP) {
+      // Calculate rotation based on time since last update
+      float rotationFactor = static_cast<float>(_frames) / static_cast<float>(UPDATE_CAP);
+      float rotation = randRotate(randomEngine) * rotationFactor;
+
+      _direction = glm::rotate(_direction, glm::radians(rotation));
+
+      // Reset frames and set new random update interval
+      _frames = 0;
+      _nextUpdateFrame = std::uniform_int_distribution<int>(1, UPDATE_CAP - 1)(randomEngine);
     }
   }
+
   collideWithLevel(levelData);
 }
 
