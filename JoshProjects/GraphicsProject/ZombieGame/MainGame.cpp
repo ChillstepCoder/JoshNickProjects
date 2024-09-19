@@ -5,16 +5,20 @@
 #include <JAGEngine/Errors.h>
 #include <JAGEngine/ResourceManager.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include "Level.h"
 #include "Zombie.h"
 #include "Gun.h"
 #include <random>
 #include <ctime>
+#include <algorithm>
 
 const float HUMAN_SPEED = 2.2f;
 const float ZOMBIE_SPEED = 1.7f;
 const float PLAYER_SPEED = 3.6f;
+
+const float TURN_TIME = 60.0f;
 
 MainGame::MainGame() :
   _screenWidth(1024),
@@ -41,7 +45,7 @@ MainGame::~MainGame() {
 void MainGame::run() {
 
   initSystems();
-  //// _playerTexture = ImageLoader::loadPNG("Textures/JimmyJump_Pack/PNG/HappyCLoud.png");
+
   initLevel();
 
   gameLoop();
@@ -55,37 +59,51 @@ void MainGame::initSystems() {
   glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
   initShaders();
   _agentSpriteBatch.init();
-  //_spriteBatch.init();
-  //_fpsLimiter.init(_maxFPS);
+
 }
 
 void MainGame::gameLoop() {
+
+  const float DESIRED_FPS = 60.0f;
+  const int MAX_PHYSICS_STEPS = 6;
+
+  const float MS_PER_SECOND = 1000.0f;
+  const float DESIRED_FRAMETIME = MS_PER_SECOND / DESIRED_FPS;
+  const float MAX_DELTA_TIME = 1.0f;
+
+  float previousTicks = SDL_GetTicks();
+
+
   while (_gameState == GameState::PLAY) {
 
     _fpsLimiter.begin();
 
+    float newTicks = SDL_GetTicks();
+    float frameTime = newTicks - previousTicks;
+    previousTicks = newTicks;
+    float totalDeltaTime = frameTime / DESIRED_FRAMETIME;
+
     checkVictory();
+
+    _inputManager.update();
 
     processInput();
 
-    updateAgents();
+    int i = 0;
+    while (totalDeltaTime > 0.0f && i < MAX_PHYSICS_STEPS) {
+      float deltaTime = std::min(totalDeltaTime, MAX_DELTA_TIME);
 
-    updateBullets();
+      updateAgents(deltaTime);
+      updateBullets(deltaTime);
+
+      totalDeltaTime -= deltaTime;
+      i++;
+    }
 
     _time += 0.01f;
 
     _camera.setPosition(_player->getPosition());
     _camera.update();
-
-    //for (int i = 0; i < _bullets.size();) {
-    //  if (_bullets[i].update() == true) {
-    //    _bullets[i] = _bullets.back();
-    //    _bullets.pop_back();
-    //  }
-    //  else {
-    //    i++;
-    //  }
-    //}
 
     drawGame();
 
@@ -104,18 +122,23 @@ void MainGame::gameLoop() {
   }
 }
 
-void MainGame::updateAgents() {
-  //update all humans
-  for (int i = 0; i < _humans.size(); i++) {
-    _humans[i]->update(_levels[_currentLevel]->getLevelData(),
-      _humans,
-      _zombies);
+void MainGame::updateAgents(float deltaTime) {
+  if (_levels.empty() || _levels[_currentLevel] == nullptr) {
+    std::cerr << "Error: No valid level data available." << std::endl;
+    _gameState = GameState::EXIT;
+    return;
   }
-  //update all zombies
+
+  const std::vector<std::string>& levelData = _levels[_currentLevel]->getLevelData();
+
+  // Update all humans
+  for (int i = 0; i < _humans.size(); i++) {
+    _humans[i]->update(levelData, _humans, _zombies, deltaTime);
+  }
+
+  // Update all zombies
   for (int i = 0; i < _zombies.size(); i++) {
-    _zombies[i]->update(_levels[_currentLevel]->getLevelData(),
-      _humans,
-      _zombies);
+    _zombies[i]->update(levelData, _humans, _zombies, deltaTime);
   }
 
   //zombie collision
@@ -124,16 +147,19 @@ void MainGame::updateAgents() {
     for (int j = i + 1; j < _zombies.size(); j++) {
       _zombies[i]->collideWithAgent(_zombies[j]);
     }
-    //collide with humans
+    // Collide with humans
     for (int j = 1; j < _humans.size(); j++) {
       if (_zombies[i]->collideWithAgent(_humans[j])) {
-        //add the new zombie
-        _zombies.push_back(new Zombie);
-        _zombies.back()->init(ZOMBIE_SPEED, _humans[j]->getPosition());
-        //delete the human
-        delete _humans[j];
-        _humans[j] = _humans.back();
-        _humans.pop_back();
+        _humans[j]->incrementZombify(1.0f * deltaTime);
+        if (_humans[j]->getZombify() >= TURN_TIME) {
+          // Add the new zombie
+          _zombies.push_back(new Zombie);
+          _zombies.back()->init(ZOMBIE_SPEED, _humans[j]->getPosition());
+          // Delete the human
+          delete _humans[j];
+          _humans[j] = _humans.back();
+          _humans.pop_back();
+        }
       }
     }
 
@@ -153,10 +179,10 @@ void MainGame::updateAgents() {
   //dont forget to update zombies
 }
 
-void MainGame::updateBullets() {
+void MainGame::updateBullets(float deltaTime) {
   //collide with world
   for (int i = 0; i < _bullets.size();) {
-    if (_bullets[i].update(_levels[_currentLevel]->getLevelData())) {
+    if (_bullets[i].update(_levels[_currentLevel]->getLevelData(), deltaTime)) {
       _bullets[i] = _bullets.back();
       _bullets.pop_back();
     }
@@ -269,11 +295,11 @@ void MainGame::processInput() {
   double currentZoom = static_cast<double>(_camera.getScale());
 
   // Handle zooming
-  if (_inputManager.isKeyPressed(SDLK_q)) {
+  if (_inputManager.isKeyDown(SDLK_q)) {
     currentZoom *= ZOOM_FACTOR;
     if (currentZoom > MAX_ZOOM) currentZoom = MAX_ZOOM;
   }
-  if (_inputManager.isKeyPressed(SDLK_e)) {
+  if (_inputManager.isKeyDown(SDLK_e)) {
     currentZoom /= ZOOM_FACTOR;
     if (currentZoom < MIN_ZOOM) currentZoom = MIN_ZOOM;
   }
@@ -283,20 +309,29 @@ void MainGame::processInput() {
 
   // Calculate adjusted movement speed
   double adjustedSpeed = BASE_MOVE_SPEED / (currentZoom);
+  float shift = 1.0f;
+
+  if (_inputManager.isKeyDown(SDLK_LSHIFT) || _inputManager.isKeyDown(SDLK_RSHIFT)) {
+    shift = 2.0f;
+  }
+  else {
+    shift = 1.0f;
+  }
 
   // Handle movement
   glm::vec2 movement(0.0f, 0.0f);
-  if (_inputManager.isKeyPressed(SDLK_w)) {
-    movement.y += 1.0f;
+
+  if (_inputManager.isKeyDown(SDLK_w)) {
+    movement.y += 1.0f * shift;
   }
-  if (_inputManager.isKeyPressed(SDLK_s)) {
-    movement.y -= 1.0f;
+  if (_inputManager.isKeyDown(SDLK_s)) {
+    movement.y -= 1.0f * shift;
   }
-  if (_inputManager.isKeyPressed(SDLK_a)) {
-    movement.x -= 1.0f;
+  if (_inputManager.isKeyDown(SDLK_a)) {
+    movement.x -= 1.0f * shift;
   }
-  if (_inputManager.isKeyPressed(SDLK_d)) {
-    movement.x += 1.0f;
+  if (_inputManager.isKeyDown(SDLK_d)) {
+    movement.x += 1.0f * shift;
   }
 
   // Normalize diagonal movement
@@ -307,7 +342,7 @@ void MainGame::processInput() {
   // Apply movement //make it only do this when not following the player?
  // _camera.setPosition(_camera.getPosition() + movement * static_cast<float>(adjustedSpeed));
 
-  if (_inputManager.isKeyPressed(SDL_BUTTON_LEFT)) {
+  if (_inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
     glm::vec2 mouseCoords = _inputManager.getMouseCoords();
     mouseCoords = _camera.convertScreenToWorld(mouseCoords);
 
@@ -319,13 +354,78 @@ void MainGame::processInput() {
 }
 
 void MainGame::checkVictory() {
-  //TODO: support for multiple levels
-  //if all zombies are dead we win
   if (_zombies.empty()) {
-    std::printf("*** You Win! ***\n You killed %d humans and %d zombies. There are %d/%d civilians remaining",
-      _numHumansKilled, _numZombiesKilled, _humans.size()-1, _levels[_currentLevel]->getNumHumans());
-    JAGEngine::fatalError("");
+    std::cout << "All zombies eliminated. Checking for next level..." << std::endl;
+    if (doesNextLevelExist()) {
+      std::cout << "Next level exists. Proceeding to load..." << std::endl;
+      try {
+        loadNextLevel();
+        std::cout << "Next level loaded successfully." << std::endl;
+      }
+      catch (const std::exception& e) {
+        std::cerr << "Error loading next level: " << e.what() << std::endl;
+        _gameState = GameState::EXIT;
+      }
+    }
+    else {
+      std::cout << "No more levels. Game completed." << std::endl;
+      std::printf("*** You Win! ***\n You killed %d humans and %d zombies. There are %d/%d civilians remaining",
+        _numHumansKilled, _numZombiesKilled, _humans.size() - 1, _levels[_currentLevel]->getNumHumans());
+      _gameState = GameState::EXIT;
+    }
   }
+}
+
+void MainGame::loadNextLevel() {
+  _currentLevel++;
+  std::cout << "Loading level " << _currentLevel + 1 << std::endl;
+
+  // Clear current level data
+  std::cout << "Clearing current level data..." << std::endl;
+
+  // Clear humans (except player)
+  for (int i = 1; i < _humans.size(); i++) {
+    delete _humans[i];
+  }
+  _humans.erase(_humans.begin() + 1, _humans.end());
+
+  // Clear zombies
+  for (auto& zombie : _zombies) {
+    delete zombie;
+  }
+  _zombies.clear();
+
+  // Clear bullets
+  _bullets.clear();
+
+  // Clear levels
+  for (auto& level : _levels) {
+    delete level;
+  }
+  _levels.clear();
+
+  // Reset player position
+  if (_player) {
+    //_player->setPosition(glm::vec2(0, 0)); // Set to a safe initial position
+  }
+
+  std::cout << "All game data cleared." << std::endl;
+
+  try {
+    initLevel();
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Error in loadNextLevel: " << e.what() << std::endl;
+    _gameState = GameState::EXIT;
+  }
+
+  std::cout << "Next level loaded successfully." << std::endl;
+}
+
+bool MainGame::doesNextLevelExist() {
+  std::string nextLevelFileName = "Levels/Level" + std::to_string(_currentLevel + 2) + ".txt";
+  std::ifstream file(nextLevelFileName);
+  return file.good();
 }
 
 void MainGame::drawGame() {
@@ -377,37 +477,62 @@ void MainGame::drawGame() {
 }
 
 void MainGame::initLevel() {
-  _levels.push_back(new Level("Levels/Level1.txt"));
-  _currentLevel = 0;
-  _player = new Player();
-  _player->init(PLAYER_SPEED, _levels[_currentLevel]->getStartPlayerPos(),&_inputManager, &_camera, &_bullets);
+  std::string levelFileName = "Levels/Level" + std::to_string(_currentLevel + 1) + ".txt";
+  std::cout << "Loading level: " << levelFileName << std::endl;
 
-  _humans.push_back(_player);
+  try {
+    _levels.push_back(new Level(levelFileName));
+    std::cout << "Level object created." << std::endl;
 
-  std::mt19937 randomEngine;
-  randomEngine.seed(time(nullptr));
-  std::uniform_int_distribution<int> randX(2, _levels[_currentLevel]->getWidth()-2);
-  std::uniform_int_distribution<int> randY(2, _levels[_currentLevel]->getHeight()-2);
+    int width = _levels[0]->getWidth();
+    int height = _levels[0]->getHeight();
+    std::cout << "Level loaded. Width: " << width << ", Height: " << height << std::endl;
 
-  //Add all the random humans
-  for (int i = 0; i < _levels[_currentLevel]->getNumHumans(); i++) {
-    _humans.push_back(new Human);
-    glm::vec2 pos(randX(randomEngine) * TILE_WIDTH, randY(randomEngine) * TILE_WIDTH);
-    _humans.back()->init(HUMAN_SPEED, pos);
+    // Initialize player
+    if (_player == nullptr) {
+      _player = new Player();
+    }
+    _player->init(PLAYER_SPEED, _levels[0]->getStartPlayerPos(), &_inputManager, &_camera, &_bullets);
+    std::cout << "Player initialized at position: " << _player->getPosition().x << ", " << _player->getPosition().y << std::endl;
 
+    // Ensure player is in _humans vector
+    if (_humans.empty()) {
+      _humans.push_back(_player);
+    }
+    else {
+      _humans[0] = _player;
+    }
+
+    // Initialize humans
+    std::mt19937 randomEngine(time(nullptr));
+    std::uniform_int_distribution<int> randX(2, width - 2);
+    std::uniform_int_distribution<int> randY(2, height - 2);
+
+    for (int i = 0; i < _levels[0]->getNumHumans(); i++) {
+      _humans.push_back(new Human);
+      glm::vec2 pos(randX(randomEngine) * TILE_WIDTH, randY(randomEngine) * TILE_WIDTH);
+      _humans.back()->init(HUMAN_SPEED, pos);
+    }
+    std::cout << "Humans initialized. Total humans: " << _humans.size() << std::endl;
+
+    // Initialize zombies
+    const std::vector<glm::vec2>& zombiePositions = _levels[0]->getZombieStartPositions();
+    for (const auto& pos : zombiePositions) {
+      _zombies.push_back(new Zombie);
+      _zombies.back()->init(ZOMBIE_SPEED, pos);
+    }
+    std::cout << "Zombies initialized. Total zombies: " << _zombies.size() << std::endl;
+
+    // Set up player's guns
+    _player->addGun(new Gun("Pistol", 20, 1, 0.15f, 40, 20.0f));
+    _player->addGun(new Gun("Shotgun", 90, 20, 50.0f, 25, 25.0f));
+    _player->addGun(new Gun("MP5", 3, 1, 0.5f, 25, 30.0f));
+    std::cout << "Player's guns set up." << std::endl;
+
+    std::cout << "Level initialization complete." << std::endl;
   }
-
-  //add the zombies
-  const std::vector<glm::vec2>& zombiePositions = _levels[_currentLevel]->getZombieStartPositions();
-  
-  for (int i = 0; i < zombiePositions.size(); i++) {
-    _zombies.push_back(new Zombie);
-    _zombies.back()->init(ZOMBIE_SPEED, zombiePositions[i]);
-
+  catch (const std::exception& e) {
+    std::cerr << "Error in initLevel: " << e.what() << std::endl;
+    throw;
   }
-
-  //set up player's guns
-  _player->addGun(new Gun("Pistol", 20, 1, 0.15f, 40, 20.0f));
-  _player->addGun(new Gun("Shotgun", 90, 15, 40.0f, 20, 30.0f));
-  _player->addGun(new Gun("MP5", 4, 1, 0.5f, 10, 40.0f));
 }

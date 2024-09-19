@@ -18,7 +18,7 @@ public:
 
 
   //getters
-  int getWidth() const { return _levelData[0].size(); }
+  int getWidth() const;
   int getHeight() const { return _levelData.size(); }
 
   const std::vector<std::string>& getLevelData() const { return _levelData; }

@@ -23,11 +23,37 @@ namespace JAGEngine {
     _mouseCoords.y = y;
   }
 
-  bool InputManager::isKeyPressed(unsigned int keyID) {
+  bool InputManager::isKeyDown(unsigned int keyID) {
     auto it = _keyMap.find(keyID);
     if (it != _keyMap.end()) {
       return it->second;
-    } else {
+    }
+    else {
+      return false;
+    }
+  }
+
+  bool InputManager::isKeyPressed(unsigned int keyID) {
+
+    if (isKeyDown(keyID) == true && wasKeyDown(keyID) == false) {
+      return true;
+    }
+    return false;
+  }
+
+  void InputManager::update() {
+    //loop through key map and copy to previous key map
+    for (auto& it : _keyMap) {
+      _previousKeyMap[it.first] = it.second;
+    }
+  }
+
+  bool InputManager::wasKeyDown(unsigned int keyID) {
+    auto it = _previousKeyMap.find(keyID);
+    if (it != _previousKeyMap.end()) {
+      return it->second;
+    }
+    else {
       return false;
     }
   }

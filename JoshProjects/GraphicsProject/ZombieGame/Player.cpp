@@ -34,27 +34,39 @@ void Player::addGun(Gun* gun) {
 
 void Player::update(const std::vector<std::string>& levelData,
   std::vector<Human*>& humans,
-  std::vector<Zombie*>& zombies) {
-  if (_inputManager->isKeyPressed(SDLK_w)) {
-    _position.y += _speed;
+  std::vector<Zombie*>& zombies,
+  float deltaTime) {
+
+  float shift = 1.0f;
+
+  if (_inputManager->isKeyDown(SDLK_LSHIFT) || _inputManager->isKeyDown(SDLK_RSHIFT)) {
+    shift = 2.0f;
   }
-  else if (_inputManager->isKeyPressed(SDLK_s)) {
-    _position.y -= _speed;
-  }
-  if (_inputManager->isKeyPressed(SDLK_a)) {
-    _position.x -= _speed;
-  }
-  else if (_inputManager->isKeyPressed(SDLK_d)) {
-    _position.x += _speed;
+  else {
+    shift = 1.0f;
   }
 
-  if (_inputManager->isKeyPressed(SDLK_1) && _guns.size() >= 1) {
+
+  if (_inputManager->isKeyDown(SDLK_w)) {
+    _position.y += _speed * deltaTime * shift;
+  }
+  else if (_inputManager->isKeyDown(SDLK_s)) {
+    _position.y -= _speed * deltaTime * shift;
+  }
+  if (_inputManager->isKeyDown(SDLK_a)) {
+    _position.x -= _speed * deltaTime * shift;
+  }
+  else if (_inputManager->isKeyDown(SDLK_d)) {
+    _position.x += _speed * deltaTime * shift;
+  }
+
+  if (_inputManager->isKeyDown(SDLK_1) && _guns.size() >= 1) {
     _currentGunIndex = 0;
   }
-  if (_inputManager->isKeyPressed(SDLK_2) && _guns.size() >= 2) {
+  if (_inputManager->isKeyDown(SDLK_2) && _guns.size() >= 2) {
     _currentGunIndex = 1;
   }
-  if (_inputManager->isKeyPressed(SDLK_3) && _guns.size() >= 3) {
+  if (_inputManager->isKeyDown(SDLK_3) && _guns.size() >= 3) {
     _currentGunIndex = 2;
   }
 
@@ -63,10 +75,11 @@ void Player::update(const std::vector<std::string>& levelData,
     mouseCoords = _camera->convertScreenToWorld(mouseCoords);
     glm::vec2 centerPosition = _position;
     glm::vec2 direction = glm::normalize(mouseCoords - centerPosition);
-    _guns[_currentGunIndex]->update(_inputManager->isKeyPressed(SDL_BUTTON_LEFT),
+    _guns[_currentGunIndex]->update(_inputManager->isKeyDown(SDL_BUTTON_LEFT),
       centerPosition,
       direction,
-      *_bullets);
+      *_bullets,
+      deltaTime);
   }
 
   collideWithLevel(levelData);

@@ -47,6 +47,8 @@ MainGame::MainGame() :
 
       _fpsLimiter.begin();
 
+
+      _inputManager.update();
       processInput();
       _time += 0.01f;
 

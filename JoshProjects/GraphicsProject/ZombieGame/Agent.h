@@ -19,7 +19,8 @@ public:
 
   virtual void update(const std::vector<std::string>& levelData,
     std::vector<Human*>& humans,
-    std::vector<Zombie*>& zombies) = 0;
+    std::vector<Zombie*>& zombies,
+    float deltaTime) = 0;
 
   void collideWithLevel(const std::vector<std::string>& levelData);
 
@@ -38,7 +39,7 @@ protected:
   void collideWithTile(glm::vec2 tilePos);
 
   glm::vec2 _position; 
-  JAGEngine::Color _color;
+  JAGEngine::ColorRGBA8 _color;
   float _speed;
 
   float _health;

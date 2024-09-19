@@ -41,10 +41,12 @@ private:
   void initShaders();
   void gameLoop();
 
-  void updateAgents();
-  void updateBullets();
+  void updateAgents(float deltaTime);
+  void updateBullets(float deltaTime);
 
   void checkVictory();
+  void loadNextLevel();
+  bool doesNextLevelExist();
 
   void processInput();
   void drawGame();

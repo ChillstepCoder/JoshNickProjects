@@ -21,15 +21,13 @@ void Zombie::init(float speed, glm::vec2 pos) {
   _speed = speed;
   _position = pos;
   _health = 100;
-  _color.r = 0;
-  _color.g = 200;
-  _color.b = 0;
-  _color.a = 255;
+  _color = JAGEngine::ColorRGBA8(0,255,0,255);
 }
 
 void Zombie::update(const std::vector<std::string>& levelData,
   std::vector<Human*>& humans,
-  std::vector<Zombie*>& zombies) {
+  std::vector<Zombie*>& zombies,
+  float deltaTime) {
   const int UPDATE_CAP = 120;
   float closestDistance = 99999.0f;
   static std::mt19937 randomEngine(time(nullptr));
@@ -46,11 +44,11 @@ void Zombie::update(const std::vector<std::string>& levelData,
 
   if (closestHuman != nullptr && closestDistance < CHASE_DISTANCE) {
     glm::vec2 direction = glm::normalize(closestHuman->getPosition() - _position);
-    _position += direction * _speed;
+    _position += direction * _speed * deltaTime;
   }
   else {
     // random movement
-    _position += _direction * _speed;
+    _position += _direction * _speed * deltaTime;
 
     if (_frames >= UPDATE_CAP) {
       int cap = randCap(randomEngine);

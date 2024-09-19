@@ -21,7 +21,8 @@ Human::~Human() {
 
 void Human::update(const std::vector<std::string>& levelData,
   std::vector<Human*>& humans,
-  std::vector<Zombie*>& zombies) {
+  std::vector<Zombie*>& zombies,
+  float deltaTime) {
 
   const int UPDATE_CAP = 120;
   Zombie* closestZombie = getNearestZombie(zombies);
@@ -43,7 +44,7 @@ void Human::update(const std::vector<std::string>& levelData,
   }
   else {
     // random movement
-    _position += _direction * _speed;
+    _position += _direction * _speed * deltaTime;
     int cap = UPDATE_CAP;
     if (_frames == UPDATE_CAP) {
       cap = randCap(randomEngine);

@@ -18,15 +18,15 @@ Bullet::~Bullet() {
 
 }
 
-bool Bullet::update(const std::vector<std::string>& levelData) {
-  _position += _direction * _speed;
+bool Bullet::update(const std::vector<std::string>& levelData, float deltaTime) {
+  _position += _direction * _speed * deltaTime;
   return collideWithWorld(levelData);
 }
 
 void Bullet::draw(JAGEngine::SpriteBatch& spriteBatch) {
   glm::vec4 destRect(_position.x - BULLET_RADIUS, _position.y - BULLET_RADIUS, BULLET_RADIUS * 2, BULLET_RADIUS * 2);
   const glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-  JAGEngine::Color color;
+  JAGEngine::ColorRGBA8 color;
   color.r = 200;
   color.g = 200;
   color.b = 200;
