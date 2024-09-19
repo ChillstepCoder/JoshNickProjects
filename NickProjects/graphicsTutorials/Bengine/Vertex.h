@@ -48,5 +48,4 @@ namespace Bengine {
             uv.v = v;
         }
     };
-
 }

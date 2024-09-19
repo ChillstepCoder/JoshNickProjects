@@ -4,7 +4,8 @@
 #include <Bengine/SpriteBatch.h>
 #include <string>
 
-const float AGENT_WIDTH = 60;
+const float AGENT_WIDTH = 60.0f;
+const float AGENT_RADIUS = AGENT_WIDTH / 2.0f;
 
 class Zombie;
 class Human;
@@ -19,10 +20,15 @@ public:
                         std::vector<Human*>& humans,
                         std::vector<Zombie*>& zombies) = 0;
 
-    void collideWithLevel(const std::vector<std::string>& levelData);
+    bool collideWithLevel(const std::vector<std::string>& levelData);
+
+    bool collideWithAgent(Agent* agent);
 
 
-    void draw(Bengine::SpriteBatch& _spriteBatch);
+    virtual void draw(Bengine::SpriteBatch& _spriteBatch) = 0;
+
+    // Return true if we died
+    bool applyDamage(float damage);
 
     glm::vec2 getPosition() const { return _position; }
 
@@ -38,6 +44,7 @@ protected:
     glm::vec2 _position;
     Bengine::Color _color;
     float _speed;
+    float _health;
 
 };
 

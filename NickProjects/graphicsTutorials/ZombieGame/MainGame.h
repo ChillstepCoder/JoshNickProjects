@@ -8,6 +8,7 @@
 
 #include "Player.h"
 #include "Level.h"
+#include "Bullet.h"
 
 class Zombie;
 
@@ -29,6 +30,8 @@ private:
     //Initializes the core systems
     void initSystems();
 
+    void initLevels();
+
     //Initializes the level and sets up everything
     void initLevel();
 
@@ -40,6 +43,12 @@ private:
 
     // Updates all agents
     void updateAgents();
+
+    // Update all bullets
+    void updateBullets();
+
+    // Checks the victory condition
+    void checkVictory();
 
     //Handles input processing
     void processInput();
@@ -69,6 +78,10 @@ private:
     Player* _player;
     std::vector<Human*> _humans; //< Vector of all humans
     std::vector<Zombie*> _zombies; //< Vector of all zombies
+    std::vector<Bullet> _bullets;
+
+    int _numHumansKilled; //< Humans killed by player
+    int _numZombiesKilled; //< Zombies killed by player
 
     GameState _gameState;
 };

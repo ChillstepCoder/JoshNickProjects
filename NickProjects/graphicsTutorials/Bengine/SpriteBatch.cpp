@@ -1,6 +1,9 @@
 #include "SpriteBatch.h"
 
 #include <algorithm>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 namespace Bengine {
 
@@ -28,7 +31,8 @@ namespace Bengine {
         createRenderBatches();
     }
 
-    void SpriteBatch::draw(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint texture, float depth, const Color& color) {
+    void SpriteBatch::draw(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint texture, float depth, const Color& color, float rotation) {
+
         Glyph* newGlyph = new Glyph;
         newGlyph->texture = texture;
         newGlyph->depth = depth;
@@ -49,6 +53,8 @@ namespace Bengine {
         newGlyph->topRight.setPosition(destRect.x + destRect.z, destRect.y + destRect.w);
         newGlyph->topRight.setUV(uvRect.x + uvRect.z, uvRect.y + uvRect.w);
 
+        newGlyph->rotation = rotation; //<Rotation
+
         _glyphs.push_back(newGlyph);
 
     }
@@ -66,6 +72,14 @@ namespace Bengine {
         glBindVertexArray(0);
     }
 
+    glm::vec2 rotatePoint(const glm::vec2& pos, float angle) {
+        // Convert the angle from degrees to radians
+        float radians = glm::radians(angle);
+        // Rotate the point
+        glm::vec2 result = glm::rotate(pos, radians);
+        return result;
+    }
+
     void SpriteBatch::createRenderBatches() {
         std::vector <Vertex> vertices;
         vertices.resize(_glyphs.size() * 6);
@@ -76,18 +90,28 @@ namespace Bengine {
 
         int offset = 0;
         int cv = 0; //current vertex
-        _renderBatches.emplace_back(offset, 6, _glyphs[0]->texture);
-        vertices[cv++] = _glyphs[0]->topLeft;
-        vertices[cv++] = _glyphs[0]->bottomLeft;
-        vertices[cv++] = _glyphs[0]->bottomRight;
-        vertices[cv++] = _glyphs[0]->bottomRight;
-        vertices[cv++] = _glyphs[0]->topRight;
-        vertices[cv++] = _glyphs[0]->topLeft;
 
-        offset += 6;
+        for (int cg = 0; cg < _glyphs.size(); cg++) {
+            Glyph* glyph = _glyphs[cg];
 
-        for (int cg = 1; cg < _glyphs.size(); cg++) {
-            if (_glyphs[cg]->texture != _glyphs[cg - 1]->texture) {
+            // Calculate the center of the sprite
+
+            glm::vec2 center = (glm::vec2(glyph->topLeft.position.x, glyph->topLeft.position.y) +
+                                glm::vec2(glyph->bottomRight.position.x, glyph->bottomRight.position.y)) * 0.5f;
+
+            // Rotate each vertex around the center
+            glm::vec2 t1 = rotatePoint(glm::vec2(glyph->topLeft.position.x, glyph->topLeft.position.y) - center, glyph->rotation) + center;
+            glm::vec2 b1 = rotatePoint(glm::vec2(glyph->bottomLeft.position.x, glyph->bottomLeft.position.y) - center, glyph->rotation) + center;
+            glm::vec2 br = rotatePoint(glm::vec2(glyph->bottomRight.position.x, glyph->bottomRight.position.y) - center, glyph->rotation) + center;
+            glm::vec2 tr = rotatePoint(glm::vec2(glyph->topRight.position.x, glyph->topRight.position.y) - center, glyph->rotation) + center;
+
+            // Update vertex positions
+            glyph->topLeft.position = { t1.x, t1.y };
+            glyph->bottomLeft.position = { b1.x, b1.y };
+            glyph->bottomRight.position = { br.x, br.y };
+            glyph->topRight.position = { tr.x, tr.y };
+
+            if (cg == 0 || _glyphs[cg]->texture != _glyphs[cg - 1]->texture) {
                 _renderBatches.emplace_back(offset, 6, _glyphs[cg]->texture);
             } else {
                 _renderBatches.back().numVertices += 6;
