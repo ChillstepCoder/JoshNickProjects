@@ -64,5 +64,26 @@ namespace JAGEngine {
     return screenCoords;
   }
 
+  //AABB test to see if box is in the camera view
+  bool Camera2D::isBoxInView(const glm::vec2& position, const glm::vec2& dimensions) {
+
+    glm::vec2 scaledScreenDimensions = glm::vec2(_screenWidth, _screenHeight) / (_scale );
+
+    const float MIN_DISTANCE_X = dimensions.x / 2.0f + scaledScreenDimensions.x / 2.0f;
+    const float MIN_DISTANCE_Y = dimensions.y / 2.0f + scaledScreenDimensions.y / 2.0f;
+
+    glm::vec2 centerPos = position + dimensions / 2.0f;
+    glm::vec2 centerCameraPos = _position;
+    glm::vec2 distVec = centerPos - centerCameraPos;
+
+    float xDepth = MIN_DISTANCE_X - std::abs(distVec.x);
+    float yDepth = MIN_DISTANCE_Y - std::abs(distVec.y);
+
+    if (xDepth > 0 && yDepth > 0) {
+      //there was a collision
+      return true;
+    }
+    return false;
+  }
 
 }

@@ -52,14 +52,32 @@ void MainGame::run() {
 }
 
 void MainGame::initSystems() {
+  std::cout << "Starting initSystems()" << std::endl;
 
   JAGEngine::init();
-  glViewport(0, 0, _screenWidth, _screenHeight);
-  _window.create("Zombie Game", _screenWidth, _screenHeight, 0);
-  glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
-  initShaders();
-  _agentSpriteBatch.init();
+  std::cout << "JAGEngine initialized" << std::endl;
 
+  glViewport(0, 0, _screenWidth, _screenHeight);
+  std::cout << "Viewport set" << std::endl;
+
+  _window.create("Zombie Game", _screenWidth, _screenHeight, 0);
+  std::cout << "Window created" << std::endl;
+
+  glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+  std::cout << "Clear color set" << std::endl;
+
+  initShaders();
+  std::cout << "Shaders initialized" << std::endl;
+
+  _agentSpriteBatch.init();
+  std::cout << "Agent sprite batch initialized" << std::endl;
+
+  _hudSpriteBatch.init();
+  std::cout << "HUD sprite batch initialized" << std::endl;
+
+  _spriteFont = new JAGEngine::SpriteFont("Fonts/data-unifon.ttf", 32);
+
+  std::cout << "initSystems() completed" << std::endl;
 }
 
 void MainGame::gameLoop() {
@@ -353,6 +371,8 @@ void MainGame::processInput() {
   }
 }
 
+//unique pointers so i dont have to delete
+
 void MainGame::checkVictory() {
   if (_zombies.empty()) {
     std::cout << "All zombies eliminated. Checking for next level..." << std::endl;
@@ -442,8 +462,6 @@ void MainGame::drawGame() {
   GLuint timeLocation = _textureProgram.getUniformLocation("time");
   glUniform1f(timeLocation, _time);
 
-
- // // TODO: Josh - camera matrix is broken
   glm::mat4 projectionMatrix = _camera.getCameraMatrix();
   GLuint pUniform = _textureProgram.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(projectionMatrix[0][0]));
@@ -454,29 +472,57 @@ void MainGame::drawGame() {
   //begin drawing agents
   _agentSpriteBatch.begin();
 
+  const glm::vec2 agentDims(AGENT_RADIUS * 2.0f);
+
   // draw the humans
   for (int i = 0; i < _humans.size(); i++) {
-    _humans[i]->draw(_agentSpriteBatch);
+    if (_camera.isBoxInView(_humans[i]->getPosition(), agentDims)) {
+      _humans[i]->draw(_agentSpriteBatch);
+    }
   }
+
   // draw the zombies
   for (int i = 0; i < _zombies.size(); i++) {
-    _zombies[i]->draw(_agentSpriteBatch);
+    if (_camera.isBoxInView(_zombies[i]->getPosition(), agentDims)) {
+      _zombies[i]->draw(_agentSpriteBatch);
+    }
   }
 
   //draw the bullets
   for (int i = 0; i < _bullets.size(); i++) {
-    _bullets[i].draw(_agentSpriteBatch);
+      _bullets[i].draw(_agentSpriteBatch);
   }
 
   _agentSpriteBatch.end();
   _agentSpriteBatch.renderBatch();
+
+  drawHud();
 
   _textureProgram.unuse();
 
   _window.swapBuffer();
 }
 
+void MainGame::drawHud() {
+
+  char buffer[256];
+
+  _hudSpriteBatch.begin();
+
+  sprintf_s(buffer, "Num Humans %d", _humans.size());
+
+  _spriteFont->draw(_hudSpriteBatch, buffer, glm::vec2(300,300),
+                    glm::vec2(4.0), 0.0f, JAGEngine::ColorRGBA8(255, 255, 255, 255));
+
+  _hudSpriteBatch.end();
+  _hudSpriteBatch.renderBatch();
+
+}
+
 void MainGame::initLevel() {
+
+  _zombies.clear();
+  _bullets.clear();
   std::string levelFileName = "Levels/Level" + std::to_string(_currentLevel + 1) + ".txt";
   std::cout << "Loading level: " << levelFileName << std::endl;
 

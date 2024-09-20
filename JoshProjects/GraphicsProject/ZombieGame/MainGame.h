@@ -4,10 +4,11 @@
 
 #include <SDL/SDL.h>
 #include <windows.h>
-#include "JAGEngine/GLSLProgram.h"
-#include "JAGEngine/Sprite.h"
 #include <GL/glew.h> 
 #include <stdio.h>
+
+#include "JAGEngine/GLSLProgram.h"
+#include "JAGEngine/Sprite.h"
 #include "JAGEngine/GLTexture.h"
 #include "JAGEngine/Window.h"
 #include "JAGEngine/JAGEngine.h"
@@ -16,6 +17,8 @@
 #include "JAGEngine/InputManager.h"
 #include "JAGEngine/Timing.h"
 #include "JAGEngine/ResourceManager.h"
+#include "JAGEngine/SpriteFont.h"
+
 #include "Player.h"
 #include "Level.h"
 #include "Bullet.h"
@@ -51,6 +54,8 @@ private:
   void processInput();
   void drawGame();
 
+  void drawHud();
+
   JAGEngine::Window _window;
   int _screenWidth;
   int _screenHeight;
@@ -61,6 +66,7 @@ private:
   JAGEngine::Camera2D _camera;
 
   JAGEngine::SpriteBatch _agentSpriteBatch; //draws all agents
+  JAGEngine::SpriteBatch _hudSpriteBatch;
 
   JAGEngine::SpriteBatch _spriteBatch;
 
@@ -75,6 +81,7 @@ private:
   std::vector<Bullet> _bullets;
 
   JAGEngine::ResourceManager _resourceManager;
+  JAGEngine::SpriteFont* _spriteFont;
 
   float _fps;
   float _maxFPS;

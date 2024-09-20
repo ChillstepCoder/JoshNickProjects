@@ -51,7 +51,7 @@ bool Agent::collideWithAgent(Agent* agent) {
 
   if (collisionDepth > 0) {
 
-    glm::vec2 collisionDepthVec = glm::normalize(distVec) * collisionDepth;
+    glm::vec2 collisionDepthVec = (distVec / distance) * collisionDepth;
 
     _position += collisionDepthVec / 2.0f;
     agent->_position -= collisionDepthVec / 2.0f;
