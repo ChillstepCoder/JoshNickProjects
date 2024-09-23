@@ -1,7 +1,7 @@
 //GLSLProgram.cpp
 
 #include "GLSLProgram.h"
-#include "Errors.h"
+#include "JAGErrors.h"
 #include <vector>
 #include <fstream>
 

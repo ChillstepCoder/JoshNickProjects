@@ -9,7 +9,7 @@ namespace JAGEngine {
   }
 
   void FpsLimiter::setMaxFPS(float maxFPS) {
-    _maxFPS = maxFPS;
+    m_maxFPS = maxFPS;
   }
 
   void FpsLimiter::begin() {
@@ -21,11 +21,11 @@ namespace JAGEngine {
     float frameTicks = SDL_GetTicks() - _startTicks;
 
     //limit fps
-    if (1000.0F / _maxFPS > frameTicks) {
-      SDL_Delay(1000.0F / _maxFPS - frameTicks);
+    if (1000.0F / m_maxFPS > frameTicks) {
+      SDL_Delay(1000.0F / m_maxFPS - frameTicks);
     }
 
-    return _fps;
+    return m_fps;
   }
 
   void FpsLimiter::calculateFPS() {
@@ -61,10 +61,10 @@ namespace JAGEngine {
     frameTimeAverage /= count;
 
     if (frameTimeAverage > 0) {
-      _fps = 1000.0f / frameTimeAverage;
+      m_fps = 1000.0f / frameTimeAverage;
     }
     else {
-      _fps = 60.0f;
+      m_fps = 60.0f;
     }
 
   }

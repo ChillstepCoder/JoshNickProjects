@@ -79,7 +79,7 @@ extern "C" {
  *  specify the subsystems which you will be using in your application.
  */
 /* @{ */
-#define SDL_INIT_TIMER          0x00000001u
+#define SDL_INITm_timeR          0x00000001u
 #define SDL_INIT_AUDIO          0x00000010u
 #define SDL_INIT_VIDEO          0x00000020u  /**< SDL_INIT_VIDEO implies SDL_INIT_EVENTS */
 #define SDL_INIT_JOYSTICK       0x00000200u  /**< SDL_INIT_JOYSTICK implies SDL_INIT_EVENTS */
@@ -89,7 +89,7 @@ extern "C" {
 #define SDL_INIT_SENSOR         0x00008000u
 #define SDL_INIT_NOPARACHUTE    0x00100000u  /**< compatibility; this flag is ignored. */
 #define SDL_INIT_EVERYTHING ( \
-                SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | \
+                SDL_INITm_timeR | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | \
                 SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR \
             )
 /* @} */
@@ -112,7 +112,7 @@ extern "C" {
  *
  * `flags` may be any of the following OR'd together:
  *
- * - `SDL_INIT_TIMER`: timer subsystem
+ * - `SDL_INITm_timeR`: timer subsystem
  * - `SDL_INIT_AUDIO`: audio subsystem
  * - `SDL_INIT_VIDEO`: video subsystem; automatically initializes the events
  *   subsystem

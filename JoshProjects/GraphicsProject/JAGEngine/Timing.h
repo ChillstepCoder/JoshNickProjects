@@ -14,8 +14,8 @@ namespace JAGEngine {
 
     void calculateFPS();
 
-    float _fps;
-    float _maxFPS;
+    float m_fps;
+    float m_maxFPS;
     float _frameTime;
 
     unsigned int _startTicks;

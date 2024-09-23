@@ -1,7 +1,7 @@
 //MainGame.cpp
 
 #include "MainGame.h"
-#include "Errors.h"
+#include "JAGErrors.h"
 #include <JAGEngine/ResourceManager.h>
 #include <iostream>
 #include <string>
@@ -9,9 +9,9 @@
 MainGame::MainGame() :
   _screenWidth(1024),
   _screenHeight(768),
-  _time(0),
+  m_time(0),
   _gameState(GameState::PLAY),
-  _maxFPS(60.0f)
+  m_maxFPS(60.0f)
 {
   _camera.init(_screenWidth, _screenHeight);
   _camera.setPosition(glm::vec2(_screenWidth / 2.0f, _screenHeight / 2.0f));
@@ -24,7 +24,7 @@ MainGame::MainGame() :
 
   void MainGame::run() {
     initSystems();
-    // _playerTexture = ImageLoader::loadPNG("Textures/JimmyJump_Pack/PNG/HappyCLoud.png");
+    // m_playerTexture = ImageLoader::loadPNG("Textures/JimmyJump_Pack/PNG/HappyCLoud.png");
         
     gameLoop();
   }
@@ -38,27 +38,27 @@ MainGame::MainGame() :
     // Do all of this AFTER creating the window / OpenGL context
     initShaders();
     
-    _spriteBatch.init();
-    _fpsLimiter.init(_maxFPS);
+    m_spriteBatch.init();
+    m_fpsLimiter.init(m_maxFPS);
   }
 
   void MainGame::gameLoop() {
     while (_gameState != GameState::EXIT) {
 
-      _fpsLimiter.begin();
+      m_fpsLimiter.begin();
 
 
-      _inputManager.update();
+      m_inputManager.update();
       processInput();
-      _time += 0.01f;
+      m_time += 0.01f;
 
 
       _camera.update();
 
-      for (int i = 0; i < _bullets.size();) {
-        if (_bullets[i].update() == true) {
-          _bullets[i] = _bullets.back();
-          _bullets.pop_back();
+      for (int i = 0; i < m_bullets.size();) {
+        if (m_bullets[i].update() == true) {
+          m_bullets[i] = m_bullets.back();
+          m_bullets.pop_back();
         } else {
           i++;
         }
@@ -66,7 +66,7 @@ MainGame::MainGame() :
 
       drawGame();
 
-      _fps = _fpsLimiter.end();
+      m_fps = m_fpsLimiter.end();
 
       static int frameCounter = 0;
       int frameReset = 60;
@@ -74,8 +74,8 @@ MainGame::MainGame() :
       frameCounter++;
 
       if (frameCounter == frameReset) { //print fps every fps frames
-        std::cout << std::to_string((int)_fps) << std::endl;
-        frameReset = (int)_fps;
+        std::cout << std::to_string((int)m_fps) << std::endl;
+        frameReset = (int)m_fps;
         frameCounter = 0;
       }
     }
@@ -102,19 +102,19 @@ MainGame::MainGame() :
         _gameState = GameState::EXIT;
         break;
       case SDL_KEYDOWN:
-        _inputManager.pressKey(evnt.key.keysym.sym);
+        m_inputManager.pressKey(evnt.key.keysym.sym);
         break;
       case SDL_KEYUP:
-        _inputManager.releaseKey(evnt.key.keysym.sym);
+        m_inputManager.releaseKey(evnt.key.keysym.sym);
         break;
       case SDL_MOUSEBUTTONDOWN:
-        _inputManager.pressKey(evnt.button.button);
+        m_inputManager.pressKey(evnt.button.button);
         break;
       case SDL_MOUSEBUTTONUP:
-        _inputManager.releaseKey(evnt.button.button);
+        m_inputManager.releaseKey(evnt.button.button);
         break;
       case SDL_MOUSEMOTION:
-        _inputManager.setMouseCoords(evnt.motion.x, evnt.motion.y);
+        m_inputManager.setMouseCoords(evnt.motion.x, evnt.motion.y);
         break;
       }
     }
@@ -123,11 +123,11 @@ MainGame::MainGame() :
     double currentZoom = static_cast<double>(_camera.getScale());
 
     // Handle zooming
-    if (_inputManager.isKeyPressed(SDLK_q)) {
+    if (m_inputManager.isKeyPressed(SDLK_q)) {
       currentZoom *= ZOOM_FACTOR;
       if (currentZoom > MAX_ZOOM) currentZoom = MAX_ZOOM;
     }
-    if (_inputManager.isKeyPressed(SDLK_e)) {
+    if (m_inputManager.isKeyPressed(SDLK_e)) {
       currentZoom /= ZOOM_FACTOR;
       if (currentZoom < MIN_ZOOM) currentZoom = MIN_ZOOM;
     }
@@ -140,16 +140,16 @@ MainGame::MainGame() :
 
     // Handle movement
     glm::vec2 movement(0.0f, 0.0f);
-    if (_inputManager.isKeyPressed(SDLK_w)) {
+    if (m_inputManager.isKeyPressed(SDLK_w)) {
       movement.y += 1.0f;
     }
-    if (_inputManager.isKeyPressed(SDLK_s)) {
+    if (m_inputManager.isKeyPressed(SDLK_s)) {
       movement.y -= 1.0f;
     }
-    if (_inputManager.isKeyPressed(SDLK_a)) {
+    if (m_inputManager.isKeyPressed(SDLK_a)) {
       movement.x -= 1.0f;
     }
-    if (_inputManager.isKeyPressed(SDLK_d)) {
+    if (m_inputManager.isKeyPressed(SDLK_d)) {
       movement.x += 1.0f;
     }
 
@@ -161,14 +161,14 @@ MainGame::MainGame() :
     // Apply movement
     _camera.setPosition(_camera.getPosition() + movement * static_cast<float>(adjustedSpeed));
 
-    if (_inputManager.isKeyPressed(SDL_BUTTON_LEFT)) {
-      glm::vec2 mouseCoords = _inputManager.getMouseCoords();
+    if (m_inputManager.isKeyPressed(SDL_BUTTON_LEFT)) {
+      glm::vec2 mouseCoords = m_inputManager.getMouseCoords();
       mouseCoords = _camera.convertScreenToWorld(mouseCoords);
 
       glm::vec2 playerPosition(0.0f);
       glm::vec2 direction = mouseCoords - playerPosition;
       direction = glm::normalize(direction);
-      _bullets.emplace_back(playerPosition, direction, 200.00f, 1000);
+      m_bullets.emplace_back(playerPosition, direction, 200.00f, 1000);
     }
   }
 
@@ -184,7 +184,7 @@ MainGame::MainGame() :
     glUniform1i(textureLocation, 0);
 
     GLuint timeLocation = _colorProgram.getUniformLocation("time");
-    glUniform1f(timeLocation, _time);
+    glUniform1f(timeLocation, m_time);
 
     GLuint pLocation = _colorProgram.getUniformLocation("P");
     // TODO: Josh - camera matrix is broken
@@ -192,7 +192,7 @@ MainGame::MainGame() :
 
     glUniformMatrix4fv(pLocation, 1, GL_FALSE, &(cameraMatrix[0][0]));
 
-    _spriteBatch.begin();
+    m_spriteBatch.begin();
     glm::vec4 pos(-500.0f, -500.0f, 1000.0f, 1000.0f);
     glm::vec4 uv(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -205,14 +205,14 @@ MainGame::MainGame() :
     color.b = 255;
     color.a = 255;
 
-    _spriteBatch.draw(pos, uv, texture.id, 0.1f, color);
+    m_spriteBatch.draw(pos, uv, texture.id, 0.1f, color);
 
-    for (int i = 0; i < _bullets.size(); i++) {
-      _bullets[i].draw(_spriteBatch);
+    for (int i = 0; i < m_bullets.size(); i++) {
+      m_bullets[i].draw(m_spriteBatch);
     }
 
-    _spriteBatch.end();
-    _spriteBatch.renderBatch();
+    m_spriteBatch.end();
+    m_spriteBatch.renderBatch();
 
     glBindTexture(GL_TEXTURE_2D, 0);
 

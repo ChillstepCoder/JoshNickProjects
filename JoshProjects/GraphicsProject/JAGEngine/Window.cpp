@@ -1,7 +1,7 @@
 //Window.cpp
 
 #include "Window.h"
-#include "Errors.h"
+#include "JAGErrors.h"
 #include <iostream>
 
 namespace JAGEngine {

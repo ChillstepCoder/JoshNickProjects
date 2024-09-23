@@ -44,15 +44,15 @@ private:
   JAGEngine::GLSLProgram _colorProgram;
   JAGEngine::Camera2D _camera;
 
-  JAGEngine::SpriteBatch _spriteBatch;
+  JAGEngine::SpriteBatch m_spriteBatch;
 
-  JAGEngine::InputManager _inputManager;
-  JAGEngine::FpsLimiter _fpsLimiter;
+  JAGEngine::InputManager m_inputManager;
+  JAGEngine::FpsLimiter m_fpsLimiter;
 
-  std::vector<Bullet> _bullets;
+  std::vector<Bullet> m_bullets;
 
-  float _fps;
-  float _maxFPS;
-  float _time;
+  float m_fps;
+  float m_maxFPS;
+  float m_time;
 };
 

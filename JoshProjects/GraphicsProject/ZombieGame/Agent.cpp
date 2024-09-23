@@ -7,11 +7,11 @@
 Agent::Agent() {}
 Agent::~Agent() {}
 
-void Agent::draw(JAGEngine::SpriteBatch& _spriteBatch) {
+void Agent::draw(JAGEngine::SpriteBatch& m_spriteBatch) {
   static int textureID = JAGEngine::ResourceManager::getTexture("Textures/zombie_game/spr_npc.png").id;
   const glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
   glm::vec4 destRect(_position.x - AGENT_WIDTH / 2, _position.y - AGENT_WIDTH / 2, AGENT_WIDTH, AGENT_WIDTH);
-  _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color);
+  m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color);
 }
 
 void Agent::collideWithLevel(const std::vector<std::string>& levelData) {

@@ -1,4 +1,4 @@
-#include "Errors.h"
+#include "JAGErrors.h"
 #include <cstdlib>
 #include <iostream>
 #include <SDL/SDL.h>

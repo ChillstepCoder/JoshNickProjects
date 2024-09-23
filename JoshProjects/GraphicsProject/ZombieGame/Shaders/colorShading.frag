@@ -1,3 +1,5 @@
+//colorShading.frag
+
 #version 130
 in vec2 fragmentPosition;
 in vec4 fragmentColor;
@@ -39,5 +41,8 @@ void main() {
     
     vec3 finalColor = mix(textureColor.rgb, spiralColor, spiral * 0.5);
     
-    color = vec4(finalColor * fragmentColor.rgb, textureColor.a);
+    // Use the alpha from both the texture and the fragment color
+    float finalAlpha = textureColor.a;
+    
+    color = vec4(finalColor * fragmentColor.rgb, finalAlpha);
 }

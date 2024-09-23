@@ -19,9 +19,9 @@ void Player::init(float speed, glm::vec2 pos, JAGEngine::InputManager* inputMana
   _color.g = 255;
   _color.b = 255;
   _color.a = 255;
-  _inputManager = inputManager;
-  _camera = camera;
-  _bullets = bullets;
+  m_inputManager = inputManager;
+  m_camera = camera;
+  m_bullets = bullets;
 }
 
 void Player::addGun(Gun* gun) {
@@ -39,7 +39,7 @@ void Player::update(const std::vector<std::string>& levelData,
 
   float shift = 1.0f;
 
-  if (_inputManager->isKeyDown(SDLK_LSHIFT) || _inputManager->isKeyDown(SDLK_RSHIFT)) {
+  if (m_inputManager->isKeyDown(SDLK_LSHIFT) || m_inputManager->isKeyDown(SDLK_RSHIFT)) {
     shift = 2.0f;
   }
   else {
@@ -47,38 +47,38 @@ void Player::update(const std::vector<std::string>& levelData,
   }
 
 
-  if (_inputManager->isKeyDown(SDLK_w)) {
+  if (m_inputManager->isKeyDown(SDLK_w)) {
     _position.y += _speed * deltaTime * shift;
   }
-  else if (_inputManager->isKeyDown(SDLK_s)) {
+  else if (m_inputManager->isKeyDown(SDLK_s)) {
     _position.y -= _speed * deltaTime * shift;
   }
-  if (_inputManager->isKeyDown(SDLK_a)) {
+  if (m_inputManager->isKeyDown(SDLK_a)) {
     _position.x -= _speed * deltaTime * shift;
   }
-  else if (_inputManager->isKeyDown(SDLK_d)) {
+  else if (m_inputManager->isKeyDown(SDLK_d)) {
     _position.x += _speed * deltaTime * shift;
   }
 
-  if (_inputManager->isKeyDown(SDLK_1) && _guns.size() >= 1) {
+  if (m_inputManager->isKeyDown(SDLK_1) && _guns.size() >= 1) {
     _currentGunIndex = 0;
   }
-  if (_inputManager->isKeyDown(SDLK_2) && _guns.size() >= 2) {
+  if (m_inputManager->isKeyDown(SDLK_2) && _guns.size() >= 2) {
     _currentGunIndex = 1;
   }
-  if (_inputManager->isKeyDown(SDLK_3) && _guns.size() >= 3) {
+  if (m_inputManager->isKeyDown(SDLK_3) && _guns.size() >= 3) {
     _currentGunIndex = 2;
   }
 
-  if (_currentGunIndex != -1 && _bullets != nullptr) {
-    glm::vec2 mouseCoords = _inputManager->getMouseCoords();
-    mouseCoords = _camera->convertScreenToWorld(mouseCoords);
+  if (_currentGunIndex != -1 && m_bullets != nullptr) {
+    glm::vec2 mouseCoords = m_inputManager->getMouseCoords();
+    mouseCoords = m_camera->convertScreenToWorld(mouseCoords);
     glm::vec2 centerPosition = _position;
     glm::vec2 direction = glm::normalize(mouseCoords - centerPosition);
-    _guns[_currentGunIndex]->update(_inputManager->isKeyDown(SDL_BUTTON_LEFT),
+    _guns[_currentGunIndex]->update(m_inputManager->isKeyDown(SDL_BUTTON_LEFT),
       centerPosition,
       direction,
-      *_bullets,
+      *m_bullets,
       deltaTime);
   }
 

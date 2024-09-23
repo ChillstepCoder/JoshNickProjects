@@ -18,6 +18,9 @@
 #include "JAGEngine/Timing.h"
 #include "JAGEngine/ResourceManager.h"
 #include "JAGEngine/SpriteFont.h"
+#include <JAGEngine/AudioEngine.h>
+#include "JAGEngine/ParticleEngine2D.h"
+#include "JAGEngine/ParticleBatch2D.h"
 
 #include "Player.h"
 #include "Level.h"
@@ -56,40 +59,50 @@ private:
 
   void drawHud();
 
-  JAGEngine::Window _window;
-  int _screenWidth;
-  int _screenHeight;
-  GameState _gameState;
+  void addBlood(const glm::vec2& position, int numParticles);
 
-  JAGEngine::Sprite _sprite;
-  JAGEngine::GLSLProgram _textureProgram;
-  JAGEngine::Camera2D _camera;
+  JAGEngine::Window m_window;
 
-  JAGEngine::SpriteBatch _agentSpriteBatch; //draws all agents
-  JAGEngine::SpriteBatch _hudSpriteBatch;
+  int m_screenWidth = 1024;
+  int m_screenHeight = 768;
 
-  JAGEngine::SpriteBatch _spriteBatch;
+  GameState m_gameState;
 
-  JAGEngine::InputManager _inputManager;
-  JAGEngine::FpsLimiter _fpsLimiter;
+  JAGEngine::Sprite m_sprite;
+  JAGEngine::GLSLProgram m_textureProgram;
+  JAGEngine::Camera2D m_camera;
+  JAGEngine::Camera2D m_hudCamera;
 
-  std::vector<Level*> _levels;
+  JAGEngine::SpriteBatch m_agentSpriteBatch; //draws all agents
+  JAGEngine::SpriteBatch m_hudSpriteBatch;
 
-  Player* _player;
-  std::vector<Human*> _humans;
-  std::vector<Zombie*> _zombies;
-  std::vector<Bullet> _bullets;
+  JAGEngine::SpriteBatch m_spriteBatch;
 
-  JAGEngine::ResourceManager _resourceManager;
-  JAGEngine::SpriteFont* _spriteFont;
+  JAGEngine::InputManager m_inputManager;
+  JAGEngine::FpsLimiter m_fpsLimiter;
 
-  float _fps;
-  float _maxFPS;
-  float _time;
-  int _currentLevel;
+  std::vector<Level*> m_levels;
 
-  int _numHumansKilled; //humans killed by player
-  int _numZombiesKilled;
+  Player* m_player;
+  std::vector<Human*> m_humans;
+  std::vector<Zombie*> m_zombies;
+  std::vector<Bullet> m_bullets;
+
+  JAGEngine::ResourceManager m_resourceManager;
+  JAGEngine::SpriteFont* m_spriteFont;
+
+  JAGEngine::ParticleEngine2D m_particleEngine;
+  JAGEngine::ParticleBatch2D* m_bloodParticleBatch;
+
+  JAGEngine::AudioEngine m_audioEngine;
+
+  float m_fps;
+  float m_maxFPS;
+  float m_time;
+  int m_currentLevel;
+
+  int m_numHumansKilled; //humans killed by player
+  int m_numZombiesKilled;
 
 
 };

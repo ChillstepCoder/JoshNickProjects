@@ -1,5 +1,5 @@
 #include "Level.h"
-#include <JAGEngine/Errors.h>
+#include <JAGEngine/JAGErrors.h>
 #include <fstream>
 #include <JAGEngine/ResourceManager.h>
 #include <iostream>
@@ -21,8 +21,8 @@ Level::Level(const std::string& fileName) {
 
   std::cout << "Level data loaded. Width: " << _levelData[0].size() << ", Height: " << _levelData.size() << std::endl;
 
-  _spriteBatch.init();
-  _spriteBatch.begin();
+  m_spriteBatch.init();
+  m_spriteBatch.begin();
   glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
   JAGEngine::ColorRGBA8 whiteColor;
   whiteColor.r = 255;
@@ -43,7 +43,7 @@ Level::Level(const std::string& fileName) {
           std::cout << "Failed to load texture: Textures/zombie_game/spr_stone.png" << std::endl;
         }
         else {
-          _spriteBatch.draw(destRect, uvRect, texture.id, 0.0f, whiteColor);
+          m_spriteBatch.draw(destRect, uvRect, texture.id, 0.0f, whiteColor);
         }
       }
       break;
@@ -54,7 +54,7 @@ Level::Level(const std::string& fileName) {
           std::cout << "Failed to load texture: Textures/zombie_game/spr_brick.png" << std::endl;
         }
         else {
-          _spriteBatch.draw(destRect, uvRect, texture.id, 0.0f, whiteColor);
+          m_spriteBatch.draw(destRect, uvRect, texture.id, 0.0f, whiteColor);
         }
       }
       break;
@@ -65,13 +65,13 @@ Level::Level(const std::string& fileName) {
           std::cout << "Failed to load texture: Textures/zombie_game/spr_wood.png" << std::endl;
         }
         else {
-          _spriteBatch.draw(destRect, uvRect, texture.id, 0.0f, whiteColor);
+          m_spriteBatch.draw(destRect, uvRect, texture.id, 0.0f, whiteColor);
         }
       }
       break;
       case 'Z':
         _levelData[y][x] = '.';
-        _zombieStartPositions.emplace_back(x * TILE_WIDTH, y * TILE_WIDTH);
+        m_zombiestartPositions.emplace_back(x * TILE_WIDTH, y * TILE_WIDTH);
         break;
       case '@':
         _levelData[y][x] = '.';
@@ -86,9 +86,9 @@ Level::Level(const std::string& fileName) {
       }
     }
   }
-  _spriteBatch.end();
+  m_spriteBatch.end();
 
-  std::cout << "Level initialization complete. Zombies: " << _zombieStartPositions.size()
+  std::cout << "Level initialization complete. Zombies: " << m_zombiestartPositions.size()
     << ", Player start: (" << _startPlayerPos.x << ", " << _startPlayerPos.y << ")" << std::endl;
 }
 
@@ -96,7 +96,7 @@ Level::~Level() {
 }
 
 void Level::draw() {
-  _spriteBatch.renderBatch();
+  m_spriteBatch.renderBatch();
 }
 
 int Level::getWidth() const {

@@ -3353,17 +3353,17 @@ typedef void (GLAPIENTRY * PFNGLVERTEXATTRIBDIVISORANGLEPROC) (GLuint index, GLu
 
 #endif /* GL_ANGLE_texture_usage */
 
-/* -------------------------- GL_ANGLE_timer_query ------------------------- */
+/* -------------------------- GL_ANGLEm_timer_query ------------------------- */
 
-#ifndef GL_ANGLE_timer_query
-#define GL_ANGLE_timer_query 1
+#ifndef GL_ANGLEm_timer_query
+#define GL_ANGLEm_timer_query 1
 
 #define GL_QUERY_COUNTER_BITS_ANGLE 0x8864
 #define GL_CURRENT_QUERY_ANGLE 0x8865
 #define GL_QUERY_RESULT_ANGLE 0x8866
 #define GL_QUERY_RESULT_AVAILABLE_ANGLE 0x8867
-#define GL_TIME_ELAPSED_ANGLE 0x88BF
-#define GL_TIMESTAMP_ANGLE 0x8E28
+#define GLm_time_ELAPSED_ANGLE 0x88BF
+#define GLm_timeSTAMP_ANGLE 0x8E28
 
 typedef void (GLAPIENTRY * PFNGLBEGINQUERYANGLEPROC) (GLenum target, GLuint id);
 typedef void (GLAPIENTRY * PFNGLDELETEQUERIESANGLEPROC) (GLsizei n, const GLuint* ids);
@@ -3389,9 +3389,9 @@ typedef void (GLAPIENTRY * PFNGLQUERYCOUNTERANGLEPROC) (GLuint id, GLenum target
 #define glIsQueryANGLE GLEW_GET_FUN(__glewIsQueryANGLE)
 #define glQueryCounterANGLE GLEW_GET_FUN(__glewQueryCounterANGLE)
 
-#define GLEW_ANGLE_timer_query GLEW_GET_VAR(__GLEW_ANGLE_timer_query)
+#define GLEW_ANGLEm_timer_query GLEW_GET_VAR(__GLEW_ANGLEm_timer_query)
 
-#endif /* GL_ANGLE_timer_query */
+#endif /* GL_ANGLEm_timer_query */
 
 /* ------------------- GL_ANGLE_translated_shader_source ------------------- */
 
@@ -3458,18 +3458,18 @@ typedef void (GLAPIENTRY * PFNGLGETTRANSLATEDSHADERSOURCEANGLEPROC) (GLuint shad
 
 #endif /* GL_APPLE_color_buffer_packed_float */
 
-/* ---------------------- GL_APPLE_copy_texture_levels --------------------- */
+/* ---------------------- GL_APPLE_copy_texturem_levels --------------------- */
 
-#ifndef GL_APPLE_copy_texture_levels
-#define GL_APPLE_copy_texture_levels 1
+#ifndef GL_APPLE_copy_texturem_levels
+#define GL_APPLE_copy_texturem_levels 1
 
 typedef void (GLAPIENTRY * PFNGLCOPYTEXTURELEVELSAPPLEPROC) (GLuint destinationTexture, GLuint sourceTexture, GLint sourceBaseLevel, GLsizei sourceLevelCount);
 
 #define glCopyTextureLevelsAPPLE GLEW_GET_FUN(__glewCopyTextureLevelsAPPLE)
 
-#define GLEW_APPLE_copy_texture_levels GLEW_GET_VAR(__GLEW_APPLE_copy_texture_levels)
+#define GLEW_APPLE_copy_texturem_levels GLEW_GET_VAR(__GLEW_APPLE_copy_texturem_levels)
 
-#endif /* GL_APPLE_copy_texture_levels */
+#endif /* GL_APPLE_copy_texturem_levels */
 
 /* ------------------------- GL_APPLE_element_array ------------------------ */
 
@@ -3670,7 +3670,7 @@ typedef GLenum (GLAPIENTRY * PFNGLOBJECTUNPURGEABLEAPPLEPROC) (GLenum objectType
 
 #define GL_SYNC_FLUSH_COMMANDS_BIT_APPLE 0x00000001
 #define GL_SYNC_OBJECT_APPLE 0x8A53
-#define GL_MAX_SERVER_WAIT_TIMEOUT_APPLE 0x9111
+#define GL_MAX_SERVER_WAITm_timeOUT_APPLE 0x9111
 #define GL_OBJECT_TYPE_APPLE 0x9112
 #define GL_SYNC_CONDITION_APPLE 0x9113
 #define GL_SYNC_STATUS_APPLE 0x9114
@@ -3680,10 +3680,10 @@ typedef GLenum (GLAPIENTRY * PFNGLOBJECTUNPURGEABLEAPPLEPROC) (GLenum objectType
 #define GL_UNSIGNALED_APPLE 0x9118
 #define GL_SIGNALED_APPLE 0x9119
 #define GL_ALREADY_SIGNALED_APPLE 0x911A
-#define GL_TIMEOUT_EXPIRED_APPLE 0x911B
+#define GLm_timeOUT_EXPIRED_APPLE 0x911B
 #define GL_CONDITION_SATISFIED_APPLE 0x911C
 #define GL_WAIT_FAILED_APPLE 0x911D
-#define GL_TIMEOUT_IGNORED_APPLE 0xFFFFFFFFFFFFFFFFull
+#define GLm_timeOUT_IGNORED_APPLE 0xFFFFFFFFFFFFFFFFull
 
 typedef GLenum (GLAPIENTRY * PFNGLCLIENTWAITSYNCAPPLEPROC) (GLsync GLsync, GLbitfield flags, GLuint64 timeout);
 typedef void (GLAPIENTRY * PFNGLDELETESYNCAPPLEPROC) (GLsync GLsync);
@@ -3953,7 +3953,7 @@ typedef void (GLAPIENTRY * PFNGLPRIMITIVEBOUNDINGBOXARBPROC) (GLfloat minX, GLfl
 #ifndef GL_ARB_ES3_compatibility
 #define GL_ARB_ES3_compatibility 1
 
-#define GL_TEXTURE_IMMUTABLE_LEVELS 0x82DF
+#define GL_TEXTURE_IMMUTABLEm_levels 0x82DF
 #define GL_PRIMITIVE_RESTART_FIXED_INDEX 0x8D69
 #define GL_ANY_SAMPLES_PASSED_CONSERVATIVE 0x8D6A
 #define GL_MAX_ELEMENT_INDEX 0x8D6B
@@ -6976,7 +6976,7 @@ typedef void (GLAPIENTRY * PFNGLBUFFERPAGECOMMITMENTARBPROC) (GLenum target, GLi
 #define GL_VIRTUAL_PAGE_SIZE_INDEX_ARB 0x91A7
 #define GL_NUM_VIRTUAL_PAGE_SIZES_ARB 0x91A8
 #define GL_SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_ARB 0x91A9
-#define GL_NUM_SPARSE_LEVELS_ARB 0x91AA
+#define GL_NUM_SPARSEm_levels_ARB 0x91AA
 
 typedef void (GLAPIENTRY * PFNGLTEXPAGECOMMITMENTARBPROC) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
 
@@ -7033,7 +7033,7 @@ typedef void (GLAPIENTRY * PFNGLTEXPAGECOMMITMENTARBPROC) (GLenum target, GLint 
 #define GL_ARB_sync 1
 
 #define GL_SYNC_FLUSH_COMMANDS_BIT 0x00000001
-#define GL_MAX_SERVER_WAIT_TIMEOUT 0x9111
+#define GL_MAX_SERVER_WAITm_timeOUT 0x9111
 #define GL_OBJECT_TYPE 0x9112
 #define GL_SYNC_CONDITION 0x9113
 #define GL_SYNC_STATUS 0x9114
@@ -7043,10 +7043,10 @@ typedef void (GLAPIENTRY * PFNGLTEXPAGECOMMITMENTARBPROC) (GLenum target, GLint 
 #define GL_UNSIGNALED 0x9118
 #define GL_SIGNALED 0x9119
 #define GL_ALREADY_SIGNALED 0x911A
-#define GL_TIMEOUT_EXPIRED 0x911B
+#define GLm_timeOUT_EXPIRED 0x911B
 #define GL_CONDITION_SATISFIED 0x911C
 #define GL_WAIT_FAILED 0x911D
-#define GL_TIMEOUT_IGNORED 0xFFFFFFFFFFFFFFFFull
+#define GLm_timeOUT_IGNORED 0xFFFFFFFFFFFFFFFFull
 
 typedef GLenum (GLAPIENTRY * PFNGLCLIENTWAITSYNCPROC) (GLsync GLsync,GLbitfield flags,GLuint64 timeout);
 typedef void (GLAPIENTRY * PFNGLDELETESYNCPROC) (GLsync GLsync);
@@ -7492,14 +7492,14 @@ typedef void (GLAPIENTRY * PFNGLTEXIMAGE3DMULTISAMPLEPROC) (GLenum target, GLsiz
 
 #endif /* GL_ARB_texture_non_power_of_two */
 
-/* ---------------------- GL_ARB_texture_query_levels ---------------------- */
+/* ---------------------- GL_ARB_texture_querym_levels ---------------------- */
 
-#ifndef GL_ARB_texture_query_levels
-#define GL_ARB_texture_query_levels 1
+#ifndef GL_ARB_texture_querym_levels
+#define GL_ARB_texture_querym_levels 1
 
-#define GLEW_ARB_texture_query_levels GLEW_GET_VAR(__GLEW_ARB_texture_query_levels)
+#define GLEW_ARB_texture_querym_levels GLEW_GET_VAR(__GLEW_ARB_texture_querym_levels)
 
-#endif /* GL_ARB_texture_query_levels */
+#endif /* GL_ARB_texture_querym_levels */
 
 /* ------------------------ GL_ARB_texture_query_lod ----------------------- */
 
@@ -7642,10 +7642,10 @@ typedef void (GLAPIENTRY * PFNGLTEXTURESTORAGE3DMULTISAMPLEEXTPROC) (GLuint text
 #define GL_ARB_texture_view 1
 
 #define GL_TEXTURE_VIEW_MIN_LEVEL 0x82DB
-#define GL_TEXTURE_VIEW_NUM_LEVELS 0x82DC
+#define GL_TEXTURE_VIEW_NUMm_levels 0x82DC
 #define GL_TEXTURE_VIEW_MIN_LAYER 0x82DD
 #define GL_TEXTURE_VIEW_NUM_LAYERS 0x82DE
-#define GL_TEXTURE_IMMUTABLE_LEVELS 0x82DF
+#define GL_TEXTURE_IMMUTABLEm_levels 0x82DF
 
 typedef void (GLAPIENTRY * PFNGLTEXTUREVIEWPROC) (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers);
 
@@ -7655,13 +7655,13 @@ typedef void (GLAPIENTRY * PFNGLTEXTUREVIEWPROC) (GLuint texture, GLenum target,
 
 #endif /* GL_ARB_texture_view */
 
-/* --------------------------- GL_ARB_timer_query -------------------------- */
+/* --------------------------- GL_ARBm_timer_query -------------------------- */
 
-#ifndef GL_ARB_timer_query
-#define GL_ARB_timer_query 1
+#ifndef GL_ARBm_timer_query
+#define GL_ARBm_timer_query 1
 
-#define GL_TIME_ELAPSED 0x88BF
-#define GL_TIMESTAMP 0x8E28
+#define GLm_time_ELAPSED 0x88BF
+#define GLm_timeSTAMP 0x8E28
 
 typedef void (GLAPIENTRY * PFNGLGETQUERYOBJECTI64VPROC) (GLuint id, GLenum pname, GLint64* params);
 typedef void (GLAPIENTRY * PFNGLGETQUERYOBJECTUI64VPROC) (GLuint id, GLenum pname, GLuint64* params);
@@ -7671,9 +7671,9 @@ typedef void (GLAPIENTRY * PFNGLQUERYCOUNTERPROC) (GLuint id, GLenum target);
 #define glGetQueryObjectui64v GLEW_GET_FUN(__glewGetQueryObjectui64v)
 #define glQueryCounter GLEW_GET_FUN(__glewQueryCounter)
 
-#define GLEW_ARB_timer_query GLEW_GET_VAR(__GLEW_ARB_timer_query)
+#define GLEW_ARBm_timer_query GLEW_GET_VAR(__GLEW_ARBm_timer_query)
 
-#endif /* GL_ARB_timer_query */
+#endif /* GL_ARBm_timer_query */
 
 /* ----------------------- GL_ARB_transform_feedback2 ---------------------- */
 
@@ -10270,17 +10270,17 @@ typedef void (GLAPIENTRY * PFNGLDISCARDFRAMEBUFFEREXTPROC) (GLenum target, GLsiz
 
 #endif /* GL_EXT_discard_framebuffer */
 
-/* ---------------------- GL_EXT_disjoint_timer_query ---------------------- */
+/* ---------------------- GL_EXT_disjointm_timer_query ---------------------- */
 
-#ifndef GL_EXT_disjoint_timer_query
-#define GL_EXT_disjoint_timer_query 1
+#ifndef GL_EXT_disjointm_timer_query
+#define GL_EXT_disjointm_timer_query 1
 
 #define GL_QUERY_COUNTER_BITS_EXT 0x8864
 #define GL_CURRENT_QUERY_EXT 0x8865
 #define GL_QUERY_RESULT_EXT 0x8866
 #define GL_QUERY_RESULT_AVAILABLE_EXT 0x8867
-#define GL_TIME_ELAPSED_EXT 0x88BF
-#define GL_TIMESTAMP_EXT 0x8E28
+#define GLm_time_ELAPSED_EXT 0x88BF
+#define GLm_timeSTAMP_EXT 0x8E28
 #define GL_GPU_DISJOINT_EXT 0x8FBB
 
 typedef void (GLAPIENTRY * PFNGLBEGINQUERYEXTPROC) (GLenum target, GLuint id);
@@ -10305,9 +10305,9 @@ typedef void (GLAPIENTRY * PFNGLQUERYCOUNTEREXTPROC) (GLuint id, GLenum target);
 #define glIsQueryEXT GLEW_GET_FUN(__glewIsQueryEXT)
 #define glQueryCounterEXT GLEW_GET_FUN(__glewQueryCounterEXT)
 
-#define GLEW_EXT_disjoint_timer_query GLEW_GET_VAR(__GLEW_EXT_disjoint_timer_query)
+#define GLEW_EXT_disjointm_timer_query GLEW_GET_VAR(__GLEW_EXT_disjointm_timer_query)
 
-#endif /* GL_EXT_disjoint_timer_query */
+#endif /* GL_EXT_disjointm_timer_query */
 
 /* -------------------------- GL_EXT_draw_buffers -------------------------- */
 
@@ -11426,14 +11426,14 @@ typedef void (GLAPIENTRY * PFNGLREADBUFFERINDEXEDEXTPROC) (GLenum src, GLint ind
 
 #endif /* GL_EXT_multiview_texture_multisample */
 
-/* ---------------------- GL_EXT_multiview_timer_query --------------------- */
+/* ---------------------- GL_EXT_multiviewm_timer_query --------------------- */
 
-#ifndef GL_EXT_multiview_timer_query
-#define GL_EXT_multiview_timer_query 1
+#ifndef GL_EXT_multiviewm_timer_query
+#define GL_EXT_multiviewm_timer_query 1
 
-#define GLEW_EXT_multiview_timer_query GLEW_GET_VAR(__GLEW_EXT_multiview_timer_query)
+#define GLEW_EXT_multiviewm_timer_query GLEW_GET_VAR(__GLEW_EXT_multiviewm_timer_query)
 
-#endif /* GL_EXT_multiview_timer_query */
+#endif /* GL_EXT_multiviewm_timer_query */
 
 /* --------------------- GL_EXT_occlusion_query_boolean -------------------- */
 
@@ -12246,7 +12246,7 @@ typedef GLsizei (GLAPIENTRY * PFNGLGETFRAMEBUFFERPIXELLOCALSTORAGESIZEEXTPROC) (
 #define GL_VIRTUAL_PAGE_SIZE_INDEX_EXT 0x91A7
 #define GL_NUM_VIRTUAL_PAGE_SIZES_EXT 0x91A8
 #define GL_SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_EXT 0x91A9
-#define GL_NUM_SPARSE_LEVELS_EXT 0x91AA
+#define GL_NUM_SPARSEm_levels_EXT 0x91AA
 
 typedef void (GLAPIENTRY * PFNGLTEXPAGECOMMITMENTEXTPROC) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
 typedef void (GLAPIENTRY * PFNGLTEXTUREPAGECOMMITMENTEXTPROC) (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
@@ -13271,10 +13271,10 @@ typedef void (GLAPIENTRY * PFNGLTEXTURESTORAGE3DEXTPROC) (GLuint texture, GLenum
 #define GL_EXT_texture_view 1
 
 #define GL_TEXTURE_VIEW_MIN_LEVEL_EXT 0x82DB
-#define GL_TEXTURE_VIEW_NUM_LEVELS_EXT 0x82DC
+#define GL_TEXTURE_VIEW_NUMm_levels_EXT 0x82DC
 #define GL_TEXTURE_VIEW_MIN_LAYER_EXT 0x82DD
 #define GL_TEXTURE_VIEW_NUM_LAYERS_EXT 0x82DE
-#define GL_TEXTURE_IMMUTABLE_LEVELS 0x82DF
+#define GL_TEXTURE_IMMUTABLEm_levels 0x82DF
 
 typedef void (GLAPIENTRY * PFNGLTEXTUREVIEWEXTPROC) (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers);
 
@@ -13284,12 +13284,12 @@ typedef void (GLAPIENTRY * PFNGLTEXTUREVIEWEXTPROC) (GLuint texture, GLenum targ
 
 #endif /* GL_EXT_texture_view */
 
-/* --------------------------- GL_EXT_timer_query -------------------------- */
+/* --------------------------- GL_EXTm_timer_query -------------------------- */
 
-#ifndef GL_EXT_timer_query
-#define GL_EXT_timer_query 1
+#ifndef GL_EXTm_timer_query
+#define GL_EXTm_timer_query 1
 
-#define GL_TIME_ELAPSED_EXT 0x88BF
+#define GLm_time_ELAPSED_EXT 0x88BF
 
 typedef void (GLAPIENTRY * PFNGLGETQUERYOBJECTI64VEXTPROC) (GLuint id, GLenum pname, GLint64EXT *params);
 typedef void (GLAPIENTRY * PFNGLGETQUERYOBJECTUI64VEXTPROC) (GLuint id, GLenum pname, GLuint64EXT *params);
@@ -13297,9 +13297,9 @@ typedef void (GLAPIENTRY * PFNGLGETQUERYOBJECTUI64VEXTPROC) (GLuint id, GLenum p
 #define glGetQueryObjecti64vEXT GLEW_GET_FUN(__glewGetQueryObjecti64vEXT)
 #define glGetQueryObjectui64vEXT GLEW_GET_FUN(__glewGetQueryObjectui64vEXT)
 
-#define GLEW_EXT_timer_query GLEW_GET_VAR(__GLEW_EXT_timer_query)
+#define GLEW_EXTm_timer_query GLEW_GET_VAR(__GLEW_EXTm_timer_query)
 
-#endif /* GL_EXT_timer_query */
+#endif /* GL_EXTm_timer_query */
 
 /* ----------------------- GL_EXT_transform_feedback ----------------------- */
 
@@ -14252,7 +14252,7 @@ typedef void (GLAPIENTRY * PFNGLVERTEXPOINTERVINTELPROC) (GLint size, GLenum typ
 #define GL_PERFQUERY_COUNTER_DURATION_RAW_INTEL 0x94F2
 #define GL_PERFQUERY_COUNTER_THROUGHPUT_INTEL 0x94F3
 #define GL_PERFQUERY_COUNTER_RAW_INTEL 0x94F4
-#define GL_PERFQUERY_COUNTER_TIMESTAMP_INTEL 0x94F5
+#define GL_PERFQUERY_COUNTERm_timeSTAMP_INTEL 0x94F5
 #define GL_PERFQUERY_COUNTER_DATA_UINT32_INTEL 0x94F8
 #define GL_PERFQUERY_COUNTER_DATA_UINT64_INTEL 0x94F9
 #define GL_PERFQUERY_COUNTER_DATA_FLOAT_INTEL 0x94FA
@@ -17028,9 +17028,9 @@ typedef void (GLAPIENTRY * PFNGLPOLYGONMODENVPROC) (GLenum face, GLenum mode);
 
 #define GL_FRAME_NV 0x8E26
 #define GL_FIELDS_NV 0x8E27
-#define GL_CURRENT_TIME_NV 0x8E28
+#define GL_CURRENTm_time_NV 0x8E28
 #define GL_NUM_FILL_STREAMS_NV 0x8E29
-#define GL_PRESENT_TIME_NV 0x8E2A
+#define GL_PRESENTm_time_NV 0x8E2A
 #define GL_PRESENT_DURATION_NV 0x8E2B
 
 typedef void (GLAPIENTRY * PFNGLGETVIDEOI64VNVPROC) (GLuint video_slot, GLenum pname, GLint64EXT* params);
@@ -17151,7 +17151,7 @@ typedef void (GLAPIENTRY * PFNGLREADBUFFERNVPROC) (GLenum mode);
 #define GL_SPARE0_NV 0x852E
 #define GL_SPARE1_NV 0x852F
 #define GL_DISCARD_NV 0x8530
-#define GL_E_TIMES_F_NV 0x8531
+#define GL_Em_timeS_F_NV 0x8531
 #define GL_SPARE0_PLUS_SECONDARY_COLOR_NV 0x8532
 #define GL_UNSIGNED_IDENTITY_NV 0x8536
 #define GL_UNSIGNED_INVERT_NV 0x8537
@@ -18544,7 +18544,7 @@ typedef void (GLAPIENTRY * PFNGLGETVIDEOCAPTURESTREAMDVNVPROC) (GLuint video_cap
 typedef void (GLAPIENTRY * PFNGLGETVIDEOCAPTURESTREAMFVNVPROC) (GLuint video_capture_slot, GLuint stream, GLenum pname, GLfloat* params);
 typedef void (GLAPIENTRY * PFNGLGETVIDEOCAPTURESTREAMIVNVPROC) (GLuint video_capture_slot, GLuint stream, GLenum pname, GLint* params);
 typedef void (GLAPIENTRY * PFNGLGETVIDEOCAPTUREIVNVPROC) (GLuint video_capture_slot, GLenum pname, GLint* params);
-typedef GLenum (GLAPIENTRY * PFNGLVIDEOCAPTURENVPROC) (GLuint video_capture_slot, GLuint* sequence_num, GLuint64EXT *capture_time);
+typedef GLenum (GLAPIENTRY * PFNGLVIDEOCAPTURENVPROC) (GLuint video_capture_slot, GLuint* sequence_num, GLuint64EXT *capturem_time);
 typedef void (GLAPIENTRY * PFNGLVIDEOCAPTURESTREAMPARAMETERDVNVPROC) (GLuint video_capture_slot, GLuint stream, GLenum pname, const GLdouble* params);
 typedef void (GLAPIENTRY * PFNGLVIDEOCAPTURESTREAMPARAMETERFVNVPROC) (GLuint video_capture_slot, GLuint stream, GLenum pname, const GLfloat* params);
 typedef void (GLAPIENTRY * PFNGLVIDEOCAPTURESTREAMPARAMETERIVNVPROC) (GLuint video_capture_slot, GLuint stream, GLenum pname, const GLint* params);
@@ -19781,10 +19781,10 @@ typedef void (GLAPIENTRY * PFNGLTEXSTORAGE3DMULTISAMPLEOESPROC) (GLenum target, 
 #define GL_OES_texture_view 1
 
 #define GL_TEXTURE_VIEW_MIN_LEVEL_OES 0x82DB
-#define GL_TEXTURE_VIEW_NUM_LEVELS_OES 0x82DC
+#define GL_TEXTURE_VIEW_NUMm_levels_OES 0x82DC
 #define GL_TEXTURE_VIEW_MIN_LAYER_OES 0x82DD
 #define GL_TEXTURE_VIEW_NUM_LAYERS_OES 0x82DE
-#define GL_TEXTURE_IMMUTABLE_LEVELS 0x82DF
+#define GL_TEXTURE_IMMUTABLEm_levels 0x82DF
 
 typedef void (GLAPIENTRY * PFNGLTEXTUREVIEWOESPROC) (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers);
 
@@ -20054,7 +20054,7 @@ typedef void (GLAPIENTRY * PFNGLGETDRIVERCONTROLSQCOMPROC) (GLint* num, GLsizei 
 #define GL_TEXTURE_FORMAT_QCOM 0x8BD6
 #define GL_TEXTURE_TYPE_QCOM 0x8BD7
 #define GL_TEXTURE_IMAGE_VALID_QCOM 0x8BD8
-#define GL_TEXTURE_NUM_LEVELS_QCOM 0x8BD9
+#define GL_TEXTURE_NUMm_levels_QCOM 0x8BD9
 #define GL_TEXTURE_TARGET_QCOM 0x8BDA
 #define GL_TEXTURE_OBJECT_VALID_QCOM 0x8BDB
 #define GL_STATE_RESTORE 0x8BDC
@@ -20823,14 +20823,14 @@ typedef GLint (GLAPIENTRY * PFNGLPOLLASYNCSGIXPROC) (GLuint* markerp);
 
 #endif /* GL_SGIX_bali_r_instruments */
 
-/* --------------------- GL_SGIX_bali_timer_instruments -------------------- */
+/* --------------------- GL_SGIX_balim_timer_instruments -------------------- */
 
-#ifndef GL_SGIX_bali_timer_instruments
-#define GL_SGIX_bali_timer_instruments 1
+#ifndef GL_SGIX_balim_timer_instruments
+#define GL_SGIX_balim_timer_instruments 1
 
-#define GLEW_SGIX_bali_timer_instruments GLEW_GET_VAR(__GLEW_SGIX_bali_timer_instruments)
+#define GLEW_SGIX_balim_timer_instruments GLEW_GET_VAR(__GLEW_SGIX_balim_timer_instruments)
 
-#endif /* GL_SGIX_bali_timer_instruments */
+#endif /* GL_SGIX_balim_timer_instruments */
 
 /* ----------------------- GL_SGIX_blend_alpha_minmax ---------------------- */
 
@@ -25498,13 +25498,13 @@ GLEW_VAR_EXPORT GLboolean __GLEW_ANGLE_texture_compression_dxt1;
 GLEW_VAR_EXPORT GLboolean __GLEW_ANGLE_texture_compression_dxt3;
 GLEW_VAR_EXPORT GLboolean __GLEW_ANGLE_texture_compression_dxt5;
 GLEW_VAR_EXPORT GLboolean __GLEW_ANGLE_texture_usage;
-GLEW_VAR_EXPORT GLboolean __GLEW_ANGLE_timer_query;
+GLEW_VAR_EXPORT GLboolean __GLEW_ANGLEm_timer_query;
 GLEW_VAR_EXPORT GLboolean __GLEW_ANGLE_translated_shader_source;
 GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_aux_depth_stencil;
 GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_client_storage;
 GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_clip_distance;
 GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_color_buffer_packed_float;
-GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_copy_texture_levels;
+GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_copy_texturem_levels;
 GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_element_array;
 GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_fence;
 GLEW_VAR_EXPORT GLboolean __GLEW_APPLE_float_pixels;
@@ -25669,7 +25669,7 @@ GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_mirror_clamp_to_edge;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_mirrored_repeat;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_multisample;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_non_power_of_two;
-GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_query_levels;
+GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_querym_levels;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_query_lod;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_rectangle;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_rg;
@@ -25679,7 +25679,7 @@ GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_storage;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_storage_multisample;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_swizzle;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_texture_view;
-GLEW_VAR_EXPORT GLboolean __GLEW_ARB_timer_query;
+GLEW_VAR_EXPORT GLboolean __GLEW_ARBm_timer_query;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_transform_feedback2;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_transform_feedback3;
 GLEW_VAR_EXPORT GLboolean __GLEW_ARB_transform_feedback_instanced;
@@ -25768,7 +25768,7 @@ GLEW_VAR_EXPORT GLboolean __GLEW_EXT_depth_bounds_test;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_depth_clamp;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_direct_state_access;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_discard_framebuffer;
-GLEW_VAR_EXPORT GLboolean __GLEW_EXT_disjoint_timer_query;
+GLEW_VAR_EXPORT GLboolean __GLEW_EXT_disjointm_timer_query;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_draw_buffers;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_draw_buffers2;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_draw_buffers_indexed;
@@ -25814,7 +25814,7 @@ GLEW_VAR_EXPORT GLboolean __GLEW_EXT_multisampled_render_to_texture2;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_multiview_draw_buffers;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_multiview_tessellation_geometry_shader;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_multiview_texture_multisample;
-GLEW_VAR_EXPORT GLboolean __GLEW_EXT_multiview_timer_query;
+GLEW_VAR_EXPORT GLboolean __GLEW_EXT_multiviewm_timer_query;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_occlusion_query_boolean;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_packed_depth_stencil;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_packed_float;
@@ -25915,7 +25915,7 @@ GLEW_VAR_EXPORT GLboolean __GLEW_EXT_texture_storage;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_texture_swizzle;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_texture_type_2_10_10_10_REV;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_texture_view;
-GLEW_VAR_EXPORT GLboolean __GLEW_EXT_timer_query;
+GLEW_VAR_EXPORT GLboolean __GLEW_EXTm_timer_query;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_transform_feedback;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_unpack_subimage;
 GLEW_VAR_EXPORT GLboolean __GLEW_EXT_vertex_array;
@@ -26261,7 +26261,7 @@ GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_async_histogram;
 GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_async_pixel;
 GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_bali_g_instruments;
 GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_bali_r_instruments;
-GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_bali_timer_instruments;
+GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_balim_timer_instruments;
 GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_blend_alpha_minmax;
 GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_blend_cadd;
 GLEW_VAR_EXPORT GLboolean __GLEW_SGIX_blend_cmultiply;

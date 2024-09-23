@@ -1,7 +1,7 @@
 #include "ImageLoader.h"
 #include "picoPNG.h"
 #include "IOManager.h"
-#include "Errors.h"
+#include "JAGErrors.h"
 
 namespace JAGEngine {
   GLTexture ImageLoader::loadPNG(std::string filePath) {

@@ -5,11 +5,13 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include "Bullet.h"
+#include <JAGEngine/AudioEngine.h>
 
 class Gun
 {
 public:
-  Gun(std::string name, int fireRate, int bulletsperShot, float spread, float bulletDamage, float bulletSpeed);
+  Gun(std::string name, int fireRate, int bulletsperShot,
+      float spread, float bulletDamage, float bulletSpeed, JAGEngine::SoundEffect fireEffect);
   ~Gun();
 
 
@@ -18,17 +20,20 @@ public:
   
 
 private:
+
+  JAGEngine::SoundEffect m_fireEffect;
+
   void fire(const glm::vec2& direction, const glm::vec2& position, std::vector<Bullet>& bullets);
 
   std::string _name;
 
   int _fireRate;
 
-  int _bulletsPerShot;
+  int m_bulletsPerShot;
 
   float _spread;
 
-  float _bulletSpeed;
+  float m_bulletspeed;
 
   float _bulletDamage;
 

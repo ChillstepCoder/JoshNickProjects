@@ -26,7 +26,7 @@ public:
 
   bool collideWithAgent(Agent* agent);
 
-  void draw(JAGEngine::SpriteBatch& _spriteBatch);
+  void draw(JAGEngine::SpriteBatch& m_spriteBatch);
 
   bool applyDamage(float damage); //retun true if we die
 

@@ -21,9 +21,9 @@ public:
     float deltaTime) override;
 
 private:
-  JAGEngine::InputManager* _inputManager;
-  JAGEngine::Camera2D* _camera;
+  JAGEngine::InputManager* m_inputManager;
+  JAGEngine::Camera2D* m_camera;
   std::vector<Gun*> _guns;
   int _currentGunIndex;
-  std::vector<Bullet>* _bullets;
+  std::vector<Bullet>* m_bullets;
 };

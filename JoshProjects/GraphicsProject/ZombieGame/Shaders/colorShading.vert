@@ -1,3 +1,5 @@
+//colorShading.vert
+
 #version 130
 
 in vec2 vertexPosition;

@@ -42,7 +42,7 @@ inline bool checkGlError(const char* errorLocation) {
                 std::cout << std::string("At " + std::string(errorLocation) + ". Error code " + std::to_string(error) + ": UNKNOWN");
                 break;
         }
-        __debugbreak(); // This automatically triggers a breakpoint if the debugger is attached
+        //__debugbreak(); // This automatically triggers a breakpoint if the debugger is attached
         return true;
     }
     return false;
