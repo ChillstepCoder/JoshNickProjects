@@ -5,6 +5,7 @@
 #include <Bengine/Camera2D.h>
 #include <Bengine/InputManager.h>
 #include <Bengine/SpriteBatch.h>
+#include <Bengine/SpriteFont.h>
 
 #include "Player.h"
 #include "Level.h"
@@ -23,40 +24,44 @@ public:
     MainGame();
     ~MainGame();
 
-    //Runs the game
+    // Runs the game
     void run();
 
 private:
-    //Initializes the core systems
+    // Initializes the core systems
     void initSystems();
 
+    // Initializes all levels
     void initLevels();
 
-    //Initializes the level and sets up everything
-    void initLevel();
+    // Initializes the level and sets up everything
+    void initNextLevel();
 
-    //Initializes the shaders
+    // Initializes the shaders
     void initShaders();
 
-    //Main game loop for the program
+    // Main game loop for the program
     void gameLoop();
 
     // Updates all agents
-    void updateAgents();
+    void updateAgents(float deltaTime);
 
     // Update all bullets
-    void updateBullets();
+    void updateBullets(float deltaTime);
 
     // Checks the victory condition
     void checkVictory();
 
-    //Handles input processing
+    // Handles input processing
     void processInput();
 
-    //Renders the game
+    // Renders the game
     void drawGame();
 
-    //Member Variables
+    // Draws the HUD
+    void drawHud();
+
+    // Member Variables
     Bengine::Window _window; //< The game window
 
     Bengine::GLSLProgram _textureProgram; //< The shader program
@@ -64,8 +69,10 @@ private:
     Bengine::InputManager _inputManager; //< Handles input
 
     Bengine::Camera2D _camera; //< Main Camera
+    Bengine::Camera2D _hudCamera; //< Hud Camera
 
     Bengine::SpriteBatch _agentSpriteBatch; //< Draws all agents
+    Bengine::SpriteBatch _hudSpriteBatch;
 
     std::vector<Level*> _levels; //< Vector of all levels
 
@@ -82,6 +89,8 @@ private:
 
     int _numHumansKilled; //< Humans killed by player
     int _numZombiesKilled; //< Zombies killed by player
+
+    Bengine::SpriteFont* _spriteFont;
 
     GameState _gameState;
 };

@@ -18,13 +18,15 @@ public:
     ~Bullet();
 
     // When update returns true, delete bullet
-    bool update(const std::vector<std::string>& levelData);
+    bool update(const std::vector<std::string>& levelData, float deltaTime);
 
     void draw(Bengine::SpriteBatch& spriteBatch);
 
     bool collideWithAgent(Agent* agent);
 
     float getDamage() const { return _damage; }
+
+    glm::vec2 getPosition() const { return _position; }
 
 private:
 

@@ -19,10 +19,7 @@ void Player::init(float speed, glm::vec2 pos, Bengine::InputManager* inputManage
     _inputManager = inputManager;
     _bullets = bullets;
     _camera = camera;
-    _color.r = 255;
-    _color.g = 255;
-    _color.b = 255;
-    _color.a = 255;
+    _color = Bengine::ColorRGBA8(255, 255, 255, 255);
     _health = 150;
 }
 
@@ -38,29 +35,30 @@ void Player::addGun(Gun* gun) {
 
 void Player::update(const std::vector<std::string>& levelData,
                     std::vector<Human*>& humans,
-                    std::vector<Zombie*>& zombies) {
+                    std::vector<Zombie*>& zombies, 
+                    float deltaTime) {
 
     // Movement controls
-    if (_inputManager->isKeyPressed(SDLK_w)) {
-        _position.y += _speed;
-    } else if (_inputManager->isKeyPressed(SDLK_s)) {
-        _position.y -= _speed;
+    if (_inputManager->isKeyDown(SDLK_w)) {
+        _position.y += _speed * deltaTime;
+    } else if (_inputManager->isKeyDown(SDLK_s)) {
+        _position.y -= _speed * deltaTime;
     }
-    if (_inputManager->isKeyPressed(SDLK_a)) {
-        _position.x -= _speed;
+    if (_inputManager->isKeyDown(SDLK_a)) {
+        _position.x -= _speed * deltaTime;
     }
-    else if (_inputManager->isKeyPressed(SDLK_d)) {
-        _position.x += _speed;
+    else if (_inputManager->isKeyDown(SDLK_d)) {
+        _position.x += _speed * deltaTime;
     }
 
     // Weapon switching
-    if (_inputManager->isKeyPressed(SDLK_1) && _guns.size() >= 0) {
+    if (_inputManager->isKeyDown(SDLK_1) && _guns.size() >= 0) {
         _currentGunIndex = 0;
-    } else if (_inputManager->isKeyPressed(SDLK_2) && _guns.size() >= 1) {
+    } else if (_inputManager->isKeyDown(SDLK_2) && _guns.size() >= 1) {
         _currentGunIndex = 1;
-    } else if (_inputManager->isKeyPressed(SDLK_3) && _guns.size() >= 2) {
+    } else if (_inputManager->isKeyDown(SDLK_3) && _guns.size() >= 2) {
         _currentGunIndex = 2;
-    } else if (_inputManager->isKeyPressed(SDLK_4) && _guns.size() >= 3) {
+    } else if (_inputManager->isKeyDown(SDLK_4) && _guns.size() >= 3) {
         _currentGunIndex = 3;
     }
 
@@ -74,10 +72,11 @@ void Player::update(const std::vector<std::string>& levelData,
         glm::vec2 direction = glm::normalize(mouseCoords - centerPosition);
 
         // Update gun
-        _guns[_currentGunIndex]->update(_inputManager->isKeyPressed(SDL_BUTTON_LEFT),
+        _guns[_currentGunIndex]->update(_inputManager->isKeyDown(SDL_BUTTON_LEFT),
                 centerPosition,
                 direction,
-                *_bullets);
+                *_bullets,
+                deltaTime);
     }
 
     collideWithLevel(levelData);
@@ -102,6 +101,5 @@ void Player::draw(Bengine::SpriteBatch& _spriteBatch) {
     destRect.z = AGENT_WIDTH;
     destRect.w = AGENT_WIDTH;
 
-    std::cout << "Player Rotation: " << _rotation << std::endl; // Debug
     _spriteBatch.draw(destRect, uvRect, textureID, 0.0f, _color, glm::degrees(_rotation));
 }

@@ -45,11 +45,8 @@ Level::Level(const std::string& fileName) {
     _spriteBatch.init();
     _spriteBatch.begin();
 
-    Bengine::Color whiteColor;
-    whiteColor.r = 255;
-    whiteColor.g = 255;
-    whiteColor.b = 255;
-    whiteColor.a = 255;
+    Bengine::ColorRGBA8 whiteColor;
+    whiteColor = Bengine::ColorRGBA8(255, 255, 255, 255);
 
     // Calculate UV dimensions
     float spriteWidth = 1.0f / 10; // 10 sprites per row

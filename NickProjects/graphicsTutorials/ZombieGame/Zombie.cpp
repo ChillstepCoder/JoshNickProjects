@@ -12,13 +12,14 @@ Zombie::~Zombie() {
 
 void Zombie::update(const std::vector<std::string>& levelData,
                     std::vector<Human*>& humans,
-                    std::vector<Zombie*>& zombies) {
+                    std::vector<Zombie*>& zombies, 
+                    float deltaTime) {
 
     Human* closestHuman = getNearestHuman(humans);
 
     if (closestHuman != nullptr) {
         glm::vec2 direction = glm::normalize(closestHuman->getPosition() - _position);
-        _position += direction * _speed;
+        _position += direction * _speed * deltaTime;
 
         // Calculate rotation in degrees
         _rotation = glm::degrees(atan2(direction.y, direction.x));
@@ -32,10 +33,7 @@ void Zombie::init(float speed, glm::vec2 pos) {
     _speed = speed;
     _position = pos;
     _health = 150;
-    _color.r = 255;
-    _color.g = 255;
-    _color.b = 255;
-    _color.a = 255;
+    _color = Bengine::ColorRGBA8(255, 255, 255, 255);
     _rotation = 0.0f;
 }
 

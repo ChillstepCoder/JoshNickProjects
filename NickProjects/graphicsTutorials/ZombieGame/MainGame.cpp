@@ -38,7 +38,7 @@ void MainGame::run() {
 
     initLevels(); // Initializes all levels
 
-    initLevel(); // Initialize the first level
+    initNextLevel(); // Initialize the first level
 
     gameLoop();
 
@@ -53,8 +53,13 @@ void MainGame::initSystems() {
     initShaders();
 
     _agentSpriteBatch.init();
+    _hudSpriteBatch.init();
+
+    _spriteFont = new Bengine::SpriteFont("Fonts/mytype.ttf", 64);
 
     _camera.init(_screenWidth, _screenHeight);
+    _hudCamera.init(_screenWidth, _screenHeight);
+    _hudCamera.setPosition(glm::vec2(_screenWidth / 2, _screenHeight / 2));
 
 }
 
@@ -68,7 +73,7 @@ void MainGame::initLevels() {
     // Add more levels as needed
 }
 
-void MainGame::initLevel() {
+void MainGame::initNextLevel() {
     // Clean up previous level data
     for (auto human : _humans) {
         delete human;
@@ -129,44 +134,71 @@ void MainGame::initShaders() {
 
 void MainGame::gameLoop() {
     
-    Bengine::FpsLimiter fpsLimiter;
-    fpsLimiter.setMaxFPS(60.0f);
+    const float DESIRED_FPS = 60.0f;
+    const int MAX_PHYSICS_STEPS = 6;
 
+    Bengine::FpsLimiter fpsLimiter;
+    fpsLimiter.setMaxFPS(144.0f);
+
+    const float CAMERA_SCALE = 1.0f / 2.0f;
+    _camera.setScale(CAMERA_SCALE);
+
+    const float MS_PER_SECOND = 1000.0f;
+    const float DESIRED_FRAMETIME = MS_PER_SECOND / DESIRED_FPS;
+    const float MAX_DELTA_TIME = 1.0f;
+
+    float previousTicks = SDL_GetTicks();
 
     while (_gameState == GameState::PLAY) {
         fpsLimiter.begin();
 
+        float newTicks = SDL_GetTicks();
+        float frameTime = newTicks - previousTicks;
+        previousTicks = newTicks;
+        float totalDeltaTime = frameTime / DESIRED_FRAMETIME;
+
         checkVictory();
+
+        _inputManager.update();
 
         processInput();
 
-        updateAgents();
-
-        updateBullets();
+        int i = 0;
+        while (totalDeltaTime > 0.0f && i < MAX_PHYSICS_STEPS) {
+            float deltaTime = std::min(totalDeltaTime, MAX_DELTA_TIME);
+            updateAgents(deltaTime);
+            updateBullets(deltaTime);
+            totalDeltaTime -= deltaTime;
+            i++;
+        }
 
         _camera.setPosition(_player->getPosition());
 
         _camera.update();
+        _hudCamera.update();
 
         drawGame();
 
         _fps = fpsLimiter.end();
+        std::cout << _fps << std::endl;
     }
 }
 
-void MainGame::updateAgents() {
+void MainGame::updateAgents(float deltaTime) {
     // Update all humans
     for (int i = 0; i < _humans.size(); i++) {
         _humans[i]->update(_levels[_currentLevel]->getLevelData(),
                            _humans,
-                           _zombies);
+                           _zombies,
+                           deltaTime);
     }
 
     // Update all zombies
     for (int i = 0; i < _zombies.size(); i++) {
         _zombies[i]->update(_levels[_currentLevel]->getLevelData(),
             _humans,
-            _zombies);
+            _zombies,
+            deltaTime);
     }
     // Update Zombie collisions
     for (int i = 0; i < _zombies.size(); i++) {
@@ -204,11 +236,11 @@ void MainGame::updateAgents() {
 
 }
 
-void MainGame::updateBullets() {
+void MainGame::updateBullets(float deltaTime) {
     // Update and collide with world
     for (int i = 0; i < _bullets.size();) {
         // If update returns true, the bullet collided with a wall
-        if (_bullets[i].update(_levels[_currentLevel]->getLevelData())) {
+        if (_bullets[i].update(_levels[_currentLevel]->getLevelData(), deltaTime)) {
             _bullets[i] = _bullets.back();
             _bullets.pop_back();
         } else {
@@ -289,7 +321,7 @@ void MainGame::checkVictory() {
         // Move to the next level
         _currentLevel++;
         if (_currentLevel < _levels.size()) {
-            initLevel(); //Initialize the new level
+            initNextLevel(); //Initialize the new level
         }
         else {
             //when all levels are complete
@@ -351,27 +383,59 @@ void MainGame::drawGame() {
     // Begin drawing agents
     _agentSpriteBatch.begin();
 
+    const glm::vec2 agentDims(AGENT_RADIUS * 2.0f);
+
     // Draw the humans
     for (int i = 0; i < _humans.size(); i++) {
-        _humans[i]->draw(_agentSpriteBatch);
+        if (_camera.isBoxInView(_humans[i]->getPosition(), agentDims)) {
+            _humans[i]->draw(_agentSpriteBatch);
+        }
     }
 
     // Draw the zombies
     for (int i = 0; i < _zombies.size(); i++) {
-        _zombies[i]->draw(_agentSpriteBatch);
+        if (_camera.isBoxInView(_zombies[i]->getPosition(), agentDims)) {
+            _zombies[i]->draw(_agentSpriteBatch);
+        }
     }
 
     // Draw the bullets
     for (int i = 0; i < _bullets.size(); i++) {
-        _bullets[i].draw(_agentSpriteBatch);
+        if (_camera.isBoxInView(_bullets[i].getPosition(), agentDims)) {
+            _bullets[i].draw(_agentSpriteBatch);
+        }
     }
 
     _agentSpriteBatch.end();
 
     _agentSpriteBatch.renderBatch();
 
+    // Render the heads up display
+    drawHud();
+
     _textureProgram.unuse();
 
     // Swap our buffer and draw everything to the screen!
     _window.swapBuffer();
+}
+
+void MainGame::drawHud() {
+    char buffer[256];
+
+    glm::mat4 projectionMatrix = _hudCamera.getCameraMatrix();
+    GLint pUniform = _textureProgram.getUniformLocation("P");
+    glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
+
+    _hudSpriteBatch.begin();
+
+    sprintf_s(buffer, "Num Humans %d", _humans.size());
+    _spriteFont->draw(_hudSpriteBatch, buffer, glm::vec2(0, 0),
+                      glm::vec2(0.5), 0.0f, Bengine::ColorRGBA8(0, 0, 255, 255));
+
+    sprintf_s(buffer, "Num Zombies %d", _zombies.size());
+    _spriteFont->draw(_hudSpriteBatch, buffer, glm::vec2(0, 36),
+        glm::vec2(0.5), 0.0f, Bengine::ColorRGBA8(255, 0, 0, 255));
+
+    _hudSpriteBatch.end();
+    _hudSpriteBatch.renderBatch();
 }

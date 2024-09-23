@@ -22,10 +22,7 @@ void Human::init(float speed, glm::vec2 pos) {
 
     _health = 20;
     
-    _color.r = 255;
-    _color.g = 255;
-    _color.b = 255;
-    _color.a = 255;
+    _color = Bengine::ColorRGBA8(255, 255, 255, 255);
 
     _speed = speed;
     _position = pos;
@@ -40,13 +37,14 @@ void Human::init(float speed, glm::vec2 pos) {
 
 void Human::update(const std::vector<std::string>& levelData,
                    std::vector<Human*>& humans,
-                   std::vector<Zombie*>& zombies) {
+                   std::vector<Zombie*>& zombies, 
+                   float deltaTime) {
 
     static std::mt19937 randomEngine(time(nullptr));
     static std::uniform_real_distribution<float> randRotate(-1.5f, 1.5f);
 
 
-    _position += _direction * _speed;
+    _position += _direction * _speed * deltaTime;
 
     // Randomly change direction every 80 frames
     if (_frames == 80) {
