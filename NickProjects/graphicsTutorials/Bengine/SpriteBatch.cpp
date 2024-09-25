@@ -7,7 +7,7 @@
 
 namespace Bengine {
 
-    SpriteBatch::SpriteBatch() : _vbo(0), _vao(0)
+    SpriteBatch::SpriteBatch() : m_vbo(0), m_vao(0)
     {
 
     }
@@ -21,16 +21,16 @@ namespace Bengine {
     }
 
     void SpriteBatch::begin(GlyphSortType sortType /* GlyphSortType::TEXTURE*/) {
-        _sortType = sortType;
-        _renderBatches.clear();
-        _glyphs.clear();
+        m_sortType = sortType;
+        m_renderBatches.clear();
+        m_glyphs.clear();
     }
 
     void SpriteBatch::end() {
         // Set up all pointers for fast sorting
-        _glyphPointers.resize(_glyphs.size());
-        for (int i = 0; i < _glyphs.size(); i++) {
-            _glyphPointers[i] = &_glyphs[i];
+        m_glyphPointers.resize(m_glyphs.size());
+        for (int i = 0; i < m_glyphs.size(); i++) {
+            m_glyphPointers[i] = &m_glyphs[i];
         }
 
         sortGlyphs();
@@ -38,18 +38,18 @@ namespace Bengine {
     }
 
     void SpriteBatch::draw(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint texture, float depth, const ColorRGBA8& color, float rotation) {
-        _glyphs.emplace_back(destRect, uvRect, texture, depth, color, rotation);
+        m_glyphs.emplace_back(destRect, uvRect, texture, depth, color, rotation);
 
     }
 
     void SpriteBatch::renderBatch() {
 
-        glBindVertexArray(_vao);
+        glBindVertexArray(m_vao);
 
-        for (int i = 0; i < _renderBatches.size(); i++) {
-            glBindTexture(GL_TEXTURE_2D, _renderBatches[i].texture);
+        for (int i = 0; i < m_renderBatches.size(); i++) {
+            glBindTexture(GL_TEXTURE_2D, m_renderBatches[i].texture);
 
-            glDrawArrays(GL_TRIANGLES, _renderBatches[i].offset, _renderBatches[i].numVertices);
+            glDrawArrays(GL_TRIANGLES, m_renderBatches[i].offset, m_renderBatches[i].numVertices);
         }
 
         glBindVertexArray(0);
@@ -65,17 +65,17 @@ namespace Bengine {
 
     void SpriteBatch::createRenderBatches() {
         std::vector <Vertex> vertices;
-        vertices.resize(_glyphPointers.size() * 6);
+        vertices.resize(m_glyphPointers.size() * 6);
 
-        if (_glyphPointers.empty()) {
+        if (m_glyphPointers.empty()) {
             return;
         }
 
         int offset = 0;
         int cv = 0; //current vertex
 
-        for (int cg = 0; cg < _glyphPointers.size(); cg++) {
-            Glyph* glyph = _glyphPointers[cg];
+        for (int cg = 0; cg < m_glyphPointers.size(); cg++) {
+            Glyph* glyph = m_glyphPointers[cg];
 
             // Calculate the center of the sprite
 
@@ -94,21 +94,21 @@ namespace Bengine {
             glyph->bottomRight.position = { br.x, br.y };
             glyph->topRight.position = { tr.x, tr.y };
 
-            if (cg == 0 || _glyphPointers[cg]->texture != _glyphPointers[cg - 1]->texture) {
-                _renderBatches.emplace_back(offset, 6, _glyphPointers[cg]->texture);
+            if (cg == 0 || m_glyphPointers[cg]->texture != m_glyphPointers[cg - 1]->texture) {
+                m_renderBatches.emplace_back(offset, 6, m_glyphPointers[cg]->texture);
             } else {
-                _renderBatches.back().numVertices += 6;
+                m_renderBatches.back().numVertices += 6;
             }
-            vertices[cv++] = _glyphPointers[cg]->topLeft;
-            vertices[cv++] = _glyphPointers[cg]->bottomLeft;
-            vertices[cv++] = _glyphPointers[cg]->bottomRight;
-            vertices[cv++] = _glyphPointers[cg]->bottomRight;
-            vertices[cv++] = _glyphPointers[cg]->topRight;
-            vertices[cv++] = _glyphPointers[cg]->topLeft;
+            vertices[cv++] = m_glyphPointers[cg]->topLeft;
+            vertices[cv++] = m_glyphPointers[cg]->bottomLeft;
+            vertices[cv++] = m_glyphPointers[cg]->bottomRight;
+            vertices[cv++] = m_glyphPointers[cg]->bottomRight;
+            vertices[cv++] = m_glyphPointers[cg]->topRight;
+            vertices[cv++] = m_glyphPointers[cg]->topLeft;
             offset += 6;
         }
 
-        glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
         //orphan the buffer
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
         //upload the data
@@ -119,15 +119,15 @@ namespace Bengine {
 
     void SpriteBatch::createVertexArray() {
 
-        if (_vao == 0) {
-            glGenVertexArrays(1, &_vao);
+        if (m_vao == 0) {
+            glGenVertexArrays(1, &m_vao);
         }
-        glBindVertexArray(_vao);
+        glBindVertexArray(m_vao);
 
-        if (_vbo == 0) {
-            glGenBuffers(1, &_vbo);
+        if (m_vbo == 0) {
+            glGenBuffers(1, &m_vbo);
         }
-        glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 
         //Tell openGl that we want to use the first attribute array.
         //We only need one array right now since we are only using this position.
@@ -147,15 +147,15 @@ namespace Bengine {
     }
 
     void SpriteBatch::sortGlyphs() {
-        switch (_sortType) {
+        switch (m_sortType) {
             case GlyphSortType::BACK_TO_FRONT:
-                std::stable_sort(_glyphPointers.begin(), _glyphPointers.end(), compareBackToFront);
+                std::stable_sort(m_glyphPointers.begin(), m_glyphPointers.end(), compareBackToFront);
                 break;
             case GlyphSortType::FRONT_TO_BACK:
-                std::stable_sort(_glyphPointers.begin(), _glyphPointers.end(), compareFrontToBack);
+                std::stable_sort(m_glyphPointers.begin(), m_glyphPointers.end(), compareFrontToBack);
                 break;
             case GlyphSortType::TEXTURE:
-                std::stable_sort(_glyphPointers.begin(), _glyphPointers.end(), compareTexture);
+                std::stable_sort(m_glyphPointers.begin(), m_glyphPointers.end(), compareTexture);
                 break;
         }
     }

@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "Errors.h"
+#include  "BengineErrors.h"
 
 namespace Bengine {
 
@@ -25,13 +25,13 @@ namespace Bengine {
         }
 
         //Open an SDL window
-        _sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth, screenHeight, flags);
-        if (_sdlWindow == nullptr) {
+        m_sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth, screenHeight, flags);
+        if (m_sdlWindow == nullptr) {
             fatalError("SDL Window could not be created!");
         }
 
         //Set up our OpenGL context
-        SDL_GLContext glContext = SDL_GL_CreateContext(_sdlWindow);
+        SDL_GLContext glContext = SDL_GL_CreateContext(m_sdlWindow);
         if (glContext == nullptr) {
             fatalError("SDL_GL context could not be created!");
         }
@@ -60,7 +60,7 @@ namespace Bengine {
     }
 
     void Window::swapBuffer() {
-        SDL_GL_SwapWindow(_sdlWindow);
+        SDL_GL_SwapWindow(m_sdlWindow);
     }
 
 }

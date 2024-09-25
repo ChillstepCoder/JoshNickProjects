@@ -39,7 +39,7 @@ namespace Bengine {
             topRight.setPosition(destRect.x + destRect.z, destRect.y + destRect.w);
             topRight.setUV(uvRect.x + uvRect.z, uvRect.y + uvRect.w);
 
-            //_glyphs.rotation = rotation; //<Rotation
+            //m_glyphs.rotation = rotation; //<Rotation
 
         }
 
@@ -88,14 +88,14 @@ namespace Bengine {
         static bool compareBackToFront(Glyph* a, Glyph* b);
         static bool compareTexture(Glyph* a, Glyph* b);
 
-        GLuint _vbo;
-        GLuint _vao;
+        GLuint m_vbo;
+        GLuint m_vao;
 
-        GlyphSortType _sortType;
+        GlyphSortType m_sortType;
 
-        std::vector<Glyph*> _glyphPointers; //< This is for sorting
-        std::vector<Glyph> _glyphs; //< These are the actual glyphs
-        std::vector<RenderBatch> _renderBatches;
+        std::vector<Glyph*> m_glyphPointers; //< This is for sorting
+        std::vector<Glyph> m_glyphs; //< These are the actual glyphs
+        std::vector<RenderBatch> m_renderBatches;
     };
 
 }

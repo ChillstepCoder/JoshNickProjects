@@ -36,23 +36,23 @@ private:
     void processInput();
     void drawGame();
     
-    Bengine::Window _window;
-    int _screenWidth;
-    int _screenHeight;
-    GameState _gameState;
+    Bengine::Window m_window;
+    int m_screenWidth;
+    int m_screenHeight;
+    GameState m_gameState;
 
-    Bengine::GLSLProgram _colorProgram;
-    Bengine::Camera2D _camera;
+    Bengine::GLSLProgram m_colorProgram;
+    Bengine::Camera2D m_camera;
 
-    Bengine::SpriteBatch _spriteBatch;
+    Bengine::SpriteBatch m_spriteBatch;
 
-    Bengine::InputManager _inputManager;
-    Bengine::FpsLimiter _fpsLimiter;
+    Bengine::InputManager m_inputManager;
+    Bengine::FpsLimiter m_fpsLimiter;
 
-    std::vector<Bullet> _bullets;
+    std::vector<Bullet> m_bullets;
 
-    float _maxFPS;
-    float _fps;
-    float _time;
+    float m_maxFPS;
+    float m_fps;
+    float m_time;
 };
 
