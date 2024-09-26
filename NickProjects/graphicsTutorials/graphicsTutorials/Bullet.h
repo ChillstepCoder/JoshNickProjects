@@ -15,9 +15,9 @@ public:
     bool update();
 
 private:
-    int _lifeTime;
-    float _speed;
-    glm::vec2 _direction;
-    glm::vec2 _position;
+    int m_lifeTime;
+    float m_speed;
+    glm::vec2 m_direction;
+    glm::vec2 m_position;
 };
 

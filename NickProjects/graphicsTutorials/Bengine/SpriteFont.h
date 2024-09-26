@@ -53,7 +53,7 @@ namespace Bengine {
 
     class SpriteFont {
     public:
-        SpriteFont() : _fontHeight(0), _glyphs(nullptr), _regLength(0), _regStart(0), _texID(0) {};
+        SpriteFont() : m_fontHeight(0), m_glyphs(nullptr), m_regLength(0), m_regStart(0), m_texID(0) {};
         SpriteFont(const char* font, int size, char cs, char ce);
         SpriteFont(const char* font, int size) :
             SpriteFont(font, size, FIRST_PRINTABLE_CHAR, LAST_PRINTABLE_CHAR) {
@@ -66,7 +66,7 @@ namespace Bengine {
         void dispose();
 
         int getFontHeight() const {
-            return _fontHeight;
+            return m_fontHeight;
         }
 
         /// Measures the dimensions of the text
@@ -78,11 +78,11 @@ namespace Bengine {
     private:
         static std::vector<int>* createRows(glm::ivec4* rects, int rectsLength, int r, int padding, int& w);
 
-        int _regStart, _regLength;
-        CharGlyph* _glyphs;
-        int _fontHeight;
+        int m_regStart, m_regLength;
+        CharGlyph* m_glyphs;
+        int m_fontHeight;
 
-        unsigned int _texID;
+        unsigned int m_texID;
     };
 
 }

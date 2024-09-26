@@ -4,7 +4,7 @@
 #include <Bengine/Timing.h>
 #include <random>
 #include <ctime>
-#include "Bengine/Errors.h"
+#include <Bengine/BengineErrors.h>
 
 #include <SDL/SDL.h>
 #include <iostream>
@@ -38,6 +38,9 @@ void MainGame::run() {
 
     initLevels(); // Initializes all levels
 
+    Bengine::Music music = m_audioEngine.loadMusic("Sound/Infested City.ogg");
+    music.play(-1);
+
     initNextLevel(); // Initialize the first level
 
     gameLoop();
@@ -46,6 +49,9 @@ void MainGame::run() {
 
 void MainGame::initSystems() {
     Bengine::init();
+
+    // Initialize sound, must happen after Bengine::init
+    m_audioEngine.init();
 
     _window.create("ZombieGame", _screenWidth, _screenHeight, 0);
     glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
@@ -116,10 +122,10 @@ void MainGame::initNextLevel() {
 
         // Set up the player's guns
         const float BULLET_SPEED = 20.0f;
-        _player->addGun(new Gun("Magnum", 15, 1, 0.1f, 30, BULLET_SPEED));
-        _player->addGun(new Gun("Shotgun", 35, 20, 0.4f, 4, BULLET_SPEED));
-        _player->addGun(new Gun("AK-47", 4, 1, 0.15f, 20, BULLET_SPEED));
-        _player->addGun(new Gun("Hose of Doom", 1, 100, 0.35f, 40, 30.0f)); // Name, firerate, # of shots, spread, damage, bullet speed
+        _player->addGun(new Gun("Magnum", 15, 1, 0.1f, 30, BULLET_SPEED, m_audioEngine.loadSoundEffect("Sound/lmg_fire01.mp3")));
+        _player->addGun(new Gun("Shotgun", 35, 20, 0.4f, 4, BULLET_SPEED, m_audioEngine.loadSoundEffect("Sound/doomshotgun.mp3")));
+        _player->addGun(new Gun("AK-47", 4, 1, 0.15f, 20, BULLET_SPEED, m_audioEngine.loadSoundEffect("Sound/lmg_fire01.mp3")));
+        _player->addGun(new Gun("Hose of Doom", 1, 100, 0.35f, 40, 30.0f, m_audioEngine.loadSoundEffect("Sound/lmg_fire01.mp3"))); // Name, firerate, # of shots, spread, damage, bullet speed
     }
 }
 

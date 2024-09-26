@@ -6,6 +6,7 @@
 #include <Bengine/InputManager.h>
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/SpriteFont.h>
+#include <Bengine/AudioEngine.h>
 
 #include "Player.h"
 #include "Level.h"
@@ -91,6 +92,8 @@ private:
     int _numZombiesKilled; //< Zombies killed by player
 
     Bengine::SpriteFont* _spriteFont;
+
+    Bengine::AudioEngine m_audioEngine;
 
     GameState _gameState;
 };
