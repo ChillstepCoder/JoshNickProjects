@@ -28,6 +28,8 @@
 #include <glm/glm.hpp>
 #include <map>
 #include <vector>
+#include <freetype-gl/freetype-gl.h>
+#include <spdlog/common.h>
 
 #include "Vertex.h"
 

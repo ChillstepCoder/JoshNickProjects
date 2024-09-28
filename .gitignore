@@ -29,3 +29,8 @@
 
 .vs/
 JoshProjects/GraphicsProject/x64/Debug/JAGEngine.lib
+
+vcpkg_installed/
+*.iobj
+*.ipdb
+*.dll
