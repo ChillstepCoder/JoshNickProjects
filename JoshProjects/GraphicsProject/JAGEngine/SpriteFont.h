@@ -28,10 +28,12 @@
 #include <glm/glm.hpp>
 #include <map>
 #include <vector>
-#include <freetype-gl/freetype-gl.h>
-#include <spdlog/common.h>
 
 #include "Vertex.h"
+
+#include <freetype-gl/freetype-gl.h>
+
+ftgl::texture_atlas_t* mAtlas = nullptr;
 
 namespace JAGEngine {
 
