@@ -1,48 +1,8 @@
-﻿  Bullet.cpp
+﻿  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
+  Bullet.cpp
   main.cpp
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\Bullet.cpp(26,17): error C2660: 'Bengine::SpriteBatch::draw': function does not take 5 arguments
   MainGame.cpp
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,68): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,53): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
-Bullet.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::SpriteBatch::draw(struct glm::vec<4,float,0> const &,struct glm::vec<4,float,0> const &,unsigned int,float,struct Bengine::Color const &)" (?draw@SpriteBatch@Bengine@@QEAAXAEBU?$vec@$03M$0A@@glm@@0IMAEBUColor@2@@Z)
-Bullet.obj : error LNK2001: unresolved external symbol "public: static struct Bengine::GLTexture __cdecl Bengine::ResourceManager::getTexture(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >)" (?getTexture@ResourceManager@Bengine@@SA?AUGLTexture@2@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z)
-MainGame.obj : error LNK2001: unresolved external symbol __imp_glClear
-MainGame.obj : error LNK2001: unresolved external symbol __imp_glBindTexture
-MainGame.obj : error LNK2001: unresolved external symbol __imp___glewUniform1i
-MainGame.obj : error LNK2001: unresolved external symbol __imp___glewActiveTexture
-MainGame.obj : error LNK2001: unresolved external symbol "public: bool __cdecl Bengine::InputManager::isKeyPressed(unsigned int)" (?isKeyPressed@InputManager@Bengine@@QEAA_NI@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::InputManager::setMouseCoords(float,float)" (?setMouseCoords@InputManager@Bengine@@QEAAXMM@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::InputManager::releaseKey(unsigned int)" (?releaseKey@InputManager@Bengine@@QEAAXI@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::InputManager::pressKey(unsigned int)" (?pressKey@InputManager@Bengine@@QEAAXI@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::InputManager::~InputManager(void)" (??1InputManager@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::InputManager::InputManager(void)" (??0InputManager@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::GLSLProgram::unuse(void)" (?unuse@GLSLProgram@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::GLSLProgram::use(void)" (?use@GLSLProgram@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: int __cdecl Bengine::GLSLProgram::getUniformLocation(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &)" (?getUniformLocation@GLSLProgram@Bengine@@QEAAHAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::GLSLProgram::addAttribute(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &)" (?addAttribute@GLSLProgram@Bengine@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::GLSLProgram::linkShaders(void)" (?linkShaders@GLSLProgram@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::GLSLProgram::compileShaders(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &)" (?compileShaders@GLSLProgram@Bengine@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@0@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::GLSLProgram::~GLSLProgram(void)" (??1GLSLProgram@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::GLSLProgram::GLSLProgram(void)" (??0GLSLProgram@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::SpriteBatch::renderBatch(void)" (?renderBatch@SpriteBatch@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::SpriteBatch::end(void)" (?end@SpriteBatch@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::SpriteBatch::begin(enum Bengine::GlyphSortType)" (?begin@SpriteBatch@Bengine@@QEAAXW4GlyphSortType@2@@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::SpriteBatch::init(void)" (?init@SpriteBatch@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::SpriteBatch::~SpriteBatch(void)" (??1SpriteBatch@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::SpriteBatch::SpriteBatch(void)" (??0SpriteBatch@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "int __cdecl Bengine::init(void)" (?init@Bengine@@YAHXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::Window::swapBuffer(void)" (?swapBuffer@Window@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: int __cdecl Bengine::Window::create(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,int,int,unsigned int)" (?create@Window@Bengine@@QEAAHV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HHI@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::Window::~Window(void)" (??1Window@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::Window::Window(void)" (??0Window@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: struct glm::vec<2,float,0> __cdecl Bengine::Camera2D::convertScreenToWorld(struct glm::vec<2,float,0>)" (?convertScreenToWorld@Camera2D@Bengine@@QEAA?AU?$vec@$01M$0A@@glm@@U34@@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::Camera2D::update(void)" (?update@Camera2D@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::Camera2D::init(int,int)" (?init@Camera2D@Bengine@@QEAAXHH@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::Camera2D::~Camera2D(void)" (??1Camera2D@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::Camera2D::Camera2D(void)" (??0Camera2D@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: float __cdecl Bengine::FpsLimiter::end(void)" (?end@FpsLimiter@Bengine@@QEAAMXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::FpsLimiter::begin(void)" (?begin@FpsLimiter@Bengine@@QEAAXXZ)
-MainGame.obj : error LNK2001: unresolved external symbol "public: void __cdecl Bengine::FpsLimiter::init(float)" (?init@FpsLimiter@Bengine@@QEAAXM@Z)
-MainGame.obj : error LNK2001: unresolved external symbol "public: __cdecl Bengine::FpsLimiter::FpsLimiter(void)" (??0FpsLimiter@Bengine@@QEAA@XZ)
-MainGame.obj : error LNK2001: unresolved external symbol __imp___glewUniformMatrix4fv
-MainGame.obj : error LNK2001: unresolved external symbol __imp_glClearDepth
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\x64\Release\graphicsTutorials.exe : fatal error LNK1120: 42 unresolved externals
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,69): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,54): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
+C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(181,19): error C2660: 'Bengine::SpriteBatch::draw': function does not take 5 arguments
