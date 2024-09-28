@@ -1,23 +1,27 @@
 //ParticleBatch2D.h
 
 #pragma once
+
+#include <functional>
 #include <glm/glm.hpp>
 #include "Vertex.h"
 #include "SpriteBatch.h"
 #include "GLTexture.h"
 
 namespace JAGEngine {
+
   class Particle2D {
   public:
-    friend class ParticleBatch2D;
-    void update(float deltaTime);
-  private:
-    glm::vec2 m_position = glm::vec2(0.0f);
-    glm::vec2 m_velocity = glm::vec2(0.0f);
-    ColorRGBA8 m_color;
-    float m_life = 1.0f;
-    float m_width = 1.0f;
+    glm::vec2 position = glm::vec2(0.0f);
+    glm::vec2 velocity = glm::vec2(0.0f);
+    ColorRGBA8 color;
+    float life = 1.0f;
+    float width = 1.0f;
   };
+
+  inline void defaultParticleUpdate(Particle2D& particle, float deltaTime) {
+    particle.position += particle.velocity * deltaTime;
+  }
 
   class ParticleBatch2D {
   public:  // Make these public
@@ -25,7 +29,8 @@ namespace JAGEngine {
     ~ParticleBatch2D();
     void init(int maxParticles,
       float decayRate,
-      GLTexture texture);
+      GLTexture texture,
+      std::function<void(Particle2D&, float)> updateFunc = defaultParticleUpdate);
     void update(float deltaTime);
     void draw(SpriteBatch* spriteBatch);
     void addParticle(const glm::vec2& position,
@@ -35,6 +40,8 @@ namespace JAGEngine {
 
   private:
     int findFreeParticle();
+
+    std::function<void(Particle2D&, float)> m_updateFunc;
     float m_decayRate = 0.1f;
     Particle2D* m_particles = nullptr;
     int m_maxParticles = 0;

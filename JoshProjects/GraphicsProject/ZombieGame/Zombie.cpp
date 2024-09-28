@@ -7,6 +7,7 @@
 #include <SDL/SDL.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <JAGEngine/ResourceManager.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -28,6 +29,7 @@ void Zombie::init(float speed, glm::vec2 pos) {
   _position = pos;
   _health = 100;
   _color = JAGEngine::ColorRGBA8(0,255,0,255);
+  m_textureID = JAGEngine::ResourceManager::getTexture("Textures/zombie_game/spr_npc.png").id;
 }
 
 void Zombie::update(const std::vector<std::string>& levelData,

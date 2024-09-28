@@ -1,6 +1,6 @@
 #include "Player.h"
 #include <SDL/SDL.h>
-
+#include <JAGEngine/ResourceManager.h>
 #include "Gun.h"
 
 Player::Player() : _currentGunIndex(-1) {
@@ -22,6 +22,7 @@ void Player::init(float speed, glm::vec2 pos, JAGEngine::InputManager* inputMana
   m_inputManager = inputManager;
   m_camera = camera;
   m_bullets = bullets;
+  m_textureID = JAGEngine::ResourceManager::getTexture("Textures/zombie_game/spr_npc.png").id;
 }
 
 void Player::addGun(Gun* gun) {

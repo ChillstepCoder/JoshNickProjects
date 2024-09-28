@@ -43,5 +43,6 @@ protected:
   float _speed;
 
   float _health;
+  GLuint m_textureID;
 };
 

@@ -7,6 +7,7 @@
 #include <SDL/SDL.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <JAGEngine/ResourceManager.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -85,6 +86,7 @@ void Human::init(float speed, glm::vec2 pos) {
   if (_direction.length() == 0) _direction = glm::vec2(1.0f, 0.0f);
   
   _direction = glm::normalize(_direction);
+  m_textureID = JAGEngine::ResourceManager::getTexture("Textures/zombie_game/spr_npc.png").id;
 }
 
 

@@ -94,7 +94,12 @@ void MainGame::initSystems() {
   m_spriteFont = new JAGEngine::SpriteFont("Fonts/data-unifon.ttf", 64);
 
   m_bloodParticleBatch = new JAGEngine::ParticleBatch2D();
-  m_bloodParticleBatch->init(1000, 0.075f, JAGEngine::ResourceManager::getTexture("Textures/zombie_game/particle.png"));
+  m_bloodParticleBatch->init(1000, 0.075f,
+    JAGEngine::ResourceManager::getTexture("Textures/zombie_game/particle.png"),
+    [](JAGEngine::Particle2D particle, float deltaTime) {
+      particle.position += particle.velocity * deltaTime;
+      particle.color.a = (GLubyte)(particle.life * 255.0f);
+  });
   m_particleEngine.addParticleBatch(m_bloodParticleBatch);
 
   std::cout << "initSystems() completed" << std::endl;
