@@ -1,0 +1,7 @@
+Package: freetype-gl
+Feature: glew
+Depends: glew
+Architecture: x64-windows
+Multi-Arch: same
+Description: Use the GLEW gl loader
+Status: purge ok not-installed

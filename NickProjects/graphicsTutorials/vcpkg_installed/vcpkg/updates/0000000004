@@ -1,0 +1,10 @@
+Package: freetype-gl
+Version: 2022-01-17
+Port-Version: 3
+Depends: freetype, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: cfa1e7a56a3974d7ecf5f13a7a4751c15146abdf9606066db739672772cfe3b1
+Description: OpenGL text using one vertex buffer, one texture and FreeType
+Default-Features: glew
+Status: purge ok half-installed

@@ -1,0 +1,669 @@
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake:228 (message)"
+      - "CMakeLists.txt:8 (project)"
+    message: |
+      The target system is: Windows - 10.0.19045 - AMD64
+      The host system is: Windows - 10.0.19045 - AMD64
+  -
+    kind: "message-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCCompiler.cmake:123 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:8 (project)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler: Z:/VisualStudio/VC/Tools/MSVC/14.40.33807/bin/Hostx64/x64/cl.exe 
+      Build flags: /nologo;/DWIN32;/D_WINDOWS;/W3;/utf-8;/MP
+      Id flags:  
+      
+      The output was:
+      0
+      CMakeCCompilerId.c
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+      
+      The C compiler identification is MSVC, found in:
+        C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/3.28.3-msvc11/CompilerIdC/CMakeCCompilerId.exe
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:1182 (message)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:247 (CMAKE_DETERMINE_MSVC_SHOWINCLUDES_PREFIX)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCCompiler.cmake:123 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:8 (project)"
+    message: |
+      Detecting C compiler /showIncludes prefix:
+        main.c
+        Note: including file: C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\ShowIncludes\\foo.h
+        
+      Found prefix "Note: including file: "
+  -
+    kind: "message-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:8 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler: Z:/VisualStudio/VC/Tools/MSVC/14.40.33807/bin/Hostx64/x64/cl.exe 
+      Build flags: /nologo;/DWIN32;/D_WINDOWS;/W3;/utf-8;/GR;/EHsc;/MP
+      Id flags:  
+      
+      The output was:
+      0
+      CMakeCXXCompilerId.cpp
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+      
+      The CXX compiler identification is MSVC, found in:
+        C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/3.28.3-msvc11/CompilerIdCXX/CMakeCXXCompilerId.exe
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:1182 (message)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:247 (CMAKE_DETERMINE_MSVC_SHOWINCLUDES_PREFIX)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:8 (project)"
+    message: |
+      Detecting CXX compiler /showIncludes prefix:
+        main.c
+        Note: including file: C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\ShowIncludes\\foo.h
+        
+      Found prefix "Note: including file: "
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:8 (project)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-s6rbh0"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-s6rbh0"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-s6rbh0'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_28798
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_28798.dir\\CMakeCCompilerABI.c.obj /FdCMakeFiles\\cmTC_28798.dir\\ /FS -c Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\share\\cmake-3.28\\Modules\\CMakeCCompilerABI.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_28798.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_28798.dir\\CMakeCCompilerABI.c.obj  /out:cmTC_28798.exe /implib:cmTC_28798.lib /pdb:cmTC_28798.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:8 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-0uneym"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-0uneym"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /GR /EHsc /MP "
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-0uneym'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_79eb6
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /GR /EHsc /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_79eb6.dir\\CMakeCXXCompilerABI.cpp.obj /FdCMakeFiles\\cmTC_79eb6.dir\\ /FS -c Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\share\\cmake-3.28\\Modules\\CMakeCXXCompilerABI.cpp
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_79eb6.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_79eb6.dir\\CMakeCXXCompilerABI.cpp.obj  /out:cmTC_79eb6.exe /implib:cmTC_79eb6.lib /pdb:cmTC_79eb6.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckIncludeFile.cmake:90 (try_compile)"
+      - "cmake/Modules/RequireIncludeFile.cmake:29 (check_include_file)"
+      - "CMakeLists.txt:51 (require_include_file)"
+    checks:
+      - "Looking for stdbool.h"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-9nukak"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-9nukak"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_STDBOOL_H"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-9nukak'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_48225
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_48225.dir\\CheckIncludeFile.c.obj /FdCMakeFiles\\cmTC_48225.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-9nukak\\CheckIncludeFile.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_48225.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_48225.dir\\CheckIncludeFile.c.obj  /out:cmTC_48225.exe /implib:cmTC_48225.lib /pdb:cmTC_48225.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckIncludeFile.cmake:90 (try_compile)"
+      - "cmake/Modules/RequireIncludeFile.cmake:29 (check_include_file)"
+      - "CMakeLists.txt:52 (require_include_file)"
+    checks:
+      - "Looking for stdint.h"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-utl0jy"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-utl0jy"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_STDINT_H"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-utl0jy'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_13704
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_13704.dir\\CheckIncludeFile.c.obj /FdCMakeFiles\\cmTC_13704.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-utl0jy\\CheckIncludeFile.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_13704.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_13704.dir\\CheckIncludeFile.c.obj  /out:cmTC_13704.exe /implib:cmTC_13704.lib /pdb:cmTC_13704.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckIncludeFile.cmake:90 (try_compile)"
+      - "cmake/Modules/RequireIncludeFile.cmake:29 (check_include_file)"
+      - "CMakeLists.txt:53 (require_include_file)"
+    checks:
+      - "Looking for math.h"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-u5316f"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-u5316f"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_MATH_H"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-u5316f'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_470cd
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_470cd.dir\\CheckIncludeFile.c.obj /FdCMakeFiles\\cmTC_470cd.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-u5316f\\CheckIncludeFile.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_470cd.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_470cd.dir\\CheckIncludeFile.c.obj  /out:cmTC_470cd.exe /implib:cmTC_470cd.lib /pdb:cmTC_470cd.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckLibraryExists.cmake:69 (try_compile)"
+      - "CMakeLists.txt:55 (check_library_exists)"
+    checks:
+      - "Looking for cos in m"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-tafoks"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-tafoks"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_MATH_LIBRARY"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-tafoks'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_07da4
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=cos /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_07da4.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_07da4.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-tafoks\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_07da4.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_07da4.dir\\CheckFunctionExists.c.obj  /out:cmTC_07da4.exe /implib:cmTC_07da4.lib /pdb:cmTC_07da4.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  m.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        FAILED: cmTC_07da4.exe 
+        C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_07da4.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_07da4.dir\\CheckFunctionExists.c.obj  /out:cmTC_07da4.exe /implib:cmTC_07da4.lib /pdb:cmTC_07da4.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  m.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        LINK Pass 1: command "Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_07da4.dir\\CheckFunctionExists.c.obj /out:cmTC_07da4.exe /implib:cmTC_07da4.lib /pdb:cmTC_07da4.pdb /version:0.0 /machine:x64 /debug /INCREMENTAL /subsystem:console m.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\\cmTC_07da4.dir/intermediate.manifest CMakeFiles\\cmTC_07da4.dir/manifest.res" failed (exit code 1104) with the following output:
+        LINK : fatal error LNK1104: cannot open file 'm.lib'\x0d
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 1
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:62 (require_function_exists)"
+    checks:
+      - "Looking for cos"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-ljctxs"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-ljctxs"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_COS"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-ljctxs'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_a677b
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=cos /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_a677b.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_a677b.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-ljctxs\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_a677b.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_a677b.dir\\CheckFunctionExists.c.obj  /out:cmTC_a677b.exe /implib:cmTC_a677b.lib /pdb:cmTC_a677b.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:63 (require_function_exists)"
+    checks:
+      - "Looking for fabs"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-idv606"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-idv606"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_FABS"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-idv606'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_c65fd
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=fabs /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_c65fd.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_c65fd.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-idv606\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_c65fd.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_c65fd.dir\\CheckFunctionExists.c.obj  /out:cmTC_c65fd.exe /implib:cmTC_c65fd.lib /pdb:cmTC_c65fd.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:64 (require_function_exists)"
+    checks:
+      - "Looking for floor"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-1eyvya"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-1eyvya"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_FLOOR"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-1eyvya'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_ffb1f
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=floor /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_ffb1f.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_ffb1f.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-1eyvya\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_ffb1f.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_ffb1f.dir\\CheckFunctionExists.c.obj  /out:cmTC_ffb1f.exe /implib:cmTC_ffb1f.lib /pdb:cmTC_ffb1f.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:65 (require_function_exists)"
+    checks:
+      - "Looking for fmod"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-mv723w"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-mv723w"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_FMOD"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-mv723w'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_88b96
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=fmod /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_88b96.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_88b96.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-mv723w\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_88b96.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_88b96.dir\\CheckFunctionExists.c.obj  /out:cmTC_88b96.exe /implib:cmTC_88b96.lib /pdb:cmTC_88b96.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:66 (require_function_exists)"
+    checks:
+      - "Looking for pow"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-ckt552"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-ckt552"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_POW"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-ckt552'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_1998b
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=pow /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_1998b.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_1998b.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-ckt552\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_1998b.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_1998b.dir\\CheckFunctionExists.c.obj  /out:cmTC_1998b.exe /implib:cmTC_1998b.lib /pdb:cmTC_1998b.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:67 (require_function_exists)"
+    checks:
+      - "Looking for roundf"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-pk7dop"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-pk7dop"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_ROUNDF"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-pk7dop'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_a1e9b
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=roundf /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_a1e9b.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_a1e9b.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-pk7dop\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_a1e9b.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_a1e9b.dir\\CheckFunctionExists.c.obj  /out:cmTC_a1e9b.exe /implib:cmTC_a1e9b.lib /pdb:cmTC_a1e9b.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:68 (require_function_exists)"
+    checks:
+      - "Looking for round"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-d2l2u8"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-d2l2u8"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_ROUND"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-d2l2u8'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_81366
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=round /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_81366.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_81366.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-d2l2u8\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_81366.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_81366.dir\\CheckFunctionExists.c.obj  /out:cmTC_81366.exe /implib:cmTC_81366.lib /pdb:cmTC_81366.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:69 (require_function_exists)"
+    checks:
+      - "Looking for sin"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-bldlhl"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-bldlhl"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_SIN"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-bldlhl'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_763fd
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=sin /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_763fd.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_763fd.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-bldlhl\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_763fd.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_763fd.dir\\CheckFunctionExists.c.obj  /out:cmTC_763fd.exe /implib:cmTC_763fd.lib /pdb:cmTC_763fd.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:70 (require_function_exists)"
+    checks:
+      - "Looking for sqrt"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-w01nqv"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-w01nqv"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_SQRT"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-w01nqv'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_accc7
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=sqrt /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_accc7.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_accc7.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-w01nqv\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_accc7.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_accc7.dir\\CheckFunctionExists.c.obj  /out:cmTC_accc7.exe /implib:cmTC_accc7.lib /pdb:cmTC_accc7.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "cmake/Modules/RequireFunctionExists.cmake:22 (check_function_exists)"
+      - "CMakeLists.txt:71 (require_function_exists)"
+    checks:
+      - "Looking for tan"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-1dv8q5"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-1dv8q5"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_TAN"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-1dv8q5'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_752ef
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP  -DCHECK_FUNCTION_EXISTS=tan /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_752ef.dir\\CheckFunctionExists.c.obj /FdCMakeFiles\\cmTC_752ef.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-1dv8q5\\CheckFunctionExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_752ef.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_752ef.dir\\CheckFunctionExists.c.obj  /out:cmTC_752ef.exe /implib:cmTC_752ef.lib /pdb:cmTC_752ef.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckSymbolExists.cmake:140 (try_compile)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckSymbolExists.cmake:66 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "CMakeLists.txt:73 (check_symbol_exists)"
+    checks:
+      - "Looking for M_PI"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-dq1z81"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-dq1z81"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_M_PI"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-dq1z81'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_43173
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_43173.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_43173.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-dq1z81\\CheckSymbolExists.c
+        FAILED: CMakeFiles/cmTC_43173.dir/CheckSymbolExists.c.obj 
+        Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo   /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_43173.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_43173.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-dq1z81\\CheckSymbolExists.c
+        C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-dq1z81\\CheckSymbolExists.c(8): error C2065: 'M_PI': undeclared identifier
+        ninja: build stopped: subcommand failed.
+        
+      exitCode: 1
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckSymbolExists.cmake:140 (try_compile)"
+      - "Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.28/Modules/CheckSymbolExists.cmake:66 (__CHECK_SYMBOL_EXISTS_IMPL)"
+      - "CMakeLists.txt:79 (check_symbol_exists)"
+    checks:
+      - "Looking for M_PI"
+    directories:
+      source: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-yim1mk"
+      binary: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-yim1mk"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP "
+      CMAKE_MODULE_PATH: "C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/src/2a4a3a1f5d-a92423a07b.clean/cmake/Modules;"
+      CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: ""
+      CMAKE_MSVC_RUNTIME_LIBRARY: "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:dynamic,dynamic>:DLL>"
+      VCPKG_APPLOCAL_DEPS: "OFF"
+      VCPKG_CHAINLOAD_TOOLCHAIN_FILE: "Z:/VisualStudio/VC/vcpkg/scripts/toolchains/windows.cmake"
+      VCPKG_TARGET_ARCHITECTURE: "x64"
+      VCPKG_TARGET_TRIPLET: "x64-windows"
+      Z_VCPKG_ROOT_DIR: "Z:/VisualStudio/VC/vcpkg"
+    buildResult:
+      variable: "HAVE_M_PI"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/blds/freetype-gl/x64-windows-rel/CMakeFiles/CMakeScratch/TryCompile-yim1mk'
+        
+        Run Build Command(s): Z:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe -v cmTC_2f6c6
+        [1/2] Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\cl.exe  /nologo -D_USE_MATH_DEFINES  /nologo /DWIN32 /D_WINDOWS /W3 /utf-8 /MP   /MDd /Zi /Ob0 /Od /RTC1 /showIncludes /FoCMakeFiles\\cmTC_2f6c6.dir\\CheckSymbolExists.c.obj /FdCMakeFiles\\cmTC_2f6c6.dir\\ /FS -c C:\\Users\\Nicholas\\Documents\\GitHub\\JoshNickProjects2\\NickProjects\\graphicsTutorials\\vcpkg_installed\\vcpkg\\blds\\freetype-gl\\x64-windows-rel\\CMakeFiles\\CMakeScratch\\TryCompile-yim1mk\\CheckSymbolExists.c
+        [2/2] C:\\WINDOWS\\system32\\cmd.exe /C "cd . && Z:\\VisualStudio\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -E vs_link_exe --intdir=CMakeFiles\\cmTC_2f6c6.dir --rc=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\rc.exe --mt=C:\\PROGRA~2\\WI3CF2~1\\10\\bin\\100226~1.0\\x64\\mt.exe --manifests  -- Z:\\VisualStudio\\VC\\Tools\\MSVC\\14.40.33807\\bin\\Hostx64\\x64\\link.exe /nologo CMakeFiles\\cmTC_2f6c6.dir\\CheckSymbolExists.c.obj  /out:cmTC_2f6c6.exe /implib:cmTC_2f6c6.lib /pdb:cmTC_2f6c6.pdb /version:0.0 /machine:x64  /debug /INCREMENTAL /subsystem:console  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+        
+      exitCode: 0
+...

@@ -1,0 +1,5 @@
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/pkgs/bzip2_x64-windows/lib/bz2.lib
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/pkgs/bzip2_x64-windows/bin/bz2.dll
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/pkgs/bzip2_x64-windows/tools/bzip2/bzip2.exe
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/pkgs/bzip2_x64-windows/tools/bzip2/bzip2recover.exe
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/vcpkg/pkgs/bzip2_x64-windows/include/bzlib.h

@@ -1,0 +1,11 @@
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/lib/glew32d.lib
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/bin/glew32d.dll
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/lib/pkgconfig/glew.pc
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/lib/glew32d.pdb
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/include/GL/wglew.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/include/GL/glew.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/include/GL/glxew.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/lib/cmake/glew/glew-targets.cmake
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/lib/cmake/glew/glew-targets-debug.cmake
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/lib/cmake/glew/glew-config.cmake
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/glew_x64-windows/debug/lib/cmake/glew/CopyImportedTargetProperties.cmake

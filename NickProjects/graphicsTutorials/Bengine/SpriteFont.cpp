@@ -3,6 +3,13 @@
 #include "SpriteBatch.h"
 
 #include <SDL/SDL.h>
+#include <freetype-gl/freetype-gl.h>
+
+
+
+ftgl::texture_atlas_t* newAtlas = ftgl::texture_atlas_new(512, 512, 1);
+
+
 
 int closestPow2(int i) {
     i--;

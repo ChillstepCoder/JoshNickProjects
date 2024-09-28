@@ -1,0 +1,17 @@
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/tools/brotli/brotli.exe
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/lib/brotlienc.lib
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/bin/brotlienc.dll
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/lib/brotlidec.lib
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/bin/brotlidec.dll
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/lib/brotlicommon.lib
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/bin/brotlicommon.dll
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/include/brotli/decode.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/include/brotli/encode.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/include/brotli/port.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/include/brotli/shared_dictionary.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/include/brotli/types.h
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/share/unofficial-brotli/unofficial-brotli-config.cmake
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/share/unofficial-brotli/unofficial-brotli-config-release.cmake
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/lib/pkgconfig/libbrotlicommon.pc
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/lib/pkgconfig/libbrotlidec.pc
+C:/Users/Nicholas/Documents/GitHub/JoshNickProjects2/NickProjects/graphicsTutorials/vcpkg_installed/x64-windows/vcpkg/pkgs/brotli_x64-windows/lib/pkgconfig/libbrotlienc.pc

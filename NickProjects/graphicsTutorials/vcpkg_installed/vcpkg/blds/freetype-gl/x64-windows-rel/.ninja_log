@@ -1,0 +1,15 @@
+# ninja log v5
+20	85	7490640033082390	CMakeFiles/freetype-gl.dir/utf8-utils.c.obj	ec586f6de4a868b9
+9	88	7490640033112163	CMakeFiles/freetype-gl.dir/platform.c.obj	221e514dd7506ce4
+24	90	7490640033136951	CMakeFiles/freetype-gl.dir/ftgl-utils.c.obj	70200f36307e3801
+7	107	7490640033295668	CMakeFiles/freetype-gl.dir/font-manager.c.obj	a33bd63bfa872175
+27	111	7490640033335349	CMakeFiles/freetype-gl.dir/vector.c.obj	40e5f9bb8c4dac18
+14	124	7490640033484148	CMakeFiles/freetype-gl.dir/texture-atlas.c.obj	c8db860c4d1e9c2b
+2	134	7490640033588315	CMakeFiles/freetype-gl.dir/distance-field.c.obj	564a738d9af62c3c
+5	180	7490640034044627	CMakeFiles/freetype-gl.dir/edtaa3func.c.obj	4f8c5efb3d49eb95
+17	195	7490640034183515	CMakeFiles/freetype-gl.dir/texture-font.c.obj	2514f17c51ebeeaf
+29	232	7490640034560479	CMakeFiles/freetype-gl.dir/vertex-attribute.c.obj	6a6d846252e96a0a
+32	235	7490640034595185	CMakeFiles/freetype-gl.dir/vertex-buffer.c.obj	517cb42f63d2bb41
+11	277	7490640035007153	CMakeFiles/freetype-gl.dir/text-buffer.c.obj	ee47040dabe44eb3
+277	354	7490640035720835	freetype-gl.lib	fed7f280c8a94c3
+354	423	0	CMakeFiles/install.util	52ac4b66ad95d034
