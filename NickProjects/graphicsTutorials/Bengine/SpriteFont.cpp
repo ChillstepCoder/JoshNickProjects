@@ -11,6 +11,8 @@ ftgl::texture_atlas_t* newAtlas = ftgl::texture_atlas_new(512, 512, 1);
 
 
 
+#include <freetype-gl/freetype-gl.h>
+
 int closestPow2(int i) {
     i--;
     int pi = 1;

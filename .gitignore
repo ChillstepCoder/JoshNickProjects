@@ -29,8 +29,9 @@
 
 .vs/
 JoshProjects/GraphicsProject/x64/Debug/JAGEngine.lib
-
 vcpkg_installed/
+*.dll
+*.lib
 *.iobj
 *.ipdb
-*.dll
+NickProjects/graphicsTutorials/ZombieGame/x64/Release/ZombieGame.vcxproj.FileListAbsolute.txt
