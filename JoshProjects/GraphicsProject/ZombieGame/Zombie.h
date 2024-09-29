@@ -22,7 +22,6 @@ public:
 private:
   Human* getNearestHuman(std::vector<Human*>& humans);
   bool hasLineOfSight(const glm::vec2& start, const glm::vec2& end, const std::vector<std::string>& levelData);
-  glm::vec2 _direction;
   int _frames;                         
   int _nextUpdateFrame;
 };

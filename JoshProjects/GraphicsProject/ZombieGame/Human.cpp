@@ -47,7 +47,7 @@ void Human::update(const std::vector<std::string>& levelData,
   }
   else {
     // random movement
-    _position += _direction * _speed * deltaTime;
+    _position += m_direction * _speed * deltaTime;
 
     _frames++;
     if (_frames >= UPDATE_CAP) {
@@ -55,7 +55,7 @@ void Human::update(const std::vector<std::string>& levelData,
       float rotationFactor = static_cast<float>(_frames) / static_cast<float>(UPDATE_CAP);
       float rotation = randRotate(randomEngine) * rotationFactor;
 
-      _direction = glm::rotate(_direction, glm::radians(rotation));
+      m_direction = glm::rotate(m_direction, glm::radians(rotation));
 
       // Reset frames and set new random update interval
       _frames = 0;
@@ -81,11 +81,11 @@ void Human::init(float speed, glm::vec2 pos) {
   _speed = speed;
   _position = pos;
   // get random direction
-  _direction = glm::vec2(randDir(randomEngine), randDir(randomEngine));
+  m_direction = glm::vec2(randDir(randomEngine), randDir(randomEngine));
   //make sure direction isnt 0
-  if (_direction.length() == 0) _direction = glm::vec2(1.0f, 0.0f);
+  if (m_direction.length() == 0) m_direction = glm::vec2(1.0f, 0.0f);
   
-  _direction = glm::normalize(_direction);
+  m_direction = glm::normalize(m_direction);
   m_textureID = JAGEngine::ResourceManager::getTexture("Textures/zombie_game/spr_npc.png").id;
 }
 

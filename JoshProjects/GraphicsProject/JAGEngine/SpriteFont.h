@@ -31,7 +31,7 @@
 
 #include "Vertex.h"
 
-//#include <freetype-gl/freetype-gl.h>
+#include <GL/freetype-gl.h>
 //ftgl::texture_atlas_t* mAtlas = nullptr;
 
 namespace JAGEngine {

@@ -38,7 +38,8 @@ protected:
 
   void collideWithTile(glm::vec2 tilePos);
 
-  glm::vec2 _position; 
+  glm::vec2 _position;
+  glm::vec2 m_direction = glm::vec2(1.0f, 0.0f);
   JAGEngine::ColorRGBA8 _color;
   float _speed;
 

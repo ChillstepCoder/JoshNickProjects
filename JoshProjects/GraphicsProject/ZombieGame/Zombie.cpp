@@ -17,8 +17,8 @@ const float TILE_WIDTH = 64.0f;
 
 Zombie::Zombie() :
   _frames(0),
-  _direction(1.0f, 0.0f),
-  _nextUpdateFrame(0) {  // Initialize direction
+  //m_direction(1.0f, 0.0f),
+  _nextUpdateFrame(0) { 
 }
 
 Zombie::~Zombie() {
@@ -49,12 +49,12 @@ void Zombie::update(const std::vector<std::string>& levelData,
   }
 
   if (closestHuman != nullptr && closestDistance < CHASE_DISTANCE) {
-    glm::vec2 direction = glm::normalize(closestHuman->getPosition() - _position);
-    _position += direction * _speed * deltaTime;
+    m_direction = glm::normalize(closestHuman->getPosition() - _position);
+    _position += m_direction * _speed * deltaTime;
   }
   else {
     // random movement
-    _position += _direction * _speed * deltaTime;
+    _position += m_direction * _speed * deltaTime;
 
     _frames++;
     if (_frames >= _nextUpdateFrame) {
@@ -62,7 +62,7 @@ void Zombie::update(const std::vector<std::string>& levelData,
       float rotationFactor = static_cast<float>(_frames) / static_cast<float>(UPDATE_CAP);
       float rotation = randRotate(randomEngine) * rotationFactor;
 
-      _direction = glm::rotate(_direction, glm::radians(rotation));
+      m_direction = glm::rotate(m_direction, glm::radians(rotation));
 
       // Reset frames and set new random update interval
       _frames = 0;

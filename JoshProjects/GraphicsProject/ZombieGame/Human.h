@@ -22,7 +22,6 @@ public:
 
 private:
   Zombie* getNearestZombie(std::vector<Zombie*>& zombies);
-  glm::vec2 _direction;
   int _frames;
   int _nextUpdateFrame;
   float _zombify = 0.0f;
