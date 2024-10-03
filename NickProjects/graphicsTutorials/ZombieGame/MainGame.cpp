@@ -61,7 +61,9 @@ void MainGame::initSystems() {
     _agentSpriteBatch.init();
     _hudSpriteBatch.init();
 
-    _spriteFont = new Bengine::SpriteFont("Fonts/mytype.ttf", 64);
+    // init Font
+    _spriteFont = std::make_unique<Bengine::SpriteFont>();
+    _spriteFont->init("Fonts/Bubblefont.ttf", 32);
 
     _camera.init(_screenWidth, _screenHeight);
     _hudCamera.init(_screenWidth, _screenHeight);
@@ -434,9 +436,11 @@ void MainGame::drawHud() {
 
     _hudSpriteBatch.begin();
 
+
     sprintf_s(buffer, "Num Humans %d", _humans.size());
     _spriteFont->draw(_hudSpriteBatch, buffer, glm::vec2(0, 0),
                       glm::vec2(0.5), 0.0f, Bengine::ColorRGBA8(0, 0, 255, 255));
+
 
     sprintf_s(buffer, "Num Zombies %d", _zombies.size());
     _spriteFont->draw(_hudSpriteBatch, buffer, glm::vec2(0, 36),
