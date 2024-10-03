@@ -23,7 +23,7 @@ void Bullet::draw(Bengine::SpriteBatch& spriteBatch) {
 
     glm::vec4 posAndSize = glm::vec4(m_position.x, m_position.y, 10, 10);
 
-    spriteBatch.draw(posAndSize, uv, texture.id, 0.0f, color);
+    spriteBatch.draw(posAndSize, uv, texture.id, 0.0f, color, 0.0f);
 }
 
 bool Bullet::update() {

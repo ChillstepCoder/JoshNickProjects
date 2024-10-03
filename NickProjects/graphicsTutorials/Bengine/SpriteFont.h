@@ -26,10 +26,14 @@
 
 #include <glm/glm.hpp>
 #include <vector>
-#include <freetype-gl/freetype-gl.h>
 #include "SpriteBatch.h"
 #include "Vertex.h"
 
+// Forward declare so we can include the file in cpp instead of .h
+namespace ftgl {
+    struct texture_font_t;
+    struct texture_atlas_t;
+}
 
 namespace Bengine {
 

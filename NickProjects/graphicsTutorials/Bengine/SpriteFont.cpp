@@ -1,6 +1,9 @@
 #include "SpriteFont.h"
 #include <stdexcept>
 
+#include "BengineErrors.h"
+
+#include <freetype-gl/freetype-gl.h>
 
 int closestPow2(int i) {
     i--;
@@ -55,6 +58,8 @@ namespace Bengine {
 
         // Create OpenGL texture
         createTexture();
+
+        Bengine::checkGlError("SpriteFont::init End");
     }
 
     void SpriteFont::createTexture() {
