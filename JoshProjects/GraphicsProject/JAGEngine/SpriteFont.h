@@ -20,73 +20,56 @@
 */
 
 #pragma once
-
 #ifndef SpriteFont_h__
 #define SpriteFont_h__
 
-#include <TTF/SDL_ttf.h>
 #include <glm/glm.hpp>
 #include <map>
-#include <vector>
-
+#include <string>
 #include "Vertex.h"
-
 #include <GL/freetype-gl.h>
-//ftgl::texture_atlas_t* mAtlas = nullptr;
 
 namespace JAGEngine {
 
-    struct GLTexture;
-    class SpriteBatch;
-
-    struct CharGlyph {
-    public:
-        char character;
-        glm::vec4 uvRect;
-        glm::vec2 size;
-    };
+  class SpriteBatch;
 
 #define FIRST_PRINTABLE_CHAR ((char)32)
 #define LAST_PRINTABLE_CHAR ((char)126)
 
-    /// For text justification
-    enum class Justification {
-        LEFT, MIDDLE, RIGHT
-    };
+  /// For text justification
+  enum class Justification {
+    LEFT, MIDDLE, RIGHT
+  };
 
-    class SpriteFont {
-    public:
-        SpriteFont() {};
-        SpriteFont(const char* font, int size, char cs, char ce);
-        SpriteFont(const char* font, int size) :
-            SpriteFont(font, size, FIRST_PRINTABLE_CHAR, LAST_PRINTABLE_CHAR) {
-        }
+  class SpriteFont {
+  public:
+    SpriteFont();
+    ~SpriteFont();
 
-        void init(const char* font, int size);
-        void init(const char* font, int size, char cs, char ce);
+    void init(const char* font, int size);
+    void dispose();
 
-        /// Destroys the font resources
-        void dispose();
+    int getFontHeight() const;
 
-        int getFontHeight() const {
-            return _fontHeight;
-        }
+    /// Measures the dimensions of the text
+    glm::vec2 measure(const char* s);
 
-        /// Measures the dimensions of the text
-        glm::vec2 measure(const char* s);
+    /// Draws using a spritebatch
+    void draw(SpriteBatch& batch, const char* s, glm::vec2 position, glm::vec2 scaling,
+      float depth, ColorRGBA8 tint, Justification just = Justification::LEFT);
 
-        /// Draws using a spritebatch
-        void draw(SpriteBatch& batch, const char* s, glm::vec2 position, glm::vec2 scaling, 
-                  float depth, ColorRGBA8 tint, Justification just = Justification::LEFT);
-    private:
-        static std::vector<int>* createRows(glm::ivec4* rects, int rectsLength, int r, int padding, int& w);
+    //getters
+    GLuint getTextureID() const { return m_textureID; }
 
-        int _regStart, _regLength;
-        CharGlyph* _glyphs;
-        int _fontHeight;
+  private:
+    ftgl::texture_atlas_t* m_atlas;
+    ftgl::texture_font_t* m_font;
+    std::map<char, ftgl::texture_glyph_t*> m_glyphMap;
 
-        unsigned int _texID;
-    };
+    int m_fontHeight;
+    GLuint m_textureID; 
+
+  };
 
 }
 

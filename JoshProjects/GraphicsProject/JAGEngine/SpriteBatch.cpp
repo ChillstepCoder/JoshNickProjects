@@ -6,24 +6,23 @@
 
 namespace JAGEngine {
 
-  Glyph::Glyph(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint Texture, float Depth, const ColorRGBA8& color) :
-  texture(Texture), depth(Depth) {
-
+   Glyph::Glyph(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint Texture, float Depth, const ColorRGBA8& color) :
+    texture(Texture), depth(Depth) {
     topLeft.color = color;
     topLeft.setPosition(destRect.x, destRect.y + destRect.w);
-    topLeft.setUV(uvRect.x, uvRect.y + uvRect.w);
+    topLeft.setUV(uvRect.x, uvRect.y);
 
     bottomLeft.color = color;
     bottomLeft.setPosition(destRect.x, destRect.y);
-    bottomLeft.setUV(uvRect.x, uvRect.y);
+    bottomLeft.setUV(uvRect.x, uvRect.y + uvRect.w);
 
     bottomRight.color = color;
     bottomRight.setPosition(destRect.x + destRect.z, destRect.y);
-    bottomRight.setUV(uvRect.x + uvRect.z, uvRect.y);
+    bottomRight.setUV(uvRect.x + uvRect.z, uvRect.y + uvRect.w);
 
     topRight.color = color;
     topRight.setPosition(destRect.x + destRect.z, destRect.y + destRect.w);
-    topRight.setUV(uvRect.x + uvRect.z, uvRect.y + uvRect.w);
+    topRight.setUV(uvRect.x + uvRect.z, uvRect.y);
   }
 
   Glyph::Glyph(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint Texture, float Depth, const ColorRGBA8& color, float angle) :
@@ -102,6 +101,7 @@ namespace JAGEngine {
     _glyphs.emplace_back(destRect, uvRect, texture, depth, color);
 
   }
+
   void SpriteBatch::draw(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint texture, float depth, const ColorRGBA8& color, float angle) {
     _glyphs.emplace_back(destRect, uvRect, texture, depth, color, angle);
   }
@@ -117,18 +117,15 @@ namespace JAGEngine {
   }
 
   void SpriteBatch::renderBatch() {
-    /*std::cout << "Rendering batch with " << _renderBatches.size() << " batches" << std::endl;*/
     glBindVertexArray(_vao);
     for (int i = 0; i < _renderBatches.size(); i++) {
-      /*std::cout << "  Batch " << i << ": Texture " << _renderBatches[i].texture
-        << " Offset " << _renderBatches[i].offset
-        << " NumVertices " << _renderBatches[i].numVertices << std::endl;*/
       glBindTexture(GL_TEXTURE_2D, _renderBatches[i].texture);
+      std::cout << "Rendering batch " << i << " with texture ID: " << _renderBatches[i].texture
+        << ", offset: " << _renderBatches[i].offset
+        << ", num vertices: " << _renderBatches[i].numVertices << std::endl;
       glDrawArrays(GL_TRIANGLES, _renderBatches[i].offset, _renderBatches[i].numVertices);
     }
     glBindVertexArray(0);
-
-    checkGlError("SpriteBatch::renderBatch");
   }
 
   void SpriteBatch::createRenderBatches() {

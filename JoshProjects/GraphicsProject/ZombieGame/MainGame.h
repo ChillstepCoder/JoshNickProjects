@@ -70,6 +70,7 @@ private:
 
   JAGEngine::Sprite m_sprite;
   JAGEngine::GLSLProgram m_textureProgram;
+  JAGEngine::GLSLProgram m_textRenderingProgram;
   JAGEngine::Camera2D m_camera;
   JAGEngine::Camera2D m_hudCamera;
 

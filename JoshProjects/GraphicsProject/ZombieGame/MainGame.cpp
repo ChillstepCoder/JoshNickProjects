@@ -49,6 +49,10 @@ MainGame::~MainGame() {
   for (int i = 0; i < m_levels.size(); i++) {
     delete m_levels[i];
   }
+  if (m_spriteFont) {
+    m_spriteFont->dispose();
+    delete m_spriteFont;
+  }
   SDL_Quit();
 }
 
@@ -91,7 +95,8 @@ void MainGame::initSystems() {
   m_hudSpriteBatch.init();
   std::cout << "HUD sprite batch initialized" << std::endl;
 
-  m_spriteFont = new JAGEngine::SpriteFont("Fonts/data-unifon.ttf", 64);
+  m_spriteFont = new JAGEngine::SpriteFont();
+  m_spriteFont->init("Fonts/data-unifon.ttf", 64);
 
   m_bloodParticleBatch = new JAGEngine::ParticleBatch2D();
   m_bloodParticleBatch->init(1000, 0.075f,
@@ -311,6 +316,12 @@ void MainGame::initShaders() {
   m_textureProgram.addAttribute("vertexColor");
   m_textureProgram.addAttribute("vertexUV");
   m_textureProgram.linkShaders();
+
+  m_textRenderingProgram.compileShaders("Shaders/textRendering.vert", "Shaders/textRendering.frag");
+  m_textRenderingProgram.addAttribute("vertexPosition");
+  m_textRenderingProgram.addAttribute("vertexColor");
+  m_textRenderingProgram.addAttribute("vertexUV");
+  m_textRenderingProgram.linkShaders();
 }
 
 void MainGame::processInput() {
@@ -543,32 +554,39 @@ void MainGame::drawGame() {
 }
 
 void MainGame::drawHud() {
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  m_textRenderingProgram.use();
+
   char buffer[256];
+
+  glActiveTexture(GL_TEXTURE0);
+  GLuint fontTextureID = m_spriteFont->getTextureID(); // Add this getter to your SpriteFont class
+  glBindTexture(GL_TEXTURE_2D, fontTextureID);
+  std::cout << "Binding font texture ID: " << fontTextureID << std::endl;
+
+  GLint textureUniform = m_textRenderingProgram.getUniformLocation("mySampler");
+  glUniform1i(textureUniform, 0);
+
+  glm::mat4 projectionMatrix = m_hudCamera.getCameraMatrix();
+  GLuint pUniform = m_textRenderingProgram.getUniformLocation("P");
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(projectionMatrix[0][0]));
 
   m_hudSpriteBatch.begin();
 
-  // Set up the text for zombies count
   sprintf_s(buffer, "ZOMBIES: %d", m_zombies.size());
-
-  // Calculate position for bottom right corner
   glm::vec2 textPos = glm::vec2(m_screenWidth - 1000, m_screenHeight - 25);
-
-  // Convert screen coordinates to world coordinates
   glm::vec2 textPosWorld = m_hudCamera.convertScreenToWorld(textPos);
 
-  // Draw the text
   m_spriteFont->draw(m_hudSpriteBatch, buffer, textPosWorld,
     glm::vec2(0.5), 0.0f, JAGEngine::ColorRGBA8(255, 255, 255, 255),
     JAGEngine::Justification::LEFT);
 
   m_hudSpriteBatch.end();
-
-  // Set up the projection matrix for the HUD
-  glm::mat4 projectionMatrix = m_hudCamera.getCameraMatrix();
-  GLuint pUniform = m_textureProgram.getUniformLocation("P");
-  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(projectionMatrix[0][0]));
-
   m_hudSpriteBatch.renderBatch();
+
+    m_textRenderingProgram.unuse();
 }
 
 void MainGame::addBlood(const glm::vec2& position, int numParticles) {

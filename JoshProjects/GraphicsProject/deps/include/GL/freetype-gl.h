@@ -7,13 +7,13 @@
 #define __FREETYPE_GL_H__
 
 /* Mandatory */
-#include "platform.h"
-#include "opengl.h"
-#include "vec234.h"
-#include "vector.h"
-#include "texture-atlas.h"
-#include "texture-font.h"
-#include "ftgl-utils.h"
+#include "GL/platform.h"
+#include "GL/opengl.h"
+#include "GL/vec234.h"
+#include "GL/vector.h"
+#include "GL/texture-atlas.h"
+#include "GL/texture-font.h"
+#include "GL/ftgl-utils.h"
 
 #ifdef IMPLEMENT_FREETYPE_GL
 #include "platform.c"
