@@ -20,16 +20,20 @@
 */
 
 #pragma once
+#ifndef SPRITE_FONT_H
+#define SPRITE_FONT_H
+#define NOMINMAX
 
-#ifndef SpriteFont_h__
-#define SpriteFont_h__
-
-#include <TTF/SDL_ttf.h>
 #include <glm/glm.hpp>
-#include <map>
 #include <vector>
-
+#include "SpriteBatch.h"
 #include "Vertex.h"
+
+// Forward declare so we can include the file in cpp instead of .h
+namespace ftgl {
+    struct texture_font_t;
+    struct texture_atlas_t;
+}
 
 namespace Bengine {
 
@@ -53,21 +57,20 @@ namespace Bengine {
 
     class SpriteFont {
     public:
-        SpriteFont() : m_fontHeight(0), m_glyphs(nullptr), m_regLength(0), m_regStart(0), m_texID(0) {};
-        SpriteFont(const char* font, int size, char cs, char ce);
-        SpriteFont(const char* font, int size) :
-            SpriteFont(font, size, FIRST_PRINTABLE_CHAR, LAST_PRINTABLE_CHAR) {
-        }
+        SpriteFont() = default;
+        ~SpriteFont();
+
+
+        SpriteFont(const SpriteFont&) = delete;
+        SpriteFont& operator = (const SpriteFont&) = delete;
 
         void init(const char* font, int size);
-        void init(const char* font, int size, char cs, char ce);
+        void init(const char* font, int size, char startChar, char endChar);
 
         /// Destroys the font resources
         void dispose();
 
-        int getFontHeight() const {
-            return m_fontHeight;
-        }
+        int getFontHeight() const { return m_fontHeight; }
 
         /// Measures the dimensions of the text
         glm::vec2 measure(const char* s);
@@ -76,13 +79,12 @@ namespace Bengine {
         void draw(SpriteBatch& batch, const char* s, glm::vec2 position, glm::vec2 scaling,
             float depth, ColorRGBA8 tint, Justification just = Justification::LEFT, float rotation = 0.0f);
     private:
-        static std::vector<int>* createRows(glm::ivec4* rects, int rectsLength, int r, int padding, int& w);
+        void createTexture();
 
-        int m_regStart, m_regLength;
-        CharGlyph* m_glyphs;
-        int m_fontHeight;
-
-        unsigned int m_texID;
+        static ftgl::texture_font_t* m_font;
+        static ftgl::texture_atlas_t* m_atlas;
+        static int m_fontHeight;
+        static unsigned int m_textureID;
     };
 
 }

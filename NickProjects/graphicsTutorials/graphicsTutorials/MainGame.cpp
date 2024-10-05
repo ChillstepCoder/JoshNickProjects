@@ -178,7 +178,7 @@ void MainGame::drawGame() {
     color.b = 255;
     color.a = 255;
 
-    m_spriteBatch.draw(pos, uv, texture.id, 0.0f, color);
+    m_spriteBatch.draw(pos, uv, texture.id, 0.0f, color, 0.0f);
     
     for (int i = 0; i < m_bullets.size(); i++) {
         m_bullets[i].draw(m_spriteBatch);

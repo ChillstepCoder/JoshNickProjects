@@ -7,6 +7,7 @@
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/SpriteFont.h>
 #include <Bengine/AudioEngine.h>
+#include <memory>
 
 #include "Player.h"
 #include "Level.h"
@@ -91,7 +92,7 @@ private:
     int _numHumansKilled; //< Humans killed by player
     int _numZombiesKilled; //< Zombies killed by player
 
-    Bengine::SpriteFont* _spriteFont;
+    std::unique_ptr<Bengine::SpriteFont> _spriteFont;
 
     Bengine::AudioEngine m_audioEngine;
 
