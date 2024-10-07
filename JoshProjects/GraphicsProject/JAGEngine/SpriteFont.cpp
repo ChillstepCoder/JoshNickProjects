@@ -9,6 +9,10 @@ namespace JAGEngine {
 
   SpriteFont::SpriteFont() : m_atlas(nullptr), m_font(nullptr), m_fontHeight(0), m_textureID(0) {}
 
+  SpriteFont::SpriteFont(const char* font, int size) : m_atlas(nullptr), m_font(nullptr), m_fontHeight(0), m_textureID(0) {
+    init(font, size);
+  }
+
   SpriteFont::~SpriteFont() {
     dispose();
   }

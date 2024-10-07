@@ -44,6 +44,9 @@ namespace JAGEngine {
   class SpriteFont {
   public:
     SpriteFont();
+
+    SpriteFont(const char* font, int size);
+
     ~SpriteFont();
 
     void init(const char* font, int size);
