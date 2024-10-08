@@ -1,13 +1,15 @@
 #include "MainGame.h"
-
+#define GLM_ENABLE_EXPERIMENTAL
 #include <Bengine/Bengine.h>
 #include <Bengine/Timing.h>
 #include <random>
 #include <ctime>
 #include <Bengine/BengineErrors.h>
+#include <Bengine/ResourceManager.h>
 
 #include <SDL/SDL.h>
 #include <iostream>
+#include <glm/gtx/rotate_vector.hpp>
 
 #include "Gun.h"
 #include "Zombie.h"
@@ -65,9 +67,15 @@ void MainGame::initSystems() {
     _spriteFont = std::make_unique<Bengine::SpriteFont>();
     _spriteFont->init("Fonts/Bubblefont.ttf", 32);
 
+    // Set up the camera
     _camera.init(_screenWidth, _screenHeight);
     _hudCamera.init(_screenWidth, _screenHeight);
     _hudCamera.setPosition(glm::vec2(_screenWidth / 2, _screenHeight / 2));
+
+    // Initialize particles
+    m_bloodParticleBatch = new Bengine::ParticleBatch2D();
+    m_bloodParticleBatch->init(1000, 0.01f, Bengine::ResourceManager::getTexture("Textures/Particles/blood.png"));
+    m_particleEngine.addParticleBatch(m_bloodParticleBatch);
 
 }
 
@@ -176,12 +184,13 @@ void MainGame::gameLoop() {
             float deltaTime = std::min(totalDeltaTime, MAX_DELTA_TIME);
             updateAgents(deltaTime);
             updateBullets(deltaTime);
+            m_particleEngine.update(deltaTime);
             totalDeltaTime -= deltaTime;
             i++;
         }
 
+        // Make sure the camera is bound to the player position
         _camera.setPosition(_player->getPosition());
-
         _camera.update();
         _hudCamera.update();
 
@@ -265,6 +274,8 @@ void MainGame::updateBullets(float deltaTime) {
         for (int j = 0; j < _zombies.size(); ) {
             // Check collision
             if (_bullets[i].collideWithAgent(_zombies[j])) {
+                // Add blood
+                addBlood(_bullets[j].getPosition(), 5);
                 // Damage zombie, and kill it if its out of health
                 if (_zombies[j]->applyDamage(_bullets[i].getDamage())) {
                     // If the zombie died, remove him
@@ -292,6 +303,8 @@ void MainGame::updateBullets(float deltaTime) {
             for (int j = 1; j < _humans.size(); ) {
                 // Check collision
                 if (_bullets[i].collideWithAgent(_humans[j])) {
+                    // Add blood
+                    addBlood(_bullets[j].getPosition(), 5);
                     // Damage human, and kill it if its out of health
                     if (_humans[j]->applyDamage(_bullets[i].getDamage())) {
                         // If the human died, remove him
@@ -418,6 +431,10 @@ void MainGame::drawGame() {
 
     _agentSpriteBatch.renderBatch();
 
+    // Render the particles
+    m_particleEngine.draw(&_agentSpriteBatch);
+
+
     // Render the heads up display
     drawHud();
 
@@ -448,4 +465,17 @@ void MainGame::drawHud() {
 
     _hudSpriteBatch.end();
     _hudSpriteBatch.renderBatch();
+}
+
+void MainGame::addBlood(const glm::vec2& position, int numParticles) {
+
+    static std::mt19937 randEngine(time(nullptr));
+    static std::uniform_real_distribution<float> randAngle(0.0f, 2 * M_PI);
+
+    glm::vec2 vel(0.01f, 0.0f);
+    Bengine::ColorRGBA8 col(255, 0, 0, 255);
+
+    for (int i = 0; i < numParticles; i++) {
+        m_bloodParticleBatch->addParticle(position, glm::rotate(vel, randAngle(randEngine)), col, 10.0f);
+    }
 }
