@@ -151,7 +151,8 @@ namespace Bengine {
             float t1 = glyph->t1;
 
             glm::vec4 destRect(x0, y1, x1 - x0, y0 - y1);
-            glm::vec4 uvRect(s0, t0, s1 - s0, t1 - t0);
+            // Note we flip the V coordinate upside down
+            glm::vec4 uvRect(s0, t1, s1 - s0, t0 - t1);
 
             batch.draw(destRect, uvRect, m_textureID, depth, tint, rotation);
 

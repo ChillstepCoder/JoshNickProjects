@@ -440,10 +440,17 @@ void MainGame::drawGame() {
 
     _agentSpriteBatch.renderBatch();
 
+    // Text
+    _textRenderingProgram.use();
+
+    // Upload text uniforms
+    glUniform1i(_textRenderingProgram.getUniformLocation("mySampler"), 0);
+    glUniformMatrix4fv(_textureProgram.getUniformLocation("P"), 1, GL_FALSE, &_camera.getCameraMatrix()[0][0]);
+
     // Render the heads up display
     drawHud();
 
-    _textureProgram.unuse();
+    _textRenderingProgram.unuse();
 
     // Swap our buffer and draw everything to the screen!
     _window.swapBuffer();
