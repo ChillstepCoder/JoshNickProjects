@@ -1,6 +1,7 @@
 #include "SpriteFont.h"
 #include <stdexcept>
 
+#include <freetype-gl/freetype-gl.h>
 
 int closestPow2(int i) {
     i--;
