@@ -35,4 +35,4 @@ vcpkg_installed/
 *.iobj
 *.ipdb
 *.obj.enc
-NickProjects/graphicsTutorials/ZombieGame/x64/Release/ZombieGame.vcxproj.FileListAbsolute.txt
+*.FileListAbsolute.txt
