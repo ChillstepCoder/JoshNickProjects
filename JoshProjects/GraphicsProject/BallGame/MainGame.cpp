@@ -76,7 +76,7 @@ void MainGame::init() {
     
     m_spriteBatch.init();
     // Initialize sprite font
-    m_spriteFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/data-unifon.ttf", 40);
+    m_spriteFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/titilium_bold.ttf", 40);
 
     // Compile our texture shader
     m_textureProgram.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");

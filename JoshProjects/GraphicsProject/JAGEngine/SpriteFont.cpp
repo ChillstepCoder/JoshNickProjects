@@ -30,7 +30,11 @@ namespace JAGEngine {
 
     // Load all ASCII printable characters
     const char* cache = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-    ftgl::texture_font_load_glyphs(m_font, cache);
+    size_t missedGlyphs = ftgl::texture_font_load_glyphs(m_font, cache);
+    if (missedGlyphs > 0) {
+        std::cerr << "Missed " << missedGlyphs << " glyphs loading font" << std::endl;
+        __debugbreak();
+    }
 
     // Create OpenGL texture
     glGenTextures(1, &m_textureID);
@@ -111,13 +115,14 @@ namespace JAGEngine {
         float h = glyph->height * scaling.y;
 
         glm::vec4 destRect(x, y, w, h);
-        glm::vec4 uvRect(glyph->s0, 1.0f-glyph->t1, glyph->s1 - glyph->s0, glyph->t1 - glyph->t0);
+        glm::vec4 uvRect(glyph->s0, glyph->t0, glyph->s1 - glyph->s0, glyph->t1 - glyph->t0);
 
         std::cout << "  Glyph '" << *p << "' at: " << destRect.x << ", " << destRect.y
           << " size: " << destRect.z << "x" << destRect.w
           << " UV: " << uvRect.x << ", " << uvRect.y << ", " << uvRect.z << ", " << uvRect.w
           << " Texture ID: " << m_textureID << std::endl;
 
+        // TODO: REMOVE
         batch.draw(destRect, uvRect, m_textureID, depth, tint);
 
         pen.x += glyph->advance_x * scaling.x;

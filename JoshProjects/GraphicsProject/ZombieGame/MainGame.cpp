@@ -96,7 +96,7 @@ void MainGame::initSystems() {
   std::cout << "HUD sprite batch initialized" << std::endl;
 
   m_spriteFont = new JAGEngine::SpriteFont();
-  m_spriteFont->init("Fonts/data-unifon.ttf", 64);
+  m_spriteFont->init("Fonts/titilium_bold.ttf", 64);
 
   m_bloodParticleBatch = new JAGEngine::ParticleBatch2D();
   m_bloodParticleBatch->init(1000, 0.075f,
