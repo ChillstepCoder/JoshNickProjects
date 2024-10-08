@@ -74,7 +74,7 @@ void MainGame::initSystems() {
 
     // Initialize particles
     m_bloodParticleBatch = new Bengine::ParticleBatch2D();
-    m_bloodParticleBatch->init(1000, 0.01f, Bengine::ResourceManager::getTexture("Textures/Particles/blood.png"));
+    m_bloodParticleBatch->init(1000, 0.05f, Bengine::ResourceManager::getTexture("Textures/Particles/blood.png"));
     m_particleEngine.addParticleBatch(m_bloodParticleBatch);
 
 }
@@ -146,6 +146,12 @@ void MainGame::initShaders() {
     _textureProgram.addAttribute("vertexColor");
     _textureProgram.addAttribute("vertexUV");
     _textureProgram.linkShaders();
+
+    _textRenderingProgram.compileShaders("Shaders/textRenderingVert.txt", "Shaders/textRenderingFrag.txt");
+    _textRenderingProgram.addAttribute("vertexPosition");
+    _textRenderingProgram.addAttribute("vertexColor");
+    _textRenderingProgram.addAttribute("vertexUV");
+    _textRenderingProgram.linkShaders();
 }
 
 void MainGame::gameLoop() {
@@ -275,7 +281,7 @@ void MainGame::updateBullets(float deltaTime) {
             // Check collision
             if (_bullets[i].collideWithAgent(_zombies[j])) {
                 // Add blood
-                addBlood(_bullets[j].getPosition(), 5);
+                addBlood(_bullets[i].getPosition(), 5);
                 // Damage zombie, and kill it if its out of health
                 if (_zombies[j]->applyDamage(_bullets[i].getDamage())) {
                     // If the zombie died, remove him
@@ -304,7 +310,7 @@ void MainGame::updateBullets(float deltaTime) {
                 // Check collision
                 if (_bullets[i].collideWithAgent(_humans[j])) {
                     // Add blood
-                    addBlood(_bullets[j].getPosition(), 5);
+                    addBlood(_bullets[i].getPosition(), 5);
                     // Damage human, and kill it if its out of health
                     if (_humans[j]->applyDamage(_bullets[i].getDamage())) {
                         // If the human died, remove him
@@ -404,6 +410,9 @@ void MainGame::drawGame() {
     // Begin drawing agents
     _agentSpriteBatch.begin();
 
+    // Render the particles
+    m_particleEngine.draw(&_agentSpriteBatch);
+
     const glm::vec2 agentDims(AGENT_RADIUS * 2.0f);
 
     // Draw the humans
@@ -430,10 +439,6 @@ void MainGame::drawGame() {
     _agentSpriteBatch.end();
 
     _agentSpriteBatch.renderBatch();
-
-    // Render the particles
-    m_particleEngine.draw(&_agentSpriteBatch);
-
 
     // Render the heads up display
     drawHud();
@@ -472,10 +477,10 @@ void MainGame::addBlood(const glm::vec2& position, int numParticles) {
     static std::mt19937 randEngine(time(nullptr));
     static std::uniform_real_distribution<float> randAngle(0.0f, 2 * M_PI);
 
-    glm::vec2 vel(0.01f, 0.0f);
+    glm::vec2 vel(1.15f, 0.0f);
     Bengine::ColorRGBA8 col(255, 0, 0, 255);
 
     for (int i = 0; i < numParticles; i++) {
-        m_bloodParticleBatch->addParticle(position, glm::rotate(vel, randAngle(randEngine)), col, 10.0f);
+        m_bloodParticleBatch->addParticle(position, glm::rotate(vel, randAngle(randEngine)), col, 25.0f);
     }
 }

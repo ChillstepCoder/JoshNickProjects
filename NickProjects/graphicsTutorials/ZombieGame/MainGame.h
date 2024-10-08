@@ -72,6 +72,7 @@ private:
     Bengine::Window _window; //< The game window
 
     Bengine::GLSLProgram _textureProgram; //< The shader program
+    Bengine::GLSLProgram _textRenderingProgram; //< The text shader program
 
     Bengine::InputManager _inputManager; //< Handles input
 

@@ -25,6 +25,7 @@
 #define NOMINMAX
 
 #include <glm/glm.hpp>
+#include <map>
 #include <vector>
 #include "SpriteBatch.h"
 #include "Vertex.h"
@@ -78,6 +79,7 @@ namespace Bengine {
         /// Draws using a spritebatch
         void draw(SpriteBatch& batch, const char* s, glm::vec2 position, glm::vec2 scaling,
             float depth, ColorRGBA8 tint, Justification just = Justification::LEFT, float rotation = 0.0f);
+
     private:
         void createTexture();
 
