@@ -33,7 +33,7 @@ namespace Bengine {
 
     void SpriteFont::init(const char* font, int size, char startChar, char endChar) {
         // Create texture atlas
-        m_atlas = ftgl::texture_atlas_new(512, 512, 4);
+        m_atlas = ftgl::texture_atlas_new(512, 512, 1);
         if (!m_atlas) {
             throw std::runtime_error("Failed to create texture atlas");
         }
@@ -62,9 +62,9 @@ namespace Bengine {
         glGenTextures(1, &m_textureID);
         glBindTexture(GL_TEXTURE_2D, m_textureID);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8,
                      m_atlas->width, m_atlas->height, 0,
-                     GL_RGBA, GL_UNSIGNED_BYTE, m_atlas->data);
+                     GL_RED, GL_UNSIGNED_BYTE, m_atlas->data);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
