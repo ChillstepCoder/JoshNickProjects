@@ -54,7 +54,7 @@ private:
     Bengine::Camera2D m_camera; ///< Renders the scene
     Bengine::InputManager m_inputManager; ///< Handles input
     Bengine::GLSLProgram m_textureProgram; ///< Shader for textures]
-
+    Bengine::GLSLProgram m_textRenderingProgram; ///< Shader for text]
     Bengine::FpsLimiter m_fpsLimiter; ///< Limits and calculates fps
     float m_fps = 0.0f;
 

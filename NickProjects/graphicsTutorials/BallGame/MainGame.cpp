@@ -83,6 +83,12 @@ void MainGame::init() {
     m_textureProgram.addAttribute("vertexUV");
     m_textureProgram.linkShaders();
 
+    m_textRenderingProgram.compileShaders("Shaders/textRenderingVert.txt", "Shaders/textRenderingFrag.txt");
+    m_textRenderingProgram.addAttribute("vertexPosition");
+    m_textRenderingProgram.addAttribute("vertexColor");
+    m_textRenderingProgram.addAttribute("vertexUV");
+    m_textRenderingProgram.linkShaders();
+
     m_fpsLimiter.setMaxFPS(60.0f);
 
     initRenderers();
@@ -218,18 +224,18 @@ void MainGame::draw() {
 
     m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, projectionMatrix);
 
-    m_textureProgram.use();
+    m_textRenderingProgram.use();
 
     // Make sure the shader uses texture 0
-    GLint textureUniform = m_textureProgram.getUniformLocation("mySampler");
+    GLint textureUniform = m_textRenderingProgram.getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
-    GLint pUniform = m_textureProgram.getUniformLocation("P");
+    GLint pUniform = m_textRenderingProgram.getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     drawHud();
 
-    m_textureProgram.unuse();
+    m_textRenderingProgram.unuse();
 
     m_window.swapBuffer();
 }
