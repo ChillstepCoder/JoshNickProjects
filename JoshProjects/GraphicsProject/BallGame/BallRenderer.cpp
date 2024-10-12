@@ -28,11 +28,15 @@ void BallRenderer::renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::v
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Render all the balls
-    for (auto& ball : balls) {
-        const glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-        const glm::vec4 destRect(ball.position.x - ball.radius, ball.position.y - ball.radius,
-                                 ball.radius * 2.0f, ball.radius * 2.0f);
-        spriteBatch.draw(destRect, uvRect, ball.textureId, 0.0f, ball.color);
+    for (const auto& ball : balls) {
+      const glm::vec4 destRect(ball.position.x - ball.radius, ball.position.y - ball.radius,
+        ball.radius * 2.0f, ball.radius * 2.0f);
+      const glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
+
+      // Apply hue shift to the ball's color
+      JAGEngine::ColorRGBA8 shiftedColor = applyHueShift(ball.color);
+
+      spriteBatch.draw(destRect, uvRect, ball.textureId, 0.0f, shiftedColor);
     }
 
     spriteBatch.end();
@@ -210,4 +214,65 @@ void TrippyBallRenderer::renderBalls(JAGEngine::SpriteBatch& spriteBatch, const 
     spriteBatch.renderBatch();
 
     m_program->unuse();
+}
+
+JAGEngine::ColorRGBA8 BallRenderer::applyHueShift(const JAGEngine::ColorRGBA8& color) const {
+  float r = color.r / 255.0f;
+  float g = color.g / 255.0f;
+  float b = color.b / 255.0f;
+
+  float cmax = std::max({ r, g, b });
+  float cmin = std::min({ r, g, b });
+  float diff = cmax - cmin;
+
+  float h = 0.0f;
+  float s = (cmax == 0.0f) ? 0.0f : diff / cmax;
+  float v = cmax;
+
+  if (cmax == cmin) {
+    h = 0.0f;
+  }
+  else if (cmax == r) {
+    h = fmod((60 * ((g - b) / diff) + 360), 360.0f);
+  }
+  else if (cmax == g) {
+    h = fmod((60 * ((b - r) / diff) + 120), 360.0f);
+  }
+  else if (cmax == b) {
+    h = fmod((60 * ((r - g) / diff) + 240), 360.0f);
+  }
+
+  // Apply hue shift
+  h = fmod(h + m_hueShift, 360.0f);
+
+  // Convert back to RGB
+  float c = v * s;
+  float x = c * (1 - fabs(fmod(h / 60.0f, 2) - 1));
+  float m = v - c;
+
+  if (h >= 0 && h < 60) {
+    r = c; g = x; b = 0;
+  }
+  else if (h >= 60 && h < 120) {
+    r = x; g = c; b = 0;
+  }
+  else if (h >= 120 && h < 180) {
+    r = 0; g = c; b = x;
+  }
+  else if (h >= 180 && h < 240) {
+    r = 0; g = x; b = c;
+  }
+  else if (h >= 240 && h < 300) {
+    r = x; g = 0; b = c;
+  }
+  else {
+    r = c; g = 0; b = x;
+  }
+
+  return JAGEngine::ColorRGBA8(
+    static_cast<GLubyte>((r + m) * 255),
+    static_cast<GLubyte>((g + m) * 255),
+    static_cast<GLubyte>((b + m) * 255),
+    color.a
+  );
 }

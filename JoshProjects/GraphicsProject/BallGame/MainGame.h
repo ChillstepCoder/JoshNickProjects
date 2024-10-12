@@ -9,6 +9,7 @@
 #include <JAGEngine/SpriteFont.h>
 #include <memory>
 
+#include <JAGEngine/ImGuiManager.h>
 #include "BallController.h"
 #include "BallRenderer.h"
 #include "Grid.h"
@@ -41,6 +42,7 @@ private:
     void draw();
     void drawHud();
     void processInput();
+    void updateImGui();
 
     int m_screenWidth = 0;
     int m_screenHeight = 0;
@@ -62,6 +64,7 @@ private:
 
     JAGEngine::FpsLimiter m_fpsLimiter; ///< Limits and calculates fps
     float m_fps = 0.0f;
+    float m_hueShift = 0.0f;
 
     GameState m_gameState = GameState::RUNNING; ///< The state of the game
 };

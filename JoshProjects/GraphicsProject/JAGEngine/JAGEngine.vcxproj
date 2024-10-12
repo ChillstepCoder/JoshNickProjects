@@ -140,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="AudioEngine.h" />
     <ClInclude Include="Camera2D.h" />
+    <ClInclude Include="ImGuiManager.h" />
     <ClInclude Include="JAGErrors.h" />
     <ClInclude Include="GLSLProgram.h" />
     <ClInclude Include="GLTexture.h" />
@@ -162,6 +163,7 @@
   <ItemGroup>
     <ClCompile Include="AudioEngine.cpp" />
     <ClCompile Include="Camera2D.cpp" />
+    <ClCompile Include="ImGuiManager.cpp" />
     <ClCompile Include="JAGErrors.cpp" />
     <ClCompile Include="GLSLProgram.cpp" />
     <ClCompile Include="ImageLoader.cpp" />

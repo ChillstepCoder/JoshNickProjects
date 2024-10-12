@@ -11,8 +11,12 @@ class BallRenderer {
 public:
     virtual void renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
                              const glm::mat4& projectionMatrix);
+    void setHueShift(float hueShift) { m_hueShift = hueShift; }
 protected:
     std::unique_ptr<JAGEngine::GLSLProgram> m_program = nullptr;
+    float m_hueShift = 0.0f;
+
+    JAGEngine::ColorRGBA8 applyHueShift(const JAGEngine::ColorRGBA8& color) const;
 };
 
 // Visualizes kinetic energy

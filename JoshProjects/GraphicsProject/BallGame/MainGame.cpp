@@ -3,7 +3,12 @@
 #define _CRT_SECURE_NO_WARNINGS // To shut up the compiler about sprintf...
 #include "MainGame.h"
 
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_sdl2.h"
+#include "ImGui/imgui_impl_opengl3.h"
+
 #include <JAGEngine/JAGEngine.h>
+
 #include <JAGEngine/ResourceManager.h>
 #include <SDL/SDL.h>
 #include <random>
@@ -32,34 +37,30 @@ void MainGame::run() {
   // Game loop
   while (m_gameState == GameState::RUNNING) {
     m_fpsLimiter.begin();
-    processInput();
 
     // Calculate the frameTime in milliseconds
     Uint32 newTicks = SDL_GetTicks();
     Uint32 frameTime = newTicks - previousTicks;
-    previousTicks = newTicks; // Store newTicks in previousTicks so we can use it next frame
-    // Get the total delta time
-    float totalDeltaTime = (float)frameTime / DESIRED_FRAMETIME;
+    previousTicks = newTicks;
+    float deltaTime = frameTime / 1000.0f; // Convert to seconds
 
-    int i = 0; // This counter makes sure we don't spiral to death!
-    // Loop while we still have steps to process.
-    while (totalDeltaTime > 0.0f && i < MAX_PHYSICS_STEPS) {
-      // The deltaTime should be the the smaller of the totalDeltaTime and MAX_DELTA_TIME
-      float deltaTime = std::min<float>(totalDeltaTime, MAX_DELTA_TIME);
-      // Update all physics here and pass in deltaTime
+    JAGEngine::ImGuiManager::newFrame();
 
-      update(deltaTime);
-
-      // Since we just took a step that is length deltaTime, subtract from totalDeltaTime
-      totalDeltaTime -= deltaTime;
-      // Increment our frame counter so we can limit steps to MAX_PHYSICS_STEPS
-      i++;
-    }
-
+    processInput();
+    update(deltaTime);
     m_camera.update();
+
+    updateImGui();
+
     draw();
+
+    JAGEngine::ImGuiManager::render();
+
+    m_window.swapBuffer();
     m_fps = m_fpsLimiter.end();
   }
+
+  JAGEngine::ImGuiManager::shutdown();
 }
 
 void MainGame::init() {
@@ -86,6 +87,8 @@ void MainGame::init() {
     m_textureProgram.linkShaders();
 
     m_fpsLimiter.setMaxFPS(60.0f);
+
+    JAGEngine::ImGuiManager::init(&m_window);
 
     initRenderers();
     
@@ -217,6 +220,7 @@ void MainGame::draw() {
     // Grab the camera matrix
     glm::mat4 projectionMatrix = m_camera.getCameraMatrix();
 
+    m_ballRenderers[m_currentRenderer]->setHueShift(m_hueShift);
     m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, projectionMatrix);
 
     m_textureProgram.use();
@@ -253,8 +257,8 @@ void MainGame::processInput() {
     m_inputManager.update();
 
     SDL_Event evnt;
-    //Will keep looping until there are no more events to process
     while (SDL_PollEvent(&evnt)) {
+      JAGEngine::ImGuiManager::processEvent(evnt);
         switch (evnt.type) {
             case SDL_QUIT:
                 m_gameState = GameState::EXIT;
@@ -303,4 +307,11 @@ void MainGame::processInput() {
             m_currentRenderer = 0;
         }
     }
+}
+
+void MainGame::updateImGui() {
+  ImGui::Begin("Ball Controls");
+  ImGui::SliderFloat("Hue Shift", &m_hueShift, 0.0f, 360.0f);
+  // Add more sliders or controls here
+  ImGui::End();
 }
