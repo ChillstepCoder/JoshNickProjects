@@ -13,6 +13,8 @@ namespace Bengine {
         Window();
         ~Window();
 
+        SDL_Window* getSDLWindow() const { return m_sdlWindow; }
+
         int create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);
 
         void swapBuffer();
