@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS // To shut up the compiler about sprintf...
 #include "MainGame.h"
-
+#include "Bengine/ImGuiManager.h"
 #include <Bengine/Bengine.h>
 #include <Bengine/ResourceManager.h>
 #include <SDL/SDL.h>
@@ -17,7 +17,7 @@ const float DESIRED_FRAMETIME = MS_PER_SECOND / DESIRED_FPS; // The desired fram
 const float MAX_DELTA_TIME = 1.0f; // Maximum size of deltaTime
 
 MainGame::~MainGame() {
-    // Empty
+    Bengine::ImGuiManager::shutdown();
 }
 
 void MainGame::run() {
@@ -54,6 +54,7 @@ void MainGame::run() {
             i++;
         }
 
+
         m_camera.update();
         draw();
         m_fps = m_fpsLimiter.end();
@@ -71,6 +72,9 @@ void MainGame::init() {
     m_camera.init(m_screenWidth, m_screenHeight);
     // Point the camera to the center of the screen
     m_camera.setPosition(glm::vec2(m_screenWidth / 2.0f, m_screenHeight / 2.0f));
+
+    Bengine::ImGuiManager::init(&m_window);
+
 
     m_spriteBatch.init();
     // Initialize sprite font
@@ -235,6 +239,8 @@ void MainGame::draw() {
 
     drawHud();
 
+    Bengine::ImGuiManager::newFrame();
+
     m_textRenderingProgram.unuse();
 
     m_window.swapBuffer();
@@ -260,6 +266,7 @@ void MainGame::processInput() {
     SDL_Event evnt;
     //Will keep looping until there are no more events to process
     while (SDL_PollEvent(&evnt)) {
+        Bengine::ImGuiManager::processEvent(evnt);
         switch (evnt.type) {
         case SDL_QUIT:
             m_gameState = GameState::EXIT;
