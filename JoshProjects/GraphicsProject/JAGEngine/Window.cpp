@@ -1,14 +1,22 @@
-//Window.cpp
+// Window.cpp
 
 #include "Window.h"
 #include "JAGErrors.h"
 #include <iostream>
+#include <sstream> // For std::stringstream
+
+#include <GL/glew.h>
+#include <GL/gl.h>
+
 
 namespace JAGEngine {
   Window::Window() {
   }
 
   Window::~Window() {
+    if (_glContext != nullptr) {
+      SDL_GL_DeleteContext(_glContext);
+    }
     if (_sdlWindow != nullptr) {
       SDL_DestroyWindow(_sdlWindow);
     }
@@ -31,25 +39,30 @@ namespace JAGEngine {
       fatalError("SDL Window could not be created!");
     }
 
-    SDL_GLContext glContext = SDL_GL_CreateContext(_sdlWindow);
-    if (glContext == nullptr) {
+    _glContext = SDL_GL_CreateContext(_sdlWindow);
+    if (_glContext == nullptr) {
       fatalError("SDL_GL context could not be created.");
     }
 
+    // Initialize GLEW
+    glewExperimental = GL_TRUE;
     GLenum error = glewInit();
     if (error != GLEW_OK) {
-      fatalError("Could not initialize glew.");
+      fatalError("Could not initialize GLEW.");
     }
 
-    //check opengl version
-    std::printf("***   OpenGL Version: %s   ***", glGetString(GL_VERSION));
+    // Enable OpenGL debug output
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(Window::glDebugOutput, nullptr);
 
-    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+    // Check OpenGL version
+    std::printf("***   OpenGL Version: %s   ***\n", glGetString(GL_VERSION));
 
-    //set vsync
+    // Set VSync
     SDL_GL_SetSwapInterval(1);
 
-    //alpha blending
+    // Enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.0f, 0.0f, 0.85f, 1.0f);
@@ -57,40 +70,39 @@ namespace JAGEngine {
     return 0;
   }
 
+
   void Window::swapBuffer() {
     SDL_GL_SwapWindow(_sdlWindow);
   }
 
-
-  // Opengl debugging
-  void APIENTRY Window::glDebugOutput(GLenum source,
+  // OpenGL debugging callback function
+  void Window::glDebugOutput(GLenum source,
     GLenum type,
-    unsigned int id,
+    GLuint id,
     GLenum severity,
     GLsizei length,
-    const char* message,
+    const GLchar* message,
     const void* userParam) {
-    // ignore non-significant error/warning codes
-    // 131218 - performance - recompiling shader... hmmm
-    if (id == 131169/*driver allocated storage**/ || id == 131185 || id == 131218 || id == 131204 || id == 131186/*Buffer Performance warning*/) return;
+    // Ignore non-significant error/warning codes
+    if (id == 131169 || id == 131185 || id == 131218 || id == 131204 || id == 131186)
+      return;
 
     std::stringstream ss;
 
     ss << "---------------" << std::endl;
-    ss << "Debug message (" << id << " - " << std::hex << "0x" << id << "): " << message << std::endl;
+    ss << "Debug message (" << id << " - 0x" << std::hex << id << std::dec << "): " << message << std::endl;
 
-    switch (source)
-    {
+    switch (source) {
     case GL_DEBUG_SOURCE_API:             ss << "Source: API"; break;
     case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   ss << "Source: Window System"; break;
     case GL_DEBUG_SOURCE_SHADER_COMPILER: ss << "Source: Shader Compiler"; break;
     case GL_DEBUG_SOURCE_THIRD_PARTY:     ss << "Source: Third Party"; break;
     case GL_DEBUG_SOURCE_APPLICATION:     ss << "Source: Application"; break;
     case GL_DEBUG_SOURCE_OTHER:           ss << "Source: Other"; break;
-    } ss << std::endl;
+    }
+    ss << std::endl;
 
-    switch (type)
-    {
+    switch (type) {
     case GL_DEBUG_TYPE_ERROR:               ss << "Type: Error"; break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: ss << "Type: Deprecated Behaviour"; break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  ss << "Type: Undefined Behaviour"; break;
@@ -100,18 +112,20 @@ namespace JAGEngine {
     case GL_DEBUG_TYPE_PUSH_GROUP:          ss << "Type: Push Group"; break;
     case GL_DEBUG_TYPE_POP_GROUP:           ss << "Type: Pop Group"; break;
     case GL_DEBUG_TYPE_OTHER:               ss << "Type: Other"; break;
-    } ss << std::endl;
+    }
+    ss << std::endl;
 
-    switch (severity)
-    {
+    switch (severity) {
     case GL_DEBUG_SEVERITY_HIGH:         ss << "Severity: high"; break;
     case GL_DEBUG_SEVERITY_MEDIUM:       ss << "Severity: medium"; break;
     case GL_DEBUG_SEVERITY_LOW:          ss << "Severity: low"; break;
     case GL_DEBUG_SEVERITY_NOTIFICATION: ss << "Severity: notification"; break;
-    } ss << std::endl;
+    }
     ss << std::endl;
+    ss << std::endl;
+
     std::cout << ss.str();
-    __debugbreak();
+    // Uncomment the line below if you want to trigger a breakpoint when a debug message is received
+    // __debugbreak();
   }
 }
-

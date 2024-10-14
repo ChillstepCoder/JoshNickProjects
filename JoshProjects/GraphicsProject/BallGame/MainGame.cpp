@@ -28,6 +28,8 @@ MainGame::~MainGame() {
     // Empty
 }
 
+// MainGame.cpp
+
 void MainGame::run() {
   init();
   initBalls();
@@ -46,13 +48,14 @@ void MainGame::run() {
 
     updateImGui();
 
-    // Render game
+    // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Render game
     draw();
 
     // Render ImGui
     ImGui::Render();
-    glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     m_window.swapBuffer();
@@ -69,6 +72,8 @@ void MainGame::run() {
   ImGui::DestroyContext();
 }
 
+// MainGame.cpp
+
 void MainGame::init() {
   JAGEngine::init();
 
@@ -83,10 +88,18 @@ void MainGame::init() {
 
   m_window.create("Ball Game", m_screenWidth, m_screenHeight, SDL_WINDOW_OPENGL);
 
-  SDL_GLContext glContext = SDL_GL_CreateContext(m_window.getSDLWindow());
+  // Remove the redundant OpenGL context creation
+  // SDL_GLContext glContext = SDL_GL_CreateContext(m_window.getSDLWindow());
+  // if (glContext == nullptr) {
+  //   std::cerr << "OpenGL context could not be created! SDL Error: " << SDL_GetError() << std::endl;
+  //   // Handle error
+  // }
+
+  // Use the OpenGL context from the window
+  SDL_GLContext glContext = m_window.getGLContext();
   if (glContext == nullptr) {
-    std::cerr << "OpenGL context could not be created! SDL Error: " << SDL_GetError() << std::endl;
-    // Handle error (e.g., throw an exception or exit)
+    std::cerr << "OpenGL context could not be retrieved!" << std::endl;
+    // Handle error
   }
 
   glewExperimental = GL_TRUE;
@@ -123,6 +136,7 @@ void MainGame::init() {
   ImGui_ImplSDL2_InitForOpenGL(m_window.getSDLWindow(), glContext);
   ImGui_ImplOpenGL3_Init("#version 330");
 
+
   SDL_GL_SetSwapInterval(1);  // Enable VSync
 
   initRenderers();
@@ -133,6 +147,7 @@ void MainGame::init() {
     std::cerr << "OpenGL Error in init(): " << error << std::endl;
   }
 }
+
 
 void MainGame::initRenderers() {
     m_ballRenderers.push_back(std::make_unique<BallRenderer>());
@@ -253,31 +268,40 @@ void MainGame::initBalls() {
 }
 
 void MainGame::draw() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // Set the viewport to cover the whole window
+  glViewport(0, 0, m_screenWidth, m_screenHeight);
 
-  glm::mat4 projectionMatrix = m_camera.getCameraMatrix();
-
+  // Use the shader program
   m_textureProgram.use();
 
+  // Set the projection matrix uniform
   GLint pUniform = m_textureProgram.getUniformLocation("P");
   if (pUniform == -1) {
     std::cerr << "Failed to get uniform location for P" << std::endl;
   }
-  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_camera.getCameraMatrix()[0][0]);
 
+  // Set the texture uniform
   GLint textureUniform = m_textureProgram.getUniformLocation("mySampler");
   if (textureUniform == -1) {
     std::cerr << "Failed to get uniform location for mySampler" << std::endl;
   }
   glUniform1i(textureUniform, 0);
 
+  // Begin the sprite batch
   m_spriteBatch.begin();
-  m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, projectionMatrix);
+
+  // Let the BallRenderer add sprites to the batch
+  m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, m_camera.getCameraMatrix());
+
+  // End and render the sprite batch
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
 
+  // Unuse the shader program
   m_textureProgram.unuse();
 
+  // Draw the HUD
   drawHud();
 
   // Check for OpenGL errors

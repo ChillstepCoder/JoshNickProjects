@@ -1,4 +1,11 @@
 #pragma once
+
+// Window.h
+
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+
 #include <GL/glew.h>
 
 namespace JAGEngine {
