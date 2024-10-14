@@ -71,11 +71,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)64/Debug/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)64/Debug/;$(IncludePath);$(SolutionDir)deps/include/ImGui/</IncludePath>
     <LibraryPath>$(SolutionDir)deps/lib/;;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)64/Release/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)64/Release/;$(IncludePath);$(SolutionDir)deps/include/ImGui/</IncludePath>
     <LibraryPath>$(SolutionDir)deps/lib/;;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">

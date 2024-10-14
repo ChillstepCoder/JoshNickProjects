@@ -35,7 +35,6 @@ namespace Bengine {
         ImGui::DestroyContext();
 
         SDL_GL_DeleteContext(SDL_GL_GetCurrentContext());
-        SDL_DestroyWindow(s_window->getSDLWindow());
         SDL_Quit();
     }
 
@@ -45,10 +44,9 @@ namespace Bengine {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
+    }
 
-        // My code goes here!
-        Bengine::ImGuiManager::renderUI();
-
+    void ImGuiManager::renderFrame() {
         ImGui::Render();
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -57,19 +55,5 @@ namespace Bengine {
     void ImGuiManager::processEvent(SDL_Event& event) {
         if (!s_initialized) return;
         ImGui_ImplSDL2_ProcessEvent(&event);  
-    }
-
-    void ImGuiManager::renderUI() {
-        if (!s_initialized) return;
-
-        ImGui::Begin("Settings");
-        if (ImGui::Button("Hello")) {
-            std::cout << "hello" << std::endl;
-        }
-        static float value = 0.0f;
-        ImGui::DragFloat("Value", &value);
-        ImGui::End();
-
-        ImGui::ShowDemoWindow();
     }
 }

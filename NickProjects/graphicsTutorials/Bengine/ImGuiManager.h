@@ -9,10 +9,10 @@ namespace Bengine {
         static void init(Window* window);
         static void shutdown();
         static void newFrame();
+        static void renderFrame();
         static void processEvent(SDL_Event& event);
 
     private:
-        static void renderUI();
         inline static bool s_initialized = false;
         inline static Window* s_window;
     };

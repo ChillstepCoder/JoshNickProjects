@@ -8,6 +8,9 @@
 #include <Bengine/Timing.h>
 #include <Bengine/SpriteFont.h>
 #include <memory>
+#include "imgui.h"
+#include "ImGui/backends/imgui_impl_sdl2.h"
+#include "ImGui/backends/imgui_impl_opengl3.h"
 
 #include "BallController.h"
 #include "BallRenderer.h"
@@ -35,6 +38,7 @@ private:
     void update(float deltaTime);
     void draw();
     void drawHud();
+    void drawImgui();
     void processInput();
 
     int m_screenWidth = 0;

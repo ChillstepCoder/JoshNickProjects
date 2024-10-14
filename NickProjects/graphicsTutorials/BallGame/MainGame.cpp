@@ -241,6 +241,10 @@ void MainGame::draw() {
 
     Bengine::ImGuiManager::newFrame();
 
+    drawImgui();
+
+    Bengine::ImGuiManager::renderFrame();
+
     m_textRenderingProgram.unuse();
 
     m_window.swapBuffer();
@@ -257,6 +261,45 @@ void MainGame::drawHud() {
         glm::vec2(1.0f), 0.0f, fontColor);
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();
+}
+
+void MainGame::drawImgui() {
+
+    ImGui::Begin("Settings");
+    if (ImGui::Button("Hello")) {
+        std::cout << "hello" << std::endl;
+    }
+
+    if (ImGui::TreeNode("Vertical Sliders"))
+    {
+        const float spacing = 4;
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(spacing, spacing));
+
+        static float values[7] = { 0.0f, 0.60f, 0.35f, 0.9f, 0.70f, 0.20f, 0.0f };
+        ImGui::PushID("set1");
+        for (int i = 0; i < 7; i++)
+        {
+            if (i > 0) ImGui::SameLine();
+            ImGui::PushID(i);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(i / 7.0f, 0.6f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(i / 7.0f, 0.7f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(i / 7.0f, 0.9f, 0.9f));
+            ImGui::VSliderFloat("##v", ImVec2(18, 160), &values[i], 0.0f, 1.0f, "");
+            if (ImGui::IsItemActive() || ImGui::IsItemHovered())
+                ImGui::SetTooltip("%.3f", values[i]);
+            ImGui::PopStyleColor(4);
+            ImGui::PopID();
+        }
+        ImGui::PopID();
+        ImGui::PopStyleVar();
+        ImGui::TreePop();
+    }
+
+
+    static float value = 0.0f;
+    ImGui::DragFloat("Value", &value);
+    ImGui::End();
 }
 
 void MainGame::processInput() {
