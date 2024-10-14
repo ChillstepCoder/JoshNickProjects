@@ -128,6 +128,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\deps\include\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -139,6 +140,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\deps\include\ImGui\imgui.cpp" />
+    <ClCompile Include="..\deps\include\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="..\deps\include\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="..\deps\include\ImGui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\deps\include\ImGui\imgui_impl_sdl2.cpp" />
+    <ClCompile Include="..\deps\include\ImGui\imgui_tables.cpp" />
+    <ClCompile Include="..\deps\include\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Ball.cpp" />
     <ClCompile Include="BallController.cpp" />
     <ClCompile Include="BallRenderer.cpp" />

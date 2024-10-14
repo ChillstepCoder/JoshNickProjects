@@ -1,33 +1,38 @@
-//Window.h
+// Window.h
 
 #pragma once
 
-#include <SDL/SDL.h>
-#include <GL/glew.h>
 #include <string>
-#include <sstream>
-#include <Windows.h>
+#include <SDL/SDL.h>
+#include <GL/glew.h> // Include GLEW before OpenGL headers
+#include <GL/gl.h>   // Include OpenGL headers
+
 
 namespace JAGEngine {
-
   enum class windowFlags { INVISIBLE = 0x1, FULLSCREEN = 0x2, BORDERLESS = 0x4 };
 
-  class Window
-  {
+  class Window {
   public:
     Window();
     ~Window();
 
-    SDL_Window* getSDLWindow() const { return _sdlWindow; }
-    void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message, const void* userParam);
-
     int create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);
     void swapBuffer();
-    int getScreenWidth() { return _screenWidth; }
-    int getScreenHeight() { return _screenHeight; }
-  private:
-    SDL_Window* _sdlWindow;
-    int _screenWidth, _screenHeight;
-  };
 
+    SDL_Window* getSDLWindow() const { return _sdlWindow; }
+    SDL_GLContext getGLContext() const { return _glContext; }
+
+    static void glDebugOutput(GLenum source,
+      GLenum type,
+      GLuint id,
+      GLenum severity,
+      GLsizei length,
+      const GLchar* message,
+      const void* userParam);
+
+
+  private:
+    SDL_Window* _sdlWindow = nullptr;
+    SDL_GLContext _glContext = nullptr;
+  };
 }

@@ -1,3 +1,5 @@
+//MainGame.h
+
 #pragma once
 
 #include <JAGEngine/Camera2D.h>
@@ -32,13 +34,13 @@ public:
 
     ~MainGame();
     void run();
-
+    void update(float deltaTime);
 
 private:
     void init();
     void initRenderers();
     void initBalls();
-    void update(float deltaTime);
+    
     void draw();
     void drawHud();
     void processInput();

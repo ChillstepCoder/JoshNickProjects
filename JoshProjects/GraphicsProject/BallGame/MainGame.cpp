@@ -15,6 +15,7 @@
 #include <ctime>
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 // Some helpful constants.
 const float DESIRED_FPS = 60.0f; // FPS the game is designed to run at
@@ -27,72 +28,126 @@ MainGame::~MainGame() {
     // Empty
 }
 
+// MainGame.cpp
+
 void MainGame::run() {
   init();
   initBalls();
 
-  // Start our previousTicks variable
-  Uint32 previousTicks = SDL_GetTicks();
-
-  // Game loop
   while (m_gameState == GameState::RUNNING) {
-    m_fpsLimiter.begin();
-
-    // Calculate the frameTime in milliseconds
-    Uint32 newTicks = SDL_GetTicks();
-    Uint32 frameTime = newTicks - previousTicks;
-    previousTicks = newTicks;
-    float deltaTime = frameTime / 1000.0f; // Convert to seconds
-
-    JAGEngine::ImGuiManager::newFrame();
+    Uint32 startTime = SDL_GetTicks();
 
     processInput();
-    update(deltaTime);
-    m_camera.update();
+
+    update(1.0f / 60.0f);  // Fixed time step
+
+    // Start the ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
 
     updateImGui();
 
+    // Clear the screen
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Render game
     draw();
 
-    JAGEngine::ImGuiManager::render();
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     m_window.swapBuffer();
-    m_fps = m_fpsLimiter.end();
+
+    Uint32 frameTime = SDL_GetTicks() - startTime;
+    if (frameTime < 16) {  // Cap at ~60 FPS
+      SDL_Delay(16 - frameTime);
+    }
   }
 
-  JAGEngine::ImGuiManager::shutdown();
+  // Cleanup
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext();
 }
+
+// MainGame.cpp
 
 void MainGame::init() {
-    JAGEngine::init();
+  JAGEngine::init();
 
-    m_screenWidth = 1920;
-    m_screenHeight = 1080;
+  m_screenWidth = 1920;
+  m_screenHeight = 1080;
 
-    m_window.create("Ball Game", m_screenWidth, m_screenHeight, 0);
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    m_camera.init(m_screenWidth, m_screenHeight);
-    // Point the camera to the center of the screen
-    m_camera.setPosition(glm::vec2(m_screenWidth / 2.0f, m_screenHeight / 2.0f));
-    
-    m_spriteBatch.init();
-    // Initialize sprite font
-    m_spriteFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/titilium_bold.ttf", 40);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    // Compile our texture shader
-    m_textureProgram.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-    m_textureProgram.addAttribute("vertexPosition");
-    m_textureProgram.addAttribute("vertexColor");
-    m_textureProgram.addAttribute("vertexUV");
-    m_textureProgram.linkShaders();
+  m_window.create("Ball Game", m_screenWidth, m_screenHeight, SDL_WINDOW_OPENGL);
 
-    m_fpsLimiter.setMaxFPS(60.0f);
+  // Remove the redundant OpenGL context creation
+  // SDL_GLContext glContext = SDL_GL_CreateContext(m_window.getSDLWindow());
+  // if (glContext == nullptr) {
+  //   std::cerr << "OpenGL context could not be created! SDL Error: " << SDL_GetError() << std::endl;
+  //   // Handle error
+  // }
 
-    JAGEngine::ImGuiManager::init(&m_window);
+  // Use the OpenGL context from the window
+  SDL_GLContext glContext = m_window.getGLContext();
+  if (glContext == nullptr) {
+    std::cerr << "OpenGL context could not be retrieved!" << std::endl;
+    // Handle error
+  }
 
-    initRenderers();
-    
+  glewExperimental = GL_TRUE;
+  GLenum glewError = glewInit();
+  if (glewError != GLEW_OK) {
+    std::cerr << "Error initializing GLEW! " << glewGetErrorString(glewError) << std::endl;
+    // Handle error
+  }
+
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  m_camera.init(m_screenWidth, m_screenHeight);
+  m_camera.setPosition(glm::vec2(m_screenWidth / 2.0f, m_screenHeight / 2.0f));
+
+  m_spriteBatch.init();
+
+  m_spriteFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/data-unifon.ttf", 40);
+
+  m_textureProgram.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
+  m_textureProgram.addAttribute("vertexPosition");
+  m_textureProgram.addAttribute("vertexColor");
+  m_textureProgram.addAttribute("vertexUV");
+  m_textureProgram.linkShaders();
+
+  m_fpsLimiter.setMaxFPS(60.0f);
+
+  // Initialize ImGui
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  ImGui::StyleColorsDark();
+  ImGui_ImplSDL2_InitForOpenGL(m_window.getSDLWindow(), glContext);
+  ImGui_ImplOpenGL3_Init("#version 330");
+
+
+  SDL_GL_SetSwapInterval(1);  // Enable VSync
+
+  initRenderers();
+
+  // Check for OpenGL errors
+  GLenum error = glGetError();
+  if (error != GL_NO_ERROR) {
+    std::cerr << "OpenGL Error in init(): " << error << std::endl;
+  }
 }
+
 
 void MainGame::initRenderers() {
     m_ballRenderers.push_back(std::make_unique<BallRenderer>());
@@ -119,124 +174,152 @@ struct BallSpawn {
     float probability;
     std::uniform_real_distribution<float> randSpeed;
 };
-#include <iostream>
+
 void MainGame::initBalls() {
 
-    // Initialize the grid
-    m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, CELL_SIZE);
+  // Initialize the grid
+  m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, CELL_SIZE);
 
 #define ADD_BALL(p, ...) \
     totalProbability += p; \
     possibleBalls.emplace_back(__VA_ARGS__);
 
-    // Number of balls to spawn
-    const int NUM_BALLS = 20000;
+  // Number of balls to spawn
+  const int NUM_BALLS = 20000;
 
-    // Random engine stuff
-    std::mt19937 randomEngine((unsigned int)time(nullptr));
-    std::uniform_real_distribution<float> randX(0.0f, (float)m_screenWidth);
-    std::uniform_real_distribution<float> randY(0.0f, (float)m_screenHeight);
-    std::uniform_real_distribution<float> randDir(-1.0f, 1.0f);
+  // Random engine stuff
+  std::mt19937 randomEngine((unsigned int)time(nullptr));
+  std::uniform_real_distribution<float> randX(0.0f, (float)m_screenWidth);
+  std::uniform_real_distribution<float> randY(0.0f, (float)m_screenHeight);
+  std::uniform_real_distribution<float> randDir(-1.0f, 1.0f);
 
-    // Add all possible balls
-    std::vector <BallSpawn> possibleBalls;
-    float totalProbability = 0.0f;
+  // Add all possible balls
+  std::vector <BallSpawn> possibleBalls;
+  float totalProbability = 0.0f;
 
-    /// Random values for ball types
-    std::uniform_real_distribution<float> r1(2.0f, 6.0f);
-    std::uniform_int_distribution<int> r2(0, 255);
+  /// Random values for ball types
+  std::uniform_real_distribution<float> r1(2.0f, 6.0f);
+  std::uniform_int_distribution<int> r2(0, 255);
 
-    // Adds the balls using a macro
-    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(255, 255, 255, 255),
-             2.0f, 1.0f, 0.1f, 7.0f, totalProbability);
-    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(1, 254, 145, 255),
-             2.0f, 2.0f, 0.1f, 3.0f, totalProbability);
-    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(177, 0, 254, 255),
-             3.0f, 4.0f, 0.0f, 0.0f, totalProbability)
+  // Adds the balls using a macro
+  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(255, 255, 255, 255),
+    2.0f, 1.0f, 0.1f, 7.0f, totalProbability);
+  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(1, 254, 145, 255),
+    2.0f, 2.0f, 0.1f, 3.0f, totalProbability);
+  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(177, 0, 254, 255),
+    3.0f, 4.0f, 0.0f, 0.0f, totalProbability)
     ADD_BALL(1.0f, JAGEngine::ColorRGBA8(254, 0, 0, 255),
-             3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
-    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(0, 255, 255, 255),
-             3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
-    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(255, 255, 0, 255),
-             3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
-    // Make a bunch of random ball types
-    for (int i = 0; i < 10000; i++) {
-        ADD_BALL(1.0f, JAGEngine::ColorRGBA8(r2(randomEngine), r2(randomEngine), r2(randomEngine), 255),
-                 r1(randomEngine), r1(randomEngine), 0.0f, 0.0f, totalProbability);
+      3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
+  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(0, 255, 255, 255),
+    3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
+  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(255, 255, 0, 255),
+    3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
+  // Make a bunch of random ball types
+  for (int i = 0; i < 10000; i++) {
+    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(r2(randomEngine), r2(randomEngine), r2(randomEngine), 255),
+      r1(randomEngine), r1(randomEngine), 0.0f, 0.0f, totalProbability);
+  }
+
+  // Random probability for ball spawn
+  std::uniform_real_distribution<float> spawn(0.0f, totalProbability);
+
+  // Small optimization that sets the size of the internal array to prevent
+  // extra allocations.
+  m_balls.reserve(NUM_BALLS);
+
+  // Set up ball to spawn with default value
+  BallSpawn* ballToSpawn = &possibleBalls[0];
+  for (int i = 0; i < NUM_BALLS; i++) {
+    // Get the ball spawn roll
+    float spawnVal = spawn(randomEngine);
+    // Figure out which ball we picked
+    for (size_t j = 0; j < possibleBalls.size(); j++) {
+      if (spawnVal <= possibleBalls[j].probability) {
+        ballToSpawn = &possibleBalls[j];
+        break;
+      }
     }
 
-    // Random probability for ball spawn
-    std::uniform_real_distribution<float> spawn(0.0f, totalProbability);
+    // Get random starting position
+    glm::vec2 pos(randX(randomEngine), randY(randomEngine));
 
-    // Small optimization that sets the size of the internal array to prevent
-    // extra allocations.
-    m_balls.reserve(NUM_BALLS);
-
-    // Set up ball to spawn with default value
-    BallSpawn* ballToSpawn = &possibleBalls[0];
-    for (int i = 0; i < NUM_BALLS; i++) {
-        // Get the ball spawn roll
-        float spawnVal = spawn(randomEngine);
-        // Figure out which ball we picked
-        for (size_t j = 0; j < possibleBalls.size(); j++) {
-            if (spawnVal <= possibleBalls[j].probability) {
-                ballToSpawn = &possibleBalls[j];
-                break;
-            }
-        }
-
-        // Get random starting position
-        glm::vec2 pos(randX(randomEngine), randY(randomEngine));
-
-        // Hacky way to get a random direction
-        glm::vec2 direction(randDir(randomEngine), randDir(randomEngine));
-        if (direction.x != 0.0f || direction.y != 0.0f) { // The chances of direction == 0 are astronomically low
-            direction = glm::normalize(direction);
-        } else {
-            direction = glm::vec2(1.0f, 0.0f); // default direction
-        }
-
-        // Add ball
-        m_balls.emplace_back(ballToSpawn->radius, ballToSpawn->mass, pos, direction * ballToSpawn->randSpeed(randomEngine),
-                             JAGEngine::ResourceManager::getTexture("Textures/circle.png").id,
-                             ballToSpawn->color);
-        // Add the ball do the grid. IF YOU EVER CALL EMPLACE BACK AFTER INIT BALLS, m_grid will have DANGLING POINTERS!
-        m_grid->addBall(&m_balls.back());
+    // Hacky way to get a random direction
+    glm::vec2 direction(randDir(randomEngine), randDir(randomEngine));
+    if (direction.x != 0.0f || direction.y != 0.0f) { // The chances of direction == 0 are astronomically low
+      direction = glm::normalize(direction);
     }
-}
+    else {
+      direction = glm::vec2(1.0f, 0.0f); // default direction
+    }
 
-void MainGame::update(float deltaTime) {
-    m_ballController.updateBalls(m_balls, m_grid.get(), deltaTime, m_screenWidth, m_screenHeight);
+    // Add ball
+    GLuint textureId = JAGEngine::ResourceManager::getTexture("Textures/circle.png").id;
+    if (textureId == 0) {
+      std::cerr << "Failed to load ball texture!" << std::endl;
+      // Handle error (e.g., use a default texture or exit)
+    }
+
+    m_balls.emplace_back(ballToSpawn->radius, ballToSpawn->mass, pos, direction * ballToSpawn->randSpeed(randomEngine),
+      textureId,
+      ballToSpawn->color);
+    // Add the ball do the grid. IF YOU EVER CALL EMPLACE BACK AFTER INIT BALLS, m_grid will have DANGLING POINTERS!
+    m_grid->addBall(&m_balls.back());
+  }
 }
 
 void MainGame::draw() {
-    // Set the base depth to 1.0
-    glClearDepth(1.0);
-    // Clear the color and depth buffer
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // Set the viewport to cover the whole window
+  glViewport(0, 0, m_screenWidth, m_screenHeight);
 
-    glActiveTexture(GL_TEXTURE0);
+  // Use the shader program
+  m_textureProgram.use();
 
-    // Grab the camera matrix
-    glm::mat4 projectionMatrix = m_camera.getCameraMatrix();
+  // Set the projection matrix uniform
+  GLint pUniform = m_textureProgram.getUniformLocation("P");
+  if (pUniform == -1) {
+    std::cerr << "Failed to get uniform location for P" << std::endl;
+  }
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_camera.getCameraMatrix()[0][0]);
 
-    m_ballRenderers[m_currentRenderer]->setHueShift(m_hueShift);
-    m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, projectionMatrix);
+  // Set the texture uniform
+  GLint textureUniform = m_textureProgram.getUniformLocation("mySampler");
+  if (textureUniform == -1) {
+    std::cerr << "Failed to get uniform location for mySampler" << std::endl;
+  }
+  glUniform1i(textureUniform, 0);
 
-    m_textureProgram.use();
+  // Begin the sprite batch
+  m_spriteBatch.begin();
 
-    // Make sure the shader uses texture 0
-    GLint textureUniform = m_textureProgram.getUniformLocation("mySampler");
-    glUniform1i(textureUniform, 0);
+  // Let the BallRenderer add sprites to the batch
+  m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, m_camera.getCameraMatrix());
 
-    GLint pUniform = m_textureProgram.getUniformLocation("P");
-    glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
+  // End and render the sprite batch
+  m_spriteBatch.end();
+  m_spriteBatch.renderBatch();
 
-    drawHud();
+  // Unuse the shader program
+  m_textureProgram.unuse();
 
-    m_textureProgram.unuse();
+  // Draw the HUD
+  drawHud();
 
-    m_window.swapBuffer();
+  // Check for OpenGL errors
+  GLenum error = glGetError();
+  if (error != GL_NO_ERROR) {
+    std::cerr << "OpenGL Error in draw(): " << error << std::endl;
+  }
+}
+
+void MainGame::update(float deltaTime) {
+  m_ballController.updateBalls(m_balls, m_grid.get(), deltaTime, m_screenWidth, m_screenHeight);
+
+  // Add some debug output
+  static int frameCount = 0;
+  if (frameCount % 60 == 0) {  // Print every 60 frames
+    std::cout << "Ball 0 position: (" << m_balls[0].position.x << ", " << m_balls[0].position.y << ")" << std::endl;
+  }
+  frameCount++;
 }
 
 void MainGame::drawHud() {
@@ -253,65 +336,94 @@ void MainGame::drawHud() {
 }
 
 void MainGame::processInput() {
-    // Update input manager
-    m_inputManager.update();
+  // Update input manager
+  m_inputManager.update();
 
-    SDL_Event evnt;
-    while (SDL_PollEvent(&evnt)) {
-      JAGEngine::ImGuiManager::processEvent(evnt);
-        switch (evnt.type) {
-            case SDL_QUIT:
-                m_gameState = GameState::EXIT;
-                break;
-            case SDL_MOUSEMOTION:
-                m_ballController.onMouseMove(m_balls, (float)evnt.motion.x, (float)m_screenHeight - (float)evnt.motion.y);
-                m_inputManager.setMouseCoords((float)evnt.motion.x, (float)evnt.motion.y);
-                break;
-            case SDL_KEYDOWN:
-                m_inputManager.pressKey(evnt.key.keysym.sym);
-                break;
-            case SDL_KEYUP:
-                m_inputManager.releaseKey(evnt.key.keysym.sym);
-                break;
-            case SDL_MOUSEBUTTONDOWN:
-                m_ballController.onMouseDown(m_balls, (float)evnt.button.x, (float)m_screenHeight - (float)evnt.button.y);
-                m_inputManager.pressKey(evnt.button.button);
-                break;
-            case SDL_MOUSEBUTTONUP:
-                m_ballController.onMouseUp(m_balls);
-                m_inputManager.releaseKey(evnt.button.button);
-                break;
-        }
-    }
+  SDL_Event event;
+  while (SDL_PollEvent(&event)) {
+    ImGui_ImplSDL2_ProcessEvent(&event);
 
-    if (m_inputManager.isKeyPressed(SDLK_ESCAPE)) {
-        m_gameState = GameState::EXIT;
+    switch (event.type) {
+    case SDL_QUIT:
+      m_gameState = GameState::EXIT;
+      break;
+    case SDL_MOUSEMOTION:
+      if (!ImGui::GetIO().WantCaptureMouse) {
+        m_ballController.onMouseMove(m_balls, (float)event.motion.x, (float)m_screenHeight - (float)event.motion.y);
+        m_inputManager.setMouseCoords((float)event.motion.x, (float)event.motion.y);
+      }
+      break;
+    case SDL_KEYDOWN:
+      if (!ImGui::GetIO().WantCaptureKeyboard) {
+        m_inputManager.pressKey(event.key.keysym.sym);
+      }
+      break;
+    case SDL_KEYUP:
+      if (!ImGui::GetIO().WantCaptureKeyboard) {
+        m_inputManager.releaseKey(event.key.keysym.sym);
+      }
+      break;
+    case SDL_MOUSEBUTTONDOWN:
+      if (!ImGui::GetIO().WantCaptureMouse) {
+        m_ballController.onMouseDown(m_balls, (float)event.button.x, (float)m_screenHeight - (float)event.button.y);
+        m_inputManager.pressKey(event.button.button);
+      }
+      break;
+    case SDL_MOUSEBUTTONUP:
+      if (!ImGui::GetIO().WantCaptureMouse) {
+        m_ballController.onMouseUp(m_balls);
+        m_inputManager.releaseKey(event.button.button);
+      }
+      break;
     }
-    // Handle gravity changes
-    if (m_inputManager.isKeyPressed(SDLK_LEFT)) {
-        m_ballController.setGravityDirection(GravityDirection::LEFT);
-    } else if (m_inputManager.isKeyPressed(SDLK_RIGHT)) {
-        m_ballController.setGravityDirection(GravityDirection::RIGHT);
-    } else if (m_inputManager.isKeyPressed(SDLK_UP)) {
-        m_ballController.setGravityDirection(GravityDirection::UP);
-    } else if (m_inputManager.isKeyPressed(SDLK_DOWN)) {
-        m_ballController.setGravityDirection(GravityDirection::DOWN);
-    } else if (m_inputManager.isKeyPressed(SDLK_SPACE)) {
-        m_ballController.setGravityDirection(GravityDirection::NONE);
-    }
+  }
 
-    // Switch renderers
-    if (m_inputManager.isKeyPressed(SDLK_1)) {
-        m_currentRenderer++;
-        if (m_currentRenderer >= (int)m_ballRenderers.size()) {
-            m_currentRenderer = 0;
-        }
+  if (m_inputManager.isKeyPressed(SDLK_ESCAPE)) {
+    m_gameState = GameState::EXIT;
+  }
+  // Handle gravity changes
+  if (m_inputManager.isKeyPressed(SDLK_LEFT)) {
+    m_ballController.setGravityDirection(GravityDirection::LEFT);
+  }
+  else if (m_inputManager.isKeyPressed(SDLK_RIGHT)) {
+    m_ballController.setGravityDirection(GravityDirection::RIGHT);
+  }
+  else if (m_inputManager.isKeyPressed(SDLK_UP)) {
+    m_ballController.setGravityDirection(GravityDirection::UP);
+  }
+  else if (m_inputManager.isKeyPressed(SDLK_DOWN)) {
+    m_ballController.setGravityDirection(GravityDirection::DOWN);
+  }
+  else if (m_inputManager.isKeyPressed(SDLK_SPACE)) {
+    m_ballController.setGravityDirection(GravityDirection::NONE);
+  }
+
+  // Switch renderers
+  if (m_inputManager.isKeyPressed(SDLK_1)) {
+    m_currentRenderer++;
+    if (m_currentRenderer >= (int)m_ballRenderers.size()) {
+      m_currentRenderer = 0;
     }
+  }
 }
 
 void MainGame::updateImGui() {
-  ImGui::Begin("Ball Controls");
+  ImGui::SetNextWindowPos(ImVec2(m_screenWidth / 2, m_screenHeight / 2), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+  ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
+
+  ImGui::Begin("Ball Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+  ImGui::Text("ImGui Debug Info:");
+  ImGui::Text("Window Position: (%.1f, %.1f)", ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+  ImGui::Text("Window Size: (%.1f, %.1f)", ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+
+  ImGui::Separator();
+
   ImGui::SliderFloat("Hue Shift", &m_hueShift, 0.0f, 360.0f);
-  // Add more sliders or controls here
+
+  if (ImGui::Button("Test Button")) {
+    // Add some action here if needed
+  }
+
   ImGui::End();
 }
