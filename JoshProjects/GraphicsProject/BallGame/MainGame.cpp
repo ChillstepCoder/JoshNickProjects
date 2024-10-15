@@ -80,32 +80,12 @@ void MainGame::init() {
   m_screenWidth = 1920;
   m_screenHeight = 1080;
 
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-
   m_window.create("Ball Game", m_screenWidth, m_screenHeight, SDL_WINDOW_OPENGL);
-
-  // Remove the redundant OpenGL context creation
-  // SDL_GLContext glContext = SDL_GL_CreateContext(m_window.getSDLWindow());
-  // if (glContext == nullptr) {
-  //   std::cerr << "OpenGL context could not be created! SDL Error: " << SDL_GetError() << std::endl;
-  //   // Handle error
-  // }
 
   // Use the OpenGL context from the window
   SDL_GLContext glContext = m_window.getGLContext();
   if (glContext == nullptr) {
     std::cerr << "OpenGL context could not be retrieved!" << std::endl;
-    // Handle error
-  }
-
-  glewExperimental = GL_TRUE;
-  GLenum glewError = glewInit();
-  if (glewError != GLEW_OK) {
-    std::cerr << "Error initializing GLEW! " << glewGetErrorString(glewError) << std::endl;
     // Handle error
   }
 
@@ -131,7 +111,7 @@ void MainGame::init() {
   // Initialize ImGui
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  //ImGuiIO& io = ImGui::GetIO(); (void)io;
   ImGui::StyleColorsDark();
   ImGui_ImplSDL2_InitForOpenGL(m_window.getSDLWindow(), glContext);
   ImGui_ImplOpenGL3_Init("#version 330");
@@ -320,6 +300,8 @@ void MainGame::update(float deltaTime) {
     std::cout << "Ball 0 position: (" << m_balls[0].position.x << ", " << m_balls[0].position.y << ")" << std::endl;
   }
   frameCount++;
+
+  m_camera.update();
 }
 
 void MainGame::drawHud() {

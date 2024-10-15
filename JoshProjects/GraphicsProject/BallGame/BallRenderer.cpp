@@ -74,7 +74,7 @@ VelocityBallRenderer::VelocityBallRenderer(int screenWidth, int screenHeight) :
 
 void VelocityBallRenderer::renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
                                        const glm::mat4& projectionMatrix) {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 
     // Lazily initialize the program
     if (m_program == nullptr) {
