@@ -1,8 +1,0 @@
-﻿  The vcpkg manifest was disabled, but we found a manifest file in C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\. You may want to enable vcpkg manifests in your properties page or pass /p:VcpkgEnableManifest=true to the msbuild invocation.
-  Bullet.cpp
-  main.cpp
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\Bullet.cpp(26,17): error C2660: 'Bengine::SpriteBatch::draw': function does not take 5 arguments
-  MainGame.cpp
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,69): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(98,54): warning C4244: 'argument': conversion from 'Sint32' to 'float', possible loss of data
-C:\Users\Nicholas\Documents\GitHub\JoshNickProjects2\NickProjects\graphicsTutorials\graphicsTutorials\MainGame.cpp(181,19): error C2660: 'Bengine::SpriteBatch::draw': function does not take 5 arguments
