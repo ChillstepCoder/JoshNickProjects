@@ -25,7 +25,7 @@ private:
     /// Checks collision between two balls
     void checkCollision(Ball& b1, Ball& b2);
     /// Returns true if the mouse is hovering over a ball
-    bool isMouseOnBall(Ball&b, float mouseX, float mouseY);
+    bool isMouseOnBall(const Ball& ball, float mouseX, float mouseY);
     glm::vec2 getGravityAccel();
 
     int m_grabbedBall = -1; ///< The ball we are currently grabbing on to

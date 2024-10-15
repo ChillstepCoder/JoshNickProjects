@@ -1,8 +1,6 @@
-//MainGame.h
+// MainGame.h
 
 #pragma once
-
-#include <JAGEngine/Camera2D.h>
 #include <JAGEngine/SpriteBatch.h>
 #include <JAGEngine/InputManager.h>
 #include <JAGEngine/Window.h>
@@ -10,10 +8,10 @@
 #include <JAGEngine/Timing.h>
 #include <JAGEngine/SpriteFont.h>
 #include <memory>
-
 #include <JAGEngine/ImGuiManager.h>
 #include "BallController.h"
 #include "BallRenderer.h"
+#include "BallGameCamera.h"
 #include "Grid.h"
 
 // TODO:
@@ -60,7 +58,7 @@ private:
     JAGEngine::Window m_window; ///< The main window
     JAGEngine::SpriteBatch m_spriteBatch; ///< Renders all the balls
     std::unique_ptr<JAGEngine::SpriteFont> m_spriteFont; ///< For font rendering
-    JAGEngine::Camera2D m_camera; ///< Renders the scene
+    BallGameCamera m_camera;
     JAGEngine::InputManager m_inputManager; ///< Handles input
     JAGEngine::GLSLProgram m_textureProgram; ///< Shader for textures]
 

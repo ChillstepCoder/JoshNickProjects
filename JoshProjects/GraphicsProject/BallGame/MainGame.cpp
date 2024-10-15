@@ -80,6 +80,8 @@ void MainGame::init() {
   m_screenWidth = 1920;
   m_screenHeight = 1080;
 
+  glViewport(0, 0, m_screenWidth, m_screenHeight);
+
   m_window.create("Ball Game", m_screenWidth, m_screenHeight, SDL_WINDOW_OPENGL);
 
   // Use the OpenGL context from the window
@@ -254,12 +256,12 @@ void MainGame::draw() {
   // Use the shader program
   m_textureProgram.use();
 
-  // Set the projection matrix uniform
+  glActiveTexture(GL_TEXTURE0);
+
+  // Use the new camera matrix
+  glm::mat4 projectionMatrix = m_camera.getCameraMatrix();
   GLint pUniform = m_textureProgram.getUniformLocation("P");
-  if (pUniform == -1) {
-    std::cerr << "Failed to get uniform location for P" << std::endl;
-  }
-  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_camera.getCameraMatrix()[0][0]);
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
   // Set the texture uniform
   GLint textureUniform = m_textureProgram.getUniformLocation("mySampler");
@@ -331,23 +333,19 @@ void MainGame::processInput() {
       break;
     case SDL_MOUSEMOTION:
       if (!ImGui::GetIO().WantCaptureMouse) {
-        m_ballController.onMouseMove(m_balls, (float)event.motion.x, (float)m_screenHeight - (float)event.motion.y);
-        m_inputManager.setMouseCoords((float)event.motion.x, (float)event.motion.y);
-      }
-      break;
-    case SDL_KEYDOWN:
-      if (!ImGui::GetIO().WantCaptureKeyboard) {
-        m_inputManager.pressKey(event.key.keysym.sym);
-      }
-      break;
-    case SDL_KEYUP:
-      if (!ImGui::GetIO().WantCaptureKeyboard) {
-        m_inputManager.releaseKey(event.key.keysym.sym);
+        glm::vec2 screenCoords(event.motion.x, event.motion.y);
+        glm::vec2 worldCoords = m_camera.convertScreenToWorld(screenCoords);
+        std::cout << "Screen coords: (" << screenCoords.x << ", " << screenCoords.y
+          << ") World coords: (" << worldCoords.x << ", " << worldCoords.y << ")" << std::endl;
+        m_ballController.onMouseMove(m_balls, worldCoords.x, worldCoords.y);
+        m_inputManager.setMouseCoords(worldCoords.x, worldCoords.y);
       }
       break;
     case SDL_MOUSEBUTTONDOWN:
       if (!ImGui::GetIO().WantCaptureMouse) {
-        m_ballController.onMouseDown(m_balls, (float)event.button.x, (float)m_screenHeight - (float)event.button.y);
+        glm::vec2 mouseCoords = m_camera.convertScreenToWorld(
+          glm::vec2((float)event.button.x, (float)event.button.y));
+        m_ballController.onMouseDown(m_balls, mouseCoords.x, mouseCoords.y);
         m_inputManager.pressKey(event.button.button);
       }
       break;

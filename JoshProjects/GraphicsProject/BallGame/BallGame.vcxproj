@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="Ball.h" />
     <ClInclude Include="BallController.h" />
+    <ClInclude Include="BallGameCamera.h" />
     <ClInclude Include="BallRenderer.h" />
     <ClInclude Include="Grid.h" />
     <ClInclude Include="MainGame.h" />

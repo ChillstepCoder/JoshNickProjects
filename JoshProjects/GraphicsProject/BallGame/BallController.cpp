@@ -1,7 +1,7 @@
 //BallController.cpp
 
 #include "BallController.h"
-
+#include <iostream>
 #include "Grid.h"
 
 void BallController::updateBalls(std::vector <Ball>& balls, Grid* grid, float deltaTime, int maxX, int maxY) {
@@ -65,30 +65,29 @@ void BallController::updateBalls(std::vector <Ball>& balls, Grid* grid, float de
     }
 }
 
-void BallController::onMouseDown(std::vector <Ball>& balls, float mouseX, float mouseY) {
-    for (size_t i = 0; i < balls.size(); i++) {
-        // Check if the mouse is hovering over a ball
-        if (isMouseOnBall(balls[i], mouseX, mouseY)) {
-            m_grabbedBall = i; // BE AWARE, if you change the order of the balls in the vector, this becomes invalid!
-            m_grabOffset = glm::vec2(mouseX, mouseY) - balls[i].position;
-            m_prevPos = balls[i].position;
-            balls[i].velocity = glm::vec2(0.0f);
-        }
-    }
+void BallController::onMouseMove(std::vector<Ball>& balls, float mouseX, float mouseY) {
+  if (m_grabbedBall != -1) {
+    balls[m_grabbedBall].position = glm::vec2(mouseX, mouseY) - m_grabOffset;
+  }
 }
 
-void BallController::onMouseUp(std::vector <Ball>& balls) {
-    if (m_grabbedBall != -1) {
-        // Throw the ball!
-        balls[m_grabbedBall].velocity = balls[m_grabbedBall].position - m_prevPos;
-        m_grabbedBall = -1;
+void BallController::onMouseDown(std::vector<Ball>& balls, float mouseX, float mouseY) {
+  for (size_t i = 0; i < balls.size(); i++) {
+    if (isMouseOnBall(balls[i], mouseX, mouseY)) {
+      m_grabbedBall = i;
+      m_grabOffset = glm::vec2(mouseX, mouseY) - balls[i].position;
+      m_prevPos = balls[i].position;
+      balls[i].velocity = glm::vec2(0.0f);
+      break;
     }
+  }
 }
 
-void BallController::onMouseMove(std::vector <Ball>& balls, float mouseX, float mouseY) {
-    if (m_grabbedBall != -1) {
-        balls[m_grabbedBall].position = glm::vec2(mouseX, mouseY) - m_grabOffset;
-    }
+void BallController::onMouseUp(std::vector<Ball>& balls) {
+  if (m_grabbedBall != -1) {
+    balls[m_grabbedBall].velocity = balls[m_grabbedBall].position - m_prevPos;
+    m_grabbedBall = -1;
+  }
 }
 
 void BallController::updateCollision(Grid* grid) {
@@ -169,9 +168,8 @@ void BallController::checkCollision(Ball& b1, Ball& b2) {
 }
 
 
-bool BallController::isMouseOnBall(Ball&b, float mouseX, float mouseY) {
-    return (mouseX >= b.position.x - b.radius && mouseX < b.position.x + b.radius &&
-            mouseY >= b.position.y - b.radius && mouseY < b.position.y + b.radius);
+bool BallController::isMouseOnBall(const Ball& ball, float mouseX, float mouseY) {
+  return glm::distance(glm::vec2(mouseX, mouseY), ball.position) < ball.radius;
 }
 
 glm::vec2 BallController::getGravityAccel() {
