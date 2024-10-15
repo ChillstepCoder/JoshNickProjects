@@ -24,14 +24,22 @@ namespace JAGEngine {
 
   int Window::create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags) {
     Uint32 flags = SDL_WINDOW_OPENGL;
-    if (currentFlags & static_cast<unsigned int>(windowFlags::INVISIBLE)) {
-      flags |= SDL_WINDOW_HIDDEN;
-    }
-    if (currentFlags & static_cast<unsigned int>(windowFlags::FULLSCREEN)) {
+
+    if (currentFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
       flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+      screenWidth = 0;  // Let SDL decide the size for fullscreen
+      screenHeight = 0;
     }
-    if (currentFlags & static_cast<unsigned int>(windowFlags::BORDERLESS)) {
-      flags |= SDL_WINDOW_BORDERLESS;
+    else {
+      if (currentFlags & static_cast<unsigned int>(windowFlags::INVISIBLE)) {
+        flags |= SDL_WINDOW_HIDDEN;
+      }
+      if (currentFlags & static_cast<unsigned int>(windowFlags::FULLSCREEN)) {
+        flags |= SDL_WINDOW_FULLSCREEN;
+      }
+      if (currentFlags & static_cast<unsigned int>(windowFlags::BORDERLESS)) {
+        flags |= SDL_WINDOW_BORDERLESS;
+      }
     }
 
     _sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth, screenHeight, flags);

@@ -81,8 +81,8 @@ public:
 private:
   int _screenWidth, _screenHeight;
   glm::vec2 _position;
-  glm::mat4 _cameraMatrix;
-  glm::mat4 _orthoMatrix;
   float _scale;
   bool _needsMatrixUpdate;
+  glm::mat4 _cameraMatrix;
+  glm::mat4 _orthoMatrix;
 };

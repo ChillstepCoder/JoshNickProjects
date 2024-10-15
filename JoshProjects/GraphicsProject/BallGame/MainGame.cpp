@@ -77,12 +77,13 @@ void MainGame::run() {
 void MainGame::init() {
   JAGEngine::init();
 
-  m_screenWidth = 1920;
-  m_screenHeight = 1080;
+  // Create the window without specifying size, using SDL_WINDOW_FULLSCREEN_DESKTOP flag
+  m_window.create("Ball Game", 0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP);
 
-  glViewport(0, 0, m_screenWidth, m_screenHeight);
+  // Get the actual screen size
+  SDL_GetWindowSize(m_window.getSDLWindow(), &m_screenWidth, &m_screenHeight);
 
-  m_window.create("Ball Game", m_screenWidth, m_screenHeight, SDL_WINDOW_OPENGL);
+  std::cout << "Actual screen size: " << m_screenWidth << "x" << m_screenHeight << std::endl;
 
   // Use the OpenGL context from the window
   SDL_GLContext glContext = m_window.getGLContext();
@@ -94,6 +95,8 @@ void MainGame::init() {
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glViewport(0, 0, m_screenWidth, m_screenHeight);
 
   m_camera.init(m_screenWidth, m_screenHeight);
   m_camera.setPosition(glm::vec2(m_screenWidth / 2.0f, m_screenHeight / 2.0f));
@@ -167,7 +170,7 @@ void MainGame::initBalls() {
     possibleBalls.emplace_back(__VA_ARGS__);
 
   // Number of balls to spawn
-  const int NUM_BALLS = 20000;
+  const int NUM_BALLS = 5000;
 
   // Random engine stuff
   std::mt19937 randomEngine((unsigned int)time(nullptr));
@@ -336,7 +339,8 @@ void MainGame::processInput() {
         glm::vec2 screenCoords(event.motion.x, event.motion.y);
         glm::vec2 worldCoords = m_camera.convertScreenToWorld(screenCoords);
         std::cout << "Screen coords: (" << screenCoords.x << ", " << screenCoords.y
-          << ") World coords: (" << worldCoords.x << ", " << worldCoords.y << ")" << std::endl;
+          << ") World coords: (" << worldCoords.x << ", " << worldCoords.y
+          << ") Screen size: " << m_screenWidth << "x" << m_screenHeight << std::endl;
         m_ballController.onMouseMove(m_balls, worldCoords.x, worldCoords.y);
         m_inputManager.setMouseCoords(worldCoords.x, worldCoords.y);
       }
@@ -378,12 +382,15 @@ void MainGame::processInput() {
     m_ballController.setGravityDirection(GravityDirection::NONE);
   }
 
-  // Switch renderers
-  if (m_inputManager.isKeyPressed(SDLK_1)) {
+  // Handle keyboard events
+  const Uint8* keyState = SDL_GetKeyboardState(NULL);
+  if (keyState[SDL_SCANCODE_1]) {
     m_currentRenderer++;
     if (m_currentRenderer >= (int)m_ballRenderers.size()) {
       m_currentRenderer = 0;
     }
+    // Add a small delay to prevent multiple switches on a single press
+    SDL_Delay(200);
   }
 }
 
