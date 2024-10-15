@@ -43,6 +43,9 @@ private:
 
     int m_screenWidth = 0;
     int m_screenHeight = 0;
+    int m_currentShader = 0;
+    glm::vec3 m_shaderColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    void applyShaderChanges();
 
     std::vector<Ball> m_balls; ///< All the balls
     std::unique_ptr<Grid> m_grid; ///< Grid for spatial partitioning for collision

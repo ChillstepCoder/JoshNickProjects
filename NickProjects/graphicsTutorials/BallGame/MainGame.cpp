@@ -213,6 +213,9 @@ void MainGame::initBalls() {
 
 void MainGame::update(float deltaTime) {
     m_ballController.updateBalls(m_balls, m_grid.get(), deltaTime, m_screenWidth, m_screenHeight);
+
+    // Apply shader changes every frame
+    applyShaderChanges();
 }
 
 void MainGame::draw() {
@@ -226,7 +229,7 @@ void MainGame::draw() {
     // Grab the camera matrix
     glm::mat4 projectionMatrix = m_camera.getCameraMatrix();
 
-    m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, projectionMatrix);
+    m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, projectionMatrix, &m_textureProgram, m_shaderColor);
 
     m_textRenderingProgram.use();
 
@@ -264,10 +267,21 @@ void MainGame::drawHud() {
 }
 
 void MainGame::drawImgui() {
-
     ImGui::Begin("Settings");
-    if (ImGui::Button("Hello")) {
-        std::cout << "hello" << std::endl;
+
+    bool shaderChanged = false;
+    if (ImGui::RadioButton("Shader 1", &m_currentShader, 0)) shaderChanged = true;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Shader 2", &m_currentShader, 1)) shaderChanged = true;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Shader 3", &m_currentShader, 2)) shaderChanged = true;
+
+    if (ImGui::ColorEdit3("Shader Color", &m_shaderColor[0])) {
+        shaderChanged = true;
+    }
+
+    if (shaderChanged) {
+        applyShaderChanges();
     }
 
     if (ImGui::TreeNode("Vertical Sliders"))
@@ -362,4 +376,33 @@ void MainGame::processInput() {
             m_currentRenderer = 0;
         }
     }
+}
+
+void MainGame::applyShaderChanges() {
+    switch (m_currentShader) {
+    case 0:
+        m_textureProgram.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
+        break;
+    case 1:
+        m_textureProgram.compileShaders("Shaders/textureShading2.vert", "Shaders/textureShading2.frag");
+        break;
+    case 2:
+        m_textureProgram.compileShaders("Shaders/textureShading3.vert", "Shaders/textureShading3.frag");
+        break;
+    }
+    m_textureProgram.addAttribute("vertexPosition");
+    m_textureProgram.addAttribute("vertexColor");
+    m_textureProgram.addAttribute("vertexUV");
+    m_textureProgram.linkShaders();
+
+    // Set the color uniform
+    m_textureProgram.use();
+    GLint colorUniform = m_textureProgram.getUniformLocation("uColor");
+    if (colorUniform != -1) {
+        glUniform3f(colorUniform, m_shaderColor.r, m_shaderColor.g, m_shaderColor.b);
+    }
+    else {
+        std::cerr << "Warning: uColor uniform not found in shader program." << std::endl;
+    }
+    m_textureProgram.unuse();
 }

@@ -1,29 +1,35 @@
 #include "BallRenderer.h"
+#include <iostream>
 
 void BallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-    const glm::mat4& projectionMatrix) {
+    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     // Lazily initialize the program
-    if (m_program == nullptr) {
-        m_program = std::make_unique<Bengine::GLSLProgram>();
-        m_program->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        m_program->addAttribute("vertexPosition");
-        m_program->addAttribute("vertexColor");
-        m_program->addAttribute("vertexUV");
-        m_program->linkShaders();
+    if (shaderProgram == nullptr) {
+        std::cerr << "Error: Shader program is null in BallRenderer::renderBalls" << std::endl;
+        return;
     }
-    m_program->use();
+
+    shaderProgram->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = m_program->getUniformLocation("mySampler");
+    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = m_program->getUniformLocation("P");
+    GLint pUniform = shaderProgram->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
+
+    GLint colorUniform = shaderProgram->getUniformLocation("uColor");
+    if (colorUniform != -1) {
+        glUniform3f(colorUniform, shaderColor.r, shaderColor.g, shaderColor.b);
+    }
+    else {
+        std::cerr << "Warning: uColor uniform not found in shader program." << std::endl;
+    }
 
     // Render all the balls
     for (auto& ball : balls) {
@@ -36,34 +42,33 @@ void BallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vec
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    m_program->unuse();
+    shaderProgram->unuse();
 }
 
 void MomentumBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-    const glm::mat4& projectionMatrix) {
+    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
 
     glClearColor(0.0f, 0.1f, 0.5f, 1.0f);
 
     // Lazily initialize the program
-    if (m_program == nullptr) {
-        m_program = std::make_unique<Bengine::GLSLProgram>();
-        m_program->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        m_program->addAttribute("vertexPosition");
-        m_program->addAttribute("vertexColor");
-        m_program->addAttribute("vertexUV");
-        m_program->linkShaders();
+    if (shaderProgram == nullptr) {
+        shaderProgram->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
+        shaderProgram->addAttribute("vertexPosition");
+        shaderProgram->addAttribute("vertexColor");
+        shaderProgram->addAttribute("vertexUV");
+        shaderProgram->linkShaders();
     }
-    m_program->use();
+    shaderProgram->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = m_program->getUniformLocation("mySampler");
+    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = m_program->getUniformLocation("P");
+    GLint pUniform = shaderProgram->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Render all the balls
@@ -83,7 +88,7 @@ void MomentumBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const 
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    m_program->unuse();
+    shaderProgram->unuse();
 }
 
 VelocityBallRenderer::VelocityBallRenderer(int screenWidth, int screenHeight) :
@@ -94,29 +99,28 @@ VelocityBallRenderer::VelocityBallRenderer(int screenWidth, int screenHeight) :
 
 
 void VelocityBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-    const glm::mat4& projectionMatrix) {
+    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // Lazily initialize the program
-    if (m_program == nullptr) {
-        m_program = std::make_unique<Bengine::GLSLProgram>();
-        m_program->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        m_program->addAttribute("vertexPosition");
-        m_program->addAttribute("vertexColor");
-        m_program->addAttribute("vertexUV");
-        m_program->linkShaders();
+    if (shaderProgram == nullptr) {
+        shaderProgram->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
+        shaderProgram->addAttribute("vertexPosition");
+        shaderProgram->addAttribute("vertexColor");
+        shaderProgram->addAttribute("vertexUV");
+        shaderProgram->linkShaders();
     }
-    m_program->use();
+    shaderProgram->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = m_program->getUniformLocation("mySampler");
+    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = m_program->getUniformLocation("P");
+    GLint pUniform = shaderProgram->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Render all the balls
@@ -138,7 +142,7 @@ void VelocityBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const 
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    m_program->unuse();
+    shaderProgram->unuse();
 }
 
 TrippyBallRenderer::TrippyBallRenderer(int screenWidth, int screenHeight) :
@@ -147,29 +151,28 @@ TrippyBallRenderer::TrippyBallRenderer(int screenWidth, int screenHeight) :
     // Empty
 }
 
-void TrippyBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls, const glm::mat4& projectionMatrix) {
+void TrippyBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls, const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
     glClearColor(0.1f, 0.0f, 0.0f, 1.0f);
 
     // Lazily initialize the program
-    if (m_program == nullptr) {
-        m_program = std::make_unique<Bengine::GLSLProgram>();
-        m_program->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        m_program->addAttribute("vertexPosition");
-        m_program->addAttribute("vertexColor");
-        m_program->addAttribute("vertexUV");
-        m_program->linkShaders();
+    if (shaderProgram == nullptr) {
+        shaderProgram->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
+        shaderProgram->addAttribute("vertexPosition");
+        shaderProgram->addAttribute("vertexColor");
+        shaderProgram->addAttribute("vertexUV");
+        shaderProgram->linkShaders();
     }
-    m_program->use();
+    shaderProgram->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = m_program->getUniformLocation("mySampler");
+    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = m_program->getUniformLocation("P");
+    GLint pUniform = shaderProgram->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Change these constants to get cool stuff
@@ -207,5 +210,5 @@ void TrippyBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const st
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    m_program->unuse();
+    shaderProgram->unuse();
 }

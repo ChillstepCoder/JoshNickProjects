@@ -10,16 +10,16 @@
 class BallRenderer {
 public:
     virtual void renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-        const glm::mat4& projectionMatrix);
+        const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor);
 protected:
-    std::unique_ptr<Bengine::GLSLProgram> m_program = nullptr;
+    //std::unique_ptr<Bengine::GLSLProgram> m_program = nullptr;
 };
 
 // Visualizes kinetic energy
 class MomentumBallRenderer : public BallRenderer {
 public:
     virtual void renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-        const glm::mat4& projectionMatrix) override;
+        const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) override;
 };
 
 // Visualizes positive X component of velocity, as well as position
@@ -28,7 +28,7 @@ public:
     VelocityBallRenderer(int screenWidth, int screenHeight);
 
     virtual void renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-        const glm::mat4& projectionMatrix) override;
+        const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) override;
 private:
     int m_screenWidth;
     int m_screenHeight;
@@ -40,7 +40,7 @@ public:
     TrippyBallRenderer(int screenWidth, int screenHeight);
 
     virtual void renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-        const glm::mat4& projectionMatrix) override;
+        const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) override;
 private:
     int m_screenWidth;
     int m_screenHeight;

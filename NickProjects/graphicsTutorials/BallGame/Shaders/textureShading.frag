@@ -5,6 +5,8 @@ in vec2 fragmentPosition;
 in vec4 fragmentColor;
 in vec2 fragmentUV;
 
+uniform vec3 uColor;
+
 //This is the 3 component float vector that gets outputted to the screen
 //for each pixel.
 out vec4 color;
@@ -13,11 +15,7 @@ uniform sampler2D mySampler;
 
 void main() {
 
-    //cos(x) returns a number between -1 and 1. To convert it into the range 0 to 1
-    //you simply do (cos(x) + 1.0) * 0.5
-    
     vec4 textureColor = texture(mySampler, fragmentUV);
     
-    //Make crazy colors using time and position!
-    color = fragmentColor * textureColor;
+    color = vec4(uColor, 1.0) * fragmentColor * textureColor;
 }
