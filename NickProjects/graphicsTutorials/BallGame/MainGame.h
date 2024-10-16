@@ -34,7 +34,7 @@ public:
 private:
     void init();
     void initRenderers();
-    void initBalls();
+    void initBalls(int numBalls, float ballSize);
     void update(float deltaTime);
     void draw();
     void drawHud();
@@ -46,6 +46,7 @@ private:
     int m_currentShader = 0;
     glm::vec3 m_shaderColor = glm::vec3(1.0f, 1.0f, 1.0f);
     void applyShaderChanges();
+    void resetGame(int newNumBalls, float newBallSize);
 
     std::vector<Ball> m_balls; ///< All the balls
     std::unique_ptr<Grid> m_grid; ///< Grid for spatial partitioning for collision
