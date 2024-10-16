@@ -22,7 +22,7 @@ MainGame::~MainGame() {
 
 void MainGame::run() {
     init();
-    initBalls();
+    initBalls(30000, 2.0f);
 
     // Start our previousTicks variable
     Uint32 previousTicks = SDL_GetTicks();
@@ -125,17 +125,17 @@ struct BallSpawn {
     std::uniform_real_distribution<float> randSpeed;
 };
 #include <iostream>
-void MainGame::initBalls() {
+void MainGame::initBalls(int numBalls, float ballSize) {
 
-    // Initialize the grid
-    m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, CELL_SIZE);
+    // Initialize the grid (if not already done)
+    if (!m_grid) {
+        m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, CELL_SIZE);
+    }
 
 #define ADD_BALL(p, ...) \
     totalProbability += p; \
     possibleBalls.emplace_back(__VA_ARGS__);
 
-    // Number of balls to spawn
-    const int NUM_BALLS = 30000;
 
     // Random engine stuff
     std::mt19937 randomEngine((unsigned int)time(nullptr));
@@ -175,11 +175,11 @@ void MainGame::initBalls() {
 
     // Small optimization that sets the size of the internal array to prevent
     // extra allocations.
-    m_balls.reserve(NUM_BALLS);
+    m_balls.reserve(numBalls);
 
     // Set up ball to spawn with default value
     BallSpawn* ballToSpawn = &possibleBalls[0];
-    for (int i = 0; i < NUM_BALLS; i++) {
+    for (int i = 0; i < numBalls; i++) {
         // Get the ball spawn roll
         float spawnVal = spawn(randomEngine);
         // Figure out which ball we picked
@@ -203,7 +203,7 @@ void MainGame::initBalls() {
         }
 
         // Add ball
-        m_balls.emplace_back(ballToSpawn->radius, ballToSpawn->mass, pos, direction * ballToSpawn->randSpeed(randomEngine),
+        m_balls.emplace_back(ballSize, ballToSpawn->mass, pos, direction * ballToSpawn->randSpeed(randomEngine),
             Bengine::ResourceManager::getTexture("Textures/circle.png").id,
             ballToSpawn->color);
         // Add the ball do the grid. IF YOU EVER CALL EMPLACE BACK AFTER INIT BALLS, m_grid will have DANGLING POINTERS!
@@ -284,35 +284,18 @@ void MainGame::drawImgui() {
         applyShaderChanges();
     }
 
-    if (ImGui::TreeNode("Vertical Sliders"))
-    {
-        const float spacing = 4;
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(spacing, spacing));
+    // Add sliders for number of balls and ball size
+    static int numBalls = 30000;  // Default value, adjust as needed
+    static float ballSize = 2.0f; // Default value, adjust as needed
 
-        static float values[7] = { 0.0f, 0.60f, 0.35f, 0.9f, 0.70f, 0.20f, 0.0f };
-        ImGui::PushID("set1");
-        for (int i = 0; i < 7; i++)
-        {
-            if (i > 0) ImGui::SameLine();
-            ImGui::PushID(i);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(i / 7.0f, 0.6f, 0.5f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(i / 7.0f, 0.7f, 0.5f));
-            ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(i / 7.0f, 0.9f, 0.9f));
-            ImGui::VSliderFloat("##v", ImVec2(18, 160), &values[i], 0.0f, 1.0f, "");
-            if (ImGui::IsItemActive() || ImGui::IsItemHovered())
-                ImGui::SetTooltip("%.3f", values[i]);
-            ImGui::PopStyleColor(4);
-            ImGui::PopID();
-        }
-        ImGui::PopID();
-        ImGui::PopStyleVar();
-        ImGui::TreePop();
+    ImGui::SliderInt("Number of balls", &numBalls, 1, 50000);
+    ImGui::SliderFloat("Ball size", &ballSize, 1.0f, 10.0f, "%.1f");
+
+    // Add a reset button
+    if (ImGui::Button("Reset Game")) {
+        resetGame(numBalls, ballSize);
     }
 
-
-    static float value = 0.0f;
-    ImGui::DragFloat("Value", &value);
     ImGui::End();
 }
 
@@ -405,4 +388,13 @@ void MainGame::applyShaderChanges() {
         std::cerr << "Warning: uColor uniform not found in shader program." << std::endl;
     }
     m_textureProgram.unuse();
+}
+
+void MainGame::resetGame(int newNumBalls, float newBallSize) {
+    // Clear existing balls
+    m_balls.clear();
+    m_grid->clear();  // Assuming you have a clear method in your Grid class
+
+    // Reinitialize the game with new parameters
+    initBalls(newNumBalls, newBallSize);
 }

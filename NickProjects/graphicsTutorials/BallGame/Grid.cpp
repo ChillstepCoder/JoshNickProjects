@@ -63,3 +63,9 @@ void Grid::removeBallFromCell(Ball* ball) {
     ball->cellVectorIndex = -1;
     ball->ownerCell = nullptr;
 }
+
+void Grid::clear() {
+    for (auto& cell : m_cells) {
+        cell.balls.clear();
+    }
+}

@@ -23,6 +23,7 @@ public:
     Cell* getCell(const glm::vec2& pos);
 
     void removeBallFromCell(Ball* ball);
+    void clear();
 
 private:
     std::vector<Cell> m_cells;
