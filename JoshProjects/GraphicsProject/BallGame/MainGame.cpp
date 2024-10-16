@@ -395,22 +395,36 @@ void MainGame::processInput() {
 }
 
 void MainGame::updateImGui() {
-  ImGui::SetNextWindowPos(ImVec2(m_screenWidth / 2, m_screenHeight / 2), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-  ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
 
-  ImGui::Begin("Ball Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Ball Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-  ImGui::Text("ImGui Debug Info:");
-  ImGui::Text("Window Position: (%.1f, %.1f)", ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-  ImGui::Text("Window Size: (%.1f, %.1f)", ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+    ImGui::Text("Shader Selection:");
+    
+    const char* shaderNames[] = { "Default", "Momentum", "Velocity", "Trippy" };
+    static int selectedShader = 0;
+    
+    for (int i = 0; i < IM_ARRAYSIZE(shaderNames); i++) {
+        if (ImGui::RadioButton(shaderNames[i], &selectedShader, i)) {
+            m_currentRenderer = i;
+        }
+    }
 
-  ImGui::Separator();
+    ImGui::Separator();
 
-  ImGui::SliderFloat("Hue Shift", &m_hueShift, 0.0f, 360.0f);
+    ImGui::SliderFloat("Hue Shift", &m_hueShift, 0.0f, 360.0f);
 
-  if (ImGui::Button("Test Button")) {
-    // Add some action here if needed
-  }
+    // Apply hue shift to all renderers that support it
+    for (auto& renderer : m_ballRenderers) {
+        if (auto* ballRenderer = dynamic_cast<BallRenderer*>(renderer.get())) {
+            ballRenderer->setHueShift(m_hueShift);
+        }
+    }
 
-  ImGui::End();
+    ImGui::Text("ImGui Debug Info:");
+    ImGui::Text("Window Position: (%.1f, %.1f)", ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+    ImGui::Text("Window Size: (%.1f, %.1f)", ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+
+    ImGui::End();
 }
