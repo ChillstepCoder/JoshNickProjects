@@ -131,17 +131,28 @@ void MainGame::init() {
   if (error != GL_NO_ERROR) {
     std::cerr << "OpenGL Error in init(): " << error << std::endl;
   }
+
+  m_gravityStrength = 0.0f;
+  m_gravityDirection = 270.0f;
+  updateGravity();
+
 }
 
 
 void MainGame::initRenderers() {
+  try {
     m_ballRenderers.push_back(std::make_unique<BallRenderer>());
     m_ballRenderers.push_back(std::make_unique<MomentumBallRenderer>());
     m_ballRenderers.push_back(std::make_unique<VelocityBallRenderer>(m_screenWidth, m_screenHeight));
     m_ballRenderers.push_back(std::make_unique<TrippyBallRenderer>(m_screenWidth, m_screenHeight));
-
+    m_ballRenderers.push_back(std::make_unique<PulsatingGlowBallRenderer>(m_screenWidth, m_screenHeight));
+    m_ballRenderers.push_back(std::make_unique<RippleEffectBallRenderer>(m_screenWidth, m_screenHeight));
+    m_ballRenderers.push_back(std::make_unique<EnergyVortexBallRenderer>(m_screenWidth, m_screenHeight));
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Error initializing renderers: " << e.what() << std::endl;
+  }
 }
-
 struct BallSpawn {
     BallSpawn(const JAGEngine::ColorRGBA8& colr,
               float rad, float m, float minSpeed,
@@ -244,7 +255,7 @@ void MainGame::update(float deltaTime) {
   m_ballController.setSpeedMultiplier(m_ballSpeedMultiplier);
   m_ballController.setFriction(m_friction);
   m_ballController.updateBalls(m_balls, m_grid.get(), deltaTime, m_screenWidth, m_screenHeight);
-
+  updateGravity();
   // Add some debug output
   static int frameCount = 0;
   if (frameCount % 60 == 0) {  // Print every 60 frames
@@ -342,19 +353,41 @@ void MainGame::processInput() {
 
 void MainGame::updateImGui() {
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(400, 450), ImGuiCond_FirstUseEver);
 
   ImGui::Begin("Ball Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
   ImGui::Text("Shader Selection:");
 
-  const char* shaderNames[] = { "Default", "Momentum", "Velocity", "Trippy" };
+  const char* shaderNames[] = {
+      "Default", "Momentum", "Velocity", "Trippy", "Pulsating Glow", "Ripple Effect"
+  };
   static int selectedShader = 0;
 
-  for (int i = 0; i < IM_ARRAYSIZE(shaderNames); i++) {
-    if (ImGui::RadioButton(shaderNames[i], &selectedShader, i)) {
-      m_currentRenderer = i;
-    }
+  // First row of shaders
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 0));
+  for (int i = 0; i < 3; i++) {
+    ImGui::RadioButton(shaderNames[i], &selectedShader, i);
+    if (i < 2) ImGui::SameLine();
+  }
+  ImGui::PopStyleVar();
+
+  ImGui::Dummy(ImVec2(0.0f, 5.0f)); // Add some vertical spacing
+
+  // Second row of shaders
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 0));
+  for (int i = 3; i < 6; i++) {
+    ImGui::RadioButton(shaderNames[i], &selectedShader, i);
+    if (i < 5) ImGui::SameLine();
+  }
+  ImGui::PopStyleVar();
+
+  // Update the current renderer if the selection has changed
+  if (selectedShader >= 0 && selectedShader < 6) {
+    m_currentRenderer = selectedShader;
+  }
+  else {
+    std::cerr << "Invalid shader selection: " << selectedShader << std::endl;
   }
 
   ImGui::Separator();
@@ -364,14 +397,29 @@ void MainGame::updateImGui() {
   ImGui::SliderFloat2("Ball Size Range", &m_ballSizeRange.x, 1.0f, 20.0f, "%.1f");
   ImGui::SliderFloat("Hue Shift", &m_hueShift, 0.0f, 360.0f);
 
+  ImGui::Text("Speed Controls:");
+
   if (ImGui::SliderFloat("Ball Speed Multiplier", &m_ballSpeedMultiplier, 0.1f, 10.0f, "%.2f")) {
     m_ballController.setSpeedMultiplier(m_ballSpeedMultiplier);
   }
 
-  ImGui::SliderFloat("Max Ball Speed", &m_maxBallSpeed, 1.0f, 500.0f);
+  ImGui::SliderFloat("Max Ball Speed", &m_maxBallSpeed, 1.0f, 1000.0f);
 
   if (ImGui::SliderFloat("Friction", &m_friction, 0.0f, 1.0f, "%.3f")) {
     m_ballController.setFriction(m_friction);
+  }
+
+  ImGui::Separator();
+  ImGui::Text("Gravity Controls:");
+
+  if (ImGui::SliderFloat("Gravity Strength", &m_gravityStrength, 0.0f, 1000.0f, "%.1f")) {
+    updateGravity();
+  }
+
+  if (ImGui::SliderFloat("Gravity Direction", &m_gravityDirection, 0.0f, 360.0f, "%.1f")) {
+    m_gravityDirection = fmodf(m_gravityDirection, 360.0f);
+    if (m_gravityDirection < 0) m_gravityDirection += 360.0f;
+    updateGravity();
   }
 
   // Apply hue shift to all renderers that support it
@@ -380,7 +428,6 @@ void MainGame::updateImGui() {
       ballRenderer->setHueShift(m_hueShift);
     }
   }
-
 
   // Button to reinitialize the game
   if (ImGui::Button("Reinitialize Game")) {
@@ -394,11 +441,29 @@ void MainGame::updateImGui() {
   ImGui::End();
 }
 
+void MainGame::updateGravity() {
+  // Convert to radians
+  float radians = m_gravityDirection * (3.14159f / 180.0f);
+
+  // Calculate gravity vector
+  glm::vec2 gravityVec(
+    m_gravityStrength * std::cos(radians),
+    m_gravityStrength * std::sin(radians)  // Note: No negation here
+  );
+
+  m_ballController.setGravity(gravityVec);
+
+  // Debug output
+  std::cout << "Gravity Direction: " << m_gravityDirection
+    << ", Gravity Vector: (" << gravityVec.x << ", " << gravityVec.y << ")" << std::endl;
+}
+
 void MainGame::reinitializeGame() {
   m_balls.clear();
   m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, CELL_SIZE);
   initBalls();
   m_ballController.setMaxSpeed(m_maxBallSpeed);
   m_ballController.setSpeedMultiplier(m_ballSpeedMultiplier);
+  updateGravity();
 }
 

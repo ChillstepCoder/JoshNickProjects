@@ -43,6 +43,7 @@ private:
     void drawHud();
     void processInput();
     void updateImGui();
+    void updateGravity();
 
     void reinitializeGame();
 
@@ -50,7 +51,9 @@ private:
     glm::vec2 m_ballSizeRange = glm::vec2(2.0f, 6.0f);
     float m_ballSpeedMultiplier = 1.0f;
     float m_friction = 0.01f;
-    float m_maxBallSpeed = 10.0f;
+    float m_maxBallSpeed = 500.0f;
+    float m_gravityStrength = 0.0f;
+    float m_gravityDirection = 270.0f;
 
     int m_screenWidth = 0;
     int m_screenHeight = 0;

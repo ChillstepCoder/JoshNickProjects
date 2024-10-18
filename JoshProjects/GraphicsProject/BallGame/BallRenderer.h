@@ -46,3 +46,40 @@ private:
   int m_screenHeight;
   float m_time = 0.0f;
 };
+
+class PulsatingGlowBallRenderer : public BallRenderer {
+public:
+  PulsatingGlowBallRenderer(int screenWidth, int screenHeight);
+  void renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
+    const glm::mat4& projectionMatrix) override;
+
+private:
+  int m_screenWidth;
+  int m_screenHeight;
+  float m_time = 0.0f;
+};
+
+class RippleEffectBallRenderer : public BallRenderer {
+public:
+  RippleEffectBallRenderer(int screenWidth, int screenHeight);
+  void renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
+    const glm::mat4& projectionMatrix) override;
+
+private:
+  int m_screenWidth;
+  int m_screenHeight;
+  float m_time = 0.0f;
+};
+
+class EnergyVortexBallRenderer : public BallRenderer {
+public:
+  EnergyVortexBallRenderer(int screenWidth, int screenHeight);
+  void renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
+    const glm::mat4& projectionMatrix) override;
+
+private:
+  int m_screenWidth;
+  int m_screenHeight;
+  float m_time = 0.0f;
+  std::vector<float> m_collisionIntensities;
+};

@@ -1,3 +1,5 @@
+// momentumShading.vert
+
 #version 130
 //The vertex shader operates on each vertex
 

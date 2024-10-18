@@ -25,6 +25,7 @@ public:
     void setMaxSpeed(float maxSpeed) { m_maxSpeed = maxSpeed; }
     void setSpeedMultiplier(float multiplier);
     void setFriction(float friction) { m_friction = friction; }
+    void setGravity(const glm::vec2& gravity) { m_gravity = gravity; }
 
 private:
     // Updates collision
@@ -37,7 +38,6 @@ private:
     void handleWallCollision(Ball& ball, int maxX, int maxY);
     void updateMultipliedSpeeds();
     bool isMouseOnBall(const Ball& ball, float mouseX, float mouseY);
-    glm::vec2 getGravityAccel();
 
     int m_grabbedBall = -1; ///< The ball we are currently grabbing on to
     glm::vec2 m_prevPos = glm::vec2(0.0f); ///< Previous position of the grabbed ball
@@ -46,6 +46,7 @@ private:
     float m_speedMultiplier = 1.0f;
     float m_multipliedMaxSpeed = 10.0f;
     float m_friction = 0.01f;
+    glm::vec2 m_gravity = glm::vec2(0.0f, -0.02f);
 
     GravityDirection m_gravityDirection = GravityDirection::NONE;
 };

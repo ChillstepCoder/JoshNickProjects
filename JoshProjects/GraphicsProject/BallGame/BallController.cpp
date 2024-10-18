@@ -9,14 +9,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 void BallController::updateBalls(std::vector<Ball>& balls, Grid* grid, float deltaTime, int maxX, int maxY) {
-  glm::vec2 gravity = getGravityAccel();
+  //glm::vec2 gravity = getGravityAccel();
 
   for (size_t i = 0; i < balls.size(); i++) {
     Ball& ball = balls[i];
 
     if (i != m_grabbedBall) {
       // Apply gravity
-      ball.velocity += gravity * deltaTime;
+      ball.velocity += m_gravity * deltaTime;
 
       // Apply friction
       float frictionFactor = std::pow(1.0f - m_friction, deltaTime * 60.0f); // Adjust for 60 FPS
@@ -229,26 +229,3 @@ bool BallController::isMouseOnBall(const Ball& ball, float mouseX, float mouseY)
   return glm::distance(glm::vec2(mouseX, mouseY), ball.position) < ball.radius;
 }
 
-glm::vec2 BallController::getGravityAccel() {
-    const float GRAVITY_FORCE = 0.02f;
-    glm::vec2 gravity;
-
-    switch (m_gravityDirection) {
-        case GravityDirection::DOWN:
-            gravity = glm::vec2(0.0f, -GRAVITY_FORCE);
-            break;
-        case GravityDirection::LEFT:
-            gravity = glm::vec2(-GRAVITY_FORCE, 0.0f);
-            break;
-        case GravityDirection::RIGHT:
-            gravity = glm::vec2(GRAVITY_FORCE, 0.0f);
-            break;
-        case GravityDirection::UP:
-            gravity = glm::vec2(0.0f, GRAVITY_FORCE);
-            break;
-        default:
-            gravity = glm::vec2(0.0f);
-            break;
-    }
-    return gravity;
-}

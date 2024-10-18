@@ -21,6 +21,9 @@ namespace JAGEngine {
     void use();
     void unuse();
 
+    //Getters
+    GLuint getProgramID() const { return _programID; }
+
   private:
     int _numAttributes;
 
