@@ -5,19 +5,19 @@
 #include <cmath>
 #include <cstdlib>
 
-Grid::Grid(int width, int height, int cellSize) :
-    m_width(width),
-    m_height(height),
-    m_cellSize(cellSize) {
-    m_numXCells = (int)ceil((float)m_width / m_cellSize);
-    m_numYCells = (int)ceil((float)m_height / m_cellSize);
+Grid::Grid(int width, int height, float maxBallSize) :
+  m_width(width),
+  m_height(height),
+  m_cellSize(static_cast<int>(maxBallSize * 2.0f)) {
+  m_numXCells = static_cast<int>(std::ceil(static_cast<float>(m_width) / m_cellSize));
+  m_numYCells = static_cast<int>(std::ceil(static_cast<float>(m_height) / m_cellSize));
 
-    // Allocate all the cells
-    const int BALLS_TO_RESERVE = 20;
-    m_cells.resize(m_numYCells * m_numXCells);
-    for (size_t i = 0; i < m_cells.size(); i++) {
-        m_cells[i].balls.reserve(BALLS_TO_RESERVE);
-    }
+  // Allocate all the cells
+  const int BALLS_TO_RESERVE = 20;
+  m_cells.resize(m_numYCells * m_numXCells);
+  for (auto& cell : m_cells) {
+    cell.balls.reserve(BALLS_TO_RESERVE);
+  }
 }
 
 Grid::~Grid() {

@@ -10,7 +10,7 @@ struct Cell {
 class Grid {
     friend class BallController;
 public:
-    Grid(int width, int height, int cellSize);
+    Grid(int width, int height, float maxBallSize);
     ~Grid();
 
     /// Adds a ball and determines which cell it belongs to

@@ -3,71 +3,76 @@
 #include "BallController.h"
 #include <iostream>
 #include "Grid.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtx/vector_angle.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
-void BallController::updateBalls(std::vector <Ball>& balls, Grid* grid, float deltaTime, int maxX, int maxY) {
-    const float FRICTION = 0.01f;
-    // Update our grabbed balls velocity
-    if (m_grabbedBall != -1) {
-        balls[m_grabbedBall].velocity = balls[m_grabbedBall].position - m_prevPos;
+void BallController::updateBalls(std::vector<Ball>& balls, Grid* grid, float deltaTime, int maxX, int maxY) {
+  glm::vec2 gravity = getGravityAccel();
+
+  for (size_t i = 0; i < balls.size(); i++) {
+    Ball& ball = balls[i];
+
+    if (i != m_grabbedBall) {
+      // Apply gravity
+      ball.velocity += gravity * deltaTime;
+
+      // Apply friction
+      float frictionFactor = std::pow(1.0f - m_friction, deltaTime * 60.0f); // Adjust for 60 FPS
+      ball.velocity *= frictionFactor;
+
+      // Update position
+      ball.position += ball.velocity * deltaTime * m_speedMultiplier;
+
+      // Apply maximum speed limit
+      float speed = glm::length(ball.velocity);
+      if (speed > m_multipliedMaxSpeed) {
+        ball.velocity = glm::normalize(ball.velocity) * m_multipliedMaxSpeed;
+      }
+
+      // Wall collisions
+      handleWallCollision(ball, maxX, maxY);
     }
 
-    glm::vec2 gravity = getGravityAccel();
-
-    for (size_t i = 0; i < balls.size(); i++) {
-        // get handle for less typing
-        Ball& ball = balls[i];
-        // Update motion if its not grabbed
-        if (i != m_grabbedBall) {
-            ball.position += ball.velocity * deltaTime;
-            // Apply friction
-            glm::vec2 momentumVec = ball.velocity * ball.mass;
-            if (momentumVec.x != 0 || momentumVec.y != 0) {
-                if (FRICTION < glm::length(momentumVec)) {
-                    ball.velocity -= deltaTime * FRICTION * glm::normalize(momentumVec) / ball.mass;
-                } else {
-                    ball.velocity = glm::vec2(0.0f);
-                }
-            }
-            // Apply gravity
-            ball.velocity += gravity * deltaTime;
-        }
-        // Check wall collision
-        if (ball.position.x < ball.radius) {
-            ball.position.x = ball.radius;
-            if (ball.velocity.x < 0) ball.velocity.x *= -1;
-        } else if (ball.position.x + ball.radius >= maxX) {
-            ball.position.x = maxX - ball.radius - 1;
-            if (ball.velocity.x > 0) ball.velocity.x *= -1;
-        }
-        if (ball.position.y < ball.radius) {
-            ball.position.y = ball.radius;
-            if (ball.velocity.y < 0) ball.velocity.y *= -1;
-        } else if (ball.position.y + ball.radius >= maxY) {
-            ball.position.y = maxY - ball.radius - 1;
-            if (ball.velocity.y > 0) ball.velocity.y *= -1;
-        }
-
-        // Check to see if the ball moved
-        Cell* newCell = grid->getCell(ball.position);
-        if (newCell != ball.ownerCell) {
-            grid->removeBallFromCell(&balls[i]);
-            grid->addBall(&balls[i], newCell);
-        }
+    // Update grid
+    Cell* newCell = grid->getCell(ball.position);
+    if (newCell != ball.ownerCell) {
+      grid->removeBallFromCell(&balls[i]);
+      grid->addBall(&balls[i], newCell);
     }
-    // Updates all collisions using the spatial partitioning
-    updateCollision(grid);
+  }
 
-    //// Update our grabbed ball
-    if (m_grabbedBall != -1) {
-        // Update the velocity again, in case it got changed by collision
-        balls[m_grabbedBall].velocity = balls[m_grabbedBall].position - m_prevPos;
-        m_prevPos = balls[m_grabbedBall].position;
-    }
+  // Handle ball-to-ball collisions
+  updateCollision(grid);
 }
 
-void BallController::onMouseMove(std::vector<Ball>& balls, float mouseX, float mouseY) {
-  if (m_grabbedBall != -1) {
-    balls[m_grabbedBall].position = glm::vec2(mouseX, mouseY) - m_grabOffset;
+void BallController::updateMultipliedSpeeds() {
+  m_multipliedMaxSpeed = m_maxSpeed * m_speedMultiplier;
+}
+
+void BallController::setSpeedMultiplier(float multiplier) {
+  m_speedMultiplier = multiplier;
+  updateMultipliedSpeeds();
+}
+
+void BallController::handleWallCollision(Ball& ball, int maxX, int maxY) {
+  if (ball.position.x - ball.radius < 0) {
+    ball.position.x = ball.radius;
+    ball.velocity.x = -ball.velocity.x;
+  }
+  else if (ball.position.x + ball.radius > maxX) {
+    ball.position.x = maxX - ball.radius;
+    ball.velocity.x = -ball.velocity.x;
+  }
+
+  if (ball.position.y - ball.radius < 0) {
+    ball.position.y = ball.radius;
+    ball.velocity.y = -ball.velocity.y;
+  }
+  else if (ball.position.y + ball.radius > maxY) {
+    ball.position.y = maxY - ball.radius;
+    ball.velocity.y = -ball.velocity.y;
   }
 }
 
@@ -85,10 +90,36 @@ void BallController::onMouseDown(std::vector<Ball>& balls, float mouseX, float m
 
 void BallController::onMouseUp(std::vector<Ball>& balls) {
   if (m_grabbedBall != -1) {
-    balls[m_grabbedBall].velocity = balls[m_grabbedBall].position - m_prevPos;
+    // Calculate velocity based on the difference in position and time
+    // Assuming a frame time of 1/60 second
+    balls[m_grabbedBall].velocity = (balls[m_grabbedBall].position - m_prevPos) * 60.0f;
+
+    // Optionally, limit the release velocity
+    float speed = glm::length(balls[m_grabbedBall].velocity);
+    if (speed > m_maxSpeed * 2) {
+      balls[m_grabbedBall].velocity = glm::normalize(balls[m_grabbedBall].velocity) * (m_maxSpeed * 2.0f);
+    }
+
     m_grabbedBall = -1;
   }
 }
+
+void BallController::onMouseMove(std::vector<Ball>& balls, float mouseX, float mouseY) {
+  if (m_grabbedBall != -1) {
+    glm::vec2 newPosition(mouseX, mouseY);
+    glm::vec2 oldPosition = balls[m_grabbedBall].position;
+    balls[m_grabbedBall].position = newPosition;
+
+    // Calculate velocity based on mouse movement
+    balls[m_grabbedBall].velocity = (newPosition - oldPosition) * 60.0f; // Assuming 60 FPS
+
+    // Optionally, limit the maximum velocity during dragging
+    float speed = glm::length(balls[m_grabbedBall].velocity);
+    if (speed > m_maxSpeed * 2) { // Allow dragged balls to move faster than the normal max speed
+      balls[m_grabbedBall].velocity = glm::normalize(balls[m_grabbedBall].velocity) * (m_maxSpeed * 2.0f);
+    }
+  }
+} 
 
 void BallController::updateCollision(Grid* grid) {
     for (size_t i = 0; i < grid->m_cells.size(); i++) {
@@ -132,39 +163,65 @@ void BallController::checkCollision(Ball* ball, std::vector<Ball*>& ballsToCheck
 }
 
 void BallController::checkCollision(Ball& b1, Ball& b2) {
-    // We add radius since position is the top left corner
-    glm::vec2 distVec = b2.position - b1.position;
-    glm::vec2 distDir = glm::normalize(distVec);
-    float dist = glm::length(distVec);
-    float totalRadius = b1.radius + b2.radius;
-    
-    float collisionDepth = totalRadius - dist;
-    // Check for collision
-    if (collisionDepth > 0) {
+  glm::vec2 distVec = b2.position - b1.position;
+  float dist = glm::length(distVec);
+  float totalRadius = b1.radius + b2.radius;
 
-        // Push away the balls based on ratio of masses
-        b1.position -= distDir * collisionDepth * (b2.mass / b1.mass) * 0.5f;
-        b2.position += distDir * collisionDepth * (b1.mass / b2.mass) * 0.5f;
-       
-        // Calculate deflection. http://stackoverflow.com/a/345863
-        // Fixed thanks to youtube user Sketchy502
-        float aci = glm::dot(b1.velocity, distDir);
-        float bci = glm::dot(b2.velocity, distDir);
+  if (dist < totalRadius) {
+    glm::vec2 collisionNormal = glm::normalize(distVec);
 
-        float acf = (aci * (b1.mass - b2.mass) + 2 * b2.mass * bci) / (b1.mass + b2.mass);
-        float bcf = (bci * (b2.mass - b1.mass) + 2 * b1.mass * aci) / (b1.mass + b2.mass);
+    // Move balls apart
+    float overlap = totalRadius - dist;
+    float totalMass = b1.mass + b2.mass;
+    float b1Ratio = b1.mass / totalMass;
+    float b2Ratio = b2.mass / totalMass;
 
-        b1.velocity += (acf - aci) * distDir;
-        b2.velocity += (bcf - bci) * distDir;
+    b1.position -= overlap * b2Ratio * collisionNormal;
+    b2.position += overlap * b1Ratio * collisionNormal;
 
-        if (glm::length(b1.velocity + b2.velocity) > 0.5f) {
-            // Choose the faster ball
-            bool choice = glm::length(b1.velocity) < glm::length(b2.velocity);
+    // Calculate relative velocity
+    glm::vec2 relativeVelocity = b2.velocity - b1.velocity;
 
-            // Faster ball transfers it's color to the slower ball
-            choice ? b2.color = b1.color : b1.color = b2.color;
-        }
+    // Calculate impulse
+    float impulseStrength = glm::dot(relativeVelocity, collisionNormal);
+
+    // If balls are moving apart, don't apply impulse
+    if (impulseStrength > 0) {
+      return;
     }
+
+    float e = 1.0f; // Perfect elasticity
+    float j = -(1 + e) * impulseStrength;
+    j /= 1 / b1.mass + 1 / b2.mass;
+
+    glm::vec2 impulse = j * collisionNormal;
+
+    // Apply impulse
+    b1.velocity -= impulse / b1.mass;
+    b2.velocity += impulse / b2.mass;
+
+    // Apply maximum speed limit
+    float speed1 = glm::length(b1.velocity);
+    float speed2 = glm::length(b2.velocity);
+
+    if (speed1 > m_multipliedMaxSpeed) {
+      b1.velocity = glm::normalize(b1.velocity) * m_multipliedMaxSpeed;
+    }
+    if (speed2 > m_multipliedMaxSpeed) {
+      b2.velocity = glm::normalize(b2.velocity) * m_multipliedMaxSpeed;
+    }
+
+    // Transfer color based on relative speed
+    if (glm::length(b1.velocity - b2.velocity) > 0.5f) {
+      bool b1Faster = glm::length(b1.velocity) > glm::length(b2.velocity);
+      if (b1Faster) {
+        b2.color = b1.color;
+      }
+      else {
+        b1.color = b2.color;
+      }
+    }
+  }
 }
 
 

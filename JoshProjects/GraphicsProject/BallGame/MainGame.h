@@ -44,6 +44,14 @@ private:
     void processInput();
     void updateImGui();
 
+    void reinitializeGame();
+
+    int m_numBalls = 5000;
+    glm::vec2 m_ballSizeRange = glm::vec2(2.0f, 6.0f);
+    float m_ballSpeedMultiplier = 1.0f;
+    float m_friction = 0.01f;
+    float m_maxBallSpeed = 10.0f;
+
     int m_screenWidth = 0;
     int m_screenHeight = 0;
 

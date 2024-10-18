@@ -161,93 +161,36 @@ struct BallSpawn {
 };
 
 void MainGame::initBalls() {
+  float maxBallSize = std::max<float>(m_ballSizeRange.x, m_ballSizeRange.y);
+  m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, maxBallSize);
 
-  // Initialize the grid
-  m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, CELL_SIZE);
-
-#define ADD_BALL(p, ...) \
-    totalProbability += p; \
-    possibleBalls.emplace_back(__VA_ARGS__);
-
-  // Number of balls to spawn
-  const int NUM_BALLS = 5000;
-
-  // Random engine stuff
   std::mt19937 randomEngine((unsigned int)time(nullptr));
   std::uniform_real_distribution<float> randX(0.0f, (float)m_screenWidth);
   std::uniform_real_distribution<float> randY(0.0f, (float)m_screenHeight);
-  std::uniform_real_distribution<float> randDir(-1.0f, 1.0f);
+  std::uniform_real_distribution<float> randSize(m_ballSizeRange.x, m_ballSizeRange.y);
+  std::uniform_int_distribution<int> randColor(0, 255);
 
-  // Add all possible balls
-  std::vector <BallSpawn> possibleBalls;
-  float totalProbability = 0.0f;
+  m_balls.clear();
+  m_balls.reserve(m_numBalls);
 
-  /// Random values for ball types
-  std::uniform_real_distribution<float> r1(2.0f, 6.0f);
-  std::uniform_int_distribution<int> r2(0, 255);
-
-  // Adds the balls using a macro
-  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(255, 255, 255, 255),
-    2.0f, 1.0f, 0.1f, 7.0f, totalProbability);
-  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(1, 254, 145, 255),
-    2.0f, 2.0f, 0.1f, 3.0f, totalProbability);
-  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(177, 0, 254, 255),
-    3.0f, 4.0f, 0.0f, 0.0f, totalProbability)
-    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(254, 0, 0, 255),
-      3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
-  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(0, 255, 255, 255),
-    3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
-  ADD_BALL(1.0f, JAGEngine::ColorRGBA8(255, 255, 0, 255),
-    3.0f, 4.0f, 0.0f, 0.0f, totalProbability);
-  // Make a bunch of random ball types
-  for (int i = 0; i < 10000; i++) {
-    ADD_BALL(1.0f, JAGEngine::ColorRGBA8(r2(randomEngine), r2(randomEngine), r2(randomEngine), 255),
-      r1(randomEngine), r1(randomEngine), 0.0f, 0.0f, totalProbability);
-  }
-
-  // Random probability for ball spawn
-  std::uniform_real_distribution<float> spawn(0.0f, totalProbability);
-
-  // Small optimization that sets the size of the internal array to prevent
-  // extra allocations.
-  m_balls.reserve(NUM_BALLS);
-
-  // Set up ball to spawn with default value
-  BallSpawn* ballToSpawn = &possibleBalls[0];
-  for (int i = 0; i < NUM_BALLS; i++) {
-    // Get the ball spawn roll
-    float spawnVal = spawn(randomEngine);
-    // Figure out which ball we picked
-    for (size_t j = 0; j < possibleBalls.size(); j++) {
-      if (spawnVal <= possibleBalls[j].probability) {
-        ballToSpawn = &possibleBalls[j];
-        break;
-      }
-    }
-
-    // Get random starting position
+  for (int i = 0; i < m_numBalls; i++) {
     glm::vec2 pos(randX(randomEngine), randY(randomEngine));
+    float radius = randSize(randomEngine);
 
-    // Hacky way to get a random direction
-    glm::vec2 direction(randDir(randomEngine), randDir(randomEngine));
-    if (direction.x != 0.0f || direction.y != 0.0f) { // The chances of direction == 0 are astronomically low
-      direction = glm::normalize(direction);
-    }
-    else {
-      direction = glm::vec2(1.0f, 0.0f); // default direction
-    }
+    // Start with zero velocity
+    glm::vec2 velocity(0.0f, 0.0f);
 
-    // Add ball
+    JAGEngine::ColorRGBA8 color(randColor(randomEngine), randColor(randomEngine), randColor(randomEngine), 255);
+
     GLuint textureId = JAGEngine::ResourceManager::getTexture("Textures/circle.png").id;
     if (textureId == 0) {
       std::cerr << "Failed to load ball texture!" << std::endl;
-      // Handle error (e.g., use a default texture or exit)
     }
 
-    m_balls.emplace_back(ballToSpawn->radius, ballToSpawn->mass, pos, direction * ballToSpawn->randSpeed(randomEngine),
-      textureId,
-      ballToSpawn->color);
-    // Add the ball do the grid. IF YOU EVER CALL EMPLACE BACK AFTER INIT BALLS, m_grid will have DANGLING POINTERS!
+    // Use radius for mass calculation (assuming uniform density)
+    float mass = radius * radius;
+
+    m_balls.emplace_back(radius, mass, pos, velocity, textureId, color);
     m_grid->addBall(&m_balls.back());
   }
 }
@@ -297,6 +240,9 @@ void MainGame::draw() {
 }
 
 void MainGame::update(float deltaTime) {
+  m_ballController.setMaxSpeed(m_maxBallSpeed);
+  m_ballController.setSpeedMultiplier(m_ballSpeedMultiplier);
+  m_ballController.setFriction(m_friction);
   m_ballController.updateBalls(m_balls, m_grid.get(), deltaTime, m_screenWidth, m_screenHeight);
 
   // Add some debug output
@@ -395,36 +341,64 @@ void MainGame::processInput() {
 }
 
 void MainGame::updateImGui() {
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
 
-    ImGui::Begin("Ball Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::Begin("Ball Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Text("Shader Selection:");
-    
-    const char* shaderNames[] = { "Default", "Momentum", "Velocity", "Trippy" };
-    static int selectedShader = 0;
-    
-    for (int i = 0; i < IM_ARRAYSIZE(shaderNames); i++) {
-        if (ImGui::RadioButton(shaderNames[i], &selectedShader, i)) {
-            m_currentRenderer = i;
-        }
+  ImGui::Text("Shader Selection:");
+
+  const char* shaderNames[] = { "Default", "Momentum", "Velocity", "Trippy" };
+  static int selectedShader = 0;
+
+  for (int i = 0; i < IM_ARRAYSIZE(shaderNames); i++) {
+    if (ImGui::RadioButton(shaderNames[i], &selectedShader, i)) {
+      m_currentRenderer = i;
     }
+  }
 
-    ImGui::Separator();
+  ImGui::Separator();
 
-    ImGui::SliderFloat("Hue Shift", &m_hueShift, 0.0f, 360.0f);
+  // Configuration sliders
+  ImGui::SliderInt("Number of Balls", &m_numBalls, 100, 10000);
+  ImGui::SliderFloat2("Ball Size Range", &m_ballSizeRange.x, 1.0f, 20.0f, "%.1f");
+  ImGui::SliderFloat("Hue Shift", &m_hueShift, 0.0f, 360.0f);
 
-    // Apply hue shift to all renderers that support it
-    for (auto& renderer : m_ballRenderers) {
-        if (auto* ballRenderer = dynamic_cast<BallRenderer*>(renderer.get())) {
-            ballRenderer->setHueShift(m_hueShift);
-        }
+  if (ImGui::SliderFloat("Ball Speed Multiplier", &m_ballSpeedMultiplier, 0.1f, 10.0f, "%.2f")) {
+    m_ballController.setSpeedMultiplier(m_ballSpeedMultiplier);
+  }
+
+  ImGui::SliderFloat("Max Ball Speed", &m_maxBallSpeed, 1.0f, 500.0f);
+
+  if (ImGui::SliderFloat("Friction", &m_friction, 0.0f, 1.0f, "%.3f")) {
+    m_ballController.setFriction(m_friction);
+  }
+
+  // Apply hue shift to all renderers that support it
+  for (auto& renderer : m_ballRenderers) {
+    if (auto* ballRenderer = dynamic_cast<BallRenderer*>(renderer.get())) {
+      ballRenderer->setHueShift(m_hueShift);
     }
+  }
 
-    ImGui::Text("ImGui Debug Info:");
-    ImGui::Text("Window Position: (%.1f, %.1f)", ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
-    ImGui::Text("Window Size: (%.1f, %.1f)", ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
 
-    ImGui::End();
+  // Button to reinitialize the game
+  if (ImGui::Button("Reinitialize Game")) {
+    reinitializeGame();
+  }
+
+  ImGui::Text("ImGui Debug Info:");
+  ImGui::Text("Window Position: (%.1f, %.1f)", ImGui::GetWindowPos().x, ImGui::GetWindowPos().y);
+  ImGui::Text("Window Size: (%.1f, %.1f)", ImGui::GetWindowSize().x, ImGui::GetWindowSize().y);
+
+  ImGui::End();
 }
+
+void MainGame::reinitializeGame() {
+  m_balls.clear();
+  m_grid = std::make_unique<Grid>(m_screenWidth, m_screenHeight, CELL_SIZE);
+  initBalls();
+  m_ballController.setMaxSpeed(m_maxBallSpeed);
+  m_ballController.setSpeedMultiplier(m_ballSpeedMultiplier);
+}
+
