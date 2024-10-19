@@ -45,7 +45,6 @@ namespace Bengine {
     void SpriteBatch::renderBatch() {
 
         glBindVertexArray(m_vao);
-
         for (int i = 0; i < m_renderBatches.size(); i++) {
             glBindTexture(GL_TEXTURE_2D, m_renderBatches[i].texture);
 

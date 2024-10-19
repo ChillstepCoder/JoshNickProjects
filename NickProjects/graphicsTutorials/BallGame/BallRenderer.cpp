@@ -2,28 +2,29 @@
 #include <iostream>
 
 void BallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
+    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* optSharedShader, const glm::vec3& shaderColor) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     // Lazily initialize the program
-    if (shaderProgram == nullptr) {
+    assert(optSharedShader);
+    if (optSharedShader == nullptr) {
         std::cerr << "Error: Shader program is null in BallRenderer::renderBalls" << std::endl;
         return;
     }
 
-    shaderProgram->use();
+    optSharedShader->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
+    GLint textureUniform = optSharedShader->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = shaderProgram->getUniformLocation("P");
+    GLint pUniform = optSharedShader->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
-    GLint colorUniform = shaderProgram->getUniformLocation("uColor");
+    GLint colorUniform = optSharedShader->getUniformLocation("uColor");
     if (colorUniform != -1) {
         glUniform3f(colorUniform, shaderColor.r, shaderColor.g, shaderColor.b);
     }
@@ -42,33 +43,32 @@ void BallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vec
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    shaderProgram->unuse();
+    optSharedShader->unuse();
 }
 
 void MomentumBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
+    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* optSharedShader, const glm::vec3& shaderColor) {
 
     glClearColor(0.0f, 0.1f, 0.5f, 1.0f);
 
-    // Lazily initialize the program
-    if (shaderProgram == nullptr) {
-        shaderProgram->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        shaderProgram->addAttribute("vertexPosition");
-        shaderProgram->addAttribute("vertexColor");
-        shaderProgram->addAttribute("vertexUV");
-        shaderProgram->linkShaders();
+    // We always use optSharedShader here
+    assert(optSharedShader);
+    if (optSharedShader == nullptr) {
+        std::cerr << "Error: Shader program is null in MomentumBallRenderer::renderBalls" << std::endl;
+        return;
     }
-    shaderProgram->use();
+
+    optSharedShader->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
+    GLint textureUniform = optSharedShader->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = shaderProgram->getUniformLocation("P");
+    GLint pUniform = optSharedShader->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Render all the balls
@@ -88,7 +88,7 @@ void MomentumBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const 
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    shaderProgram->unuse();
+    optSharedShader->unuse();
 }
 
 VelocityBallRenderer::VelocityBallRenderer(int screenWidth, int screenHeight) :
@@ -99,28 +99,27 @@ VelocityBallRenderer::VelocityBallRenderer(int screenWidth, int screenHeight) :
 
 
 void VelocityBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
-    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
+    const glm::mat4& projectionMatrix, Bengine::GLSLProgram* optSharedShader, const glm::vec3& shaderColor) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-    // Lazily initialize the program
-    if (shaderProgram == nullptr) {
-        shaderProgram->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        shaderProgram->addAttribute("vertexPosition");
-        shaderProgram->addAttribute("vertexColor");
-        shaderProgram->addAttribute("vertexUV");
-        shaderProgram->linkShaders();
+    // We always use optSharedShader here
+    assert(optSharedShader);
+    if (optSharedShader == nullptr) {
+        std::cerr << "Error: Shader program is null in VelocityBallRenderer::renderBalls" << std::endl;
+        return;
     }
-    shaderProgram->use();
+
+    optSharedShader->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
+    GLint textureUniform = optSharedShader->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = shaderProgram->getUniformLocation("P");
+    GLint pUniform = optSharedShader->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Render all the balls
@@ -142,7 +141,7 @@ void VelocityBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const 
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    shaderProgram->unuse();
+    optSharedShader->unuse();
 }
 
 TrippyBallRenderer::TrippyBallRenderer(int screenWidth, int screenHeight) :
@@ -151,28 +150,26 @@ TrippyBallRenderer::TrippyBallRenderer(int screenWidth, int screenHeight) :
     // Empty
 }
 
-void TrippyBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls, const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
+void TrippyBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls, const glm::mat4& projectionMatrix, Bengine::GLSLProgram* optSharedShader, const glm::vec3& shaderColor) {
     glClearColor(0.1f, 0.0f, 0.0f, 1.0f);
 
-    // Lazily initialize the program
-    if (shaderProgram == nullptr) {
-        shaderProgram->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        shaderProgram->addAttribute("vertexPosition");
-        shaderProgram->addAttribute("vertexColor");
-        shaderProgram->addAttribute("vertexUV");
-        shaderProgram->linkShaders();
+    // We always use optSharedShader here
+    assert(optSharedShader);
+    if (optSharedShader == nullptr) {
+        std::cerr << "Error: Shader program is null in TrippyBallRenderer::renderBalls" << std::endl;
+        return;
     }
-    shaderProgram->use();
 
     spriteBatch.begin();
+    optSharedShader->use();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
+    GLint textureUniform = optSharedShader->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
     // Grab the camera matrix
-    GLint pUniform = shaderProgram->getUniformLocation("P");
+    GLint pUniform = optSharedShader->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Change these constants to get cool stuff
@@ -210,7 +207,7 @@ void TrippyBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const st
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    shaderProgram->unuse();
+    optSharedShader->unuse();
 }
 
 NewBallRenderer::NewBallRenderer(int screenWidth, int screenHeight) :
@@ -221,28 +218,37 @@ NewBallRenderer::NewBallRenderer(int screenWidth, int screenHeight) :
 
 
 
-void NewBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls, const glm::mat4& projectionMatrix, Bengine::GLSLProgram* shaderProgram, const glm::vec3& shaderColor) {
+void NewBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls, const glm::mat4& projectionMatrix, Bengine::GLSLProgram* optSharedShader, const glm::vec3& shaderColor) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
+    // We DONT use optSharedShader because we use textureShading2 in THIS renderer
+
     // Lazily initialize the program
-    if (shaderProgram == nullptr) {
-        shaderProgram->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
-        shaderProgram->addAttribute("vertexPosition");
-        shaderProgram->addAttribute("vertexColor");
-        shaderProgram->addAttribute("vertexUV");
-        shaderProgram->linkShaders();
+    if (m_trippyFractalProgram == nullptr) {
+        m_trippyFractalProgram = std::make_unique<Bengine::GLSLProgram>();
+        m_trippyFractalProgram->compileShaders("Shaders/textureShading2.vert", "Shaders/textureShading2.frag");
+        m_trippyFractalProgram->addAttribute("vertexPosition");
+        m_trippyFractalProgram->addAttribute("vertexColor");
+        m_trippyFractalProgram->addAttribute("vertexUV");
+        m_trippyFractalProgram->linkShaders();
     }
-    shaderProgram->use();
+    m_trippyFractalProgram->use();
 
     spriteBatch.begin();
 
     // Make sure the shader uses texture 0
     glActiveTexture(GL_TEXTURE0);
-    GLint textureUniform = shaderProgram->getUniformLocation("mySampler");
+    GLint textureUniform = m_trippyFractalProgram->getUniformLocation("mySampler");
     glUniform1i(textureUniform, 0);
 
+    GLint resolutionUniform = m_trippyFractalProgram->getUniformLocation("iResolution");
+    glUniform2f(resolutionUniform, m_screenWidth, m_screenHeight);
+
+    GLint timeUniform = m_trippyFractalProgram->getUniformLocation("iTime");
+    glUniform1f(timeUniform, m_time);
+
     // Grab the camera matrix
-    GLint pUniform = shaderProgram->getUniformLocation("P");
+    GLint pUniform = m_trippyFractalProgram->getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     // Change these constants to get cool stuff
@@ -280,5 +286,5 @@ void NewBallRenderer::renderBalls(Bengine::SpriteBatch& spriteBatch, const std::
     spriteBatch.end();
     spriteBatch.renderBatch();
 
-    shaderProgram->unuse();
+    optSharedShader->unuse();
 }

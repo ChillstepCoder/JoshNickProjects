@@ -1,4 +1,18 @@
 #version 130
+
+uniform sampler2D mySampler;
+uniform vec2 iResolution;
+uniform float iTime;
+
+in vec2 fragmentPosition;
+in vec4 fragmentColor;
+in vec2 fragmentUV;
+
+//This is the 3 component float vector that gets outputted to the screen
+//for each pixel.
+out vec4 color;
+
+
 //The fragment shader operates on each pixel in a given polygon
 vec3 palette( float t ) {
     vec3 a = vec3(0.5, 0.5, 0.5);
@@ -10,8 +24,8 @@ vec3 palette( float t ) {
 }
 
 //https://www.shadertoy.com/view/mtyGWy
-void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
-    vec2 uv = (fragCoord * 2.0 - iResolution.xy) / iResolution.y;
+void main() {
+    vec2 uv = (fragmentPosition.xy * 2.0 - iResolution.xy) / iResolution.y;
     vec2 uv0 = uv;
     vec3 finalColor = vec3(0.0);
     
@@ -30,5 +44,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
         finalColor += col * d;
     }
         
-    fragColor = vec4(finalColor, 1.0);
+    vec4 textureColor = texture(mySampler, fragmentUV) * 0.00001 + vec4(1.0);
+    
+    color = vec4(finalColor, 1.0) * textureColor;
 }
