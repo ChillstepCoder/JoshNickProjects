@@ -74,7 +74,13 @@ void MainGame::initSystems() {
 
     // Initialize particles
     m_bloodParticleBatch = new Bengine::ParticleBatch2D();
-    m_bloodParticleBatch->init(1000, 0.05f, Bengine::ResourceManager::getTexture("Textures/Particles/blood.png"));
+    m_bloodParticleBatch->init(1000, 0.05f,
+                               Bengine::ResourceManager::getTexture("Textures/Particles/blood.png"),
+                               [](Bengine::Particle2D& particle, float deltaTime) {
+            particle.position += particle.velocity * deltaTime;
+            particle.color.a = (GLubyte)(particle.life * 255.0f);
+        });
+
     m_particleEngine.addParticleBatch(m_bloodParticleBatch);
 
 }
