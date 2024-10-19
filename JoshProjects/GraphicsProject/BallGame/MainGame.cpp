@@ -227,15 +227,10 @@ void MainGame::draw() {
   }
   glUniform1i(textureUniform, 0);
 
-  // Begin the sprite batch
-  m_spriteBatch.begin();
 
   // Let the BallRenderer add sprites to the batch
   m_ballRenderers[m_currentRenderer]->renderBalls(m_spriteBatch, m_balls, m_camera.getCameraMatrix());
 
-  // End and render the sprite batch
-  m_spriteBatch.end();
-  m_spriteBatch.renderBatch();
 
   // Unuse the shader program
   m_textureProgram.unuse();

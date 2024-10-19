@@ -6,6 +6,10 @@
 
 void BallRenderer::renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
   const glm::mat4& projectionMatrix) {
+
+  // Begin the sprite batch
+  spriteBatch.begin();
+
   for (const auto& ball : balls) {
     const glm::vec4 destRect(ball.position.x - ball.radius, ball.position.y - ball.radius,
       ball.radius * 2.0f, ball.radius * 2.0f);
@@ -13,10 +17,16 @@ void BallRenderer::renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::v
     JAGEngine::ColorRGBA8 shiftedColor = applyHueShift(ball.color);
     spriteBatch.draw(destRect, uvRect, ball.textureId, 0.0f, shiftedColor);
   }
+
+
+  // End and render the sprite batch
+  spriteBatch.end();
+  spriteBatch.renderBatch();
 }
 
 void MomentumBallRenderer::renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
   const glm::mat4& projectionMatrix) {
+
   if (m_program == nullptr) {
     m_program = std::make_unique<JAGEngine::GLSLProgram>();
     m_program->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
@@ -56,6 +66,7 @@ VelocityBallRenderer::VelocityBallRenderer(int screenWidth, int screenHeight)
 
 void VelocityBallRenderer::renderBalls(JAGEngine::SpriteBatch& spriteBatch, const std::vector<Ball>& balls,
   const glm::mat4& projectionMatrix) {
+
   if (m_program == nullptr) {
     m_program = std::make_unique<JAGEngine::GLSLProgram>();
     m_program->compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
