@@ -1,26 +1,34 @@
 #version 130
 //The fragment shader operates on each pixel in a given polygon
+vec3 palette( float t ) {
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0.263,0.416,0.557);
 
-in vec2 fragmentPosition;
-in vec4 fragmentColor;
-in vec2 fragmentUV;
+    return a + b*cos( 6.28318*(c*t+d) );
+}
 
-uniform vec3 uColor;
-
-float angle = atan(-fragmentPosition.y , fragmentPosition.x) * 0.1;
-float len = length(fragmentPosition - vec2(0.0, 0.0));
-
-//This is the 3 component float vector that gets outputted to the screen
-//for each pixel.
-out vec4 color;
-
-uniform sampler2D mySampler;
-
-void main() {
-
-	vec4 textureColor = texture(mySampler, fragmentUV);
+//https://www.shadertoy.com/view/mtyGWy
+void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
+    vec2 uv = (fragCoord * 2.0 - iResolution.xy) / iResolution.y;
+    vec2 uv0 = uv;
+    vec3 finalColor = vec3(0.0);
     
-    color = vec4(uColor, 1.5) * vec4(fragmentColor.r * (sin(angle * 40.0) / 2.0), 
-				 fragmentColor.g * (cos(len * 40.0) / 2.0), 
-				 fragmentColor.b * (sin(angle * 80.0) / 2.0), fragmentColor.a)* textureColor;
+    for (float i = 0.0; i < 4.0; i++) {
+        uv = fract(uv * 1.5) - 0.5;
+
+        float d = length(uv) * exp(-length(uv0));
+
+        vec3 col = palette(length(uv0) + i*.4 + iTime*.4);
+
+        d = sin(d*8. + iTime)/8.;
+        d = abs(d);
+
+        d = pow(0.01 / d, 1.2);
+
+        finalColor += col * d;
+    }
+        
+    fragColor = vec4(finalColor, 1.0);
 }
