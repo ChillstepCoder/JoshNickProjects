@@ -30,9 +30,16 @@ namespace JAGEngine {
       const GLchar* message,
       const void* userParam);
 
+    // Getters
+    int getScreenWidth() { return m_screenWidth; }
+    int getScreenHeight() { return m_screenHeight; }
 
   private:
     SDL_Window* _sdlWindow = nullptr;
     SDL_GLContext _glContext = nullptr;
+
+    int m_screenWidth = 1920;
+    int m_screenHeight = 1080;
+
   };
 }
