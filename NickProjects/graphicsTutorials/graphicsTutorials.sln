@@ -20,6 +20,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BallGame", "BallGame\BallGa
 		{95C81241-D475-41A0-9B30-DB513308716E} = {95C81241-D475-41A0-9B30-DB513308716E}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NinjaPlatformer", "NinjaPlatformer\NinjaPlatformer.vcxproj", "{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}"
+	ProjectSection(ProjectDependencies) = postProject
+		{95C81241-D475-41A0-9B30-DB513308716E} = {95C81241-D475-41A0-9B30-DB513308716E}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PixelCraft", "PixelCraft\PixelCraft.vcxproj", "{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}"
+	ProjectSection(ProjectDependencies) = postProject
+		{95C81241-D475-41A0-9B30-DB513308716E} = {95C81241-D475-41A0-9B30-DB513308716E}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -60,6 +70,22 @@ Global
 		{75716AB5-2D73-4ABE-8079-7ADCACBDD3AD}.Release|x64.Build.0 = Release|x64
 		{75716AB5-2D73-4ABE-8079-7ADCACBDD3AD}.Release|x86.ActiveCfg = Release|Win32
 		{75716AB5-2D73-4ABE-8079-7ADCACBDD3AD}.Release|x86.Build.0 = Release|Win32
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Debug|x64.ActiveCfg = Debug|x64
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Debug|x64.Build.0 = Debug|x64
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Debug|x86.ActiveCfg = Debug|Win32
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Debug|x86.Build.0 = Debug|Win32
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Release|x64.ActiveCfg = Release|x64
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Release|x64.Build.0 = Release|x64
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Release|x86.ActiveCfg = Release|Win32
+		{7BCBD2CA-AE72-4B7B-B224-13F5F1DE4210}.Release|x86.Build.0 = Release|Win32
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Debug|x64.ActiveCfg = Debug|x64
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Debug|x64.Build.0 = Debug|x64
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Debug|x86.ActiveCfg = Debug|Win32
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Debug|x86.Build.0 = Debug|Win32
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Release|x64.ActiveCfg = Release|x64
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Release|x64.Build.0 = Release|x64
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Release|x86.ActiveCfg = Release|Win32
+		{78CB3C99-E5C6-4BCA-A66B-1DBE49D4C644}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
