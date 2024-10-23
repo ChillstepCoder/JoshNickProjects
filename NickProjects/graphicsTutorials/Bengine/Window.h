@@ -19,8 +19,8 @@ namespace Bengine {
 
         void swapBuffer();
 
-        int getScreenWidth() { m_screenWidth; }
-        int getScreenHeight() { m_screenHeight; }
+        int getScreenWidth() { return m_screenWidth; }
+        int getScreenHeight() { return m_screenHeight; }
 
     private:
         SDL_Window* m_sdlWindow;
