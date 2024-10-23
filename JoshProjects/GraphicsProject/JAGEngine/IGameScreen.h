@@ -14,6 +14,7 @@ namespace JAGEngine {
 
   class IGameScreen {
   public:
+    friend class ScreenList;
     IGameScreen() {
       // Empty
     }

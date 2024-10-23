@@ -30,6 +30,7 @@ namespace JAGEngine {
       draw();
 
       m_fps = limiter.end();
+      m_window.swapBuffer();
     }
 
   }

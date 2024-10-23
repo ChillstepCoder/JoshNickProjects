@@ -27,6 +27,7 @@ namespace JAGEngine {
     m_currentScreenIndex = nextScreen;
   }
   void ScreenList::addScreen(IGameScreen* newScreen) {
+    newScreen->m_screenIndex = m_screens.size();
     m_screens.push_back(newScreen);
     newScreen->build();
     newScreen->setParentGame(m_game);
