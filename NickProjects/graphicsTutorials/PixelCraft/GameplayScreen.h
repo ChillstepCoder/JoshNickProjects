@@ -2,10 +2,16 @@
 
 #include <Box2D/box2d.h>
 #include <Bengine/IGameScreen.h>
+#include <vector>
+#include <Bengine/SpriteBatch.h>
+#include <Bengine/GLSLProgram.h>
+#include <Bengine/Camera2D.h>
+#include <Bengine/GLTexture.h>
+#include <Bengine/Window.h>
 
 class GameplayScreen : public Bengine::IGameScreen {
 public:
-    GameplayScreen();
+    GameplayScreen(Bengine::Window* window);
     ~GameplayScreen();
 
     virtual int getNextScreenIndex() const override;
@@ -26,6 +32,12 @@ public:
 
 private:
     void checkInput();
+
+    Bengine::SpriteBatch m_spriteBatch;
+    Bengine::GLSLProgram m_textureProgram;
+    Bengine::Camera2D m_camera;
+    Bengine::GLTexture m_texture;
+    Bengine::Window* m_window;
 
     std::unique_ptr<b2WorldId> m_world;
 };
