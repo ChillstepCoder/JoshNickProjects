@@ -29,19 +29,21 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = (b2Vec2)(0.0f, 9.81f);
+    worldDef.gravity = b2Vec2(0.0f, -9.81f);
     m_world = b2CreateWorld(&worldDef);
 
     // Make the ground
-    //b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    //groundBodyDef.position = (b2Vec2)( 0.0f, -20.0f );
-    //b2BodyId groundId = b2CreateBody(m_world, &groundBodyDef);
+    b2BodyDef groundBodyDef = b2DefaultBodyDef();
+    groundBodyDef.position = b2Vec2( 0.0f, -60.0f );
+    m_ground = b2CreateBody(m_world, &groundBodyDef);
 
     // Make the ground fixture
-    //b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
-    //b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
-    //b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
+    b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
+    b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
+    b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
 
+
+    // Make a box
     Box newBox;
     newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f));
     m_boxes.push_back(newBox);

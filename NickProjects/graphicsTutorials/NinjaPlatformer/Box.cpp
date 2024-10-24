@@ -18,7 +18,7 @@ void Box::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dim
     m_dimensions = dimensions;
     b2BodyDef bodyDef = b2DefaultBodyDef();
     bodyDef.type = b2_dynamicBody;
-    bodyDef.position = (b2Vec2)(position.x, position.y);
+    bodyDef.position = b2Vec2(position.x, position.y);
     m_ID = b2CreateBody(*world, &bodyDef);
 
     b2Polygon dynamicBox = b2MakeBox(dimensions.x / 2.0f, dimensions.y / 2.0f);
