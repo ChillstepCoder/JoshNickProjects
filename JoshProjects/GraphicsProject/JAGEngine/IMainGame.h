@@ -1,3 +1,5 @@
+// IMainGame.h
+
 #pragma once
 #include <memory>
 #include "Window.h"
@@ -34,7 +36,7 @@ namespace JAGEngine {
     bool init();
     bool initSystems();
 
-    std::unique_ptr<ScreenList> m_screenList = nullptr;
+    std::unique_ptr<ScreenList> m_screenList;
     IGameScreen* m_currentScreen = nullptr;
     bool m_isRunning = false;
     float m_fps = 0.0f;

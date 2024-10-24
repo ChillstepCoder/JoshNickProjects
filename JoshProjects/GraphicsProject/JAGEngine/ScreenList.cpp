@@ -1,11 +1,21 @@
+//ScreenList.cpp
+
 #include "ScreenList.h"
 #include "IGameScreen.h"
 
 namespace JAGEngine {
 
   ScreenList::ScreenList(MainGame* game) :
-  m_game(game) {
-    //empty
+    m_game(game),
+    m_currentScreenIndex(-1) {
+    // Make sure game pointer is valid
+    if (!game) {
+      throw std::runtime_error("Null game pointer in ScreenList constructor");
+    }
+  }
+
+  ScreenList::~ScreenList() {
+    destroy();
   }
 
   IGameScreen* ScreenList::moveNext() {
@@ -24,20 +34,24 @@ namespace JAGEngine {
   }
 
   void ScreenList::setScreen(int nextScreen) {
-    m_currentScreenIndex = nextScreen;
+    if (nextScreen >= 0 && nextScreen < m_screens.size()) {
+      m_currentScreenIndex = nextScreen;
+    }
   }
   void ScreenList::addScreen(IGameScreen* newScreen) {
-    newScreen->m_screenIndex = m_screens.size();
-    m_screens.push_back(newScreen);
-    newScreen->build();
-    newScreen->setParentGame(m_game);
+    if (newScreen) {
+      newScreen->m_screenIndex = m_screens.size();
+      m_screens.push_back(newScreen);
+      newScreen->build();
+      newScreen->setParentGame(m_game);
+    }
   }
 
   void ScreenList::destroy() {
     for (size_t i = 0; i < m_screens.size(); i++) {
       m_screens[i]->destroy();
     }
-    m_screens.resize(0);
+    m_screens.clear();
     m_currentScreenIndex = -1;
   }
 
@@ -46,7 +60,9 @@ namespace JAGEngine {
   }
 
   IGameScreen* ScreenList::getCurrent() {
-    if (m_currentScreenIndex = -1) return nullptr;
+    if (m_screens.empty()) {
+      return nullptr;
+    }
     return m_screens[m_currentScreenIndex];
   }
 }

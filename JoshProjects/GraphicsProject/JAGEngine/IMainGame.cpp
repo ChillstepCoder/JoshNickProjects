@@ -1,22 +1,43 @@
+// IMainGame.cpp
+
 #include "IMainGame.h"
 #include "Timing.h"
-
+#include <iostream>
 #include "ScreenList.h"
 #include "IGameScreen.h"
 
 namespace JAGEngine {
 
   IMainGame::IMainGame() {
-
+    std::cout << "IMainGame constructor start\n";
+    m_screenList = std::make_unique<ScreenList>(this);
+    /*try {
+      m_screenList = std::make_unique<ScreenList>(this);
+      std::cout << "Created screen list\n";
+    }
+    catch (const std::exception& e) {
+      std::cerr << "Exception creating screen list: " << e.what() << std::endl;
+      throw;
+    }*/
+    m_isRunning = false;
+    m_fps = 0.0f;
+    std::cout << "IMainGame constructor complete\n";
   }
 
   IMainGame::~IMainGame() {
-
+    // Ensure proper cleanup
+    if (m_screenList) {
+      m_screenList->destroy();
+      m_screenList.reset();
+    }
   }
 
   void IMainGame::run() {
-
-    if (!init()) return;
+    std::cout << "Run start\n";
+    if (!init()) {
+      std::cerr << "Failed to initialize!\n";
+      return;
+    }
 
     FpsLimiter limiter;
     limiter.setMaxFPS(60.0f);
@@ -68,19 +89,39 @@ namespace JAGEngine {
   }
 
   bool IMainGame::init() {
+    std::cout << "Init start\n";
     JAGEngine::init();
-
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-    if (!initSystems()) return false;
+    if (!initSystems()) {
+      std::cerr << "Failed to initialize systems\n";
+      return false;
+    }
 
+    std::cout << "Systems initialized, calling onInit()\n";
     onInit();
+
+    std::cout << "Checking screen list before addScreens()\n";
+    if (!m_screenList) {
+      std::cerr << "Screen list is null before addScreens!\n";
+      return false;
+    }
+
+    std::cout << "Calling addScreens()\n";
     addScreens();
 
+    std::cout << "Getting current screen\n";
     m_currentScreen = m_screenList->getCurrent();
+    if (!m_currentScreen) {
+      std::cerr << "Current screen is null after addScreens!\n";
+      return false;
+    }
+
+    std::cout << "Calling onEntry()\n";
     m_currentScreen->onEntry();
     m_currentScreen->setRunning();
 
+    std::cout << "Init complete\n";
     return true;
   }
 
