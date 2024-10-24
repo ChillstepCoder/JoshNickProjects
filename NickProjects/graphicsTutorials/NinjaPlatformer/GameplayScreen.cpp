@@ -8,7 +8,7 @@ GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
 }
 GameplayScreen::~GameplayScreen() {
-
+    b2DestroyWorld(m_world);
 }
 
 int GameplayScreen::getNextScreenIndex() const {
@@ -29,21 +29,21 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = (b2Vec2)(0.0f, -9.81f);
-    b2WorldId worldId = b2CreateWorld(&worldDef);
+    worldDef.gravity = (b2Vec2)(0.0f, 9.81f);
+    m_world = b2CreateWorld(&worldDef);
 
     // Make the ground
-    b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    groundBodyDef.position = (b2Vec2)( 0.0f, -20.0f );
-    b2BodyId groundId = b2CreateBody(worldId, &groundBodyDef);
+    //b2BodyDef groundBodyDef = b2DefaultBodyDef();
+    //groundBodyDef.position = (b2Vec2)( 0.0f, -20.0f );
+    //b2BodyId groundId = b2CreateBody(m_world, &groundBodyDef);
 
     // Make the ground fixture
-    b2Polygon groundBox = b2MakeBox(50.0f, 10.0f);
-    b2ShapeDef groundShapeDef = b2DefaultShapeDef();
-    b2CreatePolygonShape(groundId, &groundShapeDef, &groundBox);
+    //b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
+    //b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
+    //b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
 
     Box newBox;
-    newBox.init(&worldId, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f));
+    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f));
     m_boxes.push_back(newBox);
 
     // Initialize spritebatch
@@ -62,27 +62,22 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(32.0f);
+    m_camera.setScale(8.0f);
 }
 
 void GameplayScreen::onExit() {
 
 }
 
-void GameplayScreen::update(b2WorldId* world) {
+void GameplayScreen::update() {
     m_camera.update();
     checkInput();
 
     //Update the physics simulation
     float timeStep = 1.0f / 60.0f;
     int subStepCount = 4;
-    for (int i = 0; i < 90; ++i)
-    {
-        b2World_Step(*world, timeStep, subStepCount);
-        b2Vec2 position = b2Body_GetPosition(Box.getBody());
-        b2Rot rotation = b2Body_GetRotation(newBox.getBody());
-        printf("%4.2f %4.2f %4.2f\n", position.x, position.y, b2Rot_GetAngle(rotation));
-    }
+
+    b2World_Step(m_world, timeStep, subStepCount);
 }
 
 void GameplayScreen::draw() {
@@ -107,8 +102,8 @@ void GameplayScreen::draw() {
     // Draw all the boxes
     for (auto& b : m_boxes) {
         glm::vec4 destRect;
-        destRect.x = b.getBody()->GetPosition().x;
-        destRect.y = b.getBody()->GetPosition().y;
+        destRect.x = b.getPosition().x;
+        destRect.y = b.getPosition().y;
         destRect.z = b.getDimensions().x;
         destRect.w = b.getDimensions().y;
         m_spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, Bengine::ColorRGBA8(255, 255, 255, 255), 0.0f);

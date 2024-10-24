@@ -27,7 +27,7 @@ public:
 
     virtual void onExit() override;
 
-    virtual void update(b2WorldId* world);
+    virtual void update() override;
 
     virtual void draw() override;
 
@@ -41,5 +41,6 @@ private:
     Bengine::Window* m_window;
 
     std::vector<Box> m_boxes;
-    std::unique_ptr<b2WorldId> m_world;
+    b2WorldId m_world;
+    b2BodyId m_ground;
 };

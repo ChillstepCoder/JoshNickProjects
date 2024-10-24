@@ -28,20 +28,22 @@ void GameplayScreen::destroy() {
 }
 
 void GameplayScreen::onEntry() {
-    b2Vec2 gravity(0.0f, -9.81);
-    m_world = std::make_unique<b2WorldId>(gravity);
+    b2WorldDef worldDef = b2DefaultWorldDef();
+    worldDef.gravity = (b2Vec2)(0.0f, -9.81f);
+    b2WorldId worldId = b2CreateWorld(&worldDef);
 
     // Make the ground
-    b2BodyDef groundBodyDef;
-    groundBodyDef.position.Set(0.0f, -20.0f);
-    b2BodyId* groundBody = m_world->CreateBody(&groundBodyDef);
+    b2BodyDef groundBodyDef = b2DefaultBodyDef();
+    groundBodyDef.position = (b2Vec2)(0.0f, -20.0f);
+    b2BodyId groundId = b2CreateBody(worldId, &groundBodyDef);
+
     // Make the ground fixture
-    b2PolygonShape groundBox;
-    groundBox.SetAsBox(50.0f, 10.0f);
-    groundBody->CreateFixture(&groundBox, 0.0f);
+    b2Polygon groundBox = b2MakeBox(50.0f, 10.0f);
+    b2ShapeDef groundShapeDef = b2DefaultShapeDef();
+    b2CreatePolygonShape(groundId, &groundShapeDef, &groundBox);
 
     Box newBox;
-    newBox.init(m_world.get(), glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f));
+    newBox.init(&worldId, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f));
     m_boxes.push_back(newBox);
 
     // Initialize spritebatch
@@ -67,12 +69,20 @@ void GameplayScreen::onExit() {
 
 }
 
-void GameplayScreen::update() {
+void GameplayScreen::update(b2WorldId* world) {
     m_camera.update();
     checkInput();
 
     //Update the physics simulation
-    m_world->Step(1.0f / 60.0f, 6, 2);
+    float timeStep = 1.0f / 60.0f;
+    int subStepCount = 4;
+    for (int i = 0; i < 90; ++i)
+    {
+        b2World_Step(*world, timeStep, subStepCount);
+        b2Vec2 position = b2Body_GetPosition(Box.getBody());
+        b2Rot rotation = b2Body_GetRotation(newBox.getBody());
+        printf("%4.2f %4.2f %4.2f\n", position.x, position.y, b2Rot_GetAngle(rotation));
+    }
 }
 
 void GameplayScreen::draw() {
@@ -101,7 +111,7 @@ void GameplayScreen::draw() {
         destRect.y = b.getBody()->GetPosition().y;
         destRect.z = b.getDimensions().x;
         destRect.w = b.getDimensions().y;
-        m_spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, Bengine::ColorRGBA8(255, 255, 255, 255), b.getBody()->GetAngle());
+        m_spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, Bengine::ColorRGBA8(255, 255, 255, 255), 0.0f);
     }
 
     m_spriteBatch.end();
