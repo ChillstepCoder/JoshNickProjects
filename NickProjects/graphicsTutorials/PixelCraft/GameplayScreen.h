@@ -26,7 +26,7 @@ public:
 
     virtual void onExit() override;
 
-    virtual void update() override;
+    virtual void update(b2WorldId* world);
 
     virtual void draw() override;
 

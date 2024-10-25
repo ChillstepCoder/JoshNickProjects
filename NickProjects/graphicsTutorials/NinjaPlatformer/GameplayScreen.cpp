@@ -8,7 +8,7 @@ GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
 }
 GameplayScreen::~GameplayScreen() {
-
+    b2DestroyWorld(m_world);
 }
 
 int GameplayScreen::getNextScreenIndex() const {
@@ -29,21 +29,33 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = (b2Vec2)(0.0f, -9.81f);
-    b2WorldId worldId = b2CreateWorld(&worldDef);
+    worldDef.gravity = b2Vec2(0.0f, -9.81f);
+    m_world = b2CreateWorld(&worldDef);
 
     // Make the ground
     b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    groundBodyDef.position = (b2Vec2)( 0.0f, -20.0f );
-    b2BodyId groundId = b2CreateBody(worldId, &groundBodyDef);
+    groundBodyDef.position = b2Vec2( 0.0f, -60.0f );
+    m_ground = b2CreateBody(m_world, &groundBodyDef);
 
     // Make the ground fixture
-    b2Polygon groundBox = b2MakeBox(50.0f, 10.0f);
-    b2ShapeDef groundShapeDef = b2DefaultShapeDef();
-    b2CreatePolygonShape(groundId, &groundShapeDef, &groundBox);
+    b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
+    b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
+    b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
 
+    // Load the texture
+    m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
+
+
+
+    Bengine::ColorRGBA8 textureColor;
+    textureColor.r = 255;
+    textureColor.g = 255;
+    textureColor.b = 255;
+    textureColor.a = 255;
+
+    // Make a box
     Box newBox;
-    newBox.init(&worldId, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f));
+    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f), m_texture, textureColor, false);
     m_boxes.push_back(newBox);
 
     // Initialize spritebatch
@@ -57,38 +69,34 @@ void GameplayScreen::onEntry() {
     m_textureProgram.addAttribute("vertexUV");
     m_textureProgram.linkShaders();
 
-    // Load the texture
-    m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
-
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(32.0f);
+    m_camera.setScale(8.0f);
+
+    // Init player
+    m_player.init(&m_world, glm::vec2(0.0f, 30.0f), glm::vec2(3.5f, 8.0f), textureColor);
 }
 
 void GameplayScreen::onExit() {
 
 }
 
-void GameplayScreen::update(b2WorldId* world) {
+void GameplayScreen::update() {
     m_camera.update();
     checkInput();
+    m_player.update(m_game->inputManager);
 
     //Update the physics simulation
     float timeStep = 1.0f / 60.0f;
     int subStepCount = 4;
-    for (int i = 0; i < 90; ++i)
-    {
-        b2World_Step(*world, timeStep, subStepCount);
-        b2Vec2 position = b2Body_GetPosition(Box.getBody());
-        b2Rot rotation = b2Body_GetRotation(newBox.getBody());
-        printf("%4.2f %4.2f %4.2f\n", position.x, position.y, b2Rot_GetAngle(rotation));
-    }
+
+    b2World_Step(m_world, timeStep, subStepCount);
 }
 
 void GameplayScreen::draw() {
     std::cout << "Draw\n";
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.4f, 0.4f, 0.8f, 1.0f);
 
     m_textureProgram.use();
 
@@ -106,13 +114,10 @@ void GameplayScreen::draw() {
 
     // Draw all the boxes
     for (auto& b : m_boxes) {
-        glm::vec4 destRect;
-        destRect.x = b.getBody()->GetPosition().x;
-        destRect.y = b.getBody()->GetPosition().y;
-        destRect.z = b.getDimensions().x;
-        destRect.w = b.getDimensions().y;
-        m_spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, Bengine::ColorRGBA8(255, 255, 255, 255), 0.0f);
+        b.draw(m_spriteBatch);
     }
+
+    m_player.draw(m_spriteBatch);
 
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();

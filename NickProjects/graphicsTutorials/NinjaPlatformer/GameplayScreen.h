@@ -1,8 +1,9 @@
 #pragma once
 
+#include "Box.h"
+#include "Player.h"
 #include <Box2D/box2d.h>
 #include <Bengine/IGameScreen.h>
-#include "Box.h"
 #include <vector>
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLSLProgram.h>
@@ -27,7 +28,7 @@ public:
 
     virtual void onExit() override;
 
-    virtual void update(b2WorldId* world);
+    virtual void update() override;
 
     virtual void draw() override;
 
@@ -40,6 +41,8 @@ private:
     Bengine::GLTexture m_texture;
     Bengine::Window* m_window;
 
+    Player m_player;
     std::vector<Box> m_boxes;
-    std::unique_ptr<b2WorldId> m_world;
+    b2WorldId m_world;
+    b2BodyId m_ground;
 };
