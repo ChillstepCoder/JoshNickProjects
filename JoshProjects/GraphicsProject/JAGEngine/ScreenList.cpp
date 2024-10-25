@@ -2,13 +2,15 @@
 
 #include "ScreenList.h"
 #include "IGameScreen.h"
+#include "IMainGame.h"
+#include <iostream>
 
 namespace JAGEngine {
 
-  ScreenList::ScreenList(MainGame* game) :
+  ScreenList::ScreenList(IMainGame* game) :  // Change from MainGame
     m_game(game),
-    m_currentScreenIndex(-1) {
-    // Make sure game pointer is valid
+    m_currentScreenIndex(-1)
+  {
     if (!game) {
       throw std::runtime_error("Null game pointer in ScreenList constructor");
     }
@@ -53,10 +55,6 @@ namespace JAGEngine {
     }
     m_screens.clear();
     m_currentScreenIndex = -1;
-  }
-
-  ScreenList::~ScreenList() {
-    destroy();
   }
 
   IGameScreen* ScreenList::getCurrent() {

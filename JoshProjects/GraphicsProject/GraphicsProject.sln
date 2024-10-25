@@ -21,6 +21,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BallGame", "BallGame\BallGa
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RogueRacingBattleRoyale", "RogueRacingBattleRoyale\RogueRacingBattleRoyale.vcxproj", "{EFF2338C-A4A4-4637-800E-C860CB594E73}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D62C5BC1-F241-41DB-AE92-A0555B15D10C} = {D62C5BC1-F241-41DB-AE92-A0555B15D10C}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

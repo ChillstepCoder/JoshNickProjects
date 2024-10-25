@@ -76,7 +76,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>$(SolutionDir)deps/lib/Debug/;$(SolutionDir)x64/Debug/;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)deps/include/$(SolutionDir)x64/Debug/;$(LibraryPath)</IncludePath>
+    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)x64/Debug/;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

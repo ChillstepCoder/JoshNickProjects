@@ -1,4 +1,4 @@
-//MainGame.cpp
+//MainGame.cpp Ball Game
 
 #define _CRT_SECURE_NO_WARNINGS // To shut up the compiler about sprintf...
 #include "MainGame.h"

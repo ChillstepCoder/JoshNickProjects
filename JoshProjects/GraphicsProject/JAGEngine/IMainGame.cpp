@@ -10,15 +10,14 @@ namespace JAGEngine {
 
   IMainGame::IMainGame() {
     std::cout << "IMainGame constructor start\n";
-    m_screenList = std::make_unique<ScreenList>(this);
-    /*try {
+    try {
       m_screenList = std::make_unique<ScreenList>(this);
       std::cout << "Created screen list\n";
     }
     catch (const std::exception& e) {
       std::cerr << "Exception creating screen list: " << e.what() << std::endl;
       throw;
-    }*/
+    }
     m_isRunning = false;
     m_fps = 0.0f;
     std::cout << "IMainGame constructor complete\n";
@@ -126,7 +125,25 @@ namespace JAGEngine {
   }
 
   bool IMainGame::initSystems() {
-    m_window.create("Default", 1920, 1080, 0);
+    // Set up proper OpenGL context
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    // Create window with OpenGL context
+    m_window.create("Racing Game", 800, 600, SDL_WINDOW_OPENGL);
+
+    // Initialize GLEW if you're using it
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+      std::cerr << "Failed to initialize GLEW" << std::endl;
+      return false;
+    }
+
+    // Enable alpha blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     return true;
   }
 
