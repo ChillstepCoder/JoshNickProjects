@@ -42,10 +42,20 @@ void GameplayScreen::onEntry() {
     b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
     b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
 
+    // Load the texture
+    m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
+
+
+
+    Bengine::ColorRGBA8 textureColor;
+    textureColor.r = 255;
+    textureColor.g = 255;
+    textureColor.b = 255;
+    textureColor.a = 255;
 
     // Make a box
     Box newBox;
-    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f));
+    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f), m_texture, textureColor, false);
     m_boxes.push_back(newBox);
 
     // Initialize spritebatch
@@ -59,12 +69,12 @@ void GameplayScreen::onEntry() {
     m_textureProgram.addAttribute("vertexUV");
     m_textureProgram.linkShaders();
 
-    // Load the texture
-    m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
-
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
     m_camera.setScale(8.0f);
+
+    // Init player
+    m_player.init(&m_world, glm::vec2(0.0f, 30.0f), glm::vec2(3.5f, 8.0f), textureColor);
 }
 
 void GameplayScreen::onExit() {
@@ -74,6 +84,7 @@ void GameplayScreen::onExit() {
 void GameplayScreen::update() {
     m_camera.update();
     checkInput();
+    m_player.update(m_game->inputManager);
 
     //Update the physics simulation
     float timeStep = 1.0f / 60.0f;
@@ -85,7 +96,7 @@ void GameplayScreen::update() {
 void GameplayScreen::draw() {
     std::cout << "Draw\n";
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.4f, 0.4f, 0.8f, 1.0f);
 
     m_textureProgram.use();
 
@@ -103,13 +114,10 @@ void GameplayScreen::draw() {
 
     // Draw all the boxes
     for (auto& b : m_boxes) {
-        glm::vec4 destRect;
-        destRect.x = b.getPosition().x;
-        destRect.y = b.getPosition().y;
-        destRect.z = b.getDimensions().x;
-        destRect.w = b.getDimensions().y;
-        m_spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, Bengine::ColorRGBA8(255, 255, 255, 255), 0.0f);
+        b.draw(m_spriteBatch);
     }
+
+    m_player.draw(m_spriteBatch);
 
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();

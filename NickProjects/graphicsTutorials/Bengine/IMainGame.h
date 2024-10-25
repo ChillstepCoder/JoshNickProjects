@@ -35,6 +35,8 @@ namespace Bengine {
             return m_fps;
         }
 
+        InputManager inputManager;
+
     protected:
         // Custom update function
         virtual void update();
@@ -49,7 +51,6 @@ namespace Bengine {
         bool m_isRunning = false;
         float m_fps = 0.0f;
         Window m_window;
-        InputManager m_inputManager;
     };
 
 }
