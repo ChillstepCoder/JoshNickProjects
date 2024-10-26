@@ -34,7 +34,6 @@ void GameplayScreen::onEntry() {
   std::cout << "GameplayScreen::onEntry()\n";
 
   try {
-    // Initialize rendering systems
     initShaders();
     m_spriteBatch.init();
 
@@ -42,41 +41,28 @@ void GameplayScreen::onEntry() {
     m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
     std::cout << "Loaded car texture with ID: " << m_carTexture << std::endl;
 
-    // Get texture dimensions for debugging
-    GLint width, height;
-    glBindTexture(GL_TEXTURE_2D, m_carTexture);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-    std::cout << "Loaded texture dimensions: " << width << "x" << height << std::endl;
+    // Get window dimensions
+    JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
+    int screenWidth = game->getWindow().getScreenWidth();
+    int screenHeight = game->getWindow().getScreenHeight();
 
-    // Get window from parent game
-    if (m_game) {
-      JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
-      int screenWidth = game->getWindow().getScreenWidth();
-      int screenHeight = game->getWindow().getScreenHeight();
-      std::cout << "Screen dimensions: " << screenWidth << "x" << screenHeight << std::endl;
-
-      // Use proper scale for projection matrix
-      float scaleFactor = 32.0f;
-      float aspectRatio = (float)screenWidth / (float)screenHeight;
-      m_projectionMatrix = glm::ortho(
-        -scaleFactor * aspectRatio, scaleFactor * aspectRatio,
-        -scaleFactor, scaleFactor
-      );
-    }
-    else {
-      std::cerr << "Game pointer is null!" << std::endl;
-      // Use default projection as fallback
-      m_projectionMatrix = glm::ortho(-32.0f, 32.0f, -32.0f, 32.0f);
-    }
+    // Simplified projection matrix for 2D rendering
+    float zoom = 0.1f; // Adjust this value to zoom in/out
+    m_projectionMatrix = glm::ortho(
+      -screenWidth * zoom,  // left
+      screenWidth * zoom,   // right
+      -screenHeight * zoom, // bottom
+      screenHeight * zoom,  // top
+      -1.0f, 1.0f
+    );
 
     // Initialize physics
     m_physicsSystem = std::make_unique<PhysicsSystem>();
-    m_physicsSystem->init(0.0f, 0.0f);  // No gravity for now
+    m_physicsSystem->init(0.0f, 0.0f);
 
-    // Create player car in center
-    m_playerCarBody = m_physicsSystem->createDynamicBody(0.0f, 0.0f);
-    m_physicsSystem->createBoxShape(m_playerCarBody, 4.0f, 2.0f);
+    // Create larger car for testing
+    m_playerCarBody = m_physicsSystem->createDynamicBody(-100.0f, -50.0f);
+    m_physicsSystem->createBoxShape(m_playerCarBody, 10.0f, 5.0f); // Make it much bigger for testing
 
     std::cout << "Initialization complete\n";
   }
@@ -99,76 +85,99 @@ void GameplayScreen::onExit() {
 
 void GameplayScreen::draw() {
   checkGLError("start of draw");
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);  // Slightly lighter background to see if clearing works
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   m_textureProgram.use();
-  checkGLError("after shader use");
 
-  // Upload projection matrix
   GLint pUniform = m_textureProgram.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_projectionMatrix[0][0]);
 
-  // Begin sprite batch
   m_spriteBatch.begin();
 
   if (b2Body_IsValid(m_playerCarBody)) {
     b2Vec2 position = b2Body_GetPosition(m_playerCarBody);
     float angle = b2Rot_GetAngle(b2Body_GetRotation(m_playerCarBody));
 
-    // Make the car sprite larger and center it properly
-    float carWidth = 4.0f;  // Match physics size
-    float carHeight = 2.0f;
+    // Make car much bigger for testing
+    float carWidth = 20.0f;
+    float carHeight = 10.0f;
+
     glm::vec4 destRect(
-      position.x - carWidth / 2.0f,   // Center horizontally
-      position.y - carHeight / 2.0f,   // Center vertically
-      carWidth,                      // Width
-      carHeight                      // Height
+      position.x - carWidth / 2.0f,
+      position.y - carHeight / 2.0f,
+      carWidth,
+      carHeight
     );
 
     glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    JAGEngine::ColorRGBA8 color(255, 255, 255, 255);
-
-    // Debug print
-    std::cout << "Drawing car at position: (" << position.x << ", " << position.y
-      << ") with dimensions: " << carWidth << "x" << carHeight << std::endl;
+    JAGEngine::ColorRGBA8 color(255, 0, 0, 255);  // Make it red for visibility
 
     m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, color, angle);
   }
 
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
-  checkGLError("after render batch");
 
   m_textureProgram.unuse();
 
-  // Debug rendering - draw a colored quad in immediate mode to verify rendering is working
+  // Draw a debug quad to verify rendering is working
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(&m_projectionMatrix[0][0]);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
+  // Draw a small red square in the center
   glBegin(GL_QUADS);
-  glColor3f(1.0f, 0.0f, 0.0f);  // Red color
-  glVertex2f(-1.0f, -1.0f);
-  glVertex2f(1.0f, -1.0f);
-  glVertex2f(1.0f, 1.0f);
-  glVertex2f(-1.0f, 1.0f);
+  glColor3f(1.0f, 0.0f, 0.0f);
+  float size = 5.0f;  // Size in world units
+  glVertex2f(-size, -size);
+  glVertex2f(size, -size);
+  glVertex2f(size, size);
+  glVertex2f(-size, size);
   glEnd();
 }
 
 void GameplayScreen::update() {
   const float timeStep = 1.0f / 60.0f;
   m_physicsSystem->update(timeStep);
+
+  // Debug output car position
+  if (b2Body_IsValid(m_playerCarBody)) {
+    b2Vec2 position = b2Body_GetPosition(m_playerCarBody);
+    std::cout << "Car position: (" << position.x << ", " << position.y << ")\n";
+
+    // Debug camera/projection info
+    glm::vec4 viewport(0, 0,
+      m_game->getWindow().getScreenWidth(),
+      m_game->getWindow().getScreenHeight());
+
+    // Convert world coordinates to screen coordinates for debugging
+    glm::vec3 screenPos = glm::project(
+      glm::vec3(position.x, position.y, 0),
+      glm::mat4(1.0f),  // model matrix (identity)
+      m_projectionMatrix,
+      viewport
+    );
+
+    std::cout << "Car screen position: (" << screenPos.x << ", " << screenPos.y << ")\n";
+    std::cout << "Viewport: " << viewport.x << ", " << viewport.y << ", "
+      << viewport.z << ", " << viewport.w << "\n";
+  }
+
   checkInput();
 }
 
 void GameplayScreen::checkInput() {
-  if (b2Body_IsValid(m_playerCarBody)) {
-    // For now, just keep the car static
-    b2Body_SetAwake(m_playerCarBody, true);
+  const Uint8* keyState = SDL_GetKeyboardState(nullptr);
 
-    // Later we'll add movement controls here
+  if (keyState[SDL_SCANCODE_ESCAPE]) {
+    std::cout << "ESC pressed, exiting...\n";
+    m_game->exitGame();  // This should properly trigger game exit
+  }
+
+  if (b2Body_IsValid(m_playerCarBody)) {
+    b2Body_SetAwake(m_playerCarBody, true);
   }
 }
 

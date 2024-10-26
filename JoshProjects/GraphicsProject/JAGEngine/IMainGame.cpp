@@ -56,10 +56,12 @@ namespace JAGEngine {
   }
 
   void IMainGame::exitGame() {
-    m_currentScreen->onExit();
+    std::cout << "Exiting game...\n";
+    if (m_currentScreen) {
+      m_currentScreen->onExit();
+    }
     if (m_screenList) {
       m_screenList->destroy();
-      m_screenList.reset();
     }
     m_isRunning = false;
   }
@@ -188,3 +190,4 @@ namespace JAGEngine {
   }
 
 }
+
