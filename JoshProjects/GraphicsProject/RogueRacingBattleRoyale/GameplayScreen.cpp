@@ -5,7 +5,7 @@
 #include <GL/glew.h>  
 
 #include <glm/gtc/matrix_transform.hpp>  
-#include <glm/gtc/type_ptr.hpp>        
+#include <glm/gtc/type_ptr.hpp>
 
 GameplayScreen::GameplayScreen() : m_playerCarBody(b2_nullBodyId) {
 }
@@ -140,44 +140,94 @@ void GameplayScreen::draw() {
 
 void GameplayScreen::update() {
   const float timeStep = 1.0f / 60.0f;
-  m_physicsSystem->update(timeStep);
 
-  // Debug output car position
+  // Debug physics state before update
   if (b2Body_IsValid(m_playerCarBody)) {
     b2Vec2 position = b2Body_GetPosition(m_playerCarBody);
-    std::cout << "Car position: (" << position.x << ", " << position.y << ")\n";
+    b2Vec2 velocity = b2Body_GetLinearVelocity(m_playerCarBody);
+    std::cout << "Before physics update:\n"
+      << "Position: (" << position.x << ", " << position.y << ")\n"
+      << "Velocity: (" << velocity.x << ", " << velocity.y << ")\n";
+  }
 
-    // Debug camera/projection info
-    glm::vec4 viewport(0, 0,
-      m_game->getWindow().getScreenWidth(),
-      m_game->getWindow().getScreenHeight());
+  m_physicsSystem->update(timeStep);
 
-    // Convert world coordinates to screen coordinates for debugging
-    glm::vec3 screenPos = glm::project(
-      glm::vec3(position.x, position.y, 0),
-      glm::mat4(1.0f),  // model matrix (identity)
-      m_projectionMatrix,
-      viewport
-    );
-
-    std::cout << "Car screen position: (" << screenPos.x << ", " << screenPos.y << ")\n";
-    std::cout << "Viewport: " << viewport.x << ", " << viewport.y << ", "
-      << viewport.z << ", " << viewport.w << "\n";
+  // Debug physics state after update
+  if (b2Body_IsValid(m_playerCarBody)) {
+    b2Vec2 position = b2Body_GetPosition(m_playerCarBody);
+    b2Vec2 velocity = b2Body_GetLinearVelocity(m_playerCarBody);
+    std::cout << "After physics update:\n"
+      << "Position: (" << position.x << ", " << position.y << ")\n"
+      << "Velocity: (" << velocity.x << ", " << velocity.y << ")\n";
   }
 
   checkInput();
 }
 
-void GameplayScreen::checkInput() {
-  const Uint8* keyState = SDL_GetKeyboardState(nullptr);
+// Helper function to calculate vector length (can be at the top of GameplayScreen.cpp)
+float b2Vec2Length(const b2Vec2& vec) {
+  return std::sqrt(vec.x * vec.x + vec.y * vec.y);
+}
 
-  if (keyState[SDL_SCANCODE_ESCAPE]) {
-    std::cout << "ESC pressed, exiting...\n";
-    m_game->exitGame();  // This should properly trigger game exit
+void GameplayScreen::checkInput() {
+  JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
+  JAGEngine::InputManager& inputManager = game->getInputManager();
+
+  if (inputManager.isKeyDown(SDLK_ESCAPE)) {
+    game->exitGame();
+    return;
   }
 
   if (b2Body_IsValid(m_playerCarBody)) {
-    b2Body_SetAwake(m_playerCarBody, true);
+    // Adjustable physics constants
+    const float BASE_MOVE_SPEED = 1000.0f;
+    const float BASE_TURN_SPEED = 20.0f;
+    const float MIN_SPEED_TO_TURN = 0.1f;
+    const float TURN_SPEED_MULTIPLIER = 4.0f;
+    const float MAX_TURN_SPEED = 100.0f;
+    const float SPEED_SQUARED_FACTOR = 0.002f;
+
+    b2Vec2 currentVel = b2Body_GetLinearVelocity(m_playerCarBody);
+    float currentSpeed = b2Vec2Length(currentVel);  // Using our helper function
+
+    // Forward/Backward movement
+    if (inputManager.isKeyDown(SDLK_UP) || inputManager.isKeyDown(SDLK_w)) {
+      float angle = b2Rot_GetAngle(b2Body_GetRotation(m_playerCarBody));
+      b2Vec2 force = { cos(angle) * BASE_MOVE_SPEED, sin(angle) * BASE_MOVE_SPEED };
+      b2Body_ApplyForceToCenter(m_playerCarBody, force, true);
+    }
+
+    if (inputManager.isKeyDown(SDLK_DOWN) || inputManager.isKeyDown(SDLK_s)) {
+      float angle = b2Rot_GetAngle(b2Body_GetRotation(m_playerCarBody));
+      b2Vec2 force = { -cos(angle) * BASE_MOVE_SPEED, -sin(angle) * BASE_MOVE_SPEED };
+      b2Body_ApplyForceToCenter(m_playerCarBody, force, true);
+    }
+
+    // Calculate turn speed based on current velocity
+    float turnSpeed = 0.0f;
+    if (currentSpeed > MIN_SPEED_TO_TURN) {
+      // Quadratic scaling of turn speed with velocity
+      float speedFactor = currentSpeed * currentSpeed * SPEED_SQUARED_FACTOR;
+      turnSpeed = BASE_TURN_SPEED + (speedFactor * TURN_SPEED_MULTIPLIER);
+
+      // Clamp to maximum turn speed
+      turnSpeed = std::min(turnSpeed, MAX_TURN_SPEED);
+
+      // Apply steering
+      if (inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a)) {
+        b2Body_ApplyTorque(m_playerCarBody, turnSpeed, true);
+      }
+      if (inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d)) {
+        b2Body_ApplyTorque(m_playerCarBody, -turnSpeed, true);
+      }
+    }
+
+    // Debug output
+    std::cout << "Speed: " << currentSpeed
+      << " Turn Speed: " << turnSpeed
+      << " Pos: (" << b2Body_GetPosition(m_playerCarBody).x
+      << ", " << b2Body_GetPosition(m_playerCarBody).y
+      << ") Angle: " << b2Rot_GetAngle(b2Body_GetRotation(m_playerCarBody)) << "\n";
   }
 }
 

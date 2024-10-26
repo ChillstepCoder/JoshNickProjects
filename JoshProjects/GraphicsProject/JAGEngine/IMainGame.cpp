@@ -32,18 +32,34 @@ namespace JAGEngine {
   }
 
   void IMainGame::run() {
-    std::cout << "Run start\n";
-    if (!init()) {
-      std::cerr << "Failed to initialize!\n";
-      return;
-    }
+    if (!init()) return;
+
+    std::cout << "Starting game loop...\n";
 
     FpsLimiter limiter;
     limiter.setMaxFPS(60.0f);
-
     m_isRunning = true;
+
+    // Ensure window is visible before entering game loop
+    SDL_RaiseWindow(m_window.getSDLWindow());
+
     while (m_isRunning) {
-      limiter.begin();
+      // Process all SDL events
+      SDL_Event evnt;
+      while (SDL_PollEvent(&evnt)) {
+        if (evnt.type == SDL_WINDOWEVENT) {
+          switch (evnt.window.event) {
+          case SDL_WINDOWEVENT_MINIMIZED:
+            std::cout << "Window minimized\n";
+            break;
+          case SDL_WINDOWEVENT_RESTORED:
+            std::cout << "Window restored\n";
+            SDL_RaiseWindow(m_window.getSDLWindow());
+            break;
+          }
+        }
+        onSDLEvent(evnt);
+      }
 
       m_inputManager.update();
       update();
@@ -52,39 +68,42 @@ namespace JAGEngine {
       m_fps = limiter.end();
       m_window.swapBuffer();
     }
-
   }
 
   void IMainGame::exitGame() {
-    std::cout << "Exiting game...\n";
+    std::cout << "exitGame called!\n";  // Debug print
     if (m_currentScreen) {
       m_currentScreen->onExit();
     }
     if (m_screenList) {
       m_screenList->destroy();
     }
+    std::cout << "Setting isRunning to false\n";  // Debug print
     m_isRunning = false;
   }
 
   void IMainGame::onSDLEvent(SDL_Event& evnt) {
     switch (evnt.type) {
     case SDL_QUIT:
+      std::cout << "SDL_QUIT received\n";
       m_isRunning = false;
       break;
-    case SDL_MOUSEMOTION:
-        m_inputManager.setMouseCoords((float)evnt.motion.x, (float)evnt.motion.y);
-      break;
     case SDL_KEYDOWN:
+      std::cout << "SDL_KEYDOWN received: " << evnt.key.keysym.sym << "\n";
       m_inputManager.pressKey(evnt.key.keysym.sym);
       break;
     case SDL_KEYUP:
+      std::cout << "SDL_KEYUP received: " << evnt.key.keysym.sym << "\n";
       m_inputManager.releaseKey(evnt.key.keysym.sym);
       break;
+    case SDL_MOUSEMOTION:
+      m_inputManager.setMouseCoords((float)evnt.motion.x, (float)evnt.motion.y);
+      break;
     case SDL_MOUSEBUTTONDOWN:
-        m_inputManager.pressKey(evnt.button.button);
+      m_inputManager.pressKey(evnt.button.button);
       break;
     case SDL_MOUSEBUTTONUP:
-        m_inputManager.releaseKey(evnt.button.button);
+      m_inputManager.releaseKey(evnt.button.button);
       break;
     }
   }
@@ -92,57 +111,57 @@ namespace JAGEngine {
   bool IMainGame::init() {
     std::cout << "Init start\n";
     JAGEngine::init();
-    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
+    std::cout << "Setting up OpenGL attributes...\n";
+    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    std::cout << "Initializing systems...\n";
     if (!initSystems()) {
       std::cerr << "Failed to initialize systems\n";
       return false;
     }
 
-    std::cout << "Systems initialized, calling onInit()\n";
+    std::cout << "Running onInit...\n";
     onInit();
 
-    std::cout << "Checking screen list before addScreens()\n";
+    std::cout << "Checking screen list...\n";
     if (!m_screenList) {
-      std::cerr << "Screen list is null before addScreens!\n";
+      std::cerr << "Screen list is null!\n";
       return false;
     }
 
-    std::cout << "Calling addScreens()\n";
+    std::cout << "Adding screens...\n";
     addScreens();
 
-    std::cout << "Getting current screen\n";
+    std::cout << "Getting current screen...\n";
     m_currentScreen = m_screenList->getCurrent();
     if (!m_currentScreen) {
-      std::cerr << "Current screen is null after addScreens!\n";
+      std::cerr << "Current screen is null!\n";
       return false;
     }
 
-    std::cout << "Calling onEntry()\n";
+    std::cout << "Initializing current screen...\n";
     m_currentScreen->onEntry();
     m_currentScreen->setRunning();
+
+    // Make sure window is visible
+    SDL_RaiseWindow(m_window.getSDLWindow());
 
     std::cout << "Init complete\n";
     return true;
   }
 
   bool IMainGame::initSystems() {
-    // Set up proper OpenGL context
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    // Set proper SDL window flags
+    Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 
-    // Create window with OpenGL context
-    m_window.create("Racing Game", 800, 600, SDL_WINDOW_OPENGL);
+    m_window.create("Racing Game", 1920, 1080, flags);
 
-    // Initialize GLEW if you're using it
-    GLenum err = glewInit();
-    if (err != GLEW_OK) {
-      std::cerr << "Failed to initialize GLEW" << std::endl;
-      return false;
-    }
-
-    // Enable alpha blending
+    // Initialize OpenGL settings
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -150,11 +169,15 @@ namespace JAGEngine {
   }
 
   void IMainGame::update() {
+    std::cout << "IMainGame::update() called\n";
     if (m_currentScreen) {
+      m_inputManager.update();  // Make sure this is being called!
+      std::cout << "Input manager updated\n";
+
       switch (m_currentScreen->getState()) {
-        case ScreenState::RUNNING:
-          m_currentScreen->update();
-          break;
+      case ScreenState::RUNNING:
+        m_currentScreen->update();
+        break;
         case ScreenState::CHANGE_NEXT:
           m_currentScreen->onExit();
           m_currentScreen = m_screenList->moveNext();

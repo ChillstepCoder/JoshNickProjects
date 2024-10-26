@@ -1,4 +1,5 @@
 #include "InputManager.h"
+#include <iostream>
 
 namespace JAGEngine {
 
@@ -10,11 +11,14 @@ namespace JAGEngine {
 
   }
 
+  // InputManager.cpp
   void InputManager::pressKey(unsigned int keyID) {
+    std::cout << "Key pressed: " << keyID << std::endl;  // Debug print
     _keyMap[keyID] = true;
   }
 
   void InputManager::releaseKey(unsigned int keyID) {
+    std::cout << "Key released: " << keyID << std::endl;  // Debug print
     _keyMap[keyID] = false;
   }
 
@@ -25,12 +29,11 @@ namespace JAGEngine {
 
   bool InputManager::isKeyDown(unsigned int keyID) {
     auto it = _keyMap.find(keyID);
-    if (it != _keyMap.end()) {
-      return it->second;
+    bool isDown = (it != _keyMap.end() && it->second);
+    if (isDown) {
+      std::cout << "Key " << keyID << " is down\n";  // Debug print
     }
-    else {
-      return false;
-    }
+    return isDown;
   }
 
   bool InputManager::isKeyPressed(unsigned int keyID) {

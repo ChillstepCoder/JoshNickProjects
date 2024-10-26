@@ -16,6 +16,8 @@ namespace JAGEngine {
     void run();
     void exitGame();
 
+    InputManager& getInputManager() { return m_inputManager; }
+
     Window& getWindow() { return m_window; }
     const Window& getWindow() const { return m_window; }
 

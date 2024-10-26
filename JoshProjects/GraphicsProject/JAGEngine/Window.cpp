@@ -27,7 +27,7 @@ namespace JAGEngine {
 
     if (currentFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
       flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-      screenWidth = 0;  // Let SDL decide the size for fullscreen
+      screenWidth = 0;
       screenHeight = 0;
     }
     else {
@@ -41,6 +41,9 @@ namespace JAGEngine {
         flags |= SDL_WINDOW_BORDERLESS;
       }
     }
+
+    m_screenWidth = screenWidth;
+    m_screenHeight = screenHeight;
 
     _sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth, screenHeight, flags);
     if (_sdlWindow == nullptr) {
@@ -73,7 +76,15 @@ namespace JAGEngine {
     // Enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glClearColor(0.0f, 0.0f, 0.85f, 1.0f);
+    //glClearColor(0.0f, 0.0f, 0.85f, 1.0f);
+
+    // Make sure window is shown and raised
+    SDL_ShowWindow(_sdlWindow);
+    SDL_RaiseWindow(_sdlWindow);
+
+    // Set window to not minimized
+    SDL_SetWindowMinimumSize(_sdlWindow, 640, 480);  // Set minimum size
+    SDL_RestoreWindow(_sdlWindow);  // Restore from minimized state if needed
 
     return 0;
   }
