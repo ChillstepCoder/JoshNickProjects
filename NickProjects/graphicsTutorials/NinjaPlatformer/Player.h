@@ -22,7 +22,12 @@ public:
 
     b2BodyId getID() const { return m_collisionBox.getID(); }
 
+    void setGroundShapeId(b2ShapeId groundShapeId) { m_groundShapeId = groundShapeId; }
+
 private:
     Box m_collisionBox;
+    bool m_isGrounded = false;
+    b2ShapeId m_groundShapeId; // Store reference to ground shape
+    float m_jumpForce = 1000.0f;
 };
 

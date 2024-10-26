@@ -29,23 +29,36 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = b2Vec2(0.0f, -9.81f);
+    worldDef.gravity = b2Vec2(0.0f, -30.0f);
     m_world = b2CreateWorld(&worldDef);
 
-    // Make the ground
+
     b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    groundBodyDef.position = b2Vec2( 0.0f, -60.0f );
+    groundBodyDef.position = b2Vec2(0.0f, -60.0f);
     m_ground = b2CreateBody(m_world, &groundBodyDef);
 
-    // Make the ground fixture
     b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
-    b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
-    b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
+    b2ShapeDef groundShapeDef = b2DefaultShapeDef();
+    groundShapeDef.density = 1.0f;
+    groundShapeDef.friction = 0.3f;
+    // Enable contact events for the ground shape
+    groundShapeDef.enableContactEvents = true;
+    b2ShapeId groundShapeId = b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
+
+    // Pass the ground shape ID to the player
+    m_player.setGroundShapeId(groundShapeId);
+
+    //b2BodyDef groundBodyDef = b2DefaultBodyDef();
+    //groundBodyDef.position = b2Vec2( 0.0f, -60.0f );
+    //m_ground = b2CreateBody(m_world, &groundBodyDef);
+
+    // Make the ground fixture
+    //b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
+    //b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
+    //b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
 
     // Load the texture
     m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
-
-
 
     Bengine::ColorRGBA8 textureColor;
     textureColor.r = 255;
@@ -55,10 +68,11 @@ void GameplayScreen::onEntry() {
 
     // Make a box
     Box newBox;
-    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(2.0f, 2.0f), m_texture, textureColor, false);
+    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(3.0f, 3.0f), m_texture, textureColor, false);
     m_boxes.push_back(newBox);
 
     // Initialize spritebatch
+    m_debugDraw.init();
     m_spriteBatch.init();
 
     // Shader.init
@@ -84,13 +98,13 @@ void GameplayScreen::onExit() {
 void GameplayScreen::update() {
     m_camera.update();
     checkInput();
-    m_player.update(m_game->inputManager);
 
     //Update the physics simulation
     float timeStep = 1.0f / 60.0f;
     int subStepCount = 4;
-
     b2World_Step(m_world, timeStep, subStepCount);
+
+    m_player.update(m_game->inputManager);
 }
 
 void GameplayScreen::draw() {
@@ -118,6 +132,8 @@ void GameplayScreen::draw() {
     }
 
     m_player.draw(m_spriteBatch);
+
+    m_debugDraw.drawWorld(&m_world, m_camera.getCameraMatrix());
 
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();

@@ -10,6 +10,7 @@
 #include <Bengine/Camera2D.h>
 #include <Bengine/GLTexture.h>
 #include <Bengine/Window.h>
+#include "DebugDraw.h"
 
 class GameplayScreen : public Bengine::IGameScreen {
 public:
@@ -43,6 +44,8 @@ private:
 
     Player m_player;
     std::vector<Box> m_boxes;
-    b2WorldId m_world;
-    b2BodyId m_ground;
+    b2WorldId m_world = b2_nullWorldId;
+    b2BodyId m_ground = b2_nullBodyId;
+
+    DebugDraw m_debugDraw;
 };

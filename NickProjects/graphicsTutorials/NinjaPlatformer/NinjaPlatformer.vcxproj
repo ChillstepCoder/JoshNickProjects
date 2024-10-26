@@ -146,12 +146,14 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Box.h" />
+    <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="Player.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Box.cpp" />
+    <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Player.cpp" />
