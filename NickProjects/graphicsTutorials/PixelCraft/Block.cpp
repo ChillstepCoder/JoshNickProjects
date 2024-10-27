@@ -1,20 +1,20 @@
-#include "Box.h"
+#include "Block.h"
 #include <iostream>
 
 
-Box::Box() {
+Block::Block() {
 
 }
-Box::~Box() {
+Block::~Block() {
 
 }
-b2Vec2 Box::getPosition() {
+b2Vec2 Block::getPosition() {
     b2Vec2 position = b2Body_GetPosition(m_ID);
     std::cout << "X: " << position.x << "  Y: " << position.y << std::endl;
     return position;
 }
 
-void Box::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::GLTexture texture, Bengine::ColorRGBA8 color, bool fixedRotation) {
+void Block::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::GLTexture texture, Bengine::ColorRGBA8 color, bool fixedRotation) {
     m_dimensions = dimensions;
     m_color = color;
     m_texture = texture;
@@ -32,7 +32,7 @@ void Box::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dim
     b2CreatePolygonShape(m_ID, &shapeDef, &dynamicBox);
 }
 
-void Box::draw(Bengine::SpriteBatch& spriteBatch) {
+void Block::draw(Bengine::SpriteBatch& spriteBatch) {
     glm::vec4 destRect;
     destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
     destRect.y = (getPosition().y - ((0.5) * getDimensions().y));

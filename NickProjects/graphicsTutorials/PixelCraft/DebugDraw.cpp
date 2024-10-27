@@ -1,5 +1,3 @@
-
-
 #include "DebugDraw.h"
 #include <GL/glew.h>
 #include <vector>
@@ -229,7 +227,7 @@ void DebugDraw::drawTransform(b2Transform xf, void* context) {
     // Draw X axis in red
     b2Vec2 p1 = b2TransformPoint(xf, b2Vec2_zero);
     b2Vec2 p2 = b2TransformPoint(xf, b2Vec2(axisScale, 0.0f));
-    drawSegment(p1, p2, (b2HexColor)(255,0,0), context);
+    drawSegment(p1, p2, (b2HexColor)(255, 0, 0), context);
 
     // Draw Y axis in green
     p2 = b2TransformPoint(xf, b2Vec2(0.0f, axisScale));

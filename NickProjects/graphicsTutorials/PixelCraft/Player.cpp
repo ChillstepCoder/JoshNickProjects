@@ -22,16 +22,19 @@ void Player::draw(Bengine::SpriteBatch& spriteBatch) {
 void Player::update(Bengine::InputManager& inputManager) {
     if (inputManager.isKeyDown(SDLK_a)) {
         b2Body_ApplyForceToCenter(getID(), b2Vec2(-1000.0f, 0.0f), true);
-    } else if (inputManager.isKeyDown(SDLK_d)) {
+    }
+    else if (inputManager.isKeyDown(SDLK_d)) {
         b2Body_ApplyForceToCenter(getID(), b2Vec2(1000.0f, 0.0f), true);
-    } else {
+    }
+    else {
         b2Body_SetLinearVelocity(getID(), b2Vec2(b2Body_GetLinearVelocity(getID()).x * 0.97, b2Body_GetLinearVelocity(getID()).y));
     }
 
     float MAX_SPEED = 25.0f;
     if (b2Body_GetLinearVelocity(getID()).x < -MAX_SPEED) {
         b2Body_SetLinearVelocity(getID(), b2Vec2(-MAX_SPEED, b2Body_GetLinearVelocity(getID()).y));
-    } else if (b2Body_GetLinearVelocity(getID()).x > MAX_SPEED) {
+    }
+    else if (b2Body_GetLinearVelocity(getID()).x > MAX_SPEED) {
         b2Body_SetLinearVelocity(getID(), b2Vec2(MAX_SPEED, b2Body_GetLinearVelocity(getID()).y));
     }
 

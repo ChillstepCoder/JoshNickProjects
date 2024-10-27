@@ -29,7 +29,7 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = b2Vec2(0.0f, -30.0f);
+    worldDef.gravity = b2Vec2(0.0f, -70.0f);
     m_world = b2CreateWorld(&worldDef);
 
 
@@ -40,7 +40,7 @@ void GameplayScreen::onEntry() {
     b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
     b2ShapeDef groundShapeDef = b2DefaultShapeDef();
     groundShapeDef.density = 1.0f;
-    groundShapeDef.friction = 0.3f;
+    groundShapeDef.friction = 0.2f;
     // Enable contact events for the ground shape
     groundShapeDef.enableContactEvents = true;
     b2ShapeId groundShapeId = b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
@@ -139,8 +139,6 @@ void GameplayScreen::draw() {
         // Draw debug info
         m_debugDraw.drawWorld(&m_world, m_camera.getCameraMatrix());
 
-        // Restore blend state
-        glDisable(GL_BLEND);
     }
 
 }
