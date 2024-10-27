@@ -1,9 +1,9 @@
 #version 130
 
 in vec2 vertexPosition;
-in vec3 vertexColor;
+in vec4 vertexColor;
 
-out vec3 fragmentColor;
+out vec4 fragmentColor;
 
 uniform mat4 P;
 

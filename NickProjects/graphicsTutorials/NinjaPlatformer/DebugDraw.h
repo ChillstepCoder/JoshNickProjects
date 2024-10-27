@@ -12,6 +12,7 @@ public:
 
     void init();
     void drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix);
+    void setAlpha(float alpha) { m_alpha = alpha; }
 
 private:
     // Updated callback signatures to match Box2D 3.0
@@ -24,6 +25,7 @@ private:
     static void drawPoint(b2Vec2 p, float size, b2HexColor color, void* context);
     static void drawString(b2Vec2 p, const char* s, void* context);
 
+    float m_alpha = 0.1f;
     Bengine::GLSLProgram m_program;
     GLuint m_vboId = 0;
     GLuint m_vaoId = 0;

@@ -64,11 +64,12 @@ void DebugDraw::drawSegment(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* contex
     float r = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
+    float a = debugDraw->m_alpha;
 
     // Setup vertex data
     float vertices[] = {
-        p1.x, p1.y, r, g, b,
-        p2.x, p2.y, r, g, b
+        p1.x, p1.y, r, g, b, a,
+        p2.x, p2.y, r, g, b, a,
     };
 
     // Upload to GPU
@@ -80,7 +81,7 @@ void DebugDraw::drawSegment(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* contex
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 
     // Draw
     glDrawArrays(GL_LINES, 0, 2);
@@ -93,6 +94,7 @@ void DebugDraw::drawPolygon(const b2Vec2* vertices, int vertexCount, b2HexColor 
     float r = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
+    float a = debugDraw->m_alpha;
 
     // Create vertex buffer with positions and colors
     std::vector<float> vertexData;
@@ -104,6 +106,7 @@ void DebugDraw::drawPolygon(const b2Vec2* vertices, int vertexCount, b2HexColor 
         vertexData.push_back(r);
         vertexData.push_back(g);
         vertexData.push_back(b);
+        vertexData.push_back(a);
     }
 
     glBindVertexArray(debugDraw->m_vaoId);
@@ -113,7 +116,7 @@ void DebugDraw::drawPolygon(const b2Vec2* vertices, int vertexCount, b2HexColor 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 
     glDrawArrays(GL_LINE_LOOP, 0, vertexCount);
 }
@@ -124,6 +127,7 @@ void DebugDraw::drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int ver
     float r = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
+    float a = debugDraw->m_alpha;
 
     // Transform vertices by xf
     std::vector<float> vertexData;
@@ -136,6 +140,7 @@ void DebugDraw::drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int ver
         vertexData.push_back(r);
         vertexData.push_back(g);
         vertexData.push_back(b);
+        vertexData.push_back(a);
     }
 
     glBindVertexArray(debugDraw->m_vaoId);
@@ -145,7 +150,7 @@ void DebugDraw::drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int ver
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, vertexCount);
 }
@@ -156,6 +161,7 @@ void DebugDraw::drawCircle(b2Vec2 center, float radius, b2HexColor color, void* 
     float r = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
+    float a = debugDraw->m_alpha;
 
     const int segments = 16;
     std::vector<float> vertexData;
@@ -170,6 +176,7 @@ void DebugDraw::drawCircle(b2Vec2 center, float radius, b2HexColor color, void* 
         vertexData.push_back(r);
         vertexData.push_back(g);
         vertexData.push_back(b);
+        vertexData.push_back(a);
     }
 
     glBindVertexArray(debugDraw->m_vaoId);
@@ -179,7 +186,7 @@ void DebugDraw::drawCircle(b2Vec2 center, float radius, b2HexColor color, void* 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 
     glDrawArrays(GL_LINE_LOOP, 0, segments);
 }
@@ -190,6 +197,7 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
     float r = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
+    float a = debugDraw->m_alpha;
 
     b2Vec2 center = b2TransformPoint(xf, b2Vec2_zero);
 
@@ -203,6 +211,7 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
     vertexData.push_back(r);
     vertexData.push_back(g);
     vertexData.push_back(b);
+    vertexData.push_back(a);
 
     // Circle points
     for (int i = 0; i < segments; ++i) {
@@ -214,6 +223,7 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
         vertexData.push_back(r);
         vertexData.push_back(g);
         vertexData.push_back(b);
+        vertexData.push_back(a);
     }
 
     glBindVertexArray(debugDraw->m_vaoId);
@@ -223,7 +233,7 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 1);
 }
@@ -247,15 +257,16 @@ void DebugDraw::drawPoint(b2Vec2 p, float size, b2HexColor color, void* context)
     float r = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
+    float a = debugDraw->m_alpha;
 
     float halfSize = size * 0.5f;
 
     // Create a small square
     float vertices[] = {
-        p.x - halfSize, p.y - halfSize, r, g, b,
-        p.x + halfSize, p.y - halfSize, r, g, b,
-        p.x + halfSize, p.y + halfSize, r, g, b,
-        p.x - halfSize, p.y + halfSize, r, g, b
+        p.x - halfSize, p.y - halfSize, r, g, b, a,
+        p.x + halfSize, p.y - halfSize, r, g, b, a,
+        p.x + halfSize, p.y + halfSize, r, g, b, a,
+        p.x - halfSize, p.y + halfSize, r, g, b, a,
     };
 
     glBindVertexArray(debugDraw->m_vaoId);
@@ -265,7 +276,7 @@ void DebugDraw::drawPoint(b2Vec2 p, float size, b2HexColor color, void* context)
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }

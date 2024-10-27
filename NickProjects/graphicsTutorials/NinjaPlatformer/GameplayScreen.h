@@ -48,4 +48,6 @@ private:
     b2BodyId m_ground = b2_nullBodyId;
 
     DebugDraw m_debugDraw;
+    bool m_debugRenderEnabled = false;
+    float m_debugAlpha = 0.5f; // Transparency value for debug rendering
 };

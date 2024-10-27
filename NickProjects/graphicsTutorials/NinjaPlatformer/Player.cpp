@@ -46,4 +46,5 @@ void Player::update(Bengine::InputManager& inputManager) {
     if (m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) {
         b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, m_jumpForce), b2Vec2(0.0f, 0.0f), true);
     }
+
 }
