@@ -112,11 +112,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\deps\include\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2dd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2dd.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\deps\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -135,7 +136,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2d.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\deps\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -143,6 +144,7 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Box.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
+    <ClCompile Include="imgui_impls.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
   </ItemGroup>

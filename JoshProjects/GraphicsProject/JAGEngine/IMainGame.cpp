@@ -71,14 +71,20 @@ namespace JAGEngine {
   }
 
   void IMainGame::exitGame() {
-    std::cout << "exitGame called!\n";  // Debug print
+    std::cout << "exitGame called!\n";
+
+    // Let the current screen cleanup first
     if (m_currentScreen) {
       m_currentScreen->onExit();
     }
+
+    // Then cleanup screen list
     if (m_screenList) {
       m_screenList->destroy();
+      m_screenList.reset();
     }
-    std::cout << "Setting isRunning to false\n";  // Debug print
+
+    // Finally, stop the game loop
     m_isRunning = false;
   }
 
