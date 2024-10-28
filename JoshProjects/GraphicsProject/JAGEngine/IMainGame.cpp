@@ -162,7 +162,7 @@ namespace JAGEngine {
 
   bool IMainGame::initSystems() {
     // Set proper SDL window flags
-    Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
+    const Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN/* | SDL_WINDOW_BORDERLESS*/;
 
     m_window.create("Racing Game", 1920, 1080, flags);
 

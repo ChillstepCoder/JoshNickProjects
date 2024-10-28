@@ -9,7 +9,6 @@
 
 
 namespace JAGEngine {
-  enum class windowFlags { INVISIBLE = 0x1, FULLSCREEN = 0x2, BORDERLESS = 0x4 };
 
   class Window {
   public:

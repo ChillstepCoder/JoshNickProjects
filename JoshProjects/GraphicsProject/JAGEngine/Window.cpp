@@ -23,29 +23,29 @@ namespace JAGEngine {
   }
 
   int Window::create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags) {
-    Uint32 flags = SDL_WINDOW_OPENGL;
-
-    if (currentFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
-      flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-      screenWidth = 0;
-      screenHeight = 0;
-    }
-    else {
-      if (currentFlags & static_cast<unsigned int>(windowFlags::INVISIBLE)) {
-        flags |= SDL_WINDOW_HIDDEN;
-      }
-      if (currentFlags & static_cast<unsigned int>(windowFlags::FULLSCREEN)) {
-        flags |= SDL_WINDOW_FULLSCREEN;
-      }
-      if (currentFlags & static_cast<unsigned int>(windowFlags::BORDERLESS)) {
-        flags |= SDL_WINDOW_BORDERLESS;
-      }
-    }
+    Uint32 flags = SDL_WINDOW_OPENGL | currentFlags;
 
     m_screenWidth = screenWidth;
     m_screenHeight = screenHeight;
 
-    _sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, screenWidth, screenHeight, flags);
+    // This is FAKE borderless fullscreen because I think its now broken due to windows update
+    // https://discourse.libsdl.org/t/true-borderless-fullscreen-behaviour/24622/9 for more information
+    // TODO: Figure out a better way, because this ignores the task bar
+    if (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) {
+        SDL_DisplayMode DM;
+        SDL_GetCurrentDisplayMode(0, &DM);
+        auto Width = DM.w;
+        auto Height = DM.h;
+        m_screenWidth = Width;
+        m_screenHeight = Height - 128;
+        // Strip out fullscreen flag
+        flags &= ~(SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+    }
+
+    _sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_screenWidth, m_screenHeight, flags);
+
+    SDL_GetWindowSize(_sdlWindow, &m_screenWidth, &m_screenHeight);
+
     if (_sdlWindow == nullptr) {
       fatalError("SDL Window could not be created!");
     }
@@ -84,7 +84,7 @@ namespace JAGEngine {
 
     // Set window to not minimized
     SDL_SetWindowMinimumSize(_sdlWindow, 640, 480);  // Set minimum size
-    SDL_RestoreWindow(_sdlWindow);  // Restore from minimized state if needed
+    //SDL_RestoreWindow(_sdlWindow);  // Restore from minimized state if needed
 
     return 0;
   }
