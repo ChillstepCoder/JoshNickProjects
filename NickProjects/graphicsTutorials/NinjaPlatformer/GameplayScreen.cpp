@@ -29,7 +29,7 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = b2Vec2(0.0f, -30.0f);
+    worldDef.gravity = b2Vec2(0.0f, -70.0f);
     m_world = b2CreateWorld(&worldDef);
 
 
@@ -40,22 +40,13 @@ void GameplayScreen::onEntry() {
     b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
     b2ShapeDef groundShapeDef = b2DefaultShapeDef();
     groundShapeDef.density = 1.0f;
-    groundShapeDef.friction = 0.3f;
+    groundShapeDef.friction = 0.2f;
     // Enable contact events for the ground shape
     groundShapeDef.enableContactEvents = true;
     b2ShapeId groundShapeId = b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
 
     // Pass the ground shape ID to the player
     m_player.setGroundShapeId(groundShapeId);
-
-    //b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    //groundBodyDef.position = b2Vec2( 0.0f, -60.0f );
-    //m_ground = b2CreateBody(m_world, &groundBodyDef);
-
-    // Make the ground fixture
-    //b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
-    //b2ShapeDef const groundShapeDef = b2DefaultShapeDef();
-    //b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
 
     // Load the texture
     m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
@@ -133,16 +124,34 @@ void GameplayScreen::draw() {
 
     m_player.draw(m_spriteBatch);
 
-    m_debugDraw.drawWorld(&m_world, m_camera.getCameraMatrix());
-
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();
     m_textureProgram.unuse();
+
+    if (m_debugRenderEnabled) {
+        // Enable blending for transparency
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Set debug drawing alpha
+        m_debugDraw.setAlpha(m_debugAlpha);
+
+        // Draw debug info
+        m_debugDraw.drawWorld(&m_world, m_camera.getCameraMatrix());
+
+    }
+
 }
 
 void GameplayScreen::checkInput() {
     SDL_Event evnt;
     while (SDL_PollEvent(&evnt)) {
         m_game->onSDLEvent(evnt);
+
+        if (evnt.type == SDL_KEYDOWN) { // Add debug render toggle on F1 key
+            if (evnt.key.keysym.sym == SDLK_F1) {
+                m_debugRenderEnabled = !m_debugRenderEnabled;
+            }
+        }
     }
 }
