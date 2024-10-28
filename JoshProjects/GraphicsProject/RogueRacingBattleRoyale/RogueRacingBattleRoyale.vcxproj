@@ -143,6 +143,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Box.cpp" />
+    <ClCompile Include="Car.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="imgui_impls.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -151,7 +152,9 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Box.h" />
+    <ClInclude Include="Car.h" />
     <ClInclude Include="GameplayScreen.h" />
+    <ClInclude Include="InputState.h" />
     <ClInclude Include="PhysicsSystem.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

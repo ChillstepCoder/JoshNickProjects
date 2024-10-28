@@ -76,12 +76,12 @@ void GameplayScreen::onEntry() {
     int screenHeight = game->getWindow().getScreenHeight();
 
     // Simplified projection matrix for 2D rendering
-    float zoom = 0.2f; // Adjust this value to zoom in/out
+    float zoom = 0.2f;
     m_projectionMatrix = glm::ortho(
-      -screenWidth * zoom,  // left
-      screenWidth * zoom,   // right
-      -screenHeight * zoom, // bottom
-      screenHeight * zoom,  // top
+      -screenWidth * zoom,
+      screenWidth * zoom,
+      -screenHeight * zoom,
+      screenHeight * zoom,
       -1.0f, 1.0f
     );
 
@@ -89,15 +89,60 @@ void GameplayScreen::onEntry() {
     m_physicsSystem = std::make_unique<PhysicsSystem>();
     m_physicsSystem->init(0.0f, 0.0f);
 
-    // Create larger car for testing
+    // Create car body
     m_playerCarBody = m_physicsSystem->createDynamicBody(-100.0f, -100.0f);
-    m_physicsSystem->createBoxShape(m_playerCarBody, 15.0f, 15.0f); // Make it much bigger for testing
+    m_physicsSystem->createBoxShape(m_playerCarBody, 15.0f, 15.0f);
+
+    // Initialize default car properties
+    m_defaultCarProps = Car::CarProperties(); // This will use the default values
+
+    // Create the car and initialize with default properties
+    m_car = std::make_unique<Car>(m_playerCarBody);
+    m_car->setProperties(m_defaultCarProps);
 
     std::cout << "Initialization complete\n";
   }
   catch (const std::exception& e) {
     std::cerr << "Exception in onEntry: " << e.what() << std::endl;
   }
+}
+
+void GameplayScreen::drawDebugWindow() {
+  if (!m_showDebugWindow) return;
+
+  ImGui::SetNextWindowPos(ImVec2(10, 320), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
+
+  if (ImGui::Begin("Debug Controls", &m_showDebugWindow)) {
+    if (ImGui::CollapsingHeader("Car Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
+      Car::CarProperties& props = m_car->getProperties();
+
+      ImGui::DragFloat("Max Speed", &props.maxSpeed, 1.0f, 0.0f, 1000.0f);
+      ImGui::DragFloat("Acceleration", &props.acceleration, 10.0f, 0.0f, 10000.0f);
+      ImGui::DragFloat("Turn Speed", &props.turnSpeed, 0.1f, 0.0f, 10.0f);
+      ImGui::DragFloat("Lateral Damping", &props.lateralDamping, 0.01f, 0.0f, 1.0f);
+      ImGui::DragFloat("Drag Factor", &props.dragFactor, 0.001f, 0.9f, 1.0f);
+      ImGui::DragFloat("Turn Reset Rate", &props.turnResetRate, 0.01f, 0.0f, 1.0f);
+      ImGui::DragFloat("Max Angular Velocity", &props.maxAngularVelocity, 0.1f, 0.0f, 10.0f);
+      ImGui::DragFloat("Braking Force", &props.brakingForce, 0.1f, 0.0f, 2.0f);
+      ImGui::DragFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 0.0f, 10.0f);
+
+      if (ImGui::Button("Reset to Defaults")) {
+        props = m_defaultCarProps;
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Debug Info")) {
+      Car::DebugInfo debug = m_car->getDebugInfo();
+      ImGui::Text("Position: (%.1f, %.1f)", debug.position.x, debug.position.y);
+      ImGui::Text("Velocity: (%.1f, %.1f)", debug.velocity.x, debug.velocity.y);
+      ImGui::Text("Speed: %.1f", debug.currentSpeed);
+      ImGui::Text("Forward Speed: %.1f", debug.forwardSpeed);
+      ImGui::Text("Angle: %.2f", debug.angle);
+      ImGui::Text("Angular Velocity: %.2f", debug.angularVelocity);
+    }
+  }
+  ImGui::End();
 }
 
 void GameplayScreen::onExit() {
@@ -184,6 +229,8 @@ void GameplayScreen::draw() {
     JAGEngine::ColorRGBA8 color(255, 0, 0, 255);  // Red
 
     m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, color, angle);
+
+    drawDebugWindow();
   }
  
 
@@ -232,14 +279,12 @@ float b2Vec2Length(const b2Vec2& vec) {
 }
 
 void GameplayScreen::checkInput() {
+  if (m_isExiting) return;
+
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   JAGEngine::InputManager& inputManager = game->getInputManager();
 
-  if (m_isExiting) {
-    return;
-  }
-
-  // Process ImGui events first
+  // Handle ImGui events
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (m_imguiInitialized) {
@@ -256,94 +301,17 @@ void GameplayScreen::checkInput() {
     return;
   }
 
-  if (b2Body_IsValid(m_playerCarBody)) {
-    // Adjustable physics constants
-    const float ACCELERATION = 5000.0f;     // Forward acceleration force
-    const float MAX_SPEED = 200.0f;         // Maximum forward speed
-    const float TURN_SPEED = 4.0f;          // Base turning speed
-    const float LATERAL_DAMPING = 0.95f;    // How quickly lateral velocity is reduced
-    const float DRAG_FACTOR = 0.99f;        // Air resistance
-    const float TURN_RESET_RATE = 0.9f;  // How quickly turning resets
-    const float MAX_ANGULAR_VELOCITY = 2.0f;  // Maximum rotation speed
+  // Create input state for car
+  InputState input;
+  input.accelerating = inputManager.isKeyDown(SDLK_UP) || inputManager.isKeyDown(SDLK_w);
+  input.braking = inputManager.isKeyDown(SDLK_DOWN) || inputManager.isKeyDown(SDLK_s);
+  input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a);
+  input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d);
+  input.handbrake = inputManager.isKeyDown(SDLK_SPACE);
 
-    // Get current state
-    b2Vec2 currentVel = b2Body_GetLinearVelocity(m_playerCarBody);
-    float currentSpeed = b2Vec2Length(currentVel);
-    float angle = b2Rot_GetAngle(b2Body_GetRotation(m_playerCarBody));
-    float angularVel = b2Body_GetAngularVelocity(m_playerCarBody);
-
-    // Get forward direction vector
-    b2Vec2 forwardDir = { cos(angle), sin(angle) };
-
-    // Calculate forward and lateral velocity components
-    float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
-    b2Vec2 forwardVel = { forwardDir.x * forwardSpeed, forwardDir.y * forwardSpeed };
-    b2Vec2 lateralVel = { currentVel.x - forwardVel.x, currentVel.y - forwardVel.y };
-
-    // Apply lateral damping (reduce sideways sliding)
-    b2Vec2 newVel = {
-        forwardVel.x + lateralVel.x * LATERAL_DAMPING,
-        forwardVel.y + lateralVel.y * LATERAL_DAMPING
-    };
-
-    // Apply drag
-    newVel.x *= DRAG_FACTOR;
-    newVel.y *= DRAG_FACTOR;
-
-    // Set the modified velocity
-    b2Body_SetLinearVelocity(m_playerCarBody, newVel);
-
-    // Forward/Backward movement
-    if (inputManager.isKeyDown(SDLK_UP) || inputManager.isKeyDown(SDLK_w)) {
-      // Only apply force if under max speed
-      if (currentSpeed < MAX_SPEED) {
-        b2Vec2 force = { cos(angle) * ACCELERATION, sin(angle) * ACCELERATION };
-        b2Body_ApplyForceToCenter(m_playerCarBody, force, true);
-      }
-    }
-
-    if (inputManager.isKeyDown(SDLK_DOWN) || inputManager.isKeyDown(SDLK_s)) {
-      // Braking force
-      if (forwardSpeed > 1.0f) {  // Only brake when moving forward
-        b2Vec2 force = { -forwardDir.x * ACCELERATION * 0.5f, -forwardDir.y * ACCELERATION * 0.5f };
-        b2Body_ApplyForceToCenter(m_playerCarBody, force, true);
-      }
-    }
-
-    // Turning with auto-reset
-    if (abs(forwardSpeed) > 1.0f) {  // Only turn when moving
-      float turnFactor = TURN_SPEED * (forwardSpeed / MAX_SPEED);
-      float currentAngularVel = b2Body_GetAngularVelocity(m_playerCarBody);
-      float targetAngularVel = 0.0f;  // Default to no turning
-
-      if (inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a)) {
-        targetAngularVel = turnFactor * ACCELERATION;
-      }
-      else if (inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d)) {
-        targetAngularVel = -turnFactor * ACCELERATION;
-      }
-
-      // Smoothly transition to target angular velocity
-      float newAngularVel;
-      if (abs(targetAngularVel) > 0.001f) {
-        // If actively turning, move toward target velocity
-        newAngularVel = currentAngularVel + (targetAngularVel - currentAngularVel) * 0.1f;
-      }
-      else {
-        // If not turning, decay toward zero
-        newAngularVel = currentAngularVel * 0.9f;
-      }
-
-      // Clamp maximum angular velocity
-      newAngularVel = clamp(newAngularVel, -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
-      b2Body_SetAngularVelocity(m_playerCarBody, newAngularVel);
-    }
-
-    // Debug output
-    std::cout << "Speed: " << currentSpeed
-      << " Forward Speed: " << forwardSpeed
-      << " Lateral: (" << lateralVel.x << ", " << lateralVel.y << ")"
-      << " Angle: " << angle << "\n";
+  // Update car with input state
+  if (m_car) {
+    m_car->update(input);
   }
 }
 
