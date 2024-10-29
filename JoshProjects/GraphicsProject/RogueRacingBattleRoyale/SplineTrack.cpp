@@ -7,22 +7,16 @@ SplineTrack::SplineTrack() {
 }
 
 void SplineTrack::createDefaultTrack() {
-  // Clear existing nodes
   m_nodes.clear();
 
   // Create a circular track with 4 nodes
-  float radius = 100.0f;  // Your current radius
+  float radius = 100.0f;
 
-  // Create nodes with default road width
-  m_nodes.push_back(TrackNode(glm::vec2(radius, 0.0f)));
-  m_nodes.push_back(TrackNode(glm::vec2(0.0f, radius)));
-  m_nodes.push_back(TrackNode(glm::vec2(-radius, 0.0f)));
-  m_nodes.push_back(TrackNode(glm::vec2(0.0f, -radius)));
-
-  // Set initial road widths
-  for (auto& node : m_nodes) {
-    node.setRoadWidth(30.0f);  // Default width
-  }
+  // Create nodes with explicit positions and default road width
+  m_nodes.emplace_back(glm::vec2(radius, 0.0f));
+  m_nodes.emplace_back(glm::vec2(0.0f, radius));
+  m_nodes.emplace_back(glm::vec2(-radius, 0.0f));
+  m_nodes.emplace_back(glm::vec2(0.0f, -radius));
 }
 
 void SplineTrack::addNode(const glm::vec2& position) {

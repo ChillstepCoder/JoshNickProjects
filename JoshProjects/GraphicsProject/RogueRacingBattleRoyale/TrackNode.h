@@ -1,6 +1,9 @@
 // TrackNode.h
+
 #pragma once
 #include <glm/glm.hpp>
+#include <iostream>
+#include <algorithm>  // for std::min and std::max
 
 class TrackNode {
 public:
@@ -16,20 +19,22 @@ public:
   bool isHovered() const { return m_isHovered; }
   void setHovered(bool hovered) { m_isHovered = hovered; }
 
-  float getRoadWidth() const { return m_roadWidth; }
   void setRoadWidth(float width) {
-    m_roadWidth = std::max(10.0f, std::min(width, 100.0f));  // Clamp between 10 and 100
+    // Use min/max instead of clamp
+    m_roadWidth = std::max(10.0f, std::min(width, 100.0f));
+    std::cout << "Node road width set to: " << m_roadWidth << std::endl;
   }
 
-  // Get the perpendicular points based on road width
+  float getRoadWidth() const {
+    return m_roadWidth;
+  }
+
   std::pair<glm::vec2, glm::vec2> getRoadEdgePoints(const glm::vec2& nextNodePos) const {
     glm::vec2 direction = nextNodePos - m_position;
     glm::vec2 perpendicular(-direction.y, direction.x);
     perpendicular = glm::normalize(perpendicular);
-
     glm::vec2 leftEdge = m_position + perpendicular * m_roadWidth;
     glm::vec2 rightEdge = m_position - perpendicular * m_roadWidth;
-
     return { leftEdge, rightEdge };
   }
 
@@ -38,5 +43,4 @@ private:
   float m_roadWidth;
   bool m_isSelected = false;
   bool m_isHovered = false;
-
 };

@@ -98,10 +98,10 @@ void LevelEditorScreen::draw() {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // Start ImGui frame
+  // Start ImGui frame only once
   NewImGuiFrame();
 
-  // Draw track
+  // Draw game elements
   m_program.use();
   GLint pUniform = m_program.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_projectionMatrix[0][0]);
@@ -184,13 +184,13 @@ void LevelEditorScreen::draw() {
 
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
-
   m_program.unuse();
 
   // Draw ImGui windows
   drawMainMenu();
   drawDebugWindow();
 
+  // Render ImGui only once
   RenderImGui();
 }
 
@@ -201,30 +201,41 @@ void LevelEditorScreen::drawDebugWindow() {
   ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
 
   if (ImGui::Begin("Track Editor", &m_showDebugWindow)) {
+    // Reset track button
     if (ImGui::Button("Reset Track", ImVec2(180, 30))) {
+      std::cout << "Resetting track...\n";  // Debug output
+      m_selectedNode = nullptr;
+      m_isDragging = false;
       initDefaultTrack();
     }
 
     ImGui::Text("Nodes: %zu", m_track->getNodes().size());
 
+    // Node properties
     if (m_selectedNode) {
       ImGui::Separator();
       ImGui::Text("Selected Node Properties:");
       glm::vec2 pos = m_selectedNode->getPosition();
       ImGui::Text("Position: (%.1f, %.1f)", pos.x, pos.y);
 
-      // Road width control with wider range and live feedback
-      float roadWidth = m_selectedNode->getRoadWidth();
-      if (ImGui::SliderFloat("Road Width", &roadWidth, 10.0f, 100.0f, "%.1f")) {
-        m_selectedNode->setRoadWidth(roadWidth);
+      // Road width control
+      static float tempWidth = 30.0f;  // Keep the temporary value
+      if (ImGui::IsWindowAppearing()) {
+        tempWidth = m_selectedNode->getRoadWidth();
       }
 
-      // Add a visual indicator of the current width
+      if (ImGui::SliderFloat("Road Width", &tempWidth, 10.0f, 100.0f, "%.1f")) {
+        m_selectedNode->setRoadWidth(tempWidth);
+        std::cout << "Setting road width to: " << tempWidth << std::endl;
+      }
+
+      // Display actual value
       ImGui::Text("Current Width: %.1f", m_selectedNode->getRoadWidth());
     }
   }
   ImGui::End();
 }
+
 
 void LevelEditorScreen::handleInput() {
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
@@ -252,12 +263,13 @@ void LevelEditorScreen::handleInput() {
   TrackNode* hoveredNode = m_track->getNodeAtPosition(mousePos, 20.0f);
   if (hoveredNode) {
     hoveredNode->setHovered(true);
+    std::cout << "Node hovered at: " << hoveredNode->getPosition().x << ", "
+      << hoveredNode->getPosition().y << std::endl;
   }
 
   // Handle node selection and dragging
   if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
     if (!m_isDragging) {
-      // Only change selection if we click on a node
       if (hoveredNode) {
         // Deselect previous node if it's different
         if (m_selectedNode && m_selectedNode != hoveredNode) {
@@ -266,6 +278,7 @@ void LevelEditorScreen::handleInput() {
         m_selectedNode = hoveredNode;
         m_selectedNode->setSelected(true);
         m_isDragging = true;
+        std::cout << "Node selected with road width: " << m_selectedNode->getRoadWidth() << std::endl;
       }
     }
 
@@ -275,11 +288,8 @@ void LevelEditorScreen::handleInput() {
     }
   }
   else {
-    // Just stop dragging when mouse is released, maintain selection
     m_isDragging = false;
   }
-
-  m_lastMousePos = mousePos;
 }
 
 void LevelEditorScreen::exitGame() {
@@ -295,7 +305,6 @@ void LevelEditorScreen::drawMainMenu() {
 
   ImGui::Begin("Editor Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 
-  // Use available width instead of GetWindowContentRegionWidth
   float windowWidth = ImGui::GetContentRegionAvail().x;
 
   if (ImGui::Button("Main Menu", ImVec2(windowWidth, 40))) {
@@ -314,6 +323,7 @@ void LevelEditorScreen::drawMainMenu() {
 
   ImGui::End();
 }
+
 
 void LevelEditorScreen::drawRoadEdges() {
   const auto& nodes = m_track->getNodes();
@@ -370,7 +380,12 @@ void LevelEditorScreen::drawRoadEdges() {
 }
 
 void LevelEditorScreen::initDefaultTrack() {
-  m_track->createDefaultTrack();
+  std::cout << "Creating new track...\n";
+  if (m_track) {
+    m_track = std::make_unique<SplineTrack>();
+    m_track->createDefaultTrack();
+    std::cout << "Track created with " << m_track->getNodes().size() << " nodes\n";
+  }
 }
 
 void LevelEditorScreen::cleanupImGui() {
