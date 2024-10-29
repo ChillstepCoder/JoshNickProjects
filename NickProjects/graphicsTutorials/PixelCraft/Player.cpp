@@ -27,10 +27,31 @@ void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& 
     bodyDef.fixedRotation = true;
     m_bodyId = b2CreateBody(*world, &bodyDef);
 
-    b2Polygon dynamicBox = b2MakeBox(dimensions.x / 2.0f, dimensions.y / 2.0f);
+    float radius = dimensions.x / 2.0f; // Use half the width as the radius
+    float height = dimensions.y - radius * 2; // The height of the rectangle part
 
+    // Create the top circle (semicircle)
+    b2Circle topCircle;
+    topCircle.radius = radius;
+    topCircle.center = b2Vec2(0.0f, dimensions.y / 3.5f);
+    b2ShapeDef topShapeDef = b2DefaultShapeDef();
+    topShapeDef.density = 0.0f;
+    topShapeDef.friction = 0.0f;
+    b2CreateCircleShape(m_bodyId, &topShapeDef, &topCircle);
+
+    // Create the bottom circle (semicircle)
+    b2Circle bottomCircle;
+    bottomCircle.radius = radius;
+    bottomCircle.center = b2Vec2(0.0f, -dimensions.y / 3.5f);
+    b2ShapeDef bottomShapeDef = b2DefaultShapeDef();
+    bottomShapeDef.density = 1.0f;
+    bottomShapeDef.friction = 0.0f;
+    b2CreateCircleShape(m_bodyId, &bottomShapeDef, &bottomCircle);
+
+    // Create rectangle
+    b2Polygon dynamicBox = b2MakeBox(dimensions.x / 2.0f, dimensions.y / 2.5f);
     b2ShapeDef shapeDef = b2DefaultShapeDef();
-    shapeDef.density = 1.0f;
+    shapeDef.density = 0.8f;
     shapeDef.friction = 0.0f;
     b2CreatePolygonShape(m_bodyId, &shapeDef, &dynamicBox);
 
