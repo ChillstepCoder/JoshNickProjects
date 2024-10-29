@@ -7,16 +7,13 @@ void App::onInit() {
 }
 
 void App::addScreens() {
-  if (!m_screenList) {
-    std::cerr << "Screen list is null in addScreens!" << std::endl;
-    return;
-  }
-
   m_gameplayScreen = std::make_unique<GameplayScreen>();
-  if (m_gameplayScreen) {
-    m_screenList->addScreen(m_gameplayScreen.get());
-    m_screenList->setScreen(m_gameplayScreen->getIndex());
-  }
+  m_levelEditorScreen = std::make_unique<LevelEditorScreen>();
+
+  m_screenList->addScreen(m_gameplayScreen.get());
+  m_screenList->addScreen(m_levelEditorScreen.get());
+
+  m_screenList->setScreen(0);  // Start with gameplay screen
 }
 
 void App::onExit() {

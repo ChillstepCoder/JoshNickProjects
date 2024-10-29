@@ -7,15 +7,20 @@
 class Car {
 public:
   struct CarProperties {
-    float acceleration = 5000.0f;    // Forward acceleration force
-    float maxSpeed = 200.0f;         // Maximum forward speed
-    float turnSpeed = 4.0f;          // Base turning speed
-    float lateralDamping = 0.95f;    // How quickly lateral velocity is reduced
-    float dragFactor = 0.99f;        // Air resistance
-    float turnResetRate = 0.9f;      // How quickly turning resets
-    float maxAngularVelocity = 2.0f; // Maximum rotation speed
-    float brakingForce = 0.5f;       // Braking force multiplier
-    float minSpeedForTurn = 1.0f;    // Minimum speed required to turn
+    // Movement properties
+    float maxSpeed = 557.0f;         // Minimum good value from testing
+    float acceleration = 10000.0f;    // Minimum good value
+    float turnSpeed = 10.0f;          // Minimum good value
+    float lateralDamping = 0.95f;     // Good starting value
+    float dragFactor = 0.99f;         // Good starting value
+    float turnResetRate = 1.0f;       // Good starting value
+    float maxAngularVelocity = 2.7f;  // Good starting value
+    float brakingForce = 0.5f;        // Good starting value
+    float minSpeedForTurn = 1.0f;     // Good starting value
+
+    // Friction properties
+    float wheelFriction = 1.0f;       // Base friction of the car's wheels
+    float baseFriction = 0.5f;        // Default surface friction
   };
 
   struct DebugInfo {
@@ -25,19 +30,29 @@ public:
     float forwardSpeed = 0.0f;
     float angle = 0.0f;
     float angularVelocity = 0.0f;
+    float effectiveFriction = 0.0f;   // Combined wheel and surface friction
   };
 
   Car(b2BodyId bodyId);
   ~Car() = default;
 
   void update(const InputState& input);
+  void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
 
   CarProperties& getProperties() { return m_properties; }
   const CarProperties& getProperties() const { return m_properties; }
   void setProperties(const CarProperties& props) { m_properties = props; }
   DebugInfo getDebugInfo() const;
 
+  float getEffectiveFriction() const {
+    return m_properties.wheelFriction * m_properties.baseFriction;
+  }
+
 private:
+  static b2Rot angleToRotation(float angle) {
+    return b2MakeRot(angle);
+  }
+
   b2BodyId m_bodyId;
   CarProperties m_properties;
 
@@ -45,4 +60,5 @@ private:
   void updateMovement(const InputState& input);
   void handleTurning(const InputState& input, float forwardSpeed);
   void applyDrag(const b2Vec2& currentVel, float forwardSpeed);
+  void applyFriction(const b2Vec2& currentVel);
 };

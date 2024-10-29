@@ -7,20 +7,30 @@
 #include <glm/gtc/matrix_transform.hpp>  
 #include <glm/gtc/type_ptr.hpp>
 
+
+float b2Vec2Length(const b2Vec2& vec) {
+  return std::sqrt(vec.x * vec.x + vec.y * vec.y);
+}
+
 float clamp(float value, float min, float max) {
   if (value < min) return min;
   if (value > max) return max;
   return value;
 }
 
-GameplayScreen::GameplayScreen() : m_playerCarBody(b2_nullBodyId) {
+GameplayScreen::GameplayScreen() :
+  m_playerCarBody(b2_nullBodyId),
+  m_showMainMenu(true),
+  m_showDebugWindow(true),
+  m_isExiting(false),
+  m_imguiInitialized(false) {
 }
 
 GameplayScreen::~GameplayScreen() {
 }
 
 int GameplayScreen::getNextScreenIndex() const {
-  return -1;
+  return 1;  // Index of LevelEditorScreen
 }
 
 int GameplayScreen::getPreviousScreenIndex() const {
@@ -111,24 +121,35 @@ void GameplayScreen::drawDebugWindow() {
   if (!m_showDebugWindow) return;
 
   ImGui::SetNextWindowPos(ImVec2(10, 320), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(300, 450), ImGuiCond_FirstUseEver);
 
   if (ImGui::Begin("Debug Controls", &m_showDebugWindow)) {
     if (ImGui::CollapsingHeader("Car Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
       Car::CarProperties& props = m_car->getProperties();
 
-      ImGui::DragFloat("Max Speed", &props.maxSpeed, 1.0f, 0.0f, 1000.0f);
-      ImGui::DragFloat("Acceleration", &props.acceleration, 10.0f, 0.0f, 10000.0f);
-      ImGui::DragFloat("Turn Speed", &props.turnSpeed, 0.1f, 0.0f, 10.0f);
-      ImGui::DragFloat("Lateral Damping", &props.lateralDamping, 0.01f, 0.0f, 1.0f);
+      ImGui::DragFloat("Max Speed", &props.maxSpeed, 1.0f, 200.0f, 1000.0f);
+      ImGui::DragFloat("Acceleration", &props.acceleration, 10.0f, 5000.0f, 20000.0f);
+      ImGui::DragFloat("Turn Speed", &props.turnSpeed, 0.1f, 5.0f, 20.0f);
+      ImGui::DragFloat("Lateral Damping", &props.lateralDamping, 0.01f, 0.5f, 1.0f);
       ImGui::DragFloat("Drag Factor", &props.dragFactor, 0.001f, 0.9f, 1.0f);
-      ImGui::DragFloat("Turn Reset Rate", &props.turnResetRate, 0.01f, 0.0f, 1.0f);
-      ImGui::DragFloat("Max Angular Velocity", &props.maxAngularVelocity, 0.1f, 0.0f, 10.0f);
-      ImGui::DragFloat("Braking Force", &props.brakingForce, 0.1f, 0.0f, 2.0f);
-      ImGui::DragFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 0.0f, 10.0f);
+      ImGui::DragFloat("Turn Reset Rate", &props.turnResetRate, 0.01f, 0.5f, 2.0f);
+      ImGui::DragFloat("Max Angular Velocity", &props.maxAngularVelocity, 0.1f, 1.0f, 5.0f);
+      ImGui::DragFloat("Braking Force", &props.brakingForce, 0.1f, 0.1f, 2.0f);
+      ImGui::DragFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 0.1f, 5.0f);
+
+      // Add friction controls
+      ImGui::Separator();
+      ImGui::Text("Friction Settings");
+      ImGui::DragFloat("Wheel Friction", &props.wheelFriction, 0.01f, 0.1f, 2.0f);
+      ImGui::DragFloat("Surface Friction", &props.baseFriction, 0.01f, 0.1f, 2.0f);
 
       if (ImGui::Button("Reset to Defaults")) {
         props = m_defaultCarProps;
+      }
+
+      ImGui::Separator();
+      if (ImGui::Button("Reset Car Position")) {
+        m_car->resetPosition();
       }
     }
 
@@ -140,6 +161,7 @@ void GameplayScreen::drawDebugWindow() {
       ImGui::Text("Forward Speed: %.1f", debug.forwardSpeed);
       ImGui::Text("Angle: %.2f", debug.angle);
       ImGui::Text("Angular Velocity: %.2f", debug.angularVelocity);
+      ImGui::Text("Effective Friction: %.2f", debug.effectiveFriction);
     }
   }
   ImGui::End();
@@ -169,7 +191,7 @@ void GameplayScreen::drawImGui() {
   ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 
   if (ImGui::Button("Level Editor", ImVec2(180, 40))) {
-    std::cout << "Level Editor clicked\n";
+    m_currentState = JAGEngine::ScreenState::CHANGE_NEXT;  // Fixed namespace
   }
 
   if (ImGui::Button("Race", ImVec2(180, 40))) {
@@ -271,11 +293,6 @@ void GameplayScreen::update() {
   }
 
   checkInput();
-}
-
-// Helper function to calculate vector length (can be at the top of GameplayScreen.cpp)
-float b2Vec2Length(const b2Vec2& vec) {
-  return std::sqrt(vec.x * vec.x + vec.y * vec.y);
 }
 
 void GameplayScreen::checkInput() {

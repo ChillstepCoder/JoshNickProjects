@@ -1,16 +1,17 @@
 // imgui_impls.cpp
 
-// Tell ImGui and implementations that this is the implementation file
+// Implementation defines must come first
 #define IMGUI_IMPLEMENTATION
 #define IMGUI_IMPL_OPENGL3_IMPLEMENTATION
 #define IMGUI_IMPL_SDL2_IMPLEMENTATION
 
-// Include ImGui core
+// Then include core ImGui files
 #include "ImGui/imgui.cpp"
 #include "ImGui/imgui_draw.cpp"
 #include "ImGui/imgui_widgets.cpp"
 #include "ImGui/imgui_tables.cpp"
+#include "ImGui/imgui_demo.cpp"
 
-// Include ImGui implementations
+// Finally include implementations
 #include "ImGui/imgui_impl_opengl3.cpp"
 #include "ImGui/imgui_impl_sdl2.cpp"
