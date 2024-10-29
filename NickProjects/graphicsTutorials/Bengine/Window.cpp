@@ -11,19 +11,20 @@ namespace Bengine {
     }
 
     int Window::create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags) {
+        Uint32 flags = SDL_WINDOW_OPENGL | currentFlags;
 
-        Uint32 flags = SDL_WINDOW_OPENGL;
         m_screenWidth = screenWidth;
         m_screenHeight = screenHeight;
 
-        if (currentFlags & INVISIBLE) {
-            flags |= SDL_WINDOW_HIDDEN;
-        }
-        if (currentFlags & FULLSCREEN) {
-            flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-        }
-        if (currentFlags & BORDERLESS) {
-            flags |= SDL_WINDOW_BORDERLESS;
+        if (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) {
+            SDL_DisplayMode DM;
+            SDL_GetCurrentDisplayMode(0, &DM);
+            auto Width = DM.w;
+            auto Height = DM.h;
+            m_screenWidth = Width;
+            m_screenHeight = Height - 128;
+            // Strip out fullscreen flag
+            flags &= ~(SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
         }
 
         //Open an SDL window
@@ -31,6 +32,8 @@ namespace Bengine {
         if (m_sdlWindow == nullptr) {
             fatalError("SDL Window could not be created!");
         }
+
+        SDL_GetWindowSize(m_sdlWindow, &m_screenWidth, &m_screenHeight);
 
         //Set up our OpenGL context
         SDL_GLContext glContext = SDL_GL_CreateContext(m_sdlWindow);

@@ -3,6 +3,7 @@
 #include <SDL/SDL.h>
 #include <Bengine/IMainGame.h>
 #include <Bengine/ResourceManager.h>
+#include "Bengine/ImGuiManager.h"
 
 GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
@@ -29,7 +30,7 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = b2Vec2(0.0f, -70.0f);
+    worldDef.gravity = b2Vec2(0.0f, m_gravity);
     m_world = b2CreateWorld(&worldDef);
 
 
@@ -49,7 +50,7 @@ void GameplayScreen::onEntry() {
     m_player.setGroundShapeId(groundShapeId);
 
     // Load the texture
-    m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png");
 
     Bengine::ColorRGBA8 textureColor;
     textureColor.r = 255;
@@ -57,10 +58,51 @@ void GameplayScreen::onEntry() {
     textureColor.b = 255;
     textureColor.a = 255;
 
-    // Make a block
+    const int NUM_BLOCKS = 80; // Number of blocks
+    const float BLOCK_WIDTH = 2.5f;
+    const float BLOCK_HEIGHT = 2.5f;
+    const float START_X = -100.0f; // Starting position
+    const float START_Y = 14.0f; // Vertical position for blocks
+    const float SPACING = 0.00f; // Space between blocks
+
+    // Create blocks
+    for (int i = 0; i < NUM_BLOCKS; ++i) {
+        Block newBox;
+        glm::vec2 position(START_X + i * (BLOCK_WIDTH + SPACING), START_Y); // Calculate position
+        newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
+        m_blocks.push_back(newBox);
+    }
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png");
+    for (int i = 0; i < NUM_BLOCKS - 2; ++i) {
+        Block newBox;
+        glm::vec2 position(START_X + 2.5f + i * (BLOCK_WIDTH + SPACING), START_Y - 2.5f); // Calculate position
+        newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
+        m_blocks.push_back(newBox);
+    }
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlockTR.png");
     Block newBox;
-    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(3.0f, 3.0f), m_texture, textureColor, false);
+    glm::vec2 position(START_X, START_Y - 2.5f); // Calculate position
+    newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
     m_blocks.push_back(newBox);
+
+    Block newBox2;
+    glm::vec2 position2(START_X + 2.5f, START_Y - 5.0f); // Calculate position
+    newBox2.init(&m_world, position2, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
+    m_blocks.push_back(newBox2);
+
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlockTLR.png");
+    for (int i = 0; i < NUM_BLOCKS - 4; ++i) {
+        Block newBox;
+        glm::vec2 position(START_X + 5.0f + i * (BLOCK_WIDTH + SPACING), START_Y - 5.0f); // Calculate position
+        newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
+        m_blocks.push_back(newBox);
+    }
+
+
+
+
+    // Init Imgui
+    Bengine::ImGuiManager::init(m_window);
 
     // Initialize spritebatch
     m_debugDraw.init();
@@ -95,11 +137,13 @@ void GameplayScreen::update() {
     int subStepCount = 4;
     b2World_Step(m_world, timeStep, subStepCount);
 
-    m_player.update(m_game->inputManager);
+    m_player.update(m_game->inputManager, m_blocks);
+
+    const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
+    m_camera.setPosition(playerPos); // Set camera position to player's position
 }
 
 void GameplayScreen::draw() {
-    std::cout << "Draw\n";
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.4f, 0.4f, 0.8f, 1.0f);
 
@@ -124,8 +168,15 @@ void GameplayScreen::draw() {
 
     m_player.draw(m_spriteBatch);
 
+    Bengine::ImGuiManager::newFrame();
+
+    drawImgui();
+
+    Bengine::ImGuiManager::renderFrame();
+
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();
+
     m_textureProgram.unuse();
 
     if (m_debugRenderEnabled) {
@@ -146,12 +197,32 @@ void GameplayScreen::draw() {
 void GameplayScreen::checkInput() {
     SDL_Event evnt;
     while (SDL_PollEvent(&evnt)) {
+        Bengine::ImGuiManager::processEvent(evnt);
         m_game->onSDLEvent(evnt);
-
-        if (evnt.type == SDL_KEYDOWN) { // Add debug render toggle on F1 key
-            if (evnt.key.keysym.sym == SDLK_F1) {
-                m_debugRenderEnabled = !m_debugRenderEnabled;
-            }
-        }
     }
+}
+
+void GameplayScreen::drawImgui() {
+    ImGui::Begin("Settings");
+
+    static bool check = false;
+    if (ImGui::Checkbox("Debug Renderer", &check)) {
+        m_debugRenderEnabled = !m_debugRenderEnabled;
+    }
+
+    if (ImGui::InputFloat("Gravity", &m_gravity, 1.0f, 1.0f, "%.3f")) {
+        updateGravity();
+    }
+
+    float jumpForce = m_player.getJumpForce(); // Get the current jump force
+    if (ImGui::InputFloat("Jump Force", &jumpForce, 10.0f, 100.0f, "%.1f")) {
+        m_player.setJumpForce(jumpForce); // Update the player's jump force
+    }
+
+    ImGui::End();
+}
+
+void GameplayScreen::updateGravity() {
+    b2Vec2 newGravity(0.0f, m_gravity);
+    b2World_SetGravity(m_world, newGravity);
 }

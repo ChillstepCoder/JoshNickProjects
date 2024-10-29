@@ -10,53 +10,90 @@ Player::~Player() {
 
 }
 
+b2Vec2 Player::getPosition() {
+    b2Vec2 position = b2Body_GetPosition(m_bodyId);
+    return position;
+}
+
+
 void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color) {
     Bengine::GLTexture texture = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
-    m_collisionBox.init(world, position, dimensions, texture, color, true);
+    m_dimensions = dimensions;
+    m_color = color;
+    m_texture = texture;
+    b2BodyDef bodyDef = b2DefaultBodyDef();
+    bodyDef.type = b2_dynamicBody;
+    bodyDef.position = b2Vec2(position.x, position.y);
+    bodyDef.fixedRotation = true;
+    m_bodyId = b2CreateBody(*world, &bodyDef);
+
+    b2Polygon dynamicBox = b2MakeBox(dimensions.x / 2.0f, dimensions.y / 2.0f);
+
+    b2ShapeDef shapeDef = b2DefaultShapeDef();
+    shapeDef.density = 1.0f;
+    shapeDef.friction = 0.0f;
+    b2CreatePolygonShape(m_bodyId, &shapeDef, &dynamicBox);
+
 }
 
 void Player::draw(Bengine::SpriteBatch& spriteBatch) {
-    m_collisionBox.draw(spriteBatch);
+    glm::vec4 destRect;
+    destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
+    destRect.y = (getPosition().y - ((0.5) * getDimensions().y));
+    destRect.z = getDimensions().x;
+    destRect.w = getDimensions().y;
+    spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, m_color, 0.0f);
 }
 
-void Player::update(Bengine::InputManager& inputManager) {
-    if (inputManager.isKeyDown(SDLK_a)) {
-        b2Body_ApplyForceToCenter(getID(), b2Vec2(-1000.0f, 0.0f), true);
-    }
-    else if (inputManager.isKeyDown(SDLK_d)) {
-        b2Body_ApplyForceToCenter(getID(), b2Vec2(1000.0f, 0.0f), true);
-    }
-    else {
-        b2Body_SetLinearVelocity(getID(), b2Vec2(b2Body_GetLinearVelocity(getID()).x * 0.97, b2Body_GetLinearVelocity(getID()).y));
-    }
-
-    float MAX_SPEED = 25.0f;
-    if (b2Body_GetLinearVelocity(getID()).x < -MAX_SPEED) {
-        b2Body_SetLinearVelocity(getID(), b2Vec2(-MAX_SPEED, b2Body_GetLinearVelocity(getID()).y));
-    }
-    else if (b2Body_GetLinearVelocity(getID()).x > MAX_SPEED) {
-        b2Body_SetLinearVelocity(getID(), b2Vec2(MAX_SPEED, b2Body_GetLinearVelocity(getID()).y));
-    }
-
+void Player::update(Bengine::InputManager& inputManager, const std::vector<Block>& blocks) {
     // Check for ground contact
     m_isGrounded = false;
-    b2ContactData contacts[8];
-    int contactCount = b2Body_GetContactData(getID(), contacts, 8);
+    // Check contact with each block
+    for (const auto& block : blocks) {
+        b2ContactData contacts[8];
+        int contactCount = b2Body_GetContactData(getID(), contacts, 8);
 
-    for (int i = 0; i < contactCount; ++i) {
-        // Get the shape IDs from the contact
-        b2ShapeId shape1 = contacts[i].shapeIdA;
-        b2ShapeId shape2 = contacts[i].shapeIdB;
+        for (int i = 0; i < contactCount; ++i) {
+            b2ShapeId shape1 = contacts[i].shapeIdA;
+            b2ShapeId shape2 = contacts[i].shapeIdB;
 
-        // Check if either shape is the ground shape
-        if (B2_ID_EQUALS(shape1, m_groundShapeId) || B2_ID_EQUALS(shape2, m_groundShapeId)) {
-            m_isGrounded = true;
-            break;
+            // Check if the block's shape ID matches the player's shape ID
+            if (B2_ID_EQUALS(shape1, block.getID()) || B2_ID_EQUALS(shape2, block.getID())) {
+                m_isGrounded = true; // Player is grounded on this block
+                break; // No need to check further
+            }
         }
+
+        if (m_isGrounded) break; // Exit if already grounded
     }
+
+    // Handle movement input
+    float force = 1000.0f; // Define a base force for movement
+    if (inputManager.isKeyDown(SDLK_a)) {
+        b2Body_ApplyForceToCenter(getID(), b2Vec2(-force, 0.0f), true);
+    }
+    else if (inputManager.isKeyDown(SDLK_d)) {
+        b2Body_ApplyForceToCenter(getID(), b2Vec2(force, 0.0f), true);
+    }
+    else {
+        // Apply gradual slowdown
+        b2Vec2 currentVelocity = b2Body_GetLinearVelocity(getID());
+        float slowdownFactor = m_isGrounded ? 0.93f : 0.97f; // Slower when grounded
+        b2Body_SetLinearVelocity(getID(), b2Vec2(currentVelocity.x * slowdownFactor, currentVelocity.y));
+    }
+
+    // Enforce maximum speed
+    float MAX_SPEED = 25.0f;
+    b2Vec2 currentVelocity = b2Body_GetLinearVelocity(getID());
+    if (currentVelocity.x < -MAX_SPEED) {
+        b2Body_SetLinearVelocity(getID(), b2Vec2(-MAX_SPEED, currentVelocity.y));
+    }
+    else if (currentVelocity.x > MAX_SPEED) {
+        b2Body_SetLinearVelocity(getID(), b2Vec2(MAX_SPEED, currentVelocity.y));
+    }
+
     // Jump only when grounded and space is pressed
     if (m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) {
-        b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, m_jumpForce), b2Vec2(0.0f, 0.0f), true);
+        b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, m_jumpForce), b2Body_GetPosition(getID()), true);
     }
-
 }

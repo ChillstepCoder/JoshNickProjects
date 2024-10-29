@@ -4,6 +4,7 @@
 #include <Bengine/Inputmanager.h>
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLTexture.h>
+#include <vector>
 
 
 class Player
@@ -12,22 +13,33 @@ public:
     Player();
     ~Player();
 
+    b2Vec2 getPosition();
+
+    const glm::vec2& getDimensions() const { return m_dimensions; }
+
     void init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color);
 
     void draw(Bengine::SpriteBatch& spriteBatch);
 
-    void update(Bengine::InputManager& inputManager);
+    void update(Bengine::InputManager& inputManager, const std::vector<Block>& blocks);
 
-    const Block& getBox() const { return m_collisionBox; }
+    b2BodyId getID() const { return m_bodyId; }
 
-    b2BodyId getID() const { return m_collisionBox.getID(); }
+    float getJumpForce() const { return m_jumpForce; }
+
+    void setJumpForce(float jumpForce) { m_jumpForce = jumpForce; }
 
     void setGroundShapeId(b2ShapeId groundShapeId) { m_groundShapeId = groundShapeId; }
 
 private:
-    Block m_collisionBox;
+    b2BodyId m_bodyId;
+    b2BodyDef* m_body = nullptr;
+    glm::vec2 m_dimensions;
+    Bengine::ColorRGBA8 m_color;
+    Bengine::GLTexture m_texture;
+
     bool m_isGrounded = false;
     b2ShapeId m_groundShapeId; // Store reference to ground shape
-    float m_jumpForce = 1600.0f;
+    float m_jumpForce = 2200.0f;
 };
 

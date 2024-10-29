@@ -11,6 +11,9 @@
 #include <Bengine/GLTexture.h>
 #include <Bengine/Window.h>
 #include "DebugDraw.h"
+#include "Imgui.h"
+#include "ImGui/backends/imgui_impl_sdl2.h"
+#include "ImGui/backends/imgui_impl_opengl3.h"
 
 class GameplayScreen : public Bengine::IGameScreen {
 public:
@@ -33,6 +36,10 @@ public:
 
     virtual void draw() override;
 
+    void drawImgui();
+
+    void updateGravity();
+
 private:
     void checkInput();
 
@@ -50,4 +57,5 @@ private:
     DebugDraw m_debugDraw;
     bool m_debugRenderEnabled = false;
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
+    float m_gravity = -180.0f;
 };
