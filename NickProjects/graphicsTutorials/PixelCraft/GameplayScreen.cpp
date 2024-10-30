@@ -4,6 +4,7 @@
 #include <Bengine/IMainGame.h>
 #include <Bengine/ResourceManager.h>
 #include "Bengine/ImGuiManager.h"
+#include "PerlinNoise.hpp"
 
 GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
@@ -33,72 +34,8 @@ void GameplayScreen::onEntry() {
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
     m_world = b2CreateWorld(&worldDef);
 
-
-    b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    groundBodyDef.position = b2Vec2(0.0f, -60.0f);
-    m_ground = b2CreateBody(m_world, &groundBodyDef);
-
-    b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
-    b2ShapeDef groundShapeDef = b2DefaultShapeDef();
-    groundShapeDef.density = 1.0f;
-    groundShapeDef.friction = 0.2f;
-    // Enable contact events for the ground shape
-    groundShapeDef.enableContactEvents = true;
-    b2ShapeId groundShapeId = b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
-
-    // Pass the ground shape ID to the player
-    m_player.setGroundShapeId(groundShapeId);
-
-    // Load the texture
-    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png");
-
-    Bengine::ColorRGBA8 textureColor;
-    textureColor.r = 255;
-    textureColor.g = 255;
-    textureColor.b = 255;
-    textureColor.a = 255;
-
-    const int NUM_BLOCKS = 80; // Number of blocks
-    const float BLOCK_WIDTH = 2.5f;
-    const float BLOCK_HEIGHT = 2.5f;
-    const float START_X = -100.0f; // Starting position
-    const float START_Y = 14.0f; // Vertical position for blocks
-    const float SPACING = 0.00f; // Space between blocks
-
-    // Create blocks
-    for (int i = 0; i < NUM_BLOCKS; ++i) {
-        Block newBox;
-        glm::vec2 position(START_X + i * (BLOCK_WIDTH + SPACING), START_Y); // Calculate position
-        newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
-        m_blocks.push_back(newBox);
-    }
-    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png");
-    for (int i = 0; i < NUM_BLOCKS - 2; ++i) {
-        Block newBox;
-        glm::vec2 position(START_X + 2.5f + i * (BLOCK_WIDTH + SPACING), START_Y - 2.5f); // Calculate position
-        newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
-        m_blocks.push_back(newBox);
-    }
-    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlockTR.png");
-    Block newBox;
-    glm::vec2 position(START_X, START_Y - 2.5f); // Calculate position
-    newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
-    m_blocks.push_back(newBox);
-
-    Block newBox2;
-    glm::vec2 position2(START_X + 2.5f, START_Y - 5.0f); // Calculate position
-    newBox2.init(&m_world, position2, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
-    m_blocks.push_back(newBox2);
-
-    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlockTLR.png");
-    for (int i = 0; i < NUM_BLOCKS - 4; ++i) {
-        Block newBox;
-        glm::vec2 position(START_X + 5.0f + i * (BLOCK_WIDTH + SPACING), START_Y - 5.0f); // Calculate position
-        newBox.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT), m_texture, textureColor, false);
-        m_blocks.push_back(newBox);
-    }
-
-
+    // Create blocks using perlin noise
+    perlinNoise();
 
 
     // Init Imgui
@@ -120,8 +57,14 @@ void GameplayScreen::onEntry() {
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
     m_camera.setScale(8.0f);
 
+    Bengine::ColorRGBA8 textureColor;
+    textureColor.r = 255;
+    textureColor.g = 255;
+    textureColor.b = 255;
+    textureColor.a = 255;
+
     // Init player
-    m_player.init(&m_world, glm::vec2(0.0f, 30.0f), glm::vec2(3.5f, 8.0f), textureColor);
+    m_player.init(&m_world, glm::vec2(0.0f, 60.0f), glm::vec2(3.5f, 8.0f), textureColor);
 }
 
 void GameplayScreen::onExit() {
@@ -225,4 +168,89 @@ void GameplayScreen::drawImgui() {
 void GameplayScreen::updateGravity() {
     b2Vec2 newGravity(0.0f, m_gravity);
     b2World_SetGravity(m_world, newGravity);
+}
+
+void GameplayScreen::perlinNoise() {
+    // Create Perlin noise instance with random seed
+    siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
+
+    // Parameters for terrain generation
+    const int NUM_BLOCKS_X = 500;  // Width of the terrain
+    const float BLOCK_WIDTH = 2.5f;
+    const float BLOCK_HEIGHT = 2.5f;
+    const float START_X = -750.0f;
+
+    // Parameters for noise
+    const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
+    const float AMPLITUDE = 10.0f;    // Controls the height variation
+    const float SURFACE_Y = 14.0f;    // Base height of the surface
+
+    Bengine::ColorRGBA8 textureColor;
+    textureColor.r = 255;
+    textureColor.g = 255;
+    textureColor.b = 255;
+    textureColor.a = 255;
+
+    // Generate surface terrain
+    std::vector<int> heightMap(NUM_BLOCKS_X);
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        // Generate height using Perlin noise
+        float noiseValue = perlin.noise1D(x * NOISE_SCALE);
+        int height = static_cast<int>(SURFACE_Y + noiseValue * AMPLITUDE);
+        heightMap[x] = height;
+
+        // Create surface (grass) blocks
+        float worldX = START_X + x * BLOCK_WIDTH;
+        Block surfaceBlock;
+        glm::vec2 position(worldX, height * BLOCK_HEIGHT);
+        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png");
+        surfaceBlock.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+            m_texture, textureColor, false);
+        m_blocks.push_back(surfaceBlock);
+
+        // Fill blocks below surface with dirt
+        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png");
+        for (int y = height - 1; y > height - 15; y--) {
+            Block dirtBlock;
+            glm::vec2 dirtPos(worldX, y * BLOCK_HEIGHT);
+            dirtBlock.init(&m_world, dirtPos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                m_texture, textureColor, false);
+            m_blocks.push_back(dirtBlock);
+        }
+
+        // Fill deeper blocks with stone
+        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png");
+        for (int y = height - 5; y > height - 50; y--) {
+            Block stoneBlock;
+            glm::vec2 stonePos(worldX, y * BLOCK_HEIGHT);
+            stoneBlock.init(&m_world, stonePos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                m_texture, textureColor, false);
+            m_blocks.push_back(stoneBlock);
+        }
+    }
+
+    // Generate caves using 2D Perlin noise
+    const float CAVE_SCALE = 0.4f;
+    const float CAVE_THRESHOLD = 0.4f; // Adjust this to control cave density
+
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        for (int y = heightMap[x] - 8; y > heightMap[x] - 35; y--) {
+            float caveNoise = perlin.noise2D(x * CAVE_SCALE, y * CAVE_SCALE);
+            if (caveNoise > CAVE_THRESHOLD) {
+                // Find and remove blocks at this position
+                float worldX = START_X + x * BLOCK_WIDTH;
+                float worldY = y * BLOCK_HEIGHT;
+
+                auto it = std::remove_if(m_blocks.begin(), m_blocks.end(),
+                    [worldX, worldY, BLOCK_WIDTH, BLOCK_HEIGHT](Block& block) {
+                        b2Vec2 pos = block.getPosition();
+                        return (pos.x >= worldX - BLOCK_WIDTH / 2 &&
+                            pos.x <= worldX + BLOCK_WIDTH / 2 &&
+                            pos.y >= worldY - BLOCK_HEIGHT / 2 &&
+                            pos.y <= worldY + BLOCK_HEIGHT / 2);
+                    });
+                m_blocks.erase(it, m_blocks.end());
+            }
+        }
+    }
 }

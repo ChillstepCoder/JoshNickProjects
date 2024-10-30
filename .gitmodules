@@ -10,3 +10,6 @@
 [submodule "NickProjects/graphicsTutorials/deps/Box2D"]
 	path = NickProjects/graphicsTutorials/deps/Box2D
 	url = https://github.com/erincatto/box2d.git
+[submodule "NickProjects/graphicsTutorials/deps/PerlinNoise"]
+	path = NickProjects/graphicsTutorials/deps/PerlinNoise
+	url = https://github.com/Reputeless/PerlinNoise.git

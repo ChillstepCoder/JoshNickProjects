@@ -43,6 +43,8 @@ public:
 private:
     void checkInput();
 
+    void perlinNoise();
+
     Bengine::SpriteBatch m_spriteBatch;
     Bengine::GLSLProgram m_textureProgram;
     Bengine::Camera2D m_camera;
