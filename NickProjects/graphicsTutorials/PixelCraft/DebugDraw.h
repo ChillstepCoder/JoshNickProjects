@@ -18,6 +18,7 @@ private:
     static void drawPolygon(const b2Vec2* vertices, int vertexCount, b2HexColor color, void* context);
     static void drawCircle(b2Vec2 center, float radius, b2HexColor color, void* context);
     static void drawSolidCircle(b2Transform xf, float radius, b2HexColor color, void* context);
+    static void drawCapsule(b2Vec2 p1, b2Vec2 p2, float radius, b2HexColor color, void* context);
     static void drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context);
     static void drawTransform(b2Transform xf, void* context);
     static void drawPoint(b2Vec2 p, float size, b2HexColor color, void* context);

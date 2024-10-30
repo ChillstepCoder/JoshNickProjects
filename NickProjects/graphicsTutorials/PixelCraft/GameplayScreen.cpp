@@ -3,6 +3,8 @@
 #include <SDL/SDL.h>
 #include <Bengine/IMainGame.h>
 #include <Bengine/ResourceManager.h>
+#include "Bengine/ImGuiManager.h"
+#include "PerlinNoise.hpp"
 
 GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
@@ -29,38 +31,15 @@ void GameplayScreen::destroy() {
 
 void GameplayScreen::onEntry() {
     b2WorldDef worldDef = b2DefaultWorldDef();
-    worldDef.gravity = b2Vec2(0.0f, -70.0f);
+    worldDef.gravity = b2Vec2(0.0f, m_gravity);
     m_world = b2CreateWorld(&worldDef);
 
+    // Create blocks using perlin noise
+    perlinNoise();
 
-    b2BodyDef groundBodyDef = b2DefaultBodyDef();
-    groundBodyDef.position = b2Vec2(0.0f, -60.0f);
-    m_ground = b2CreateBody(m_world, &groundBodyDef);
 
-    b2Polygon const groundBox = b2MakeBox(50.0f, 10.0f);
-    b2ShapeDef groundShapeDef = b2DefaultShapeDef();
-    groundShapeDef.density = 1.0f;
-    groundShapeDef.friction = 0.2f;
-    // Enable contact events for the ground shape
-    groundShapeDef.enableContactEvents = true;
-    b2ShapeId groundShapeId = b2CreatePolygonShape(m_ground, &groundShapeDef, &groundBox);
-
-    // Pass the ground shape ID to the player
-    m_player.setGroundShapeId(groundShapeId);
-
-    // Load the texture
-    m_texture = Bengine::ResourceManager::getTexture("Textures/dirtBlock.png");
-
-    Bengine::ColorRGBA8 textureColor;
-    textureColor.r = 255;
-    textureColor.g = 255;
-    textureColor.b = 255;
-    textureColor.a = 255;
-
-    // Make a block
-    Block newBox;
-    newBox.init(&m_world, glm::vec2(0.0f, 14.0f), glm::vec2(3.0f, 3.0f), m_texture, textureColor, false);
-    m_blocks.push_back(newBox);
+    // Init Imgui
+    Bengine::ImGuiManager::init(m_window);
 
     // Initialize spritebatch
     m_debugDraw.init();
@@ -78,8 +57,14 @@ void GameplayScreen::onEntry() {
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
     m_camera.setScale(8.0f);
 
+    Bengine::ColorRGBA8 textureColor;
+    textureColor.r = 255;
+    textureColor.g = 255;
+    textureColor.b = 255;
+    textureColor.a = 255;
+
     // Init player
-    m_player.init(&m_world, glm::vec2(0.0f, 30.0f), glm::vec2(3.5f, 8.0f), textureColor);
+    m_player.init(&m_world, glm::vec2(0.0f, 60.0f), glm::vec2(3.5f, 8.0f), textureColor);
 }
 
 void GameplayScreen::onExit() {
@@ -95,11 +80,13 @@ void GameplayScreen::update() {
     int subStepCount = 4;
     b2World_Step(m_world, timeStep, subStepCount);
 
-    m_player.update(m_game->inputManager);
+    m_player.update(m_game->inputManager, m_blocks);
+
+    const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
+    m_camera.setPosition(playerPos); // Set camera position to player's position
 }
 
 void GameplayScreen::draw() {
-    std::cout << "Draw\n";
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.4f, 0.4f, 0.8f, 1.0f);
 
@@ -124,8 +111,15 @@ void GameplayScreen::draw() {
 
     m_player.draw(m_spriteBatch);
 
+    Bengine::ImGuiManager::newFrame();
+
+    drawImgui();
+
+    Bengine::ImGuiManager::renderFrame();
+
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();
+
     m_textureProgram.unuse();
 
     if (m_debugRenderEnabled) {
@@ -146,11 +140,193 @@ void GameplayScreen::draw() {
 void GameplayScreen::checkInput() {
     SDL_Event evnt;
     while (SDL_PollEvent(&evnt)) {
+        Bengine::ImGuiManager::processEvent(evnt);
         m_game->onSDLEvent(evnt);
+    }
+}
 
-        if (evnt.type == SDL_KEYDOWN) { // Add debug render toggle on F1 key
-            if (evnt.key.keysym.sym == SDLK_F1) {
-                m_debugRenderEnabled = !m_debugRenderEnabled;
+void GameplayScreen::drawImgui() {
+    ImGui::Begin("Settings");
+
+    static bool check = false;
+    if (ImGui::Checkbox("Debug Renderer", &check)) {
+        m_debugRenderEnabled = !m_debugRenderEnabled;
+    }
+
+    if (ImGui::InputFloat("Gravity", &m_gravity, 1.0f, 1.0f, "%.3f")) {
+        updateGravity();
+    }
+
+    float jumpForce = m_player.getJumpForce(); // Get the current jump force
+    if (ImGui::InputFloat("Jump Force", &jumpForce, 10.0f, 100.0f, "%.1f")) {
+        m_player.setJumpForce(jumpForce); // Update the player's jump force
+    }
+
+    ImGui::End();
+}
+
+void GameplayScreen::updateGravity() {
+    b2Vec2 newGravity(0.0f, m_gravity);
+    b2World_SetGravity(m_world, newGravity);
+}
+
+void GameplayScreen::perlinNoise() {
+    // Create Perlin noise instance with random seed
+    siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
+
+    // Parameters for terrain generation
+    const int NUM_BLOCKS_X = 500;  // Width of the terrain
+    const float BLOCK_WIDTH = 2.5f;
+    const float BLOCK_HEIGHT = 2.5f;
+    const float START_X = -750.0f;
+
+    // Parameters for noise
+    const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
+    const float AMPLITUDE = 10.0f;    // Controls the height variation
+    const float SURFACE_Y = 14.0f;    // Base height of the surface
+
+    Bengine::ColorRGBA8 textureColor;
+    textureColor.r = 255;
+    textureColor.g = 255;
+    textureColor.b = 255;
+    textureColor.a = 255;
+
+    // Generate surface terrain
+    std::vector<int> heightMap(NUM_BLOCKS_X);
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        // Generate height using Perlin noise
+        float noiseValue = perlin.noise1D(x * NOISE_SCALE);
+        int height = static_cast<int>(SURFACE_Y + noiseValue * AMPLITUDE);
+        heightMap[x] = height;
+
+        // Create surface (grass) blocks
+        float worldX = START_X + x * BLOCK_WIDTH;
+        Block surfaceBlock;
+        glm::vec2 position(worldX, height * BLOCK_HEIGHT);
+        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png");
+        surfaceBlock.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+            m_texture, textureColor, false);
+        m_blocks.push_back(surfaceBlock);
+
+        // Fill blocks below surface with dirt
+        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png");
+        for (int y = height - 1; y > height - 10; y--) {
+            Block dirtBlock;
+            glm::vec2 dirtPos(worldX, y * BLOCK_HEIGHT);
+            dirtBlock.init(&m_world, dirtPos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                m_texture, textureColor, false);
+            m_blocks.push_back(dirtBlock);
+        }
+
+        // Fill deeper blocks with stone
+        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png");
+        for (int y = height - 10; y > height - 50; y--) {
+            Block stoneBlock;
+            glm::vec2 stonePos(worldX, y * BLOCK_HEIGHT);
+            stoneBlock.init(&m_world, stonePos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                m_texture, textureColor, false);
+            m_blocks.push_back(stoneBlock);
+        }
+    }
+
+    // Generate caves using 2D Perlin noise
+    const float CAVE_SCALE = 0.4f;
+    const float CAVE_THRESHOLD = 0.4f; // Adjust this to control cave density
+
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        for (int y = heightMap[x] - 8; y > heightMap[x] - 35; y--) {
+            float caveNoise = perlin.noise2D(x * CAVE_SCALE, y * CAVE_SCALE);
+            if (caveNoise > CAVE_THRESHOLD) {
+                // Find and remove blocks at this position
+                float worldX = START_X + x * BLOCK_WIDTH;
+                float worldY = y * BLOCK_HEIGHT;
+
+                auto it = std::remove_if(m_blocks.begin(), m_blocks.end(),
+                    [worldX, worldY, BLOCK_WIDTH, BLOCK_HEIGHT](Block& block) {
+                        b2Vec2 pos = block.getPosition();
+                        return (pos.x >= worldX - BLOCK_WIDTH / 2 &&
+                            pos.x <= worldX + BLOCK_WIDTH / 2 &&
+                            pos.y >= worldY - BLOCK_HEIGHT / 2 &&
+                            pos.y <= worldY + BLOCK_HEIGHT / 2);
+                    });
+                m_blocks.erase(it, m_blocks.end());
+            }
+        }
+    }
+
+    // Load the copper ore texture
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedCopperBlock.png");
+
+    // Parameters for ore vein generation
+    const float ORE_VEIN_SCALE = 0.03f;  // Controls how stretched the ore veins are
+    const float ORE_VEIN_THRESHOLD = 0.25f; // Adjust this to control ore vein density
+    const int MIN_VEIN_LENGTH = 5;      // Minimum length of an ore vein
+    const int MAX_VEIN_LENGTH = 9;     // Maximum length of an ore vein
+
+    // Generate copper ore veins
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        for (int y = heightMap[x] - 12; y > heightMap[x] - 35; y--) {
+            float oreNoise = perlin.noise2D(x * ORE_VEIN_SCALE, y * ORE_VEIN_SCALE);
+            if (oreNoise > ORE_VEIN_THRESHOLD) {
+                // Start a new ore vein
+                int veinLength = MIN_VEIN_LENGTH + rand() % (MAX_VEIN_LENGTH - MIN_VEIN_LENGTH + 1);
+                int veinStartX = x;
+                int veinStartY = y;
+
+                for (int i = 0; i < veinLength; i++) {
+                    // Create ore blocks along the vein
+                    float worldX = START_X + veinStartX * BLOCK_WIDTH;
+                    float worldY = veinStartY * BLOCK_HEIGHT;
+                    Block oreBlock;
+                    oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                        m_texture, textureColor, false);
+                    m_blocks.push_back(oreBlock);
+
+                    // Move to the next position in the vein
+                    veinStartX++;
+                    if (veinStartX >= NUM_BLOCKS_X) {
+                        // Wrap around to the beginning if we reach the end
+                        veinStartX = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedIronBlock.png");
+
+    // Parameters for iron vein generation
+    const float ORE_VEIN_SCALE2 = 0.02f;  // Controls how stretched the ore veins are
+    const float ORE_VEIN_THRESHOLD2 = 0.45f; // Adjust this to control ore vein density
+    const int MIN_VEIN_LENGTH2 = 5;      // Minimum length of an ore vein
+    const int MAX_VEIN_LENGTH2 = 9;     // Maximum length of an ore vein
+
+    // Generate iron ore veins
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        for (int y = heightMap[x] - 12; y > heightMap[x] - 35; y--) {
+            float oreNoise = perlin.noise2D(x * ORE_VEIN_SCALE2, y * ORE_VEIN_SCALE2);
+            if (oreNoise > ORE_VEIN_THRESHOLD2) {
+                // Start a new ore vein
+                int veinLength = MIN_VEIN_LENGTH2 + rand() % (MAX_VEIN_LENGTH2 - MIN_VEIN_LENGTH2 + 1);
+                int veinStartX = x;
+                int veinStartY = y;
+
+                for (int i = 0; i < veinLength; i++) {
+                    // Create ore blocks along the vein
+                    float worldX = START_X + veinStartX * BLOCK_WIDTH;
+                    float worldY = veinStartY * BLOCK_HEIGHT;
+                    Block oreBlock;
+                    oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                        m_texture, textureColor, false);
+                    m_blocks.push_back(oreBlock);
+
+                    // Move to the next position in the vein
+                    veinStartX++;
+                    if (veinStartX >= NUM_BLOCKS_X) {
+                        // Wrap around to the beginning if we reach the end
+                        veinStartX = 0;
+                    }
+                }
             }
         }
     }

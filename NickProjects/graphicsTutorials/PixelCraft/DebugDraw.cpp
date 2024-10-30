@@ -47,6 +47,8 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
     debugDraw.DrawTransform = drawTransform;
     debugDraw.DrawPoint = drawPoint;
     debugDraw.DrawString = drawString;
+    debugDraw.DrawSolidCapsule = drawCapsule;
+
 
     // Draw the world
     b2World_Draw(*world, &debugDraw);
@@ -219,6 +221,41 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
     setAttrib();
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 1);
+}
+
+void DebugDraw::drawCapsule(b2Vec2 p1, b2Vec2 p2, float radius, b2HexColor color, void* context) {
+
+    // Draw the end circles
+    b2Transform circle1Transform = { p1 };
+    b2Transform circle2Transform = { p2 };
+    drawSolidCircle(circle1Transform, radius, color, context);
+    drawSolidCircle(circle2Transform, radius, color, context);
+
+    // Calculate the direction vector between centers
+    b2Vec2 d = b2Sub(p2, p1);
+    float angle = atan2f(d.y, d.x);
+
+    // Calculate the corner points of the rectangle
+    b2Vec2 p1l = {
+        p1.x - radius * sinf(angle),
+        p1.y + radius * cosf(angle)
+    };
+    b2Vec2 p1r = {
+        p1.x + radius * sinf(angle),
+        p1.y - radius * cosf(angle)
+    };
+    b2Vec2 p2l = {
+        p2.x - radius * sinf(angle),
+        p2.y + radius * cosf(angle)
+    };
+    b2Vec2 p2r = {
+        p2.x + radius * sinf(angle),
+        p2.y - radius * cosf(angle)
+    };
+
+    // Draw the connecting lines
+    drawSegment(p1l, p2l, color, context);
+    drawSegment(p1r, p2r, color, context);
 }
 
 void DebugDraw::drawTransform(b2Transform xf, void* context) {
