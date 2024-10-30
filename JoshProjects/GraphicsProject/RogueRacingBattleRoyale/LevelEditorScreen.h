@@ -30,7 +30,7 @@ private:
   void initShaders();
   void cleanupImGui();
   void drawImGui();
-  void drawMainMenu();
+  void checkImGuiState();
   void drawDebugWindow();
   void exitGame();
   void handleInput();
@@ -52,4 +52,9 @@ private:
   // ImGui state
   bool m_imguiInitialized = false;
   bool m_showDebugWindow = true;
+
+  JAGEngine::ScreenState m_currentState = JAGEngine::ScreenState::NONE;
+  bool m_isExiting = false;
+
+  using IGameScreen::m_game;  // Make m_game accessible
 };

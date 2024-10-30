@@ -22,9 +22,22 @@ void LevelEditorScreen::destroy() {
 }
 
 void LevelEditorScreen::onEntry() {
+  std::cout << "LevelEditorScreen::onEntry() start\n";  // Debug output
+
+  // Initialize ImGui from scratch
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui::StyleColorsDark();
+
+  // Setup Platform/Renderer backends
   SDL_Window* window = m_game->getWindow().getSDLWindow();
   SDL_GLContext gl_context = m_game->getWindow().getGLContext();
-  m_imguiInitialized = InitImGui(window, gl_context);
+
+  bool imguiInitSuccess = ImGui_ImplSDL2_InitForOpenGL(window, gl_context) &&
+    ImGui_ImplOpenGL3_Init("#version 130");
+
+  std::cout << "ImGui initialization " << (imguiInitSuccess ? "succeeded" : "failed") << "\n";
+  m_imguiInitialized = imguiInitSuccess;
 
   // Initialize rendering
   initShaders();
@@ -48,10 +61,26 @@ void LevelEditorScreen::onEntry() {
   // Initialize track
   m_track = std::make_unique<SplineTrack>();
   initDefaultTrack();
+
+  std::cout << "LevelEditorScreen::onEntry() complete\n";
 }
 
 void LevelEditorScreen::onExit() {
-  cleanupImGui();
+  std::cout << "LevelEditorScreen::onExit() start\n";  // Debug output
+
+  // Clean up ImGui
+  if (m_imguiInitialized) {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+    m_imguiInitialized = false;
+  }
+
+  // Clear any selected nodes
+  m_selectedNode = nullptr;
+  m_isDragging = false;
+
+  std::cout << "LevelEditorScreen::onExit() complete\n";
 }
 
 void LevelEditorScreen::update() {
@@ -70,16 +99,15 @@ void LevelEditorScreen::initShaders() {
 void LevelEditorScreen::drawImGui() {
   // Main menu window
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
 
-  ImGui::Begin("Editor Menu", nullptr, ImGuiWindowFlags_NoCollapse);
+  ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 
-  if (ImGui::Button("Main Menu", ImVec2(180, 40))) {
+  if (ImGui::Button("Back to Game", ImVec2(180, 40))) {
     m_currentState = JAGEngine::ScreenState::CHANGE_PREVIOUS;
   }
 
   if (ImGui::Button("Options", ImVec2(180, 40))) {
-    // TODO: Implement options
     std::cout << "Options clicked\n";
   }
 
@@ -87,53 +115,72 @@ void LevelEditorScreen::drawImGui() {
     exitGame();
   }
 
-  ImGui::Separator();
-  ImGui::TextWrapped("Click and drag nodes to modify track shape");
-  ImGui::Text("Press ESC to return to main menu");
-
   ImGui::End();
 }
 
 void LevelEditorScreen::draw() {
+  if (m_isExiting || !m_imguiInitialized) {
+    std::cout << "Skipping draw: " << (m_isExiting ? "exiting" : "imgui not initialized") << "\n";
+    return;
+  }
+
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // Start ImGui frame only once
-  NewImGuiFrame();
+  // Start ImGui frame
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui::NewFrame();
 
-  // Draw game elements
+  // Debug output before drawing windows
+  checkImGuiState();
+
+  // Draw main menu first to ensure it's on top
+  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
+
+  ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
+
+  // Fixed color pushing with correct ImGui enum
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.4f, 0.7f, 1.0f));
+
+  if (ImGui::Button("Back to Game", ImVec2(180, 40))) {
+    std::cout << "Back to Game clicked\n";
+    m_currentState = JAGEngine::ScreenState::CHANGE_PREVIOUS;
+  }
+
+  if (ImGui::Button("Options", ImVec2(180, 40))) {
+    std::cout << "Options clicked\n";
+  }
+
+  if (ImGui::Button("Exit Game", ImVec2(180, 40))) {
+    std::cout << "Exit clicked\n";
+    exitGame();
+  }
+
+  ImGui::PopStyleColor();
+  ImGui::End();
+
+  // Draw debug window
+  drawDebugWindow();
+
+  // Draw game world after ImGui windows
   m_program.use();
   GLint pUniform = m_program.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_projectionMatrix[0][0]);
 
   m_spriteBatch.begin();
 
-  // Draw spline points as small white dots - fixed color
+  // Draw track spline points
   auto splinePoints = m_track->getSplinePoints(200);
-  for (size_t i = 0; i < splinePoints.size() - 1; i += 2) { // Modified step for clearer dots
+  for (size_t i = 0; i < splinePoints.size() - 1; i += 2) {
     const glm::vec2& point = splinePoints[i];
-    // Draw each dot slightly larger
-    glm::vec4 destRect(
-      point.x - 1.0f,  // Slightly larger dot
-      point.y - 1.0f,
-      2.0f,
-      2.0f
-    );
-
-    // Explicitly white color
-    JAGEngine::ColorRGBA8 white;
-    white.r = 255;
-    white.g = 255;
-    white.b = 255;
-    white.a = 255;
-
-    // Use texture coordinates that match the white part of your texture
-    glm::vec4 uvRect(0.5f, 0.5f, 1.0f, 1.0f);  // Adjust these based on your texture
-
-    m_spriteBatch.draw(destRect, uvRect, 0, 0.0f, white);
+    glm::vec4 destRect(point.x - 1.0f, point.y - 1.0f, 2.0f, 2.0f);
+    JAGEngine::ColorRGBA8 white(255, 255, 255, 255);
+    m_spriteBatch.draw(destRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, white);
   }
 
-  // Draw road edges here - we'll implement this next
+  // Draw road edges
   drawRoadEdges();
 
   // Draw nodes
@@ -147,38 +194,15 @@ void LevelEditorScreen::draw() {
 
     JAGEngine::ColorRGBA8 nodeColor;
     if (node.isSelected()) {
-      // Red for selected
-      nodeColor.r = 255;
-      nodeColor.g = 0;
-      nodeColor.b = 0;
-      nodeColor.a = 255;
+      nodeColor = JAGEngine::ColorRGBA8(255, 0, 0, 255);
     }
     else if (node.isHovered()) {
-      // Blue for hovered
-      nodeColor.r = 0;
-      nodeColor.g = 150;
-      nodeColor.b = 255;
-      nodeColor.a = 255;
+      nodeColor = JAGEngine::ColorRGBA8(0, 150, 255, 255);
     }
     else {
-      // Green for normal
-      nodeColor.r = 0;
-      nodeColor.g = 255;
-      nodeColor.b = 0;
-      nodeColor.a = 255;
+      nodeColor = JAGEngine::ColorRGBA8(0, 255, 0, 255);
     }
 
-    // Draw a slightly larger black outline first
-    JAGEngine::ColorRGBA8 outlineColor(0, 0, 0, 255);
-    glm::vec4 outlineRect(
-      node.getPosition().x - 11.0f,
-      node.getPosition().y - 11.0f,
-      22.0f,
-      22.0f
-    );
-    m_spriteBatch.draw(outlineRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, outlineColor);
-
-    // Then draw the node
     m_spriteBatch.draw(nodeRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, nodeColor);
   }
 
@@ -186,53 +210,61 @@ void LevelEditorScreen::draw() {
   m_spriteBatch.renderBatch();
   m_program.unuse();
 
-  // Draw ImGui windows
-  drawMainMenu();
-  drawDebugWindow();
+  // End ImGui frame
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-  // Render ImGui only once
-  RenderImGui();
+  // Debug output after frame
+  checkImGuiState();
+}
+
+void LevelEditorScreen::checkImGuiState() {
+  if (!m_imguiInitialized) {
+    std::cout << "ImGui not initialized!\n";
+    return;
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+  std::cout << "ImGui State:\n"
+    << "  Initialized: " << m_imguiInitialized << "\n"
+    << "  WantCaptureMouse: " << io.WantCaptureMouse << "\n"
+    << "  WantCaptureKeyboard: " << io.WantCaptureKeyboard << "\n"
+    << "  MousePos: " << io.MousePos.x << ", " << io.MousePos.y << "\n"
+    << "  MouseDown[0]: " << io.MouseDown[0] << "\n"
+    << "  MouseDown[1]: " << io.MouseDown[1] << "\n"
+    << "  MouseWheel: " << io.MouseWheel << "\n";
 }
 
 void LevelEditorScreen::drawDebugWindow() {
-  if (!m_showDebugWindow) return;
+  ImGui::SetNextWindowPos(ImVec2(10, 220), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);
 
-  ImGui::SetNextWindowPos(ImVec2(10, 320), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
+  ImGui::Begin("Track Editor", nullptr, ImGuiWindowFlags_NoCollapse);
 
-  if (ImGui::Begin("Track Editor", &m_showDebugWindow)) {
-    // Reset track button
-    if (ImGui::Button("Reset Track", ImVec2(180, 30))) {
-      std::cout << "Resetting track...\n";  // Debug output
-      m_selectedNode = nullptr;
-      m_isDragging = false;
-      initDefaultTrack();
-    }
+  if (ImGui::Button("Reset Track", ImVec2(180, 30))) {
+    m_selectedNode = nullptr;
+    m_isDragging = false;
+    initDefaultTrack();
+  }
 
-    ImGui::Text("Nodes: %zu", m_track->getNodes().size());
+  ImGui::Text("Nodes: %zu", m_track->getNodes().size());
 
-    // Node properties
+  if (ImGui::CollapsingHeader("Node Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (m_selectedNode) {
-      ImGui::Separator();
-      ImGui::Text("Selected Node Properties:");
       glm::vec2 pos = m_selectedNode->getPosition();
       ImGui::Text("Position: (%.1f, %.1f)", pos.x, pos.y);
 
-      // Road width control
-      static float tempWidth = 30.0f;  // Keep the temporary value
-      if (ImGui::IsWindowAppearing()) {
-        tempWidth = m_selectedNode->getRoadWidth();
+      float width = m_selectedNode->getRoadWidth();
+      if (ImGui::SliderFloat("Road Width##NodeWidth", &width, 10.0f, 100.0f)) {
+        m_selectedNode->setRoadWidth(width);
+        std::cout << "Width changed to: " << width << std::endl;
       }
-
-      if (ImGui::SliderFloat("Road Width", &tempWidth, 10.0f, 100.0f, "%.1f")) {
-        m_selectedNode->setRoadWidth(tempWidth);
-        std::cout << "Setting road width to: " << tempWidth << std::endl;
-      }
-
-      // Display actual value
-      ImGui::Text("Current Width: %.1f", m_selectedNode->getRoadWidth());
+    }
+    else {
+      ImGui::Text("No node selected");
     }
   }
+
   ImGui::End();
 }
 
@@ -241,8 +273,31 @@ void LevelEditorScreen::handleInput() {
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   JAGEngine::InputManager& inputManager = game->getInputManager();
 
-  // If ImGui is handling input, don't process game input
-  if (ImGui::GetIO().WantCaptureMouse) {
+  // Process SDL events first
+  SDL_Event event;
+  while (SDL_PollEvent(&event)) {
+    std::cout << "SDL Event Type: " << event.type << std::endl;
+
+    if (m_imguiInitialized) {
+      bool handled = ImGui_ImplSDL2_ProcessEvent(&event);
+      std::cout << "ImGui " << (handled ? "handled" : "ignored") << " event\n";
+    }
+
+    if (event.type == SDL_QUIT) {
+      exitGame();
+      return;
+    }
+  }
+
+  // Check ImGui state
+  bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse;
+  bool imguiWantsKeyboard = ImGui::GetIO().WantCaptureKeyboard;
+
+  std::cout << "ImGui wants: Mouse=" << imguiWantsMouse
+    << " Keyboard=" << imguiWantsKeyboard << "\n";
+
+  // Only process game input if ImGui isn't capturing it
+  if (imguiWantsMouse) {
     return;
   }
 
@@ -293,35 +348,13 @@ void LevelEditorScreen::handleInput() {
 }
 
 void LevelEditorScreen::exitGame() {
-  if (m_game) {
-    m_game->exitGame();
+  if (!m_isExiting) {
+    m_isExiting = true;
+    cleanupImGui();
+    if (m_game) {
+      m_game->exitGame();
+    }
   }
-}
-
-void LevelEditorScreen::drawMainMenu() {
-  // Editor menu window - fixed position in top-left
-  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
-
-  ImGui::Begin("Editor Menu", nullptr, ImGuiWindowFlags_NoCollapse);
-
-  float windowWidth = ImGui::GetContentRegionAvail().x;
-
-  if (ImGui::Button("Main Menu", ImVec2(windowWidth, 40))) {
-    m_currentState = JAGEngine::ScreenState::CHANGE_PREVIOUS;
-  }
-
-  ImGui::Spacing();
-  if (ImGui::Button("Options", ImVec2(windowWidth, 40))) {
-    std::cout << "Options clicked\n";
-  }
-
-  ImGui::Spacing();
-  if (ImGui::Button("Exit Game", ImVec2(windowWidth, 40))) {
-    exitGame();
-  }
-
-  ImGui::End();
 }
 
 
