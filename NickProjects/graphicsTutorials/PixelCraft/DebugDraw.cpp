@@ -48,6 +48,19 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
     debugDraw.DrawPoint = drawPoint;
     debugDraw.DrawString = drawString;
 
+    using DrawShapeCallback = void (*)(b2DebugDraw*, b2ShapeId, b2Transform, b2HexColor);
+    DrawShapeCallback shapeCallback = [](b2DebugDraw* draw, b2ShapeId shapeId, b2Transform xf, b2HexColor color) {
+        // Get shape data
+        b2Capsule shape = b2Shape_GetCapsule(shapeId);
+        if (b2ShapeType shapeId = b2_capsuleShape) {
+            b2Capsule capsule = shape;
+            // Call drawCapsule function
+            DebugDraw* debugDraw = static_cast<DebugDraw*>(draw->context);
+            debugDraw->drawCapsule(xf, shape, color);
+        }
+        };
+    debugDraw.drawShapes = shapeCallback;
+
     // Draw the world
     b2World_Draw(*world, &debugDraw);
 
@@ -219,6 +232,43 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
     setAttrib();
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 1);
+}
+
+void DebugDraw::drawCapsule(b2Transform xf, b2Capsule capsule, b2HexColor color) {
+    // Transform the centers
+    b2Vec2 c1 = b2TransformPoint(xf, capsule.center1);
+    b2Vec2 c2 = b2TransformPoint(xf, capsule.center2);
+
+    // Draw the end circles
+    b2Transform circle1Transform = { c1, xf.q };
+    b2Transform circle2Transform = { c2, xf.q };
+    drawSolidCircle(circle1Transform, capsule.radius, color, this);
+
+    // Calculate the direction vector between centers
+    b2Vec2 d = b2Sub(c2, c1);
+    float angle = atan2f(d.y, d.x);
+
+    // Calculate the corner points of the rectangle
+    b2Vec2 p1l = {
+        c1.x - capsule.radius * sinf(angle),
+        c1.y + capsule.radius * cosf(angle)
+    };
+    b2Vec2 p1r = {
+        c1.x + capsule.radius * sinf(angle),
+        c1.y - capsule.radius * cosf(angle)
+    };
+    b2Vec2 p2l = {
+        c2.x - capsule.radius * sinf(angle),
+        c2.y + capsule.radius * cosf(angle)
+    };
+    b2Vec2 p2r = {
+        c2.x + capsule.radius * sinf(angle),
+        c2.y - capsule.radius * cosf(angle)
+    };
+
+    // Draw the connecting lines
+    drawSegment(p1l, p2l, color, this);
+    drawSegment(p1r, p2r, color, this);
 }
 
 void DebugDraw::drawTransform(b2Transform xf, void* context) {
