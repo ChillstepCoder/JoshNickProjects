@@ -5,6 +5,9 @@
 #include <Bengine/ResourceManager.h>
 #include "Bengine/ImGuiManager.h"
 #include "PerlinNoise.hpp"
+#include "Timer.h"
+
+#define PROFILE_SCOPE(name) Timer timer##__LINE__(name,[&](ProfileResult profileResult) { m_profileResults.push_back(profileResult); })
 
 GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
@@ -45,6 +48,8 @@ void GameplayScreen::onEntry() {
     m_debugDraw.init();
     m_spriteBatch.init();
 
+    m_spriteFont->init("Fonts/Chintzy.ttf", 32);
+
     // Shader.init
     // Compile our color shader
     m_textureProgram.compileShaders("Shaders/textureShadingVert.txt", "Shaders/textureShadingFrag.txt");
@@ -52,6 +57,12 @@ void GameplayScreen::onEntry() {
     m_textureProgram.addAttribute("vertexColor");
     m_textureProgram.addAttribute("vertexUV");
     m_textureProgram.linkShaders();
+    // Compile our text shader
+    m_textRenderingProgram.compileShaders("Shaders/textRenderingVert.txt", "Shaders/textRenderingFrag.txt");
+    m_textRenderingProgram.addAttribute("vertexPosition");
+    m_textRenderingProgram.addAttribute("vertexColor");
+    m_textRenderingProgram.addAttribute("vertexUV");
+    m_textRenderingProgram.linkShaders();
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
@@ -72,21 +83,41 @@ void GameplayScreen::onExit() {
 }
 
 void GameplayScreen::update() {
-    m_camera.update();
-    checkInput();
+    PROFILE_SCOPE("GameplayScreen::update");
 
-    //Update the physics simulation
-    float timeStep = 1.0f / 60.0f;
-    int subStepCount = 4;
-    b2World_Step(m_world, timeStep, subStepCount);
+    {
+        PROFILE_SCOPE("camera.update");
+        m_camera.update();
+    }
 
-    m_player.update(m_game->inputManager, m_blocks);
+    {
+        PROFILE_SCOPE("GameplayScreen::checkInput");
+        checkInput();
+    }
 
-    const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
-    m_camera.setPosition(playerPos); // Set camera position to player's position
+    {
+        PROFILE_SCOPE("GameplayScreen::b2World_Step");
+        //Update the physics simulation
+        float timeStep = 1.0f / 60.0f;
+        int subStepCount = 4;
+        b2World_Step(m_world, timeStep, subStepCount);
+    }
+
+    {
+        PROFILE_SCOPE("player.update");
+        m_player.update(m_game->inputManager, m_blocks);
+    }
+
+    {
+        PROFILE_SCOPE("camera.setPosition");
+        const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
+        m_camera.setPosition(playerPos); // Set camera position to player's position
+    }
 }
 
 void GameplayScreen::draw() {
+    PROFILE_SCOPE("GameplayScreen::draw");
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.4f, 0.4f, 0.8f, 1.0f);
 
@@ -103,24 +134,42 @@ void GameplayScreen::draw() {
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     m_spriteBatch.begin();
-
-    // Draw all the boxes
-    for (auto& b : m_blocks) {
-        b.draw(m_spriteBatch);
+    
+    {
+        PROFILE_SCOPE("Draw blocks");
+        // Draw all the blocks
+        for (auto& b : m_blocks) {
+            b.draw(m_spriteBatch);
+        }
     }
-
-    m_player.draw(m_spriteBatch);
-
-    Bengine::ImGuiManager::newFrame();
-
-    drawImgui();
-
-    Bengine::ImGuiManager::renderFrame();
-
+    {
+        PROFILE_SCOPE("Draw player");
+        m_player.draw(m_spriteBatch);
+    }
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();
 
+    {
+        PROFILE_SCOPE("drawImgui");
+        Bengine::ImGuiManager::newFrame();
+
+        drawImgui();
+
+        Bengine::ImGuiManager::renderFrame();
+    }
     m_textureProgram.unuse();
+    m_textRenderingProgram.use();
+
+    // Make sure the shader uses texture 0
+    GLint textUniform = m_textRenderingProgram.getUniformLocation("mySampler");
+    glUniform1i(textUniform, 0);
+
+    GLint pUniform2 = m_textRenderingProgram.getUniformLocation("P");
+    glUniformMatrix4fv(pUniform2, 1, GL_FALSE, &projectionMatrix[0][0]);
+
+    drawHud();
+
+    m_textRenderingProgram.unuse();
 
     if (m_debugRenderEnabled) {
         // Enable blending for transparency
@@ -145,6 +194,16 @@ void GameplayScreen::checkInput() {
     }
 }
 
+void GameplayScreen::drawHud() {
+    const Bengine::ColorRGBA8 fontColor(255, 0, 0, 255);
+    // Convert float to char *
+    float _fps = 60.0f;
+    char buffer[64];
+    sprintf_s(buffer, "%.1f", _fps);
+    m_spriteFont->draw(m_spriteBatch, buffer, glm::vec2(0.0f, m_window->getScreenHeight() - 32.0f),
+        glm::vec2(1.0f), 0.0f, fontColor);
+}
+
 void GameplayScreen::drawImgui() {
     ImGui::Begin("Settings");
 
@@ -161,6 +220,15 @@ void GameplayScreen::drawImgui() {
     if (ImGui::InputFloat("Jump Force", &jumpForce, 10.0f, 100.0f, "%.1f")) {
         m_player.setJumpForce(jumpForce); // Update the player's jump force
     }
+
+    for (auto& result : m_profileResults)
+    {
+        char label[50];
+        strcpy_s(label, result.Name);
+        strcat_s(label, "  %.3fms");
+        ImGui::Text(label, result.Time);
+    }
+    m_profileResults.clear();
 
     ImGui::End();
 }

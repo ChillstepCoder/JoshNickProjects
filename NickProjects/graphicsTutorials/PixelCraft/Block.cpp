@@ -27,6 +27,7 @@ void Block::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& d
     b2ShapeDef shapeDef = b2DefaultShapeDef();
     shapeDef.density = 1.0f;
     shapeDef.friction = 0.0f;
+    shapeDef.restitution = 0.0f;
     b2CreatePolygonShape(m_ID, &shapeDef, &dynamicBox);
 
 }

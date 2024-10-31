@@ -36,7 +36,8 @@ void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& 
     capsule.center2 = b2Vec2(0.0f, -dimensions.y / 3.5f);
     b2ShapeDef capsuleShapeDef = b2DefaultShapeDef();
     capsuleShapeDef.density = 1.0f;
-    capsuleShapeDef.friction = 0.0f;
+    capsuleShapeDef.friction = 0.1f;
+    capsuleShapeDef.restitution = 0.0f;
     b2CreateCapsuleShape(m_bodyId, &capsuleShapeDef, &capsule);
 
 }
@@ -83,7 +84,7 @@ void Player::update(Bengine::InputManager& inputManager, const std::vector<Block
     else {
         // Apply gradual slowdown
         b2Vec2 currentVelocity = b2Body_GetLinearVelocity(getID());
-        float slowdownFactor = m_isGrounded ? 0.93f : 0.97f; // Slower when grounded
+        float slowdownFactor = m_isGrounded ? 0.84f : 0.88f; // Slower when grounded
         b2Body_SetLinearVelocity(getID(), b2Vec2(currentVelocity.x * slowdownFactor, currentVelocity.y));
     }
 
