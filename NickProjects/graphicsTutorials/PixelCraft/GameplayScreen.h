@@ -13,6 +13,7 @@
 #include <Bengine/Window.h>
 #include <Bengine/Timing.h>
 #include <Bengine/SpriteFont.h>
+#include "BlockMeshManager.h"
 #include "DebugDraw.h"
 #include "Imgui.h"
 #include "ImGui/backends/imgui_impl_sdl2.h"
@@ -74,5 +75,8 @@ private:
         float Time;
     };
     std::vector<ProfileResult> m_profileResults;
+
+    BlockMeshManager m_blockMeshManager;
+    BlockManager m_blockManager{ m_blockMeshManager };
 
 };

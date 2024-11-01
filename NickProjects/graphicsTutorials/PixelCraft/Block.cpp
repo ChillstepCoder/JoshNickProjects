@@ -33,10 +33,9 @@ void Block::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& d
 }
 
 void Block::draw(Bengine::SpriteBatch& spriteBatch) {
-    glm::vec4 destRect;
-    destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
-    destRect.y = (getPosition().y - ((0.5) * getDimensions().y));
-    destRect.z = getDimensions().x;
-    destRect.w = getDimensions().y;
-    spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, m_color, 0.0f);
+    m_destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
+    m_destRect.y = (getPosition().y - ((0.5) * getDimensions().y));
+    m_destRect.z = getDimensions().x;
+    m_destRect.w = getDimensions().y;
+    spriteBatch.draw(m_destRect, m_uvRect, m_texture.id, 0.0f, m_color, 0.0f);
 }

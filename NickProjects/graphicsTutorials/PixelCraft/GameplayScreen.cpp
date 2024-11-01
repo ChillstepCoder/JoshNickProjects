@@ -37,16 +37,17 @@ void GameplayScreen::onEntry() {
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
     m_world = b2CreateWorld(&worldDef);
 
+    // Initialize BlockMeshManager
+    m_blockMeshManager.init();
+
     // Create blocks using perlin noise
     perlinNoise();
-
+    m_blockManager.rebuildMesh();
 
     // Init Imgui
     Bengine::ImGuiManager::init(m_window);
 
-    // Initialize spritebatch
     m_debugDraw.init();
-    m_spriteBatch.init();
 
     m_spriteFont->init("Fonts/Chintzy.ttf", 32);
 
@@ -133,15 +134,12 @@ void GameplayScreen::draw() {
     GLint pUniform = m_textureProgram.getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
-    m_spriteBatch.begin();
-    
     {
         PROFILE_SCOPE("Draw blocks");
-        // Draw all the blocks
-        for (auto& b : m_blocks) {
-            b.draw(m_spriteBatch);
-        }
+        m_blockManager.renderBlocks();
     }
+
+    m_spriteBatch.begin();
     {
         PROFILE_SCOPE("Draw player");
         m_player.draw(m_spriteBatch);
