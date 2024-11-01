@@ -59,19 +59,6 @@ void GameplayScreen::onEntry() {
   std::cout << "GameplayScreen::onEntry()\n";
 
   try {
-    // Initialize ImGui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
-
-    // Setup Platform/Renderer backends
-    SDL_Window* window = m_game->getWindow().getSDLWindow();
-    SDL_GLContext gl_context = m_game->getWindow().getGLContext();
-    if (ImGui_ImplSDL2_InitForOpenGL(window, gl_context) &&
-      ImGui_ImplOpenGL3_Init("#version 130")) {
-      m_imguiInitialized = true;
-    }
-
     // Initialize Shaders
     initShaders();
     m_spriteBatch.init();
@@ -104,7 +91,7 @@ void GameplayScreen::onEntry() {
     m_physicsSystem->createBoxShape(m_playerCarBody, 15.0f, 15.0f);
 
     // Initialize default car properties
-    m_defaultCarProps = Car::CarProperties(); // This will use the default values
+    m_defaultCarProps = Car::CarProperties();
 
     // Create the car and initialize with default properties
     m_car = std::make_unique<Car>(m_playerCarBody);
@@ -168,12 +155,9 @@ void GameplayScreen::drawDebugWindow() {
 }
 
 void GameplayScreen::onExit() {
-  if (!m_isExiting) {
-    m_isExiting = true;
-    cleanupImGui();
-  }
+  m_isExiting = true;
 
-  // Rest of cleanup
+  // Cleanup physics
   if (m_physicsSystem) {
     m_physicsSystem->cleanup();
     m_physicsSystem.reset();
@@ -198,7 +182,7 @@ void GameplayScreen::drawImGui() {
     std::cout << "Race clicked\n";
     m_showMainMenu = false;
   }
-
+  
   if (ImGui::Button("Options", ImVec2(180, 40))) {
     std::cout << "Options clicked\n";
   }
@@ -212,17 +196,8 @@ void GameplayScreen::drawImGui() {
 }
 
 void GameplayScreen::draw() {
-  if (m_isExiting || !m_imguiInitialized) {
-    return;
-  }
-
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  // Start ImGui frame
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplSDL2_NewFrame();
-  ImGui::NewFrame();
 
   // Draw game world
   m_textureProgram.use();
@@ -251,22 +226,16 @@ void GameplayScreen::draw() {
     JAGEngine::ColorRGBA8 color(255, 0, 0, 255);  // Red
 
     m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, color, angle);
-
-    drawDebugWindow();
   }
- 
 
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
 
   m_textureProgram.unuse();
 
-  // Draw ImGui
+  // Draw ImGui windows - only once!
   drawImGui();
-
-  // Render ImGui
-  ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  drawDebugWindow();
 }
 
 void GameplayScreen::update() {
@@ -300,18 +269,6 @@ void GameplayScreen::checkInput() {
 
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   JAGEngine::InputManager& inputManager = game->getInputManager();
-
-  // Handle ImGui events
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    if (m_imguiInitialized) {
-      ImGui_ImplSDL2_ProcessEvent(&event);
-    }
-    if (event.type == SDL_QUIT) {
-      exitGame();
-      return;
-    }
-  }
 
   if (inputManager.isKeyDown(SDLK_ESCAPE)) {
     exitGame();
@@ -364,7 +321,6 @@ void GameplayScreen::checkGLError(const char* location) {
 void GameplayScreen::exitGame() {
   if (!m_isExiting) {
     m_isExiting = true;
-    cleanupImGui();
     if (m_game) {
       m_game->exitGame();
     }

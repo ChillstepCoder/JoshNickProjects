@@ -18,26 +18,11 @@ void LevelEditorScreen::build() {
 }
 
 void LevelEditorScreen::destroy() {
-  cleanupImGui();
+  //cleanupImGui();
 }
 
 void LevelEditorScreen::onEntry() {
-  std::cout << "LevelEditorScreen::onEntry() start\n";  // Debug output
-
-  // Initialize ImGui from scratch
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGui::StyleColorsDark();
-
-  // Setup Platform/Renderer backends
-  SDL_Window* window = m_game->getWindow().getSDLWindow();
-  SDL_GLContext gl_context = m_game->getWindow().getGLContext();
-
-  bool imguiInitSuccess = ImGui_ImplSDL2_InitForOpenGL(window, gl_context) &&
-    ImGui_ImplOpenGL3_Init("#version 130");
-
-  std::cout << "ImGui initialization " << (imguiInitSuccess ? "succeeded" : "failed") << "\n";
-  m_imguiInitialized = imguiInitSuccess;
+  std::cout << "LevelEditorScreen::onEntry() start\n";
 
   // Initialize rendering
   initShaders();
@@ -66,15 +51,7 @@ void LevelEditorScreen::onEntry() {
 }
 
 void LevelEditorScreen::onExit() {
-  std::cout << "LevelEditorScreen::onExit() start\n";  // Debug output
-
-  // Clean up ImGui
-  if (m_imguiInitialized) {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
-    m_imguiInitialized = false;
-  }
+  std::cout << "LevelEditorScreen::onExit() start\n";
 
   // Clear any selected nodes
   m_selectedNode = nullptr;
@@ -119,53 +96,12 @@ void LevelEditorScreen::drawImGui() {
 }
 
 void LevelEditorScreen::draw() {
-  if (m_isExiting || !m_imguiInitialized) {
-    std::cout << "Skipping draw: " << (m_isExiting ? "exiting" : "imgui not initialized") << "\n";
-    return;
-  }
-
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // Start ImGui frame
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplSDL2_NewFrame();
-  ImGui::NewFrame();
-
-  // Debug output before drawing windows
-  checkImGuiState();
-
-  // Draw main menu first to ensure it's on top
-  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
-
-  ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
-
-  // Fixed color pushing with correct ImGui enum
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.4f, 0.7f, 1.0f));
-
-  if (ImGui::Button("Back to Game", ImVec2(180, 40))) {
-    std::cout << "Back to Game clicked\n";
-    m_currentState = JAGEngine::ScreenState::CHANGE_PREVIOUS;
-  }
-
-  if (ImGui::Button("Options", ImVec2(180, 40))) {
-    std::cout << "Options clicked\n";
-  }
-
-  if (ImGui::Button("Exit Game", ImVec2(180, 40))) {
-    std::cout << "Exit clicked\n";
-    exitGame();
-  }
-
-  ImGui::PopStyleColor();
-  ImGui::End();
-
-  // Draw debug window
-  drawDebugWindow();
-
-  // Draw game world after ImGui windows
+  // Draw game world
   m_program.use();
+
   GLint pUniform = m_program.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_projectionMatrix[0][0]);
 
@@ -174,8 +110,13 @@ void LevelEditorScreen::draw() {
   // Draw track spline points
   auto splinePoints = m_track->getSplinePoints(200);
   for (size_t i = 0; i < splinePoints.size() - 1; i += 2) {
-    const glm::vec2& point = splinePoints[i];
-    glm::vec4 destRect(point.x - 1.0f, point.y - 1.0f, 2.0f, 2.0f);
+    const auto& pointInfo = splinePoints[i];
+    glm::vec4 destRect(
+      pointInfo.position.x - 1.0f,
+      pointInfo.position.y - 1.0f,
+      2.0f,
+      2.0f
+    );
     JAGEngine::ColorRGBA8 white(255, 255, 255, 255);
     m_spriteBatch.draw(destRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, white);
   }
@@ -206,16 +147,77 @@ void LevelEditorScreen::draw() {
     m_spriteBatch.draw(nodeRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, nodeColor);
   }
 
+  // Draw preview node if in add mode
+  if (m_addNodeMode && m_showPreviewNode) {
+    glm::vec4 previewRect(
+      m_previewNodePosition.x - 10.0f,
+      m_previewNodePosition.y - 10.0f,
+      20.0f,
+      20.0f
+    );
+    JAGEngine::ColorRGBA8 previewColor(255, 255, 0, 200); // Yellow, semi-transparent
+    m_spriteBatch.draw(previewRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, previewColor);
+  }
+
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
+
   m_program.unuse();
 
-  // End ImGui frame
-  ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  // Draw ImGui windows
+  drawImGui();
+  drawDebugWindow();
+}
 
-  // Debug output after frame
-  checkImGuiState();
+// Update drawRoadEdges() to use SplinePointInfo correctly
+void LevelEditorScreen::drawRoadEdges() {
+  const auto& nodes = m_track->getNodes();
+  if (nodes.empty()) return;
+
+  // Get spline points with interpolated widths
+  auto splinePoints = m_track->getSplinePoints(200);
+  std::vector<glm::vec2> leftEdgePoints;
+  std::vector<glm::vec2> rightEdgePoints;
+
+  // Calculate perpendicular points for each spline point
+  for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
+    const auto& current = splinePoints[i];
+    const auto& next = splinePoints[i + 1];
+
+    // Calculate direction and perpendicular
+    glm::vec2 direction = next.position - current.position;
+    glm::vec2 perpendicular(-direction.y, direction.x);
+    perpendicular = glm::normalize(perpendicular);
+
+    // Use interpolated road width
+    float roadWidth = current.roadWidth;
+
+    // Calculate edge points using interpolated width
+    leftEdgePoints.push_back(current.position + perpendicular * roadWidth);
+    rightEdgePoints.push_back(current.position - perpendicular * roadWidth);
+  }
+
+  // Draw edges
+  for (size_t i = 0; i < leftEdgePoints.size(); i += 2) {
+    // Draw left edge
+    glm::vec4 leftRect(
+      leftEdgePoints[i].x - 1.0f,
+      leftEdgePoints[i].y - 1.0f,
+      2.0f,
+      2.0f
+    );
+    JAGEngine::ColorRGBA8 edgeColor(255, 255, 255, 255);
+    m_spriteBatch.draw(leftRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, edgeColor);
+
+    // Draw right edge
+    glm::vec4 rightRect(
+      rightEdgePoints[i].x - 1.0f,
+      rightEdgePoints[i].y - 1.0f,
+      2.0f,
+      2.0f
+    );
+    m_spriteBatch.draw(rightRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, edgeColor);
+  }
 }
 
 void LevelEditorScreen::checkImGuiState() {
@@ -249,6 +251,12 @@ void LevelEditorScreen::drawDebugWindow() {
 
   ImGui::Text("Nodes: %zu", m_track->getNodes().size());
 
+  // Add node mode toggle
+  ImGui::Checkbox("Add Node Mode", &m_addNodeMode);
+  if (m_addNodeMode) {
+    ImGui::TextWrapped("Click on the track to add a new node");
+  }
+
   if (ImGui::CollapsingHeader("Node Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (m_selectedNode) {
       glm::vec2 pos = m_selectedNode->getPosition();
@@ -257,7 +265,11 @@ void LevelEditorScreen::drawDebugWindow() {
       float width = m_selectedNode->getRoadWidth();
       if (ImGui::SliderFloat("Road Width##NodeWidth", &width, 10.0f, 100.0f)) {
         m_selectedNode->setRoadWidth(width);
-        std::cout << "Width changed to: " << width << std::endl;
+      }
+
+      // Add delete node button
+      if (ImGui::Button("Delete Node", ImVec2(180, 30))) {
+        deleteSelectedNode();
       }
     }
     else {
@@ -269,37 +281,15 @@ void LevelEditorScreen::drawDebugWindow() {
 }
 
 
+// Update handleInput() in LevelEditorScreen.cpp
 void LevelEditorScreen::handleInput() {
+  if (m_isExiting) return;
+
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   JAGEngine::InputManager& inputManager = game->getInputManager();
 
-  // Process SDL events first
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    std::cout << "SDL Event Type: " << event.type << std::endl;
-
-    if (m_imguiInitialized) {
-      bool handled = ImGui_ImplSDL2_ProcessEvent(&event);
-      std::cout << "ImGui " << (handled ? "handled" : "ignored") << " event\n";
-    }
-
-    if (event.type == SDL_QUIT) {
-      exitGame();
-      return;
-    }
-  }
-
-  // Check ImGui state
   bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse;
-  bool imguiWantsKeyboard = ImGui::GetIO().WantCaptureKeyboard;
-
-  std::cout << "ImGui wants: Mouse=" << imguiWantsMouse
-    << " Keyboard=" << imguiWantsKeyboard << "\n";
-
-  // Only process game input if ImGui isn't capturing it
-  if (imguiWantsMouse) {
-    return;
-  }
+  if (imguiWantsMouse) return;
 
   // Convert screen coordinates to world coordinates
   float screenWidth = static_cast<float>(game->getWindow().getScreenWidth());
@@ -309,106 +299,70 @@ void LevelEditorScreen::handleInput() {
   mousePos.x = ((mousePos.x / screenWidth) * 2.0f - 1.0f) * (screenWidth * 0.2f);
   mousePos.y = (-(mousePos.y / screenHeight) * 2.0f + 1.0f) * (screenHeight * 0.2f);
 
-  // Reset hover states
-  for (auto& node : m_track->getNodes()) {
-    node.setHovered(false);
-  }
+  // Get current mouse state
+  bool isMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
 
-  // Check for node under cursor
-  TrackNode* hoveredNode = m_track->getNodeAtPosition(mousePos, 20.0f);
-  if (hoveredNode) {
-    hoveredNode->setHovered(true);
-    std::cout << "Node hovered at: " << hoveredNode->getPosition().x << ", "
-      << hoveredNode->getPosition().y << std::endl;
-  }
+  if (m_addNodeMode) {
+    // Update preview node position
+    m_previewNodePosition = findClosestSplinePoint(mousePos);
+    m_showPreviewNode = true;
 
-  // Handle node selection and dragging
-  if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
-    if (!m_isDragging) {
-      if (hoveredNode) {
-        // Deselect previous node if it's different
-        if (m_selectedNode && m_selectedNode != hoveredNode) {
-          m_selectedNode->setSelected(false);
-        }
-        m_selectedNode = hoveredNode;
-        m_selectedNode->setSelected(true);
-        m_isDragging = true;
-        std::cout << "Node selected with road width: " << m_selectedNode->getRoadWidth() << std::endl;
-      }
-    }
-
-    // Move the node if we're dragging
-    if (m_isDragging && m_selectedNode) {
-      m_selectedNode->setPosition(mousePos);
+    // Detect mouse button press (transition from up to down)
+    if (isMouseDown && !m_wasMouseDown) {
+      std::cout << "Mouse clicked! Adding node at position: "
+        << m_previewNodePosition.x << ", "
+        << m_previewNodePosition.y << std::endl;
+      addNodeAtPosition(m_previewNodePosition);
     }
   }
   else {
-    m_isDragging = false;
+    m_showPreviewNode = false;
+
+    // Reset hover states
+    for (auto& node : m_track->getNodes()) {
+      node.setHovered(false);
+    }
+
+    // Check for node under cursor
+    TrackNode* hoveredNode = m_track->getNodeAtPosition(mousePos, 20.0f);
+    if (hoveredNode) {
+      hoveredNode->setHovered(true);
+    }
+
+    // Handle node selection and dragging
+    if (isMouseDown) {
+      if (!m_isDragging) {
+        if (hoveredNode) {
+          // Deselect previous node if it's different
+          if (m_selectedNode && m_selectedNode != hoveredNode) {
+            m_selectedNode->setSelected(false);
+          }
+          m_selectedNode = hoveredNode;
+          m_selectedNode->setSelected(true);
+          m_isDragging = true;
+        }
+      }
+
+      // Move the node if we're dragging
+      if (m_isDragging && m_selectedNode) {
+        m_selectedNode->setPosition(mousePos);
+      }
+    }
+    else {
+      m_isDragging = false;
+    }
   }
+
+  // Update previous mouse state
+  m_wasMouseDown = isMouseDown;
 }
 
 void LevelEditorScreen::exitGame() {
   if (!m_isExiting) {
     m_isExiting = true;
-    cleanupImGui();
     if (m_game) {
       m_game->exitGame();
     }
-  }
-}
-
-
-void LevelEditorScreen::drawRoadEdges() {
-  const auto& nodes = m_track->getNodes();
-  if (nodes.empty()) return;
-
-  // Get spline points for both edges
-  auto splinePoints = m_track->getSplinePoints(200);
-  std::vector<glm::vec2> leftEdgePoints;
-  std::vector<glm::vec2> rightEdgePoints;
-
-  // Calculate perpendicular points for each spline point
-  for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
-    glm::vec2 current = splinePoints[i];
-    glm::vec2 next = splinePoints[i + 1];
-
-    // Calculate direction and perpendicular
-    glm::vec2 direction = next - current;
-    glm::vec2 perpendicular(-direction.y, direction.x);
-    perpendicular = glm::normalize(perpendicular);
-
-    // Interpolate road width between nodes
-    float t = static_cast<float>(i) / splinePoints.size();
-    size_t nodeIndex = static_cast<size_t>(t * (nodes.size() - 1));
-    float roadWidth = nodes[nodeIndex].getRoadWidth();
-
-    // Calculate edge points
-    leftEdgePoints.push_back(current + perpendicular * roadWidth);
-    rightEdgePoints.push_back(current - perpendicular * roadWidth);
-  }
-
-  // Draw left edge
-  for (size_t i = 0; i < leftEdgePoints.size(); i += 2) {
-    glm::vec4 destRect(
-      leftEdgePoints[i].x - 1.0f,
-      leftEdgePoints[i].y - 1.0f,
-      2.0f,
-      2.0f
-    );
-    JAGEngine::ColorRGBA8 edgeColor(255, 255, 255, 255);
-    m_spriteBatch.draw(destRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, edgeColor);
-  }
-
-  // Draw right edge
-  for (size_t i = 0; i < rightEdgePoints.size(); i += 2) {
-    glm::vec4 destRect(
-      rightEdgePoints[i].x - 1.0f,
-      rightEdgePoints[i].y - 1.0f,
-      2.0f,
-      2.0f
-    );
-    JAGEngine::ColorRGBA8 edgeColor(255, 255, 255, 255);
-    m_spriteBatch.draw(destRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, edgeColor);
   }
 }
 
@@ -421,13 +375,6 @@ void LevelEditorScreen::initDefaultTrack() {
   }
 }
 
-void LevelEditorScreen::cleanupImGui() {
-  if (m_imguiInitialized) {
-    ShutdownImGui();
-    m_imguiInitialized = false;
-  }
-}
-
 // Screen transition methods
 int LevelEditorScreen::getNextScreenIndex() const {
   return -1;  // No next screen
@@ -436,4 +383,102 @@ int LevelEditorScreen::getNextScreenIndex() const {
 // And LevelEditorScreen's getPreviousScreenIndex:
 int LevelEditorScreen::getPreviousScreenIndex() const {
   return 0;  // Index of GameplayScreen
+}
+
+glm::vec2 LevelEditorScreen::findClosestSplinePoint(const glm::vec2& mousePos) {
+  auto splinePoints = m_track->getSplinePoints(200);
+  float minDist = std::numeric_limits<float>::max();
+  glm::vec2 closestPoint;
+
+  for (const auto& pointInfo : splinePoints) {
+    float dist = glm::distance(mousePos, pointInfo.position);
+    if (dist < minDist) {
+      minDist = dist;
+      closestPoint = pointInfo.position;
+    }
+  }
+
+  return closestPoint;
+}
+
+void LevelEditorScreen::addNodeAtPosition(const glm::vec2& position) {
+  std::cout << "Adding node at position: " << position.x << ", " << position.y << std::endl;
+
+  auto& nodes = m_track->getNodes();
+  if (nodes.empty()) {
+    nodes.push_back(TrackNode(position));
+    return;
+  }
+
+  // Find the nearest segment
+  float minDist = std::numeric_limits<float>::max();
+  size_t insertIndex = 0;
+
+  for (size_t i = 0; i < nodes.size(); i++) {
+    const auto& node1 = nodes[i];
+    const auto& node2 = nodes[(i + 1) % nodes.size()];
+
+    // Calculate point-to-line distance
+    glm::vec2 segStart = node1.getPosition();
+    glm::vec2 segEnd = node2.getPosition();
+    glm::vec2 segDir = segEnd - segStart;
+    float segLen = glm::length(segDir);
+
+    if (segLen > 0) {
+      segDir /= segLen;
+      glm::vec2 toPoint = position - segStart;
+      float proj = glm::dot(toPoint, segDir);
+      proj = glm::clamp(proj, 0.0f, segLen);
+      glm::vec2 closestPoint = segStart + segDir * proj;
+      float dist = glm::distance(position, closestPoint);
+
+      if (dist < minDist) {
+        minDist = dist;
+        insertIndex = (i + 1) % nodes.size();
+      }
+    }
+  }
+
+  // Create new node
+  TrackNode newNode(position);
+
+  // Interpolate road width from neighboring nodes
+  float prevWidth = nodes[insertIndex > 0 ? insertIndex - 1 : nodes.size() - 1].getRoadWidth();
+  float nextWidth = nodes[insertIndex].getRoadWidth();
+  newNode.setRoadWidth((prevWidth + nextWidth) * 0.5f);
+
+  // Insert the new node
+  nodes.insert(nodes.begin() + insertIndex, newNode);
+  std::cout << "Added node. New node count: " << nodes.size() << std::endl;
+}
+
+// Update deleteSelectedNode() in LevelEditorScreen.cpp
+void LevelEditorScreen::deleteSelectedNode() {
+  if (!m_selectedNode) {
+    std::cout << "No node selected for deletion" << std::endl;
+    return;
+  }
+
+  auto& nodes = m_track->getNodes();
+  if (nodes.size() <= 4) {
+    std::cout << "Cannot delete node: minimum node count reached" << std::endl;
+    return;
+  }
+
+  // Find the selected node in the vector
+  auto it = std::find_if(nodes.begin(), nodes.end(),
+    [this](const TrackNode& node) {
+      return &node == m_selectedNode;
+    });
+
+  if (it != nodes.end()) {
+    std::cout << "Deleting node at index " << std::distance(nodes.begin(), it) << std::endl;
+    nodes.erase(it);
+    m_selectedNode = nullptr;
+    m_isDragging = false;
+    std::cout << "Node deleted. New node count: " << nodes.size() << std::endl;
+  }
+  else {
+    std::cout << "Selected node not found in track nodes" << std::endl;
+  }
 }

@@ -28,7 +28,6 @@ public:
 
 private:
   void initShaders();
-  void cleanupImGui();
   void drawImGui();
   void checkImGuiState();
   void drawDebugWindow();
@@ -37,12 +36,20 @@ private:
   void drawRoadEdges();
   void initDefaultTrack();
 
+  glm::vec2 findClosestSplinePoint(const glm::vec2& mousePos);
+  void addNodeAtPosition(const glm::vec2& position);
+  void deleteSelectedNode();
+
   // Track editing
   std::unique_ptr<SplineTrack> m_track;
   TrackNode* m_selectedNode = nullptr;
   TrackNode* m_draggedNode = nullptr;
   bool m_isDragging = false;
   glm::vec2 m_lastMousePos;
+
+  bool m_addNodeMode = false;
+  glm::vec2 m_previewNodePosition = glm::vec2(0.0f);
+  bool m_showPreviewNode = false;
 
   // Rendering
   JAGEngine::SpriteBatch m_spriteBatch;
@@ -55,6 +62,8 @@ private:
 
   JAGEngine::ScreenState m_currentState = JAGEngine::ScreenState::NONE;
   bool m_isExiting = false;
+
+  bool m_wasMouseDown = false;
 
   using IGameScreen::m_game;  // Make m_game accessible
 };

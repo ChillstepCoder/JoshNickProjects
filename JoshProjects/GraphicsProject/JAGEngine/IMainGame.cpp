@@ -47,6 +47,9 @@ namespace JAGEngine {
       // Process all SDL events
       SDL_Event evnt;
       while (SDL_PollEvent(&evnt)) {
+        if (m_imguiInitialized) {
+          ImGui_ImplSDL2_ProcessEvent(&evnt);
+        }
         if (evnt.type == SDL_WINDOWEVENT) {
           switch (evnt.window.event) {
           case SDL_WINDOWEVENT_MINIMIZED:
@@ -61,9 +64,13 @@ namespace JAGEngine {
         onSDLEvent(evnt);
       }
 
+      beginImGuiFrame();
+
       m_inputManager.update();
       update();
       draw();
+
+      endImGuiFrame();
 
       m_fps = limiter.end();
       m_window.swapBuffer();
@@ -118,45 +125,18 @@ namespace JAGEngine {
     std::cout << "Init start\n";
     JAGEngine::init();
 
-    std::cout << "Setting up OpenGL attributes...\n";
-    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    if (!initSystems()) return false;
+    if (!initImGui()) return false;
 
-    std::cout << "Initializing systems...\n";
-    if (!initSystems()) {
-      std::cerr << "Failed to initialize systems\n";
-      return false;
-    }
-
-    std::cout << "Running onInit...\n";
     onInit();
-
-    std::cout << "Checking screen list...\n";
-    if (!m_screenList) {
-      std::cerr << "Screen list is null!\n";
-      return false;
-    }
-
-    std::cout << "Adding screens...\n";
     addScreens();
 
-    std::cout << "Getting current screen...\n";
     m_currentScreen = m_screenList->getCurrent();
-    if (!m_currentScreen) {
-      std::cerr << "Current screen is null!\n";
-      return false;
+    if (m_currentScreen) {
+      m_currentScreen->onEntry();
+      m_currentScreen->setRunning();
     }
 
-    std::cout << "Initializing current screen...\n";
-    m_currentScreen->onEntry();
-    m_currentScreen->setRunning();
-
-    // Make sure window is visible
-    SDL_RaiseWindow(m_window.getSDLWindow());
-
-    std::cout << "Init complete\n";
     return true;
   }
 
@@ -172,6 +152,44 @@ namespace JAGEngine {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     return true;
+  }
+
+  bool IMainGame::initImGui() {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+
+    if (!ImGui_ImplSDL2_InitForOpenGL(m_window.getSDLWindow(), m_window.getGLContext()) ||
+      !ImGui_ImplOpenGL3_Init("#version 130")) {
+      return false;
+    }
+
+    m_imguiInitialized = true;
+    return true;
+  }
+
+  void IMainGame::cleanupImGui() {
+    if (m_imguiInitialized) {
+      ImGui_ImplOpenGL3_Shutdown();
+      ImGui_ImplSDL2_Shutdown();
+      ImGui::DestroyContext();
+      m_imguiInitialized = false;
+    }
+  }
+
+  void IMainGame::beginImGuiFrame() {
+    if (m_imguiInitialized) {
+      ImGui_ImplOpenGL3_NewFrame();
+      ImGui_ImplSDL2_NewFrame();
+      ImGui::NewFrame();
+    }
+  }
+
+  void IMainGame::endImGuiFrame() {
+    if (m_imguiInitialized) {
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
   }
 
   void IMainGame::update() {
