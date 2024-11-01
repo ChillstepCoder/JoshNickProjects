@@ -4,6 +4,7 @@
 #include <JAGEngine/IGameScreen.h>
 #include <JAGEngine/SpriteBatch.h>
 #include <JAGEngine/GLSLProgram.h>
+#include <JAGEngine/Camera2D.h>
 #include <glm/glm.hpp>
 #include <vector>
 #include <ImGui/imgui.h>
@@ -27,6 +28,8 @@ public:
   virtual int getPreviousScreenIndex() const override;
 
 private:
+
+  glm::vec2 screenToWorld(const glm::vec2& screenCoords);
   void initShaders();
   void drawImGui();
   void checkImGuiState();
@@ -64,6 +67,12 @@ private:
   bool m_isExiting = false;
 
   bool m_wasMouseDown = false;
+
+  JAGEngine::Camera2D m_camera;
+  float m_cameraSpeed = 8.0f;
+  float m_zoomFactor = 1.02f;
+  float m_minZoom = 0.1f;
+  float m_maxZoom = 5.0f;
 
   using IGameScreen::m_game;  // Make m_game accessible
 };

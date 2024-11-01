@@ -33,15 +33,10 @@ void LevelEditorScreen::onEntry() {
   int screenWidth = game->getWindow().getScreenWidth();
   int screenHeight = game->getWindow().getScreenHeight();
 
-  // Setup projection
-  float zoom = 0.2f;
-  m_projectionMatrix = glm::ortho(
-    -screenWidth * zoom,
-    screenWidth * zoom,
-    -screenHeight * zoom,
-    screenHeight * zoom,
-    -1.0f, 1.0f
-  );
+  // Initialize camera
+  m_camera.init(screenWidth, screenHeight);
+  m_camera.setScale(1.0f);
+  m_camera.setPosition(glm::vec2(0.0f));
 
   // Initialize track
   m_track = std::make_unique<SplineTrack>();
@@ -99,11 +94,16 @@ void LevelEditorScreen::draw() {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // Update camera
+  m_camera.update();
+
   // Draw game world
   m_program.use();
 
+  // Use camera matrix
   GLint pUniform = m_program.getUniformLocation("P");
-  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_projectionMatrix[0][0]);
+  glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
 
   m_spriteBatch.begin();
 
@@ -164,11 +164,10 @@ void LevelEditorScreen::draw() {
 
   m_program.unuse();
 
-  // Draw ImGui windows
+  // Draw ImGui windows once at the end
   drawImGui();
   drawDebugWindow();
 }
-
 // Update drawRoadEdges() to use SplinePointInfo correctly
 void LevelEditorScreen::drawRoadEdges() {
   const auto& nodes = m_track->getNodes();
@@ -280,8 +279,26 @@ void LevelEditorScreen::drawDebugWindow() {
   ImGui::End();
 }
 
+glm::vec2 LevelEditorScreen::screenToWorld(const glm::vec2& screenCoords) {
+  JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
+  float screenWidth = static_cast<float>(game->getWindow().getScreenWidth());
+  float screenHeight = static_cast<float>(game->getWindow().getScreenHeight());
 
-// Update handleInput() in LevelEditorScreen.cpp
+  // Get current camera scale and position
+  float scale = m_camera.getScale();
+  glm::vec2 cameraPos = m_camera.getPosition();
+
+  // Convert screen coordinates to world coordinates
+  glm::vec2 worldCoords;
+  worldCoords.x = ((screenCoords.x / screenWidth) * 2.0f - 1.0f) * (screenWidth * 0.2f) / scale;
+  worldCoords.y = (-(screenCoords.y / screenHeight) * 2.0f + 1.0f) * (screenHeight * 0.2f) / scale;
+
+  // Apply camera position
+  worldCoords += cameraPos;
+
+  return worldCoords;
+}
+
 void LevelEditorScreen::handleInput() {
   if (m_isExiting) return;
 
@@ -289,72 +306,100 @@ void LevelEditorScreen::handleInput() {
   JAGEngine::InputManager& inputManager = game->getInputManager();
 
   bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse;
-  if (imguiWantsMouse) return;
+  bool imguiWantsKeyboard = ImGui::GetIO().WantCaptureKeyboard;
 
-  // Convert screen coordinates to world coordinates
-  float screenWidth = static_cast<float>(game->getWindow().getScreenWidth());
-  float screenHeight = static_cast<float>(game->getWindow().getScreenHeight());
+  // Handle camera controls if ImGui isn't capturing keyboard
+  if (!imguiWantsKeyboard) {
+    // Handle zoom
+    float currentScale = m_camera.getScale();
 
-  glm::vec2 mousePos(inputManager.getMouseCoords());
-  mousePos.x = ((mousePos.x / screenWidth) * 2.0f - 1.0f) * (screenWidth * 0.2f);
-  mousePos.y = (-(mousePos.y / screenHeight) * 2.0f + 1.0f) * (screenHeight * 0.2f);
-
-  // Get current mouse state
-  bool isMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
-
-  if (m_addNodeMode) {
-    // Update preview node position
-    m_previewNodePosition = findClosestSplinePoint(mousePos);
-    m_showPreviewNode = true;
-
-    // Detect mouse button press (transition from up to down)
-    if (isMouseDown && !m_wasMouseDown) {
-      std::cout << "Mouse clicked! Adding node at position: "
-        << m_previewNodePosition.x << ", "
-        << m_previewNodePosition.y << std::endl;
-      addNodeAtPosition(m_previewNodePosition);
+    if (inputManager.isKeyDown(SDLK_q) || inputManager.isKeyDown(SDLK_MINUS) ||
+      inputManager.isKeyDown(SDLK_UNDERSCORE)) {
+      currentScale /= m_zoomFactor;
     }
+    if (inputManager.isKeyDown(SDLK_e) || inputManager.isKeyDown(SDLK_EQUALS) ||
+      inputManager.isKeyDown(SDLK_PLUS)) {
+      currentScale *= m_zoomFactor;
+    }
+
+    // Clamp zoom
+    currentScale = glm::clamp(currentScale, m_minZoom, m_maxZoom);
+    m_camera.setScale(currentScale);
+
+    // Handle camera movement
+    glm::vec2 cameraPosition = m_camera.getPosition();
+    float adjustedSpeed = m_cameraSpeed / currentScale;
+
+    if (inputManager.isKeyDown(SDLK_w) || inputManager.isKeyDown(SDLK_UP)) {
+      cameraPosition.y += adjustedSpeed;
+    }
+    if (inputManager.isKeyDown(SDLK_s) || inputManager.isKeyDown(SDLK_DOWN)) {
+      cameraPosition.y -= adjustedSpeed;
+    }
+    if (inputManager.isKeyDown(SDLK_a) || inputManager.isKeyDown(SDLK_LEFT)) {
+      cameraPosition.x -= adjustedSpeed;
+    }
+    if (inputManager.isKeyDown(SDLK_d) || inputManager.isKeyDown(SDLK_RIGHT)) {
+      cameraPosition.x += adjustedSpeed;
+    }
+
+    m_camera.setPosition(cameraPosition);
   }
-  else {
-    m_showPreviewNode = false;
 
-    // Reset hover states
-    for (auto& node : m_track->getNodes()) {
-      node.setHovered(false);
-    }
+  // Handle mouse input
+  if (!imguiWantsMouse) {
+    // Convert screen coordinates to world coordinates
+    glm::vec2 mousePos = screenToWorld(inputManager.getMouseCoords());
 
-    // Check for node under cursor
-    TrackNode* hoveredNode = m_track->getNodeAtPosition(mousePos, 20.0f);
-    if (hoveredNode) {
-      hoveredNode->setHovered(true);
-    }
+    // Handle node addition mode
+    if (m_addNodeMode) {
+      m_previewNodePosition = findClosestSplinePoint(mousePos);
+      m_showPreviewNode = true;
 
-    // Handle node selection and dragging
-    if (isMouseDown) {
-      if (!m_isDragging) {
-        if (hoveredNode) {
-          // Deselect previous node if it's different
-          if (m_selectedNode && m_selectedNode != hoveredNode) {
-            m_selectedNode->setSelected(false);
-          }
-          m_selectedNode = hoveredNode;
-          m_selectedNode->setSelected(true);
-          m_isDragging = true;
-        }
-      }
-
-      // Move the node if we're dragging
-      if (m_isDragging && m_selectedNode) {
-        m_selectedNode->setPosition(mousePos);
+      if (inputManager.isKeyDown(SDL_BUTTON_LEFT) && !m_wasMouseDown) {
+        addNodeAtPosition(m_previewNodePosition);
       }
     }
     else {
-      m_isDragging = false;
-    }
-  }
+      m_showPreviewNode = false;
 
-  // Update previous mouse state
-  m_wasMouseDown = isMouseDown;
+      // Reset hover states
+      for (auto& node : m_track->getNodes()) {
+        node.setHovered(false);
+      }
+
+      // Adjust hover threshold based on zoom level
+      float hoverThreshold = 20.0f * m_camera.getScale();
+
+      // Handle normal node selection and dragging
+      TrackNode* hoveredNode = m_track->getNodeAtPosition(mousePos, hoverThreshold);
+      if (hoveredNode) {
+        hoveredNode->setHovered(true);
+      }
+
+      if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+        if (!m_isDragging) {
+          if (hoveredNode) {
+            if (m_selectedNode && m_selectedNode != hoveredNode) {
+              m_selectedNode->setSelected(false);
+            }
+            m_selectedNode = hoveredNode;
+            m_selectedNode->setSelected(true);
+            m_isDragging = true;
+          }
+        }
+
+        if (m_isDragging && m_selectedNode) {
+          m_selectedNode->setPosition(mousePos);
+        }
+      }
+      else {
+        m_isDragging = false;
+      }
+    }
+
+    m_wasMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
+  }
 }
 
 void LevelEditorScreen::exitGame() {
