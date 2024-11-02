@@ -24,16 +24,13 @@ void LevelEditorScreen::destroy() {
 void LevelEditorScreen::onEntry() {
   std::cout << "LevelEditorScreen::onEntry() start\n";
 
-  // Initialize rendering
   initShaders();
   m_spriteBatch.init();
 
-  // Get window dimensions
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   int screenWidth = game->getWindow().getScreenWidth();
   int screenHeight = game->getWindow().getScreenHeight();
 
-  // Initialize camera
   m_camera.init(screenWidth, screenHeight);
   m_camera.setScale(1.0f);
   m_camera.setPosition(glm::vec2(0.0f));
@@ -328,7 +325,7 @@ void LevelEditorScreen::handleInput() {
 
     // Handle camera movement
     glm::vec2 cameraPosition = m_camera.getPosition();
-    float adjustedSpeed = m_cameraSpeed / currentScale;
+    float adjustedSpeed = m_cameraSpeed;
 
     if (inputManager.isKeyDown(SDLK_w) || inputManager.isKeyDown(SDLK_UP)) {
       cameraPosition.y += adjustedSpeed;
@@ -349,12 +346,22 @@ void LevelEditorScreen::handleInput() {
   // Handle mouse input
   if (!imguiWantsMouse) {
     // Convert screen coordinates to world coordinates
-    glm::vec2 mousePos = screenToWorld(inputManager.getMouseCoords());
+    glm::vec2 screenCoords = inputManager.getMouseCoords();
+    glm::vec2 worldPos = m_camera.convertScreenToWorld(screenCoords);
 
-    // Handle node addition mode
+    // Debug output
+    std::cout << "Screen coords: (" << screenCoords.x << ", " << screenCoords.y << ")\n";
+    std::cout << "World coords: (" << worldPos.x << ", " << worldPos.y << ")\n";
+    std::cout << "Camera pos: (" << m_camera.getPosition().x << ", " << m_camera.getPosition().y
+      << ") Scale: " << m_camera.getScale() << "\n";
+
     if (m_addNodeMode) {
-      m_previewNodePosition = findClosestSplinePoint(mousePos);
+      m_previewNodePosition = findClosestSplinePoint(worldPos);
       m_showPreviewNode = true;
+
+      // Debug preview position
+      std::cout << "Preview pos: (" << m_previewNodePosition.x << ", "
+        << m_previewNodePosition.y << ")\n";
 
       if (inputManager.isKeyDown(SDL_BUTTON_LEFT) && !m_wasMouseDown) {
         addNodeAtPosition(m_previewNodePosition);
@@ -368,29 +375,29 @@ void LevelEditorScreen::handleInput() {
         node.setHovered(false);
       }
 
-      // Adjust hover threshold based on zoom level
-      float hoverThreshold = 20.0f * m_camera.getScale();
+      // Scale selection radius with camera zoom
+      float baseRadius = 20.0f;
+      float scaledRadius = baseRadius / m_camera.getScale();
 
-      // Handle normal node selection and dragging
-      TrackNode* hoveredNode = m_track->getNodeAtPosition(mousePos, hoverThreshold);
+      TrackNode* hoveredNode = m_track->getNodeAtPosition(worldPos, scaledRadius);
       if (hoveredNode) {
         hoveredNode->setHovered(true);
+        glm::vec2 nodePos = hoveredNode->getPosition();
+        std::cout << "Hovering node at: (" << nodePos.x << ", " << nodePos.y << ")\n";
       }
 
       if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
-        if (!m_isDragging) {
-          if (hoveredNode) {
-            if (m_selectedNode && m_selectedNode != hoveredNode) {
-              m_selectedNode->setSelected(false);
-            }
-            m_selectedNode = hoveredNode;
-            m_selectedNode->setSelected(true);
-            m_isDragging = true;
+        if (!m_isDragging && hoveredNode) {
+          if (m_selectedNode && m_selectedNode != hoveredNode) {
+            m_selectedNode->setSelected(false);
           }
+          m_selectedNode = hoveredNode;
+          m_selectedNode->setSelected(true);
+          m_isDragging = true;
         }
 
         if (m_isDragging && m_selectedNode) {
-          m_selectedNode->setPosition(mousePos);
+          m_selectedNode->setPosition(worldPos);
         }
       }
       else {
@@ -401,6 +408,7 @@ void LevelEditorScreen::handleInput() {
     m_wasMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
   }
 }
+
 
 void LevelEditorScreen::exitGame() {
   if (!m_isExiting) {
