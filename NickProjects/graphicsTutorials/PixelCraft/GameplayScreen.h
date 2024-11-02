@@ -19,6 +19,8 @@
 #include "ImGui/backends/imgui_impl_sdl2.h"
 #include "ImGui/backends/imgui_impl_opengl3.h"
 
+class BlockManager;
+
 class GameplayScreen : public Bengine::IGameScreen {
 public:
     GameplayScreen(Bengine::Window* window);
@@ -60,7 +62,6 @@ private:
     std::unique_ptr<Bengine::SpriteFont> m_spriteFont; ///< For font rendering
 
     Player m_player;
-    std::vector<Block> m_blocks;
     b2WorldId m_world = b2_nullWorldId;
     b2BodyId m_ground = b2_nullBodyId;
 
@@ -77,6 +78,6 @@ private:
     std::vector<ProfileResult> m_profileResults;
 
     BlockMeshManager m_blockMeshManager;
-    BlockManager m_blockManager{ m_blockMeshManager };
+    BlockManager* m_blockManager;
 
 };
