@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Block.cpp" />
+    <ClCompile Include="BlockMeshManager.cpp" />
     <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="main.cpp" />
@@ -154,6 +155,7 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Block.h" />
+    <ClInclude Include="BlockMeshManager.h" />
     <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="Player.h" />

@@ -18,11 +18,17 @@ public:
     b2Vec2 getPosition();
     b2BodyId getID() const { return m_ID; }
     const glm::vec2& getDimensions() const { return m_dimensions; }
+    const glm::vec4 getDestRect() const { return m_destRect; }
+    const glm::vec4 getUVRect() const { return m_uvRect; }
+    const GLuint getTextureID() const { return m_texture.id; }
+    const Bengine::ColorRGBA8 getColor() const { return m_color; }
 
 private:
     b2BodyDef* m_body = nullptr;
     b2BodyId m_ID;
     glm::vec2 m_dimensions;
+    glm::vec4 m_destRect;
+    glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
     Bengine::ColorRGBA8 m_color;
     Bengine::GLTexture m_texture;
 };
