@@ -13,6 +13,7 @@ GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
 }
 GameplayScreen::~GameplayScreen() {
+    delete m_blockManager;
     b2DestroyWorld(m_world);
 }
 
@@ -40,9 +41,15 @@ void GameplayScreen::onEntry() {
     // Initialize BlockMeshManager
     m_blockMeshManager.init();
 
+    m_blockManager = new BlockManager(m_blockMeshManager, m_world);
+
     // Create blocks using perlin noise
     perlinNoise();
-    m_blockManager.rebuildMesh();
+
+    m_blockManager->rebuildMesh();
+
+    m_spriteBatch.init();
+
 
     // Init Imgui
     Bengine::ImGuiManager::init(m_window);
@@ -106,7 +113,7 @@ void GameplayScreen::update() {
 
     {
         PROFILE_SCOPE("player.update");
-        m_player.update(m_game->inputManager, m_blocks);
+        m_player.update(m_game->inputManager, m_blockManager->getBlocks());
     }
 
     {
@@ -136,9 +143,8 @@ void GameplayScreen::draw() {
 
     {
         PROFILE_SCOPE("Draw blocks");
-        m_blockManager.renderBlocks();
+        m_blockManager->renderBlocks();
     }
-
     m_spriteBatch.begin();
     {
         PROFILE_SCOPE("Draw player");
@@ -272,7 +278,7 @@ void GameplayScreen::perlinNoise() {
         m_texture = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png");
         surfaceBlock.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
             m_texture, textureColor, false);
-        m_blocks.push_back(surfaceBlock);
+        m_blockManager->addBlock(surfaceBlock);
 
         // Fill blocks below surface with dirt
         m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png");
@@ -281,7 +287,7 @@ void GameplayScreen::perlinNoise() {
             glm::vec2 dirtPos(worldX, y * BLOCK_HEIGHT);
             dirtBlock.init(&m_world, dirtPos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
                 m_texture, textureColor, false);
-            m_blocks.push_back(dirtBlock);
+            m_blockManager->addBlock(dirtBlock);
         }
 
         // Fill deeper blocks with stone
@@ -291,7 +297,7 @@ void GameplayScreen::perlinNoise() {
             glm::vec2 stonePos(worldX, y * BLOCK_HEIGHT);
             stoneBlock.init(&m_world, stonePos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
                 m_texture, textureColor, false);
-            m_blocks.push_back(stoneBlock);
+            m_blockManager->addBlock(stoneBlock);
         }
     }
 
@@ -307,7 +313,7 @@ void GameplayScreen::perlinNoise() {
                 float worldX = START_X + x * BLOCK_WIDTH;
                 float worldY = y * BLOCK_HEIGHT;
 
-                auto it = std::remove_if(m_blocks.begin(), m_blocks.end(),
+                auto it = std::remove_if(m_blockManager->getBlocks().begin(), m_blockManager->getBlocks().end(),
                     [worldX, worldY, BLOCK_WIDTH, BLOCK_HEIGHT](Block& block) {
                         b2Vec2 pos = block.getPosition();
                         return (pos.x >= worldX - BLOCK_WIDTH / 2 &&
@@ -315,7 +321,7 @@ void GameplayScreen::perlinNoise() {
                             pos.y >= worldY - BLOCK_HEIGHT / 2 &&
                             pos.y <= worldY + BLOCK_HEIGHT / 2);
                     });
-                m_blocks.erase(it, m_blocks.end());
+                m_blockManager->getBlocks().erase(it, m_blockManager->getBlocks().end());
             }
         }
     }
@@ -346,7 +352,7 @@ void GameplayScreen::perlinNoise() {
                     Block oreBlock;
                     oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
                         m_texture, textureColor, false);
-                    m_blocks.push_back(oreBlock);
+                    m_blockManager->addBlock(oreBlock);
 
                     // Move to the next position in the vein
                     veinStartX++;
@@ -384,7 +390,7 @@ void GameplayScreen::perlinNoise() {
                     Block oreBlock;
                     oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
                         m_texture, textureColor, false);
-                    m_blocks.push_back(oreBlock);
+                    m_blockManager->addBlock(oreBlock);
 
                     // Move to the next position in the vein
                     veinStartX++;

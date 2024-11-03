@@ -20,7 +20,7 @@ public:
     const glm::vec2& getDimensions() const { return m_dimensions; }
     const glm::vec4 getDestRect() const { return m_destRect; }
     const glm::vec4 getUVRect() const { return m_uvRect; }
-    const GLuint getTextureID() const { return m_texture.id; }
+    const GLuint getTextureID() const { return m_textureID; }
     const Bengine::ColorRGBA8 getColor() const { return m_color; }
 
 private:
@@ -31,4 +31,5 @@ private:
     glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
     Bengine::ColorRGBA8 m_color;
     Bengine::GLTexture m_texture;
+    GLuint m_textureID;
 };

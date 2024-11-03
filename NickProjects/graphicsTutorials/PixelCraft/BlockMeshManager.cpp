@@ -15,13 +15,12 @@ void BlockMeshManager::init() {
 void BlockMeshManager::buildMesh(const std::vector<Block>& blocks) {
     m_spriteBatch.begin();
     for (const auto& block : blocks) {
-        m_spriteBatch.draw(
-            block.getDestRect(), 
-            block.getUVRect(),
-            block.getTextureID(), 
-            0.0f,        // Depth
-            block.getColor(), 
-            0.0f);       // Rotation
+        auto destRect = block.getDestRect();
+        auto uvRect = block.getUVRect();
+        auto textureID = block.getTextureID();
+        auto color = block.getColor();
+
+        m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
     }
     m_spriteBatch.end();
 }

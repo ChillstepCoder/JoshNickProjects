@@ -43,6 +43,7 @@ namespace Bengine {
     }
 
     void SpriteBatch::renderBatch() {
+        assert(m_vao != 0 && "Forgot to init spritebatch!");
 
         glBindVertexArray(m_vao);
         for (int i = 0; i < m_renderBatches.size(); i++) {
