@@ -39,6 +39,13 @@ void LevelEditorScreen::onEntry() {
   m_track = std::make_unique<SplineTrack>();
   initDefaultTrack();
 
+  m_roadShader.compileShaders("Shaders/road.vert", "Shaders/road.frag");
+  m_roadShader.addAttribute("vertexPosition");
+  m_roadShader.addAttribute("vertexUV");
+  m_roadShader.addAttribute("distanceAlong");
+  m_roadShader.linkShaders();
+  updateRoadMesh();
+
   std::cout << "LevelEditorScreen::onEntry() complete\n";
 }
 
@@ -93,78 +100,105 @@ void LevelEditorScreen::draw() {
 
   // Update camera
   m_camera.update();
-
-  // Draw game world
-  m_program.use();
-
-  // Use camera matrix
-  GLint pUniform = m_program.getUniformLocation("P");
   glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
-  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
 
-  m_spriteBatch.begin();
+  if (m_roadViewMode == RoadViewMode::Shaded) {
+    // Draw the shaded road
+    m_roadShader.use();
+    GLint roadPUniform = m_roadShader.getUniformLocation("P");
+    glUniformMatrix4fv(roadPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
 
-  // Draw track spline points
-  auto splinePoints = m_track->getSplinePoints(200);
-  for (size_t i = 0; i < splinePoints.size() - 1; i += 2) {
-    const auto& pointInfo = splinePoints[i];
-    glm::vec4 destRect(
-      pointInfo.position.x - 1.0f,
-      pointInfo.position.y - 1.0f,
-      2.0f,
-      2.0f
-    );
-    JAGEngine::ColorRGBA8 white(255, 255, 255, 255);
-    m_spriteBatch.draw(destRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, white);
+    if (m_roadMesh.vao != 0 && !m_roadMesh.indices.empty()) {
+      glBindVertexArray(m_roadMesh.vao);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_roadMesh.ibo);
+      glDrawElements(GL_TRIANGLES,
+        static_cast<GLsizei>(m_roadMesh.indices.size()),
+        GL_UNSIGNED_INT,
+        nullptr);
+      glBindVertexArray(0);
+    }
+    m_roadShader.unuse();
   }
 
-  // Draw road edges
-  drawRoadEdges();
+  // Draw spline points and control nodes if enabled
+  if (m_showSplinePoints || m_roadViewMode == RoadViewMode::Spline) {
+    m_program.use();
+    GLint spritePUniform = m_program.getUniformLocation("P");
+    glUniformMatrix4fv(spritePUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
 
-  // Draw nodes
-  for (const auto& node : m_track->getNodes()) {
-    glm::vec4 nodeRect(
-      node.getPosition().x - 10.0f,
-      node.getPosition().y - 10.0f,
-      20.0f,
-      20.0f
-    );
+    m_spriteBatch.begin();
 
-    JAGEngine::ColorRGBA8 nodeColor;
-    if (node.isSelected()) {
-      nodeColor = JAGEngine::ColorRGBA8(255, 0, 0, 255);
-    }
-    else if (node.isHovered()) {
-      nodeColor = JAGEngine::ColorRGBA8(0, 150, 255, 255);
-    }
-    else {
-      nodeColor = JAGEngine::ColorRGBA8(0, 255, 0, 255);
+    // Draw spline points if in spline mode
+    if (m_roadViewMode == RoadViewMode::Spline) {
+      drawRoadEdges();
     }
 
-    m_spriteBatch.draw(nodeRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, nodeColor);
+    // Draw nodes
+    for (const auto& node : m_track->getNodes()) {
+      glm::vec4 nodeRect(
+        node.getPosition().x - 10.0f,
+        node.getPosition().y - 10.0f,
+        20.0f,
+        20.0f
+      );
+
+      JAGEngine::ColorRGBA8 nodeColor;
+      if (node.isSelected()) {
+        nodeColor = JAGEngine::ColorRGBA8(255, 0, 0, 255);
+      }
+      else if (node.isHovered()) {
+        nodeColor = JAGEngine::ColorRGBA8(0, 150, 255, 255);
+      }
+      else {
+        nodeColor = JAGEngine::ColorRGBA8(0, 255, 0, 255);
+      }
+
+      m_spriteBatch.draw(nodeRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, nodeColor);
+    }
+
+    // Draw preview node if in add mode
+    if (m_addNodeMode && m_showPreviewNode) {
+      glm::vec4 previewRect(
+        m_previewNodePosition.x - 10.0f,
+        m_previewNodePosition.y - 10.0f,
+        20.0f,
+        20.0f
+      );
+      JAGEngine::ColorRGBA8 previewColor(255, 255, 0, 200);
+      m_spriteBatch.draw(previewRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, previewColor);
+    }
+
+    m_spriteBatch.end();
+    m_spriteBatch.renderBatch();
+
+    m_program.unuse();
   }
 
-  // Draw preview node if in add mode
-  if (m_addNodeMode && m_showPreviewNode) {
-    glm::vec4 previewRect(
-      m_previewNodePosition.x - 10.0f,
-      m_previewNodePosition.y - 10.0f,
-      20.0f,
-      20.0f
-    );
-    JAGEngine::ColorRGBA8 previewColor(255, 255, 0, 200); // Yellow, semi-transparent
-    m_spriteBatch.draw(previewRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, previewColor);
+  // Draw wireframe mode
+  if (m_roadViewMode == RoadViewMode::Wireframe) {
+    m_roadShader.use();
+    GLint roadPUniform = m_roadShader.getUniformLocation("P");
+    glUniformMatrix4fv(roadPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
+
+    if (m_roadMesh.vao != 0 && !m_roadMesh.indices.empty()) {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      glBindVertexArray(m_roadMesh.vao);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_roadMesh.ibo);
+      glDrawElements(GL_TRIANGLES,
+        static_cast<GLsizei>(m_roadMesh.indices.size()),
+        GL_UNSIGNED_INT,
+        nullptr);
+      glBindVertexArray(0);
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    m_roadShader.unuse();
   }
 
-  m_spriteBatch.end();
-  m_spriteBatch.renderBatch();
-
-  m_program.unuse();
-
-  // Draw ImGui windows once at the end
+  // Draw ImGui windows last
   drawImGui();
   drawDebugWindow();
 }
+
 // Update drawRoadEdges() to use SplinePointInfo correctly
 void LevelEditorScreen::drawRoadEdges() {
   const auto& nodes = m_track->getNodes();
@@ -247,12 +281,46 @@ void LevelEditorScreen::drawDebugWindow() {
 
   ImGui::Text("Nodes: %zu", m_track->getNodes().size());
 
+  // View Options
+  if (ImGui::CollapsingHeader("View Options", ImGuiTreeNodeFlags_DefaultOpen)) {
+    const char* viewModes[] = { "Spline View", "Wireframe", "Shaded Road" };
+    int currentMode = static_cast<int>(m_roadViewMode);
+    if (ImGui::Combo("View Mode", &currentMode, viewModes, IM_ARRAYSIZE(viewModes))) {
+      m_roadViewMode = static_cast<RoadViewMode>(currentMode);
+    }
+
+    ImGui::Checkbox("Show Control Points", &m_showSplinePoints);
+
+    // LOD Controls
+    ImGui::Separator();
+    ImGui::Text("Road Detail Level");
+
+    // LOD slider with real-time preview
+    if (ImGui::SliderInt("Subdivisions##LOD", &m_roadLOD, MIN_LOD, MAX_LOD)) {
+      if (m_autoUpdateMesh) {
+        updateRoadMesh();
+      }
+    }
+
+    ImGui::Checkbox("Auto Update Mesh", &m_autoUpdateMesh);
+    if (!m_autoUpdateMesh && ImGui::Button("Update Mesh", ImVec2(180, 25))) {
+      updateRoadMesh();
+    }
+
+    // Show vertex/triangle count
+    if (m_roadMesh.vertices.size() > 0) {
+      ImGui::Text("Vertices: %zu", m_roadMesh.vertices.size());
+      ImGui::Text("Triangles: %zu", m_roadMesh.indices.size() / 3);
+    }
+  }
+
   // Add node mode toggle
   ImGui::Checkbox("Add Node Mode", &m_addNodeMode);
   if (m_addNodeMode) {
     ImGui::TextWrapped("Click on the track to add a new node");
   }
 
+  // Node Properties
   if (ImGui::CollapsingHeader("Node Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (m_selectedNode) {
       glm::vec2 pos = m_selectedNode->getPosition();
@@ -261,9 +329,9 @@ void LevelEditorScreen::drawDebugWindow() {
       float width = m_selectedNode->getRoadWidth();
       if (ImGui::SliderFloat("Road Width##NodeWidth", &width, 10.0f, 100.0f)) {
         m_selectedNode->setRoadWidth(width);
+        updateRoadMesh();
       }
 
-      // Add delete node button
       if (ImGui::Button("Delete Node", ImVec2(180, 30))) {
         deleteSelectedNode();
       }
@@ -398,6 +466,7 @@ void LevelEditorScreen::handleInput() {
 
         if (m_isDragging && m_selectedNode) {
           m_selectedNode->setPosition(worldPos);
+          updateRoadMesh();
         }
       }
       else {
@@ -419,12 +488,51 @@ void LevelEditorScreen::exitGame() {
   }
 }
 
+void LevelEditorScreen::updateRoadMesh() {
+  std::cout << "Updating road mesh with LOD " << m_roadLOD << "...\n";
+
+  // Clean up old mesh if it exists
+  m_roadMesh.cleanup();
+
+  // Generate new mesh with current LOD
+  m_roadMesh = RoadMeshGenerator::generateRoadMesh(*m_track, m_roadLOD);
+
+  // Verify the new mesh
+  if (m_roadMesh.vao == 0 || m_roadMesh.indices.empty()) {
+    std::cout << "Failed to generate valid road mesh!\n";
+  }
+  else {
+    std::cout << "Successfully generated road mesh with "
+      << m_roadMesh.vertices.size() << " vertices and "
+      << m_roadMesh.indices.size() / 3 << " triangles\n";
+  }
+}
+
 void LevelEditorScreen::initDefaultTrack() {
   std::cout << "Creating new track...\n";
   if (m_track) {
     m_track = std::make_unique<SplineTrack>();
     m_track->createDefaultTrack();
     std::cout << "Track created with " << m_track->getNodes().size() << " nodes\n";
+  }
+}
+
+void LevelEditorScreen::drawMeshDebug() {
+  if (m_roadViewMode == RoadViewMode::Wireframe) {
+    // Draw vertices as small points
+    glPointSize(4.0f);
+    glBegin(GL_POINTS);
+    for (const auto& vertex : m_roadMesh.vertices) {
+      if (vertex.uv.x == 0.5f) {
+        glColor3f(1.0f, 1.0f, 0.0f); // Yellow for center points
+      }
+      else {
+        glColor3f(1.0f, 0.0f, 0.0f); // Red for edge points
+      }
+      glVertex2f(vertex.position.x, vertex.position.y);
+    }
+    glEnd();
+    glPointSize(1.0f);
   }
 }
 
@@ -502,6 +610,9 @@ void LevelEditorScreen::addNodeAtPosition(const glm::vec2& position) {
 
   // Insert the new node
   nodes.insert(nodes.begin() + insertIndex, newNode);
+
+  updateRoadMesh();
+
   std::cout << "Added node. New node count: " << nodes.size() << std::endl;
 }
 
@@ -529,9 +640,12 @@ void LevelEditorScreen::deleteSelectedNode() {
     nodes.erase(it);
     m_selectedNode = nullptr;
     m_isDragging = false;
+    updateRoadMesh();
     std::cout << "Node deleted. New node count: " << nodes.size() << std::endl;
   }
   else {
     std::cout << "Selected node not found in track nodes" << std::endl;
   }
+
+
 }
