@@ -18,6 +18,7 @@ void Block::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& d
     m_color = color;
     m_texture = texture;
     m_textureID = texture.id;
+    m_destRect = glm::vec4(position.x - (0.5 * dimensions.x), position.y - (0.5 * dimensions.y), dimensions.x, dimensions.y);
     b2BodyDef bodyDef = b2DefaultBodyDef();
     bodyDef.position = b2Vec2(position.x, position.y);
     bodyDef.fixedRotation = fixedRotation;

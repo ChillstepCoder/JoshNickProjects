@@ -2,6 +2,23 @@
 #include <box2d/box2d.h>
 #include <Bengine/GLSLProgram.h>
 #include <glm/glm.hpp>
+#include <Bengine/vertex.h>
+#include <vector>
+
+struct DebugVertex {
+    DebugVertex(b2Vec2 pos, GLubyte R, GLubyte G, GLubyte B, GLubyte A) :
+        pos(pos), color(R, G, B, A) {
+    }
+    DebugVertex(b2Vec2 pos, b2Vec2 vert, int vertCount, GLubyte R, GLubyte G, GLubyte B, GLubyte A) :
+        pos(pos), vert(vert), vertCount(vertCount), color(R, G, B, A) {
+    }
+
+
+    b2Vec2 pos;
+    b2Vec2 vert;
+    int vertCount;
+    Bengine::ColorRGBA8 color;
+};
 
 class DebugDraw {
 public:
@@ -22,12 +39,15 @@ private:
     static void drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context);
     static void drawTransform(b2Transform xf, void* context);
     static void drawPoint(b2Vec2 p, float size, b2HexColor color, void* context);
-    static void drawString(b2Vec2 p, const char* s, void* context);
     static void setAttrib();
 
     float m_alpha = 0.1f;
     Bengine::GLSLProgram m_program;
     GLuint m_vboId = 0;
     GLuint m_vaoId = 0;
+    inline static std::vector<DebugVertex> m_lineVertexData;
+    inline static std::vector<DebugVertex> m_lineLoopVertexData;
+    inline static std::vector<DebugVertex> m_triangleFanVertexData;
 };
+
 

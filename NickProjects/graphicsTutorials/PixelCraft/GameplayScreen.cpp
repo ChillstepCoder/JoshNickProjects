@@ -247,10 +247,10 @@ void GameplayScreen::perlinNoise() {
     siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
 
     // Parameters for terrain generation
-    const int NUM_BLOCKS_X = 500;  // Width of the terrain
+    const int NUM_BLOCKS_X = 1500;  // Width of the terrain
     const float BLOCK_WIDTH = 2.5f;
     const float BLOCK_HEIGHT = 2.5f;
-    const float START_X = -750.0f;
+    const float START_X = -2000.0f;
 
     // Parameters for noise
     const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
