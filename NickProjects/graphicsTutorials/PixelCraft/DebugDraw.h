@@ -6,17 +6,15 @@
 #include <vector>
 
 struct DebugVertex {
+
+    DebugVertex(b2Vec2 pos, float R, float G, float B, float A) :
+        pos(pos.x, pos.y), color(GLubyte(R * 255.f), GLubyte(G * 255.f), GLubyte(B * 255.f), GLubyte(A * 255.f)) {
+    }
     DebugVertex(b2Vec2 pos, GLubyte R, GLubyte G, GLubyte B, GLubyte A) :
-        pos(pos), color(R, G, B, A) {
-    }
-    DebugVertex(b2Vec2 pos, b2Vec2 vert, int vertCount, GLubyte R, GLubyte G, GLubyte B, GLubyte A) :
-        pos(pos), vert(vert), vertCount(vertCount), color(R, G, B, A) {
+        pos(pos.x, pos.y), color(R, G, B, A) {
     }
 
-
-    b2Vec2 pos;
-    b2Vec2 vert;
-    int vertCount;
+    glm::vec2 pos;
     Bengine::ColorRGBA8 color;
 };
 
@@ -38,6 +36,7 @@ private:
     static void drawCapsule(b2Vec2 p1, b2Vec2 p2, float radius, b2HexColor color, void* context);
     static void drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context);
     static void drawTransform(b2Transform xf, void* context);
+    static void drawString(b2Vec2 p, const char* s, void* context);
     static void drawPoint(b2Vec2 p, float size, b2HexColor color, void* context);
     static void setAttrib();
 

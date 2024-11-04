@@ -46,6 +46,7 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
     debugDraw.DrawSolidPolygon = drawSolidPolygon;
     debugDraw.DrawTransform = drawTransform;
     debugDraw.DrawPoint = drawPoint;
+    debugDraw.DrawString = drawString;
     debugDraw.DrawSolidCapsule = drawCapsule;
 
 
@@ -58,12 +59,10 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
 
     // Upload to GPU
     glBindVertexArray(m_vaoId);
-
-    // Setup attributes
+    glBindBuffer(GL_ARRAY_BUFFER, m_vboId);
     setAttrib();
 
     // Lines
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboId);
     glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex) * m_lineVertexData.size(), m_lineVertexData.data(), GL_DYNAMIC_DRAW);
 
     // Draw lines
@@ -81,7 +80,7 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
 
     m_lineLoopVertexData.clear();
 
-    // Triangle Fans
+    // TODO: Triangles
     //glBindVertexArray(m_vaoId);
     //glBindBuffer(GL_ARRAY_BUFFER, m_vboId);
     //glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex) * m_triangleFanVertexData.size(), m_triangleFanVertexData.data(), GL_DYNAMIC_DRAW);
@@ -162,7 +161,6 @@ void DebugDraw::drawCircle(b2Vec2 center, float radius, b2HexColor color, void* 
 }
 
 void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, void* context) {
-    return; // remove later when ready to work on triangles
     DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
 
     float r = ((color >> 16) & 0xFF) / 255.0f;
@@ -236,8 +234,11 @@ void DebugDraw::drawTransform(b2Transform xf, void* context) {
     drawSegment(p1, p2, (b2HexColor)(0, 255, 0), context);
 }
 
+void DebugDraw::drawString(b2Vec2 p, const char* s, void* context) {
+    // TODO: Implement line rendering
+}
+
 void DebugDraw::drawPoint(b2Vec2 p, float size, b2HexColor color, void* context) {
-    return; // remove later when ready to work on triangles
     DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
 
     float r = ((color >> 16) & 0xFF) / 255.0f;
