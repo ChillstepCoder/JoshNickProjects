@@ -64,7 +64,7 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
 
     // Lines
     glBindBuffer(GL_ARRAY_BUFFER, m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex), m_lineVertexData.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex) * m_lineVertexData.size(), m_lineVertexData.data(), GL_DYNAMIC_DRAW);
 
     // Draw lines
     glDrawArrays(GL_LINES, 0, m_lineVertexData.size() / 2);
@@ -74,7 +74,7 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
     // Line loops
     glBindVertexArray(m_vaoId);
     glBindBuffer(GL_ARRAY_BUFFER, m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex), m_lineLoopVertexData.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex) * m_lineLoopVertexData.size(), m_lineLoopVertexData.data(), GL_DYNAMIC_DRAW);
 
     // Draw Line loops
     glDrawArrays(GL_LINE_LOOP, 0, m_lineLoopVertexData.size() / 2);
@@ -82,18 +82,14 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
     m_lineLoopVertexData.clear();
 
     // Triangle Fans
-    glBindVertexArray(m_vaoId);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex), m_triangleFanVertexData.data(), GL_DYNAMIC_DRAW);
+    //glBindVertexArray(m_vaoId);
+    //glBindBuffer(GL_ARRAY_BUFFER, m_vboId);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex) * m_triangleFanVertexData.size(), m_triangleFanVertexData.data(), GL_DYNAMIC_DRAW);
 
     // Draw Triangle Fans
-    glDrawArrays(GL_TRIANGLE_FAN, 0, m_triangleFanVertexData.size() / 2);
+    //glDrawArrays(GL_TRIANGLE_FAN, 0, m_triangleFanVertexData.size() / 2);
 
-    m_triangleFanVertexData.clear();
-
-
-
-
+    //m_triangleFanVertexData.clear();
     m_program.unuse();
 }
 
@@ -166,6 +162,7 @@ void DebugDraw::drawCircle(b2Vec2 center, float radius, b2HexColor color, void* 
 }
 
 void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, void* context) {
+    return; // remove later when ready to work on triangles
     DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
 
     float r = ((color >> 16) & 0xFF) / 255.0f;
@@ -240,6 +237,7 @@ void DebugDraw::drawTransform(b2Transform xf, void* context) {
 }
 
 void DebugDraw::drawPoint(b2Vec2 p, float size, b2HexColor color, void* context) {
+    return; // remove later when ready to work on triangles
     DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
 
     float r = ((color >> 16) & 0xFF) / 255.0f;
