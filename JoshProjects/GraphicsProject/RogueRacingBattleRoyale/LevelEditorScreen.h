@@ -39,6 +39,7 @@ private:
 
   glm::vec2 screenToWorld(const glm::vec2& screenCoords);
   void initShaders();
+  void initBackgroundQuad();
   void drawImGui();
   void checkImGuiState();
   void drawDebugWindow();
@@ -86,8 +87,20 @@ private:
 
   using IGameScreen::m_game;
 
+  // Shading
+
   RoadMeshGenerator::MeshData m_roadMesh;
   JAGEngine::GLSLProgram m_roadShader;
+
+  RoadMeshGenerator::OffroadMeshData m_offroadMesh;
+  JAGEngine::GLSLProgram m_offroadShader;
+
+  JAGEngine::GLSLProgram m_grassShader;
+  RoadMeshGenerator::MeshData m_backgroundQuad;
+  glm::vec3 m_grassColor = glm::vec3(0.2f, 0.5f, 0.1f);
+  glm::vec3 m_offroadColor = glm::vec3(0.45f, 0.32f, 0.15f);
+  float m_grassNoiseScale = 100.0f;
+  float m_grassNoiseIntensity = 1.0f;
 
   RoadViewMode m_roadViewMode = RoadViewMode::Shaded;
   bool m_showSplinePoints = true;

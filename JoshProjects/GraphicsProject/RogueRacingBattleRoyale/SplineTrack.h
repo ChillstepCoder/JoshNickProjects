@@ -9,6 +9,7 @@ public:
   struct SplinePointInfo {
     glm::vec2 position;
     float roadWidth;
+    glm::vec2 offroadWidth;  // x = left side, y = right side
   };
 
   SplineTrack();
@@ -29,6 +30,8 @@ public:
 private:
   std::vector<TrackNode> m_nodes;
   glm::vec2 catmullRom(const glm::vec2& p0, const glm::vec2& p1,
+    const glm::vec2& p2, const glm::vec2& p3, float t) const;
+  glm::vec2 catmullRomVec2(const glm::vec2& p0, const glm::vec2& p1,
     const glm::vec2& p2, const glm::vec2& p3, float t) const;
   float catmullRomValue(float p0, float p1, float p2, float p3, float t) const;
 };

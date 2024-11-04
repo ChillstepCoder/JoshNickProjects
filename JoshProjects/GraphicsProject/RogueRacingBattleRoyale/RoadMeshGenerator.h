@@ -25,8 +25,10 @@ struct RoadVertex {
   float depth;         // Depth component for z-ordering
 };
 
+
 class RoadMeshGenerator {
 public:
+
   struct MeshData {
     std::vector<RoadVertex> vertices;
     std::vector<GLuint> indices;
@@ -84,6 +86,11 @@ public:
       }
       return *this;
     }
+  };
+
+  struct OffroadMeshData {
+    RoadMeshGenerator::MeshData leftSide;
+    RoadMeshGenerator::MeshData rightSide;
   };
 
   static void createBuffers(MeshData& mesh) {
@@ -297,4 +304,133 @@ public:
     createBuffers(mesh);
     return mesh;
   }
+
+  static OffroadMeshData generateOffroadMesh(const SplineTrack& track, int baseLOD = 10) {
+    OffroadMeshData mesh;
+    auto splinePoints = track.getSplinePoints(baseLOD);
+
+    if (splinePoints.size() < 2) return mesh;
+
+    std::cout << "Generating offroad mesh with " << splinePoints.size() << " points\n";
+
+    float totalDistance = 0.0f;
+    std::vector<RoadVertex> leftVertices;
+    std::vector<RoadVertex> rightVertices;
+    std::vector<GLuint> leftIndices;
+    std::vector<GLuint> rightIndices;
+
+    // Reserve space
+    leftVertices.reserve((splinePoints.size() + 1) * 2);
+    rightVertices.reserve((splinePoints.size() + 1) * 2);
+    leftIndices.reserve(splinePoints.size() * 6);
+    rightIndices.reserve(splinePoints.size() * 6);
+
+    for (size_t i = 0; i < splinePoints.size(); ++i) {
+      const auto& current = splinePoints[i];
+      const auto& next = splinePoints[(i + 1) % splinePoints.size()];
+      const auto& prev = splinePoints[(i > 0) ? i - 1 : splinePoints.size() - 1];
+
+      // Calculate smooth perpendicular
+      glm::vec2 perp = calculateSmoothPerpendicular(prev.position, current.position, next.position);
+
+      // Left side offroad
+      {
+        RoadVertex roadEdge, offroadEdge;
+
+        // Road edge
+        roadEdge.position = current.position + perp * current.roadWidth;
+        roadEdge.uv = glm::vec2(1.0f, totalDistance * 0.01f);
+        roadEdge.distanceAlong = totalDistance;
+        roadEdge.depth = 0.1f * static_cast<float>(i) / splinePoints.size();
+
+        // Offroad edge
+        offroadEdge.position = current.position + perp * (current.roadWidth + current.offroadWidth.x);
+        offroadEdge.uv = glm::vec2(0.0f, totalDistance * 0.01f);
+        offroadEdge.distanceAlong = totalDistance;
+        offroadEdge.depth = roadEdge.depth;
+
+        leftVertices.push_back(roadEdge);
+        leftVertices.push_back(offroadEdge);
+      }
+
+      // Right side offroad
+      {
+        RoadVertex roadEdge, offroadEdge;
+
+        // Road edge
+        roadEdge.position = current.position - perp * current.roadWidth;
+        roadEdge.uv = glm::vec2(0.0f, totalDistance * 0.01f);
+        roadEdge.distanceAlong = totalDistance;
+        roadEdge.depth = 0.1f * static_cast<float>(i) / splinePoints.size();
+
+        // Offroad edge
+        offroadEdge.position = current.position - perp * (current.roadWidth + current.offroadWidth.y);
+        offroadEdge.uv = glm::vec2(1.0f, totalDistance * 0.01f);
+        offroadEdge.distanceAlong = totalDistance;
+        offroadEdge.depth = roadEdge.depth;
+
+        rightVertices.push_back(roadEdge);
+        rightVertices.push_back(offroadEdge);
+      }
+
+      if (i < splinePoints.size() - 1) {
+        GLuint baseIndex = static_cast<GLuint>(i * 2);
+        GLuint nextBaseIndex = baseIndex + 2;
+
+        // Left side indices
+        leftIndices.push_back(baseIndex);
+        leftIndices.push_back(baseIndex + 1);
+        leftIndices.push_back(nextBaseIndex);
+
+        leftIndices.push_back(nextBaseIndex);
+        leftIndices.push_back(baseIndex + 1);
+        leftIndices.push_back(nextBaseIndex + 1);
+
+        // Right side indices
+        rightIndices.push_back(baseIndex);
+        rightIndices.push_back(baseIndex + 1);
+        rightIndices.push_back(nextBaseIndex);
+
+        rightIndices.push_back(nextBaseIndex);
+        rightIndices.push_back(baseIndex + 1);
+        rightIndices.push_back(nextBaseIndex + 1);
+      }
+
+      totalDistance += glm::length(next.position - current.position);
+    }
+
+    // Connect last to first
+    if (leftVertices.size() >= 4) {
+      GLuint lastIndex = static_cast<GLuint>(leftVertices.size() - 2);
+
+      // Left side
+      leftIndices.push_back(lastIndex);
+      leftIndices.push_back(lastIndex + 1);
+      leftIndices.push_back(0);
+
+      leftIndices.push_back(0);
+      leftIndices.push_back(lastIndex + 1);
+      leftIndices.push_back(1);
+
+      // Right side
+      rightIndices.push_back(lastIndex);
+      rightIndices.push_back(lastIndex + 1);
+      rightIndices.push_back(0);
+
+      rightIndices.push_back(0);
+      rightIndices.push_back(lastIndex + 1);
+      rightIndices.push_back(1);
+    }
+
+    mesh.leftSide.vertices = std::move(leftVertices);
+    mesh.leftSide.indices = std::move(leftIndices);
+    mesh.rightSide.vertices = std::move(rightVertices);
+    mesh.rightSide.indices = std::move(rightIndices);
+
+    createBuffers(mesh.leftSide);
+    createBuffers(mesh.rightSide);
+
+    return mesh;
+  }
+
 };
