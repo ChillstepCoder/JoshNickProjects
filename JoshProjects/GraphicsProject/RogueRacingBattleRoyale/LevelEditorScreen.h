@@ -5,6 +5,7 @@
 #include <JAGEngine/SpriteBatch.h>
 #include <JAGEngine/GLSLProgram.h>
 #include <JAGEngine/Camera2D.h>
+#include "RoadMeshGenerator.h"
 #include <glm/glm.hpp>
 #include <vector>
 #include <ImGui/imgui.h>
@@ -13,8 +14,15 @@
 class SplineTrack;
 class TrackNode;
 
+
 class LevelEditorScreen : public JAGEngine::IGameScreen {
 public:
+  enum class RoadViewMode {
+    Spline,      // Shows spline points and control nodes
+    Wireframe,   // Shows triangle mesh wireframe
+    Shaded       // Shows fully shaded road
+  };
+
   LevelEditorScreen();
   ~LevelEditorScreen();
 
@@ -34,9 +42,11 @@ private:
   void drawImGui();
   void checkImGuiState();
   void drawDebugWindow();
+  void drawMeshDebug();
   void exitGame();
   void handleInput();
   void drawRoadEdges();
+  void updateRoadMesh();
   void initDefaultTrack();
 
   glm::vec2 findClosestSplinePoint(const glm::vec2& mousePos);
@@ -74,5 +84,17 @@ private:
   float m_minZoom = 0.1f;
   float m_maxZoom = 5.0f;
 
-  using IGameScreen::m_game;  // Make m_game accessible
+  using IGameScreen::m_game;
+
+  RoadMeshGenerator::MeshData m_roadMesh;
+  JAGEngine::GLSLProgram m_roadShader;
+
+  RoadViewMode m_roadViewMode = RoadViewMode::Shaded;
+  bool m_showSplinePoints = true;
+
+  int m_roadLOD = 10;            // Default subdivisions
+  const int MIN_LOD = 4;         // Minimum subdivisions
+  const int MAX_LOD = 50;        // Maximum subdivisions
+  bool m_autoUpdateMesh = true;  // Auto update when LOD changes
+
 };

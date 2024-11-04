@@ -1,4 +1,4 @@
-// Main.cpp
+// Main.cpp - Racing Game
 
 #include <JAGEngine/IMainGame.h>
 
