@@ -4,6 +4,9 @@
 #include <glm/glm.hpp>
 #include <Bengine/vertex.h>
 #include <vector>
+#include "BlockMeshManager.h"
+
+class BlockManager;
 
 struct DebugVertex {
 
@@ -42,11 +45,15 @@ private:
 
     float m_alpha = 0.1f;
     Bengine::GLSLProgram m_program;
-    GLuint m_vboId = 0;
-    GLuint m_vaoId = 0;
+    GLuint m_linesvboId = 0;
+    GLuint m_linesvaoId = 0;
+    GLuint m_trianglesvboId = 0;
+    GLuint m_trianglesvaoId = 0;
+
     inline static std::vector<DebugVertex> m_lineVertexData;
-    inline static std::vector<DebugVertex> m_lineLoopVertexData;
-    inline static std::vector<DebugVertex> m_triangleFanVertexData;
+    inline static std::vector<DebugVertex> m_triangleVertexData;
+
+    bool m_vertexDataChanged = true;
 };
 
 
