@@ -9,7 +9,8 @@ public:
   struct SplinePointInfo {
     glm::vec2 position;
     float roadWidth;
-    glm::vec2 offroadWidth;  // x = left side, y = right side
+    glm::vec2 offroadWidth;
+    glm::vec2 barrierDistance;
   };
 
   SplineTrack();

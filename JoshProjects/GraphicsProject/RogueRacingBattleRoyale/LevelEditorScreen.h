@@ -5,6 +5,7 @@
 #include <JAGEngine/SpriteBatch.h>
 #include <JAGEngine/GLSLProgram.h>
 #include <JAGEngine/Camera2D.h>
+#include "ObjectManager.h"
 #include "RoadMeshGenerator.h"
 #include <glm/glm.hpp>
 #include <vector>
@@ -41,11 +42,13 @@ private:
   void initShaders();
   void initBackgroundQuad();
   void drawImGui();
+  void drawObject(const PlaceableObject& obj, const JAGEngine::ColorRGBA8& color);
   void checkImGuiState();
   void drawDebugWindow();
   void drawMeshDebug();
   void exitGame();
   void handleInput();
+  void handleObjectPlacement(const glm::vec2& worldPos);
   void drawRoadEdges();
   void updateRoadMesh();
   void initDefaultTrack();
@@ -102,6 +105,12 @@ private:
   float m_grassNoiseScale = 100.0f;
   float m_grassNoiseIntensity = 1.0f;
 
+  JAGEngine::GLSLProgram m_barrierShader;
+  RoadMeshGenerator::BarrierMeshData m_barrierMesh;
+  glm::vec3 m_barrierPrimaryColor = glm::vec3(1.0f, 1.0f, 1.0f);
+  glm::vec3 m_barrierSecondaryColor = glm::vec3(0.0f, 0.0f, 0.0f);
+  float m_barrierPatternScale = 5.0f;
+
   RoadViewMode m_roadViewMode = RoadViewMode::Shaded;
   bool m_showSplinePoints = true;
 
@@ -109,5 +118,12 @@ private:
   const int MIN_LOD = 4;         // Minimum subdivisions
   const int MAX_LOD = 50;        // Maximum subdivisions
   bool m_autoUpdateMesh = true;  // Auto update when LOD changes
+
+  std::unique_ptr<ObjectManager> m_objectManager;
+  int m_selectedTemplateIndex = -1;
+  bool m_objectPlacementMode = false;
+  PlaceableObject* m_selectedObject = nullptr;
+  bool m_isDraggingObject = false;
+  glm::vec2 m_lastDragPos;
 
 };

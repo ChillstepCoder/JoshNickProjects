@@ -163,7 +163,9 @@
     <ClInclude Include="imgui_impls.h" />
     <ClInclude Include="InputState.h" />
     <ClInclude Include="LevelEditorScreen.h" />
+    <ClInclude Include="ObjectManager.h" />
     <ClInclude Include="PhysicsSystem.h" />
+    <ClInclude Include="PlaceableObject.h" />
     <ClInclude Include="RoadMeshGenerator.h" />
     <ClInclude Include="ScreenState.h" />
     <ClInclude Include="SplineTrack.h" />

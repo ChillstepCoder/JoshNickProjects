@@ -8,13 +8,25 @@ SplineTrack::SplineTrack() {
 
 void SplineTrack::createDefaultTrack() {
   m_nodes.clear();
-  // Create a circular track with 4 nodes
   float radius = 100.0f;
-  // Create nodes with explicit positions and default road width
-  m_nodes.emplace_back(glm::vec2(radius, 0.0f));
-  m_nodes.emplace_back(glm::vec2(0.0f, radius));
-  m_nodes.emplace_back(glm::vec2(-radius, 0.0f));
-  m_nodes.emplace_back(glm::vec2(0.0f, -radius));
+
+  // Create nodes with explicit positions and default properties
+  TrackNode node1(glm::vec2(radius, 0.0f));
+  TrackNode node2(glm::vec2(0.0f, radius));
+  TrackNode node3(glm::vec2(-radius, 0.0f));
+  TrackNode node4(glm::vec2(0.0f, -radius));
+
+  // Set default barrier distances
+  glm::vec2 defaultBarrierDist(10.0f, 10.0f); // Increased from 0.0f
+  node1.setBarrierDistance(defaultBarrierDist);
+  node2.setBarrierDistance(defaultBarrierDist);
+  node3.setBarrierDistance(defaultBarrierDist);
+  node4.setBarrierDistance(defaultBarrierDist);
+
+  m_nodes.push_back(node1);
+  m_nodes.push_back(node2);
+  m_nodes.push_back(node3);
+  m_nodes.push_back(node4);
 }
 
 void SplineTrack::addNode(const glm::vec2& position) {
@@ -62,10 +74,17 @@ std::vector<SplineTrack::SplinePointInfo> SplineTrack::getSplinePoints(int subdi
       const glm::vec2& o3 = m_nodes[(i + 2) % m_nodes.size()].getOffroadWidth();
       const glm::vec2& o0 = m_nodes[(i > 0 ? i - 1 : m_nodes.size() - 1)].getOffroadWidth();
 
+      // Add barrier distance interpolation
+      const glm::vec2& b1 = m_nodes[i].getBarrierDistance();
+      const glm::vec2& b2 = m_nodes[(i + 1) % m_nodes.size()].getBarrierDistance();
+      const glm::vec2& b3 = m_nodes[(i + 2) % m_nodes.size()].getBarrierDistance();
+      const glm::vec2& b0 = m_nodes[(i > 0 ? i - 1 : m_nodes.size() - 1)].getBarrierDistance();
+
       SplinePointInfo pointInfo;
       pointInfo.position = catmullRom(p0, p1, p2, p3, t);
       pointInfo.roadWidth = catmullRomValue(w0, w1, w2, w3, t);
       pointInfo.offroadWidth = catmullRomVec2(o0, o1, o2, o3, t);
+      pointInfo.barrierDistance = catmullRomVec2(b0, b1, b2, b3, t);  // Add this line
 
       points.push_back(pointInfo);
     }

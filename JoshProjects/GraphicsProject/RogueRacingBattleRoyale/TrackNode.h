@@ -8,10 +8,12 @@
 class TrackNode {
 public:
   TrackNode(const glm::vec2& position, float roadWidth = 30.0f,
-    const glm::vec2& offroadWidth = glm::vec2(20.0f, 20.0f))
+    const glm::vec2& offroadWidth = glm::vec2(20.0f, 20.0f),
+    const glm::vec2& barrierDistance = glm::vec2(0.0f, 0.0f))
     : m_position(position)
     , m_roadWidth(roadWidth)
-    , m_offroadWidth(offroadWidth) {}
+    , m_offroadWidth(offroadWidth)
+    , m_barrierDistance(barrierDistance) {}
 
   const glm::vec2& getPosition() const { return m_position; }
   void setPosition(const glm::vec2& pos) { m_position = pos; }
@@ -47,10 +49,17 @@ public:
     return { leftEdge, rightEdge };
   }
 
+  const glm::vec2& getBarrierDistance() const { return m_barrierDistance; }
+  void setBarrierDistance(const glm::vec2& distance) {
+    // x = left side, y = right side
+    m_barrierDistance = glm::clamp(distance, glm::vec2(0.0f), glm::vec2(100.0f));
+  }
+
 private:
   glm::vec2 m_position;
   float m_roadWidth;
   glm::vec2 m_offroadWidth;
+  glm::vec2 m_barrierDistance;
 
   bool m_isSelected = false;
   bool m_isHovered = false;

@@ -52,17 +52,42 @@ void LevelEditorScreen::onEntry() {
   m_offroadShader.addAttribute("distanceAlong");
   m_offroadShader.linkShaders();
 
-// Initialize grass shader
+  // Initialize grass shader
   m_grassShader.compileShaders("Shaders/grass.vert", "Shaders/grass.frag");
   m_grassShader.addAttribute("vertexPosition");
   m_grassShader.addAttribute("vertexUV");
   m_grassShader.linkShaders();
+
+  // Initialize barrier shader
+  std::cout << "Compiling barrier shaders...\n";
+  m_barrierShader.compileShaders("Shaders/barrier.vert", "Shaders/barrier.frag");
+  m_barrierShader.addAttribute("vertexPosition");
+  m_barrierShader.addAttribute("vertexUV");
+  m_barrierShader.addAttribute("distanceAlong");
+  m_barrierShader.addAttribute("depth");
+  m_barrierShader.linkShaders();
+
+  // After linking, get and verify all uniforms
+  m_barrierShader.use();
+  GLint pLoc = m_barrierShader.getUniformLocation("P");
+  GLint primaryColorLoc = m_barrierShader.getUniformLocation("primaryColor");
+  GLint secondaryColorLoc = m_barrierShader.getUniformLocation("secondaryColor");
+  GLint patternScaleLoc = m_barrierShader.getUniformLocation("patternScale");
+
+  std::cout << "Barrier shader uniform locations:\n"
+    << "P: " << pLoc << "\n"
+    << "primaryColor: " << primaryColorLoc << "\n"
+    << "secondaryColor: " << secondaryColorLoc << "\n"
+    << "patternScale: " << patternScaleLoc << "\n";
+  m_barrierShader.unuse();
 
   // Initialize background quad
   initBackgroundQuad();
 
   // Initialize meshes
   updateRoadMesh();
+
+  m_objectManager = std::make_unique<ObjectManager>(m_track.get());
 
   std::cout << "LevelEditorScreen::onEntry() complete\n";
 }
@@ -141,22 +166,22 @@ void LevelEditorScreen::draw() {
   m_camera.update();
   glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
 
-  // Draw grass background
-  m_grassShader.use();
-
-  glUniformMatrix4fv(m_grassShader.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
-  glUniform3fv(m_grassShader.getUniformLocation("grassColor"), 1, &m_grassColor[0]);
-  glUniform1f(m_grassShader.getUniformLocation("noiseScale"), m_grassNoiseScale);
-  glUniform1f(m_grassShader.getUniformLocation("noiseIntensity"), m_grassNoiseIntensity);
-
-  glBindVertexArray(m_backgroundQuad.vao);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-  glBindVertexArray(0);
-
-  m_grassShader.unuse();
-
   if (m_roadViewMode == RoadViewMode::Shaded) {
-    // Draw offroad first (it goes under the road)
+    // Draw grass background
+    m_grassShader.use();
+
+    glUniformMatrix4fv(m_grassShader.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
+    glUniform3fv(m_grassShader.getUniformLocation("grassColor"), 1, &m_grassColor[0]);
+    glUniform1f(m_grassShader.getUniformLocation("noiseScale"), m_grassNoiseScale);
+    glUniform1f(m_grassShader.getUniformLocation("noiseIntensity"), m_grassNoiseIntensity);
+
+    glBindVertexArray(m_backgroundQuad.vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
+
+    m_grassShader.unuse();
+
+    // Draw offroad (it goes under the road)
     m_offroadShader.use();
     GLint offroadColorUniform = m_offroadShader.getUniformLocation("offroadColor");
     if (offroadColorUniform != -1) {
@@ -200,6 +225,64 @@ void LevelEditorScreen::draw() {
       glBindVertexArray(0);
     }
     m_roadShader.unuse();
+
+    // In LevelEditorScreen::draw(), in the barrier drawing section:
+
+    m_barrierShader.use();
+
+    // Set camera matrix with validation
+    GLint barrierPUniform = m_barrierShader.getUniformLocation("P");
+    if (barrierPUniform != -1) {
+      glUniformMatrix4fv(barrierPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
+    }
+    else {
+      std::cout << "Warning: P uniform not found in barrier shader\n";
+    }
+
+    // Set uniforms with validation
+    GLint primaryColorUniform = m_barrierShader.getUniformLocation("primaryColor");
+    GLint secondaryColorUniform = m_barrierShader.getUniformLocation("secondaryColor");
+    GLint patternScaleUniform = m_barrierShader.getUniformLocation("patternScale");
+
+    if (primaryColorUniform != -1) {
+      glUniform3fv(primaryColorUniform, 1, &m_barrierPrimaryColor[0]);
+    }
+    else {
+      std::cout << "Warning: primaryColor uniform not found\n";
+    }
+
+    if (secondaryColorUniform != -1) {
+      glUniform3fv(secondaryColorUniform, 1, &m_barrierSecondaryColor[0]);
+    }
+    else {
+      std::cout << "Warning: secondaryColor uniform not found\n";
+    }
+
+    if (patternScaleUniform != -1) {
+      glUniform1f(patternScaleUniform, m_barrierPatternScale);
+    }
+    else {
+      std::cout << "Warning: patternScale uniform not found\n";
+    }
+
+    // Draw left barrier
+    if (m_barrierMesh.leftSide.vao != 0) {
+      glBindVertexArray(m_barrierMesh.leftSide.vao);
+      glDrawElements(GL_TRIANGLES,
+        static_cast<GLsizei>(m_barrierMesh.leftSide.indices.size()),
+        GL_UNSIGNED_INT, nullptr);
+    }
+
+    // Draw right barrier
+    if (m_barrierMesh.rightSide.vao != 0) {
+      glBindVertexArray(m_barrierMesh.rightSide.vao);
+      glDrawElements(GL_TRIANGLES,
+        static_cast<GLsizei>(m_barrierMesh.rightSide.indices.size()),
+        GL_UNSIGNED_INT, nullptr);
+    }
+
+    glBindVertexArray(0);
+    m_barrierShader.unuse();
   }
 
   // Draw spline points and control nodes if enabled
@@ -299,11 +382,97 @@ void LevelEditorScreen::draw() {
     glBindVertexArray(0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     m_offroadShader.unuse();
+
+    m_barrierShader.use();
+    GLint barrierPUniform = m_barrierShader.getUniformLocation("P");
+    glUniformMatrix4fv(barrierPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    // Draw left barrier wireframe
+    if (m_barrierMesh.leftSide.vao != 0) {
+      glBindVertexArray(m_barrierMesh.leftSide.vao);
+      glDrawElements(GL_TRIANGLES,
+        static_cast<GLsizei>(m_barrierMesh.leftSide.indices.size()),
+        GL_UNSIGNED_INT, nullptr);
+    }
+
+    // Draw right barrier wireframe
+    if (m_barrierMesh.rightSide.vao != 0) {
+      glBindVertexArray(m_barrierMesh.rightSide.vao);
+      glDrawElements(GL_TRIANGLES,
+        static_cast<GLsizei>(m_barrierMesh.rightSide.indices.size()),
+        GL_UNSIGNED_INT, nullptr);
+    }
+
+    glBindVertexArray(0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    m_barrierShader.unuse();
   }
+
+  // Draw placed objects
+  m_program.use();
+  m_spriteBatch.begin();
+
+  // Draw all placed objects
+  for (const auto& obj : m_objectManager->getPlacedObjects()) {
+    drawObject(*obj, obj->isSelected() ?
+      JAGEngine::ColorRGBA8(255, 255, 255, 255) :
+      JAGEngine::ColorRGBA8(200, 200, 200, 255));
+  }
+
+  // Draw preview object if in placement mode
+  if (m_objectPlacementMode && m_selectedTemplateIndex >= 0) {
+    const auto& templates = m_objectManager->getObjectTemplates();
+    if (m_selectedTemplateIndex < templates.size()) {
+      glm::vec2 mousePos = m_camera.convertScreenToWorld(
+        m_game->getInputManager().getMouseCoords());
+
+      PlaceableObject previewObj(*templates[m_selectedTemplateIndex]);
+      previewObj.setPosition(mousePos);
+
+      bool validPlacement = m_objectManager->isValidPlacement(&previewObj, mousePos);
+      JAGEngine::ColorRGBA8 previewColor = validPlacement ?
+        JAGEngine::ColorRGBA8(0, 255, 0, 128) :
+        JAGEngine::ColorRGBA8(255, 0, 0, 128);
+
+      drawObject(previewObj, previewColor);
+    }
+  }
+
+  m_spriteBatch.end();
+  m_spriteBatch.renderBatch();
+
+  m_program.unuse();
 
   // Draw ImGui windows last
   drawImGui();
   drawDebugWindow();
+}
+
+void LevelEditorScreen::drawObject(const PlaceableObject& obj, const JAGEngine::ColorRGBA8& color) {
+  const auto& texture = obj.getTexture();
+
+  // Calculate world-space dimensions
+  float baseWidth = texture.width * obj.getScale().x;
+  float baseHeight = texture.height * obj.getScale().y;
+
+  // Create destination rectangle in world space
+  glm::vec4 destRect(
+    obj.getPosition().x - baseWidth * 0.5f,  // Center the object
+    obj.getPosition().y - baseHeight * 0.5f,
+    baseWidth,
+    baseHeight
+  );
+
+  float rotation = obj.getRotation();
+
+  // Draw using world-space coordinates
+  m_spriteBatch.draw(destRect,
+    glm::vec4(0, 0, 1, 1),  // UV coordinates
+    texture.id,
+    rotation,
+    color);
 }
 
 // Update drawRoadEdges() to use SplinePointInfo correctly
@@ -354,6 +523,60 @@ void LevelEditorScreen::drawRoadEdges() {
     // Right offroad edge
     glm::vec4 rightOffroadRect(rightOffroadPoints[i].x - 1.0f, rightOffroadPoints[i].y - 1.0f, 2.0f, 2.0f);
     m_spriteBatch.draw(rightOffroadRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, offroadEdgeColor);
+  }
+  std::vector<glm::vec2> leftBarrierPoints, rightBarrierPoints;
+
+  // Calculate barrier points
+  for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
+    const auto& current = splinePoints[i];
+    const auto& next = splinePoints[i + 1];
+
+    // Calculate direction and perpendicular
+    glm::vec2 direction = next.position - current.position;
+    glm::vec2 perpendicular = glm::normalize(glm::vec2(-direction.y, direction.x));
+
+    // Calculate barrier points
+    glm::vec2 leftEdge = current.position + perpendicular * current.roadWidth;
+    glm::vec2 rightEdge = current.position - perpendicular * current.roadWidth;
+
+    // Add offroad width
+    glm::vec2 leftBarrierStart = leftEdge + perpendicular * current.offroadWidth.x;
+    glm::vec2 rightBarrierStart = rightEdge - perpendicular * current.offroadWidth.y;
+
+    // Add barrier distance
+    glm::vec2 leftBarrierEnd = leftBarrierStart + perpendicular * current.barrierDistance.x;
+    glm::vec2 rightBarrierEnd = rightBarrierStart - perpendicular * current.barrierDistance.y;
+
+    if (current.barrierDistance.x > 0.0f) {
+      leftBarrierPoints.push_back(leftBarrierStart);
+      leftBarrierPoints.push_back(leftBarrierEnd);
+    }
+
+    if (current.barrierDistance.y > 0.0f) {
+      rightBarrierPoints.push_back(rightBarrierStart);
+      rightBarrierPoints.push_back(rightBarrierEnd);
+    }
+  }
+
+  // Draw barrier edges
+  JAGEngine::ColorRGBA8 barrierColor(255, 255, 0, 255); // Yellow for barriers
+
+  // Draw left barrier points
+  for (size_t i = 0; i < leftBarrierPoints.size(); i += 2) {
+    glm::vec4 startRect(leftBarrierPoints[i].x - 1.0f, leftBarrierPoints[i].y - 1.0f, 2.0f, 2.0f);
+    glm::vec4 endRect(leftBarrierPoints[i + 1].x - 1.0f, leftBarrierPoints[i + 1].y - 1.0f, 2.0f, 2.0f);
+
+    m_spriteBatch.draw(startRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, barrierColor);
+    m_spriteBatch.draw(endRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, barrierColor);
+  }
+
+  // Draw right barrier points
+  for (size_t i = 0; i < rightBarrierPoints.size(); i += 2) {
+    glm::vec4 startRect(rightBarrierPoints[i].x - 1.0f, rightBarrierPoints[i].y - 1.0f, 2.0f, 2.0f);
+    glm::vec4 endRect(rightBarrierPoints[i + 1].x - 1.0f, rightBarrierPoints[i + 1].y - 1.0f, 2.0f, 2.0f);
+
+    m_spriteBatch.draw(startRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, barrierColor);
+    m_spriteBatch.draw(endRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, barrierColor);
   }
 }
 
@@ -455,7 +678,83 @@ void LevelEditorScreen::drawDebugWindow() {
     }
   }
 
-  // In LevelEditorScreen::drawDebugWindow(), find the Terrain Colors section
+  // Barrier control
+  if (ImGui::CollapsingHeader("Barrier Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+    bool colorChanged = false;
+
+    // Barrier colors
+    float primaryColor[3] = { m_barrierPrimaryColor.r, m_barrierPrimaryColor.g, m_barrierPrimaryColor.b };
+    if (ImGui::ColorEdit3("Primary Color", primaryColor)) {
+      m_barrierPrimaryColor = glm::vec3(primaryColor[0], primaryColor[1], primaryColor[2]);
+    }
+
+    float secondaryColor[3] = { m_barrierSecondaryColor.r, m_barrierSecondaryColor.g, m_barrierSecondaryColor.b };
+    if (ImGui::ColorEdit3("Secondary Color", secondaryColor)) {
+      m_barrierSecondaryColor = glm::vec3(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    }
+
+    // Pattern scale
+    ImGui::SliderFloat("Pattern Scale", &m_barrierPatternScale, 1.0f, 10.0f);
+
+    // If a node is selected, show barrier distance controls
+    if (m_selectedNode) {
+      glm::vec2 barrierDist = m_selectedNode->getBarrierDistance();
+      if (ImGui::SliderFloat2("Barrier Distance##NodeBarrier", &barrierDist.x, 0.0f, 100.0f)) {
+        m_selectedNode->setBarrierDistance(barrierDist);
+        updateRoadMesh();
+      }
+    }
+  }
+
+  if (ImGui::CollapsingHeader("Object Placement", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::Checkbox("Place Objects", &m_objectPlacementMode);
+
+    const auto& templates = m_objectManager->getObjectTemplates();
+
+    // Create preview label
+    std::string previewValue = (m_selectedTemplateIndex >= 0) ?
+      templates[m_selectedTemplateIndex]->getDisplayName() :
+      "Select Object";
+
+    // Properly formatted BeginCombo with label and preview value
+    if (ImGui::BeginCombo("Object Type", previewValue.c_str())) {
+      for (size_t i = 0; i < templates.size(); i++) {
+        bool isSelected = (m_selectedTemplateIndex == i);
+        if (ImGui::Selectable(templates[i]->getDisplayName().c_str(), isSelected)) {
+          m_selectedTemplateIndex = i;
+        }
+
+        // Set the initial focus when opening the combo
+        if (isSelected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    // Show placement zone info for selected template
+    if (m_selectedTemplateIndex >= 0) {
+      const auto& selectedTemplate = templates[m_selectedTemplateIndex];
+      const char* zoneText = "";
+      switch (selectedTemplate->getZone()) {
+      case PlacementZone::Road:
+        zoneText = "Can only be placed on road";
+        break;
+      case PlacementZone::Offroad:
+        zoneText = "Can only be placed on offroad areas";
+        break;
+      case PlacementZone::Grass:
+        zoneText = "Can only be placed on grass";
+        break;
+      case PlacementZone::Anywhere:
+        zoneText = "Can be placed anywhere";
+        break;
+      }
+      ImGui::TextWrapped("%s", zoneText);
+    }
+  }
+
+  // Terrain Colors section
   if (ImGui::CollapsingHeader("Terrain Colors", ImGuiTreeNodeFlags_DefaultOpen)) {
     bool colorChanged = false;
 
@@ -557,28 +856,39 @@ void LevelEditorScreen::handleInput() {
     glm::vec2 screenCoords = inputManager.getMouseCoords();
     glm::vec2 worldPos = m_camera.convertScreenToWorld(screenCoords);
 
-    // Debug output
-    std::cout << "Screen coords: (" << screenCoords.x << ", " << screenCoords.y << ")\n";
-    std::cout << "World coords: (" << worldPos.x << ", " << worldPos.y << ")\n";
-    std::cout << "Camera pos: (" << m_camera.getPosition().x << ", " << m_camera.getPosition().y
-      << ") Scale: " << m_camera.getScale() << "\n";
+    if (m_objectPlacementMode) {
+      // Handle object placement mode
+      handleObjectPlacement(worldPos);
 
-    if (m_addNodeMode) {
+      // Reset node-related states when in object placement mode
+      m_showPreviewNode = false;
+      m_isDragging = false;
+      if (m_selectedNode) {
+        m_selectedNode->setSelected(false);
+        m_selectedNode = nullptr;
+      }
+    }
+    else if (m_addNodeMode) {
+      // Handle node addition mode
       m_previewNodePosition = findClosestSplinePoint(worldPos);
       m_showPreviewNode = true;
-
-      // Debug preview position
-      std::cout << "Preview pos: (" << m_previewNodePosition.x << ", "
-        << m_previewNodePosition.y << ")\n";
 
       if (inputManager.isKeyDown(SDL_BUTTON_LEFT) && !m_wasMouseDown) {
         addNodeAtPosition(m_previewNodePosition);
       }
+
+      // Reset object-related states when in node addition mode
+      if (m_selectedObject) {
+        m_selectedObject->setSelected(false);
+        m_selectedObject = nullptr;
+      }
+      m_isDraggingObject = false;
     }
     else {
+      // Handle normal node editing mode
       m_showPreviewNode = false;
 
-      // Reset hover states
+      // Reset hover states for nodes
       for (auto& node : m_track->getNodes()) {
         node.setHovered(false);
       }
@@ -590,18 +900,23 @@ void LevelEditorScreen::handleInput() {
       TrackNode* hoveredNode = m_track->getNodeAtPosition(worldPos, scaledRadius);
       if (hoveredNode) {
         hoveredNode->setHovered(true);
-        glm::vec2 nodePos = hoveredNode->getPosition();
-        std::cout << "Hovering node at: (" << nodePos.x << ", " << nodePos.y << ")\n";
       }
 
       if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
         if (!m_isDragging && hoveredNode) {
+          // Select node
           if (m_selectedNode && m_selectedNode != hoveredNode) {
             m_selectedNode->setSelected(false);
           }
           m_selectedNode = hoveredNode;
           m_selectedNode->setSelected(true);
           m_isDragging = true;
+
+          // Reset object selection when dragging nodes
+          if (m_selectedObject) {
+            m_selectedObject->setSelected(false);
+            m_selectedObject = nullptr;
+          }
         }
 
         if (m_isDragging && m_selectedNode) {
@@ -614,10 +929,102 @@ void LevelEditorScreen::handleInput() {
       }
     }
 
+    // Update mouse state
     m_wasMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
   }
 }
 
+void LevelEditorScreen::handleObjectPlacement(const glm::vec2& worldPos) {
+  if (!m_objectManager) return;
+
+  // Don't handle placement if ImGui is using the mouse
+  ImGuiIO& io = ImGui::GetIO();
+  if (io.WantCaptureMouse) return;
+
+  JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
+  JAGEngine::InputManager& inputManager = game->getInputManager();
+
+  if (m_objectPlacementMode && m_selectedTemplateIndex >= 0) {
+    const auto& templates = m_objectManager->getObjectTemplates();
+    if (m_selectedTemplateIndex < templates.size()) {
+      const auto& template_obj = templates[m_selectedTemplateIndex];
+
+      // Debug output for world position
+      std::cout << "Current world position: " << worldPos.x << ", " << worldPos.y << "\n";
+
+      if (inputManager.isKeyDown(SDL_BUTTON_LEFT) && !m_wasMouseDown) {
+        if (m_objectManager->isValidPlacement(template_obj.get(), worldPos)) {
+          m_objectManager->addObject(m_selectedTemplateIndex, worldPos);
+          std::cout << "Object placed at world position: " << worldPos.x << ", " << worldPos.y << "\n";
+        }
+      }
+    }
+  }
+  else {
+    // Handle selection and dragging in world space
+    if (inputManager.isKeyDown(SDL_BUTTON_LEFT) && !m_wasMouseDown) {
+      PlaceableObject* clickedObject = m_objectManager->getObjectAtPosition(worldPos);
+
+      if (clickedObject) {
+        if (m_selectedObject) m_selectedObject->setSelected(false);
+        m_selectedObject = clickedObject;
+        m_selectedObject->setSelected(true);
+        m_isDraggingObject = true;
+        m_lastDragPos = worldPos;
+      }
+      else {
+        if (m_selectedObject) {
+          m_selectedObject->setSelected(false);
+          m_selectedObject = nullptr;
+        }
+      }
+    }
+
+    // Handle dragging in world space
+    if (m_isDraggingObject && m_selectedObject) {
+      if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+        glm::vec2 dragDelta = worldPos - m_lastDragPos;
+        glm::vec2 newPos = m_selectedObject->getPosition() + dragDelta;
+
+        if (m_objectManager->isValidPlacement(m_selectedObject, newPos)) {
+          m_selectedObject->setPosition(newPos);
+        }
+        m_lastDragPos = worldPos;
+      }
+      else {
+        m_isDraggingObject = false;
+      }
+    }
+  }
+
+  // Update mouse state
+  m_wasMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
+
+  // Handle object rotation with R key
+  if (m_selectedObject && inputManager.isKeyDown(SDLK_r)) {
+    float rotation = m_selectedObject->getRotation();
+    rotation += 2.0f;
+    m_selectedObject->setRotation(rotation);
+  }
+
+  // Handle object scaling with + and - keys
+  if (m_selectedObject) {
+    glm::vec2 scale = m_selectedObject->getScale();
+    if (inputManager.isKeyDown(SDLK_EQUALS)) {
+      scale *= 1.02f;
+    }
+    if (inputManager.isKeyDown(SDLK_MINUS)) {
+      scale *= 0.98f;
+    }
+    m_selectedObject->setScale(glm::clamp(scale, glm::vec2(0.1f), glm::vec2(10.0f)));
+  }
+
+  // Handle object deletion with Delete key
+  if (m_selectedObject && inputManager.isKeyDown(SDLK_DELETE)) {
+    m_objectManager->removeSelectedObject();
+    m_selectedObject = nullptr;
+  }
+}
 
 void LevelEditorScreen::exitGame() {
   if (!m_isExiting) {
@@ -631,14 +1038,15 @@ void LevelEditorScreen::exitGame() {
 void LevelEditorScreen::updateRoadMesh() {
   std::cout << "Updating road meshes...\n";
 
-  // Clean up old meshes
   m_roadMesh.cleanup();
   m_offroadMesh.leftSide.cleanup();
   m_offroadMesh.rightSide.cleanup();
+  m_barrierMesh.leftSide.cleanup();
+  m_barrierMesh.rightSide.cleanup();
 
-  // Generate new meshes
   m_roadMesh = RoadMeshGenerator::generateRoadMesh(*m_track, m_roadLOD);
   m_offroadMesh = RoadMeshGenerator::generateOffroadMesh(*m_track, m_roadLOD);
+  m_barrierMesh = RoadMeshGenerator::generateBarrierMesh(*m_track, m_roadLOD);
 }
 
 void LevelEditorScreen::initDefaultTrack() {
@@ -700,7 +1108,9 @@ void LevelEditorScreen::addNodeAtPosition(const glm::vec2& position) {
 
   auto& nodes = m_track->getNodes();
   if (nodes.empty()) {
-    nodes.push_back(TrackNode(position));
+    TrackNode newNode(position);
+    newNode.setBarrierDistance(glm::vec2(10.0f, 10.0f)); // Set default barrier distance
+    nodes.push_back(newNode);
     return;
   }
 
@@ -733,17 +1143,35 @@ void LevelEditorScreen::addNodeAtPosition(const glm::vec2& position) {
     }
   }
 
-  // Create new node
+  // Create new node with interpolated values
   TrackNode newNode(position);
 
-  // Interpolate road width from neighboring nodes
-  float prevWidth = nodes[insertIndex > 0 ? insertIndex - 1 : nodes.size() - 1].getRoadWidth();
-  float nextWidth = nodes[insertIndex].getRoadWidth();
+  // Interpolate properties from neighboring nodes
+  const TrackNode& prevNode = nodes[insertIndex > 0 ? insertIndex - 1 : nodes.size() - 1];
+  const TrackNode& nextNode = nodes[insertIndex];
+
+  // Interpolate road width
+  float prevWidth = prevNode.getRoadWidth();
+  float nextWidth = nextNode.getRoadWidth();
   newNode.setRoadWidth((prevWidth + nextWidth) * 0.5f);
+
+  // Interpolate offroad width
+  glm::vec2 prevOffroadWidth = prevNode.getOffroadWidth();
+  glm::vec2 nextOffroadWidth = nextNode.getOffroadWidth();
+  newNode.setOffroadWidth((prevOffroadWidth + nextOffroadWidth) * 0.5f);
+
+  // Interpolate barrier distance with minimum value
+  glm::vec2 prevBarrierDist = prevNode.getBarrierDistance();
+  glm::vec2 nextBarrierDist = nextNode.getBarrierDistance();
+  glm::vec2 interpolatedBarrierDist = (prevBarrierDist + nextBarrierDist) * 0.5f;
+
+  // Ensure minimum barrier distance
+  interpolatedBarrierDist.x = std::max(interpolatedBarrierDist.x, 10.0f);
+  interpolatedBarrierDist.y = std::max(interpolatedBarrierDist.y, 10.0f);
+  newNode.setBarrierDistance(interpolatedBarrierDist);
 
   // Insert the new node
   nodes.insert(nodes.begin() + insertIndex, newNode);
-
   updateRoadMesh();
 
   std::cout << "Added node. New node count: " << nodes.size() << std::endl;

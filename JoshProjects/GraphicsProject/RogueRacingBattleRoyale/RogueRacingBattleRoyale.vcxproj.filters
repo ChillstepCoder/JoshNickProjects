@@ -92,5 +92,11 @@
     <ClInclude Include="RoadMeshGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PlaceableObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
