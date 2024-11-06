@@ -6,8 +6,10 @@ DebugDraw::DebugDraw() {
 }
 
 DebugDraw::~DebugDraw() {
-    if (m_vboId) glDeleteBuffers(1, &m_vboId);
-    if (m_vaoId) glDeleteVertexArrays(1, &m_vaoId);
+    glDeleteBuffers(1, &m_linesvboId);
+    glDeleteVertexArrays(1, &m_linesvaoId);
+    glDeleteBuffers(1, &m_trianglesvboId);
+    glDeleteVertexArrays(1, &m_trianglesvaoId);
 }
 
 void DebugDraw::init() {
@@ -18,8 +20,11 @@ void DebugDraw::init() {
     m_program.linkShaders();
 
     // Create VAO and VBO
-    glGenVertexArrays(1, &m_vaoId);
-    glGenBuffers(1, &m_vboId);
+    glGenVertexArrays(1, &m_linesvaoId);
+    glGenBuffers(1, &m_linesvboId);
+    glGenVertexArrays(1, &m_trianglesvaoId);
+    glGenBuffers(1, &m_trianglesvboId);
+
 }
 
 void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
@@ -49,9 +54,39 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
     debugDraw.DrawString = drawString;
     debugDraw.DrawSolidCapsule = drawCapsule;
 
+    if (m_vertexDataChanged) {
+        m_lineVertexData.clear();
+        m_triangleVertexData.clear();
+        // Draw the world
+        b2World_Draw(*world, &debugDraw);
 
-    // Draw the world
-    b2World_Draw(*world, &debugDraw);
+        // Upload to GPU
+        glBindVertexArray(m_linesvaoId);
+        glBindBuffer(GL_ARRAY_BUFFER, m_linesvboId);
+        setAttrib();
+
+        // Lines
+        glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex) * m_lineVertexData.size(), m_lineVertexData.data(), GL_DYNAMIC_DRAW);
+
+
+        //Triangles
+        glBindVertexArray(m_trianglesvaoId);
+        glBindBuffer(GL_ARRAY_BUFFER, m_trianglesvboId);
+        setAttrib();
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(DebugVertex) * m_triangleVertexData.size(), m_triangleVertexData.data(), GL_DYNAMIC_DRAW);
+
+        m_vertexDataChanged = false;
+    }
+
+    // Draw lines
+    glBindVertexArray(m_linesvaoId);
+    glBindBuffer(GL_ARRAY_BUFFER, m_linesvboId);
+    glDrawArrays(GL_LINES, 0, m_lineVertexData.size() / 2);
+    // Draw Triangles
+    glBindVertexArray(m_trianglesvaoId);
+    glBindBuffer(GL_ARRAY_BUFFER, m_trianglesvboId);
+    glDrawArrays(GL_TRIANGLES, 0, m_triangleVertexData.size() / 3);
 
     m_program.unuse();
 }
@@ -67,21 +102,8 @@ void DebugDraw::drawSegment(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* contex
     float a = debugDraw->m_alpha;
 
     // Setup vertex data
-    float vertices[] = {
-        p1.x, p1.y, r, g, b, a,
-        p2.x, p2.y, r, g, b, a,
-    };
-
-    // Upload to GPU
-    glBindVertexArray(debugDraw->m_vaoId);
-    glBindBuffer(GL_ARRAY_BUFFER, debugDraw->m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-
-    // Setup attributes
-    setAttrib();
-
-    // Draw
-    glDrawArrays(GL_LINES, 0, 2);
+    m_lineVertexData.push_back(DebugVertex(p1, r, g, b, a));
+    m_lineVertexData.push_back(DebugVertex(p2, r, g, b, a));
 }
 
 void DebugDraw::drawPolygon(const b2Vec2* vertices, int vertexCount, b2HexColor color, void* context) {
@@ -93,29 +115,18 @@ void DebugDraw::drawPolygon(const b2Vec2* vertices, int vertexCount, b2HexColor 
     float b = (color & 0xFF) / 255.0f;
     float a = debugDraw->m_alpha;
 
-    // Create vertex buffer with positions and colors
-    std::vector<float> vertexData;
-    vertexData.reserve(vertexCount * 5); // 2 for position, 3 for color
-
+    // Iterate through the vertices and draw the edges
     for (int i = 0; i < vertexCount; ++i) {
-        vertexData.push_back(vertices[i].x);
-        vertexData.push_back(vertices[i].y);
-        vertexData.push_back(r);
-        vertexData.push_back(g);
-        vertexData.push_back(b);
-        vertexData.push_back(a);
+        b2Vec2 p1 = vertices[i];
+        b2Vec2 p2 = vertices[(i + 1) % vertexCount]; // Loops back to the first vertex
+
+        // drawSegment draws the edge from p1 to p2
+        drawSegment(p1, p2, color, context);
     }
-
-    glBindVertexArray(debugDraw->m_vaoId);
-    glBindBuffer(GL_ARRAY_BUFFER, debugDraw->m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_DYNAMIC_DRAW);
-
-    setAttrib();
-
-    glDrawArrays(GL_LINE_LOOP, 0, vertexCount);
 }
 
 void DebugDraw::drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context) {
+    assert(vertexCount == 4);
     DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
 
     float r = ((color >> 16) & 0xFF) / 255.0f;
@@ -124,26 +135,22 @@ void DebugDraw::drawSolidPolygon(b2Transform xf, const b2Vec2* vertices, int ver
     float a = debugDraw->m_alpha;
 
     // Transform vertices by xf
-    std::vector<float> vertexData;
-    vertexData.reserve(vertexCount * 5);
+    m_triangleVertexData.reserve(vertexCount * 3); // 3 vertices per triangle
 
+    b2Vec2 transformedVertices[4];
     for (int i = 0; i < vertexCount; ++i) {
-        b2Vec2 v = b2TransformPoint(xf, vertices[i]);
-        vertexData.push_back(v.x);
-        vertexData.push_back(v.y);
-        vertexData.push_back(r);
-        vertexData.push_back(g);
-        vertexData.push_back(b);
-        vertexData.push_back(a);
+        transformedVertices[i] = b2TransformPoint(xf, vertices[i]);
     }
 
-    glBindVertexArray(debugDraw->m_vaoId);
-    glBindBuffer(GL_ARRAY_BUFFER, debugDraw->m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_DYNAMIC_DRAW);
+    // Triangle 1: A, B, C
+    m_triangleVertexData.push_back(DebugVertex(transformedVertices[0], r, g, b, a)); // A
+    m_triangleVertexData.push_back(DebugVertex(transformedVertices[1], r, g, b, a)); // B
+    m_triangleVertexData.push_back(DebugVertex(transformedVertices[2], r, g, b, a)); // C
 
-    setAttrib();
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, vertexCount);
+    // Triangle 2: C, D, A
+    m_triangleVertexData.push_back(DebugVertex(transformedVertices[2], r, g, b, a)); // C
+    m_triangleVertexData.push_back(DebugVertex(transformedVertices[3], r, g, b, a)); // D
+    m_triangleVertexData.push_back(DebugVertex(transformedVertices[0], r, g, b, a)); // A
 }
 
 void DebugDraw::drawCircle(b2Vec2 center, float radius, b2HexColor color, void* context) {
@@ -154,29 +161,24 @@ void DebugDraw::drawCircle(b2Vec2 center, float radius, b2HexColor color, void* 
     float b = (color & 0xFF) / 255.0f;
     float a = debugDraw->m_alpha;
 
-    const int segments = 16;
-    std::vector<float> vertexData;
-    vertexData.reserve(segments * 5);
+    const int numSegments = 30;
+    float angleIncrement = 2.0f * b2_pi / numSegments; // Angle between each vertex
 
-    for (int i = 0; i < segments; ++i) {
-        float angle = (float(i) / segments) * 2.0f * b2_pi;
-        float x = center.x + radius * cosf(angle);
-        float y = center.y + radius * sinf(angle);
-        vertexData.push_back(x);
-        vertexData.push_back(y);
-        vertexData.push_back(r);
-        vertexData.push_back(g);
-        vertexData.push_back(b);
-        vertexData.push_back(a);
+    // Iterate through the circle's vertices and draw line segments between them
+    for (int i = 0; i < numSegments; ++i) {
+        // Calculate the angle of the current vertex
+        float angle = i * angleIncrement;
+
+        // Calculate the position of the vertex based on the angle and radius
+        b2Vec2 p1 = center + radius * b2Vec2(cos(angle), sin(angle));
+
+        // Calculate the position of the next vertex (loop back to the first after the last)
+        float nextAngle = (i + 1) * angleIncrement;
+        b2Vec2 p2 = center + radius * b2Vec2(cos(nextAngle), sin(nextAngle));
+
+        // Draw a segment from p1 to p2
+        drawSegment(p1, p2, color, context);
     }
-
-    glBindVertexArray(debugDraw->m_vaoId);
-    glBindBuffer(GL_ARRAY_BUFFER, debugDraw->m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_DYNAMIC_DRAW);
-
-    setAttrib();
-
-    glDrawArrays(GL_LINE_LOOP, 0, segments);
 }
 
 void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, void* context) {
@@ -187,40 +189,31 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
     float b = (color & 0xFF) / 255.0f;
     float a = debugDraw->m_alpha;
 
+    // Transform the center point to world space
     b2Vec2 center = b2TransformPoint(xf, b2Vec2_zero);
 
-    const int segments = 16;
-    std::vector<float> vertexData;
-    vertexData.reserve((segments + 1) * 5); // +1 for center point
+    const int segments = 30;
+    m_triangleVertexData.reserve((segments + 1) * 3); // +1 for center point
 
     // Center point
-    vertexData.push_back(center.x);
-    vertexData.push_back(center.y);
-    vertexData.push_back(r);
-    vertexData.push_back(g);
-    vertexData.push_back(b);
-    vertexData.push_back(a);
+    m_triangleVertexData.push_back(DebugVertex(center, r, g, b, a));
 
-    // Circle points
-    for (int i = 0; i < segments; ++i) {
+    // Calc + store the circle's boundary points
+    b2Vec2 prevPoint = center + radius * b2Vec2(cosf(0.0f), sinf(0.0f)); // starting point on the circle
+    for (int i = 1; i <= segments; ++i) {
+
+        // Calc the angle for current vertex
         float angle = (float(i) / segments) * 2.0f * b2_pi;
-        float x = center.x + radius * cosf(angle);
-        float y = center.y + radius * sinf(angle);
-        vertexData.push_back(x);
-        vertexData.push_back(y);
-        vertexData.push_back(r);
-        vertexData.push_back(g);
-        vertexData.push_back(b);
-        vertexData.push_back(a);
+        b2Vec2 currentPoint = center + radius * b2Vec2(cosf(angle), sinf(angle));
+
+        // Add the triangles for the current segment
+        m_triangleVertexData.push_back(DebugVertex(prevPoint, r, g, b, a));
+        m_triangleVertexData.push_back(DebugVertex(currentPoint, r, g, b, a));
+        m_triangleVertexData.push_back(DebugVertex(center, r, g, b, a));
+
+        // Move to next point
+        prevPoint = currentPoint;
     }
-
-    glBindVertexArray(debugDraw->m_vaoId);
-    glBindBuffer(GL_ARRAY_BUFFER, debugDraw->m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), vertexData.data(), GL_DYNAMIC_DRAW);
-
-    setAttrib();
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 1);
 }
 
 void DebugDraw::drawCapsule(b2Vec2 p1, b2Vec2 p2, float radius, b2HexColor color, void* context) {
@@ -271,6 +264,10 @@ void DebugDraw::drawTransform(b2Transform xf, void* context) {
     drawSegment(p1, p2, (b2HexColor)(0, 255, 0), context);
 }
 
+void DebugDraw::drawString(b2Vec2 p, const char* s, void* context) {
+    // TODO: Implement line rendering
+}
+
 void DebugDraw::drawPoint(b2Vec2 p, float size, b2HexColor color, void* context) {
     DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
 
@@ -281,34 +278,27 @@ void DebugDraw::drawPoint(b2Vec2 p, float size, b2HexColor color, void* context)
 
     float halfSize = size * 0.5f;
 
-    // Create a small square
-    float vertices[] = {
-        p.x - halfSize, p.y - halfSize, r, g, b, a,
-        p.x + halfSize, p.y - halfSize, r, g, b, a,
-        p.x + halfSize, p.y + halfSize, r, g, b, a,
-        p.x - halfSize, p.y + halfSize, r, g, b, a,
-    };
+    // Define the four vertices of the square (forming two triangles)
+    b2Vec2 topLeft = b2Vec2(p.x - halfSize, p.y - halfSize);
+    b2Vec2 topRight = b2Vec2(p.x + halfSize, p.y - halfSize);
+    b2Vec2 bottomRight = b2Vec2(p.x + halfSize, p.y + halfSize);
+    b2Vec2 bottomLeft = b2Vec2(p.x - halfSize, p.y + halfSize);
 
-    glBindVertexArray(debugDraw->m_vaoId);
-    glBindBuffer(GL_ARRAY_BUFFER, debugDraw->m_vboId);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    // Add the first triangle (top-left, top-right, bottom-right)
+    m_triangleVertexData.push_back(DebugVertex(topLeft, r, g, b, a));
+    m_triangleVertexData.push_back(DebugVertex(topRight, r, g, b, a));
+    m_triangleVertexData.push_back(DebugVertex(bottomRight, r, g, b, a));
 
-    setAttrib();
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    // Add the second triangle (top-left, bottom-right, bottom-left)
+    m_triangleVertexData.push_back(DebugVertex(topLeft, r, g, b, a));
+    m_triangleVertexData.push_back(DebugVertex(bottomRight, r, g, b, a));
+    m_triangleVertexData.push_back(DebugVertex(bottomLeft, r, g, b, a));
 }
-
-void DebugDraw::drawString(b2Vec2 p, const char* s, void* context) {
-    // Note: This is left empty as text rendering requires additional setup
-    // If you want to implement text rendering, you'll need to add a text rendering system
-    // This could use FreeType, SDL_ttf, or another text rendering library
-}
-
 
 void DebugDraw::setAttrib() {
     // Setup attributes
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (void*)offsetof(DebugVertex, pos));
+    glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(DebugVertex), (void*)offsetof(DebugVertex, color));
 }
