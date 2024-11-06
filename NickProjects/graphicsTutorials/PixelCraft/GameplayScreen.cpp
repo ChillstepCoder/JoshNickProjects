@@ -242,6 +242,16 @@ void GameplayScreen::updateGravity() {
     b2World_SetGravity(m_world, newGravity);
 }
 
+
+glm::vec2 GameplayScreen::screenToWorldCoords(int screenX, int screenY) {
+    // Convert screen coordinates to world coordinates using the camera matrix
+    glm::vec4 screenPos(screenX, screenY, 0.0f, 1.0f);
+    glm::vec4 worldPos = glm::inverse(m_camera.getCameraMatrix()) * screenPos;
+    return glm::vec2(worldPos.x, worldPos.y);
+}
+
+
+
 void GameplayScreen::perlinNoise() {
     // Create Perlin noise instance with random seed
     siv::PerlinNoise perlin(12345); // Can change this seed for different terrain

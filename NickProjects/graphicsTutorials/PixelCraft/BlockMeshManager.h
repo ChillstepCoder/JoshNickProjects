@@ -43,6 +43,30 @@ public:
         return m_blocks;
     }
 
+    void breakBlockAtPosition(const glm::vec2& position) {
+        // Iterate through blocks and find the one that contains the given position
+        auto it = std::find_if(m_blocks.begin(), m_blocks.end(), [&](const Block& block) {
+            return isPositionInBlock(position, block);
+            });
+
+        if (it != m_blocks.end()) {
+            // Remove the block from the world
+            b2DestroyBody(it->getID());
+            m_blocks.erase(it);
+
+            // Rebuild the mesh
+            rebuildMesh();
+        }
+    }
+
+    bool isPositionInBlock(const glm::vec2& position, const Block& block) {
+        // Check if the position is within the block's bounding box
+        glm::vec2 blockPos = block.getDestRect();
+        glm::vec2 blockSize = block.getDimensions();
+        return (position.x >= blockPos.x - blockSize.x / 2 && position.x <= blockPos.x + blockSize.x / 2 &&
+            position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
+    }
+
 private:
     BlockMeshManager& m_MeshManager;
     std::vector<Block> m_blocks;

@@ -195,9 +195,6 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
     const int segments = 30;
     m_triangleVertexData.reserve((segments + 1) * 3); // +1 for center point
 
-    // Center point
-    m_triangleVertexData.push_back(DebugVertex(center, r, g, b, a));
-
     // Calc + store the circle's boundary points
     b2Vec2 prevPoint = center + radius * b2Vec2(cosf(0.0f), sinf(0.0f)); // starting point on the circle
     for (int i = 1; i <= segments; ++i) {
@@ -217,7 +214,7 @@ void DebugDraw::drawSolidCircle(b2Transform xf, float radius, b2HexColor color, 
 }
 
 void DebugDraw::drawCapsule(b2Vec2 p1, b2Vec2 p2, float radius, b2HexColor color, void* context) {
-
+    return;
     // Draw the end circles
     b2Transform circle1Transform = { p1 };
     b2Transform circle2Transform = { p2 };

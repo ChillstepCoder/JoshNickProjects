@@ -102,4 +102,16 @@ void Player::update(Bengine::InputManager& inputManager, const std::vector<Block
     if (m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) {
         b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, m_jumpForce), b2Body_GetPosition(getID()), true);
     }
+
+    // Handle block breaking
+    if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+        // Get the player's mouse position
+        glm::vec2 mouseCoords = inputManager.getMouseCoords();
+
+        // Convert mouse position to world coordinates
+        glm::vec2 mouseWorldPos = m_gameplayScreen->screenToWorldCoords(mouseCoords.x, mouseCoords.y);
+
+        // Check if the mouse position is over a block and break it
+        m_blockManager->breakBlockAtPosition(mouseWorldPos);
+    }
 }

@@ -5,7 +5,10 @@
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLTexture.h>
 #include <vector>
+#include "GameplayScreen.h"
+#include "BlockMeshManager.h"
 
+class GameplayScreen;
 
 class Player
 {
@@ -41,5 +44,8 @@ private:
     bool m_isGrounded = false;
     b2ShapeId m_groundShapeId; // Store reference to ground shape
     float m_jumpForce = 2200.0f;
+
+    GameplayScreen* m_gameplayScreen;
+    BlockManager* m_blockManager;
 };
 
