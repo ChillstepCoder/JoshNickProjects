@@ -44,7 +44,7 @@ void GameplayScreen::onEntry() {
     m_blockManager = new BlockManager(m_blockMeshManager, m_world);
 
     // Create blocks using perlin noise
-    perlinNoise();
+    generateWorld();
 
     m_blockManager->rebuildMesh();
 
@@ -75,6 +75,7 @@ void GameplayScreen::onEntry() {
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
     m_camera.setScale(8.0f);
+    m_player = Player(&m_camera, m_blockManager);
 
     Bengine::ColorRGBA8 textureColor;
     textureColor.r = 255;
@@ -83,7 +84,7 @@ void GameplayScreen::onEntry() {
     textureColor.a = 255;
 
     // Init player
-    m_player.init(&m_world, glm::vec2(0.0f, 60.0f), glm::vec2(3.5f, 8.0f), textureColor);
+    m_player.init(&m_world, glm::vec2(0.0f, 60.0f), glm::vec2(3.5f, 8.0f), textureColor, &m_camera);
 }
 
 void GameplayScreen::onExit() {
@@ -242,17 +243,7 @@ void GameplayScreen::updateGravity() {
     b2World_SetGravity(m_world, newGravity);
 }
 
-
-glm::vec2 GameplayScreen::screenToWorldCoords(int screenX, int screenY) {
-    // Convert screen coordinates to world coordinates using the camera matrix
-    glm::vec4 screenPos(screenX, screenY, 0.0f, 1.0f);
-    glm::vec4 worldPos = glm::inverse(m_camera.getCameraMatrix()) * screenPos;
-    return glm::vec2(worldPos.x, worldPos.y);
-}
-
-
-
-void GameplayScreen::perlinNoise() {
+void GameplayScreen::generateWorld() {
     // Create Perlin noise instance with random seed
     siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
 

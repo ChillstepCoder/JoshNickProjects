@@ -1,8 +1,13 @@
 #include "Player.h"
 #include <Bengine/ResourceManager.h>
 #include <SDL/SDL.h>
+#include "GameplayScreen.h"
 
-Player::Player() {
+Player::Player() : m_camera(nullptr) {
+    // Default constructor
+}
+
+Player::Player(Bengine::Camera2D* camera, BlockManager* blockManager) : m_camera(camera), m_blockManager(blockManager) {
 
 }
 
@@ -16,8 +21,9 @@ b2Vec2 Player::getPosition() {
 }
 
 
-void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color) {
+void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color, Bengine::Camera2D* camera) {
     Bengine::GLTexture texture = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
+    m_camera = camera;
     m_dimensions = dimensions;
     m_color = color;
     m_texture = texture;
@@ -109,7 +115,7 @@ void Player::update(Bengine::InputManager& inputManager, const std::vector<Block
         glm::vec2 mouseCoords = inputManager.getMouseCoords();
 
         // Convert mouse position to world coordinates
-        glm::vec2 mouseWorldPos = m_gameplayScreen->screenToWorldCoords(mouseCoords.x, mouseCoords.y);
+        glm::vec2 mouseWorldPos = m_camera->convertScreenToWorld(mouseCoords);
 
         // Check if the mouse position is over a block and break it
         m_blockManager->breakBlockAtPosition(mouseWorldPos);

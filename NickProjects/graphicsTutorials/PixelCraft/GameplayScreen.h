@@ -16,7 +16,6 @@
 #include "BlockMeshManager.h"
 #include "DebugDraw.h"
 #include "Imgui.h"
-#include "Player.h"
 #include "ImGui/backends/imgui_impl_sdl2.h"
 #include "ImGui/backends/imgui_impl_opengl3.h"
 
@@ -47,14 +46,12 @@ public:
 
     void updateGravity();
 
-    glm::vec2 screenToWorldCoords(int screenX, int screenY);
-
 private:
     void checkInput();
 
     void drawHud();
 
-    void perlinNoise();
+    void generateWorld();
 
     Bengine::SpriteBatch m_spriteBatch;
     Bengine::GLSLProgram m_textureProgram;

@@ -5,22 +5,22 @@
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLTexture.h>
 #include <vector>
-#include "GameplayScreen.h"
 #include "BlockMeshManager.h"
-
-class GameplayScreen;
+#include <Bengine/Camera2D.h>
 
 class Player
 {
 public:
-    Player();
+    Player(); // Default
+
+    Player(Bengine::Camera2D* camera, BlockManager* blockManager);
     ~Player();
 
     b2Vec2 getPosition();
 
     const glm::vec2& getDimensions() const { return m_dimensions; }
 
-    void init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color);
+    void init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color, Bengine::Camera2D* camera);
 
     void draw(Bengine::SpriteBatch& spriteBatch);
 
@@ -45,7 +45,7 @@ private:
     b2ShapeId m_groundShapeId; // Store reference to ground shape
     float m_jumpForce = 2200.0f;
 
-    GameplayScreen* m_gameplayScreen;
+    Bengine::Camera2D* m_camera;
     BlockManager* m_blockManager;
 };
 

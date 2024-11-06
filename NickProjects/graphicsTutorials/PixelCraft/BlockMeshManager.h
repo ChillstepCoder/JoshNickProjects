@@ -28,7 +28,6 @@ public:
 
     void addBlock(const Block& block) {
         m_blocks.push_back(block);
-        std::cout << "Added block with texture ID: " << block.getTextureID() << std::endl;
     }
 
     void rebuildMesh() {
@@ -43,7 +42,7 @@ public:
         return m_blocks;
     }
 
-    void breakBlockAtPosition(const glm::vec2& position) {
+    void breakBlockAtPosition(const glm::vec2& position) {  //destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
         // Iterate through blocks and find the one that contains the given position
         auto it = std::find_if(m_blocks.begin(), m_blocks.end(), [&](const Block& block) {
             return isPositionInBlock(position, block);
@@ -62,6 +61,8 @@ public:
     bool isPositionInBlock(const glm::vec2& position, const Block& block) {
         // Check if the position is within the block's bounding box
         glm::vec2 blockPos = block.getDestRect();
+        blockPos.x = blockPos.x + 1.25;
+        blockPos.y = blockPos.y + 1.25;
         glm::vec2 blockSize = block.getDimensions();
         return (position.x >= blockPos.x - blockSize.x / 2 && position.x <= blockPos.x + blockSize.x / 2 &&
             position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
