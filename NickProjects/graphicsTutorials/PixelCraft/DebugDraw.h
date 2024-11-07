@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 #include <Bengine/vertex.h>
 #include <vector>
-#include "BlockMeshManager.h"
 
 class BlockManager;
 
@@ -23,14 +22,23 @@ struct DebugVertex {
 
 class DebugDraw {
 public:
-    DebugDraw();
+    static DebugDraw& getInstance() {
+        static DebugDraw instance; // Guaranteed to be destroyed, instantiated on first use
+        return instance;
+    }
+
+    DebugDraw(DebugDraw const&) = delete;
+    void operator=(DebugDraw const&) = delete;
     ~DebugDraw();
 
     void init();
     void drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix);
     void setAlpha(float alpha) { m_alpha = alpha; }
 
+    void setVertexDataChanged(bool changed) {m_vertexDataChanged = changed; }
+
 private:
+    DebugDraw() = default;
     // Updated callback signatures to match Box2D 3.0
     static void drawSegment(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* context);
     static void drawPolygon(const b2Vec2* vertices, int vertexCount, b2HexColor color, void* context);

@@ -54,7 +54,7 @@ void GameplayScreen::onEntry() {
     // Init Imgui
     Bengine::ImGuiManager::init(m_window);
 
-    m_debugDraw.init();
+    DebugDraw::getInstance().init();
 
     m_spriteFont->init("Fonts/Chintzy.ttf", 32);
 
@@ -182,10 +182,10 @@ void GameplayScreen::draw() {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // Set debug drawing alpha
-        m_debugDraw.setAlpha(m_debugAlpha);
+        DebugDraw::getInstance().setAlpha(m_debugAlpha);
 
         // Draw debug info
-        m_debugDraw.drawWorld(&m_world, m_camera.getCameraMatrix());
+        DebugDraw::getInstance().drawWorld(&m_world, m_camera.getCameraMatrix());
 
     }
 

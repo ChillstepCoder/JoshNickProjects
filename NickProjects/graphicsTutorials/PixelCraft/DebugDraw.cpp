@@ -2,8 +2,6 @@
 #include <GL/glew.h>
 #include <vector>
 
-DebugDraw::DebugDraw() {
-}
 
 DebugDraw::~DebugDraw() {
     glDeleteBuffers(1, &m_linesvboId);

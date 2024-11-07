@@ -6,6 +6,7 @@
 #include <Bengine/SpriteBatch.h>
 #include "Block.h"
 #include <iostream>
+#include "DebugDraw.h"
 
 class BlockMeshManager
 {
@@ -55,6 +56,7 @@ public:
 
             // Rebuild the mesh
             rebuildMesh();
+            DebugDraw::getInstance().setVertexDataChanged(true);
         }
     }
 
