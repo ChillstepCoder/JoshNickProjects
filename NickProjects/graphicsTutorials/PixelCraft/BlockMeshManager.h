@@ -5,8 +5,8 @@
 #include <vector>
 #include <Bengine/SpriteBatch.h>
 #include "Block.h"
-#include <iostream>
-#include "DebugDraw.h"
+
+class DebugDraw;
 
 class BlockMeshManager
 {
@@ -22,6 +22,24 @@ private:
     Bengine::SpriteBatch m_spriteBatch;
 };
 
+const int CHUNK_WIDTH = 64;
+
+class Chunk {
+public:
+
+    Block blocks[CHUNK_WIDTH][CHUNK_WIDTH];
+    glm::vec2 getWorldPosition() {
+        return m_worldPosition;
+    }
+
+    void generateChunks();
+
+    glm::vec2 m_worldPosition;
+
+};
+
+const int WORLD_WIDTH_CHUNKS = 128;
+const int WORLD_HEIGHT_CHUNKS = 64;
 
 class BlockManager {
 public:
@@ -43,34 +61,25 @@ public:
         return m_blocks;
     }
 
-    void breakBlockAtPosition(const glm::vec2& position) {  //destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
-        // Iterate through blocks and find the one that contains the given position
-        auto it = std::find_if(m_blocks.begin(), m_blocks.end(), [&](const Block& block) {
-            return isPositionInBlock(position, block);
-            });
+    void breakBlockAtPosition(const glm::vec2& position);
 
-        if (it != m_blocks.end()) {
-            // Remove the block from the world
-            b2DestroyBody(it->getID());
-            m_blocks.erase(it);
+    bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
-            // Rebuild the mesh
-            rebuildMesh();
-            DebugDraw::getInstance().setVertexDataChanged(true);
-        }
-    }
+    void loadNearbyChunks(const glm::vec2& playerPos);
 
-    bool isPositionInBlock(const glm::vec2& position, const Block& block) {
-        // Check if the position is within the block's bounding box
-        glm::vec2 blockPos = block.getDestRect();
-        blockPos.x = blockPos.x + 1.25;
-        blockPos.y = blockPos.y + 1.25;
-        glm::vec2 blockSize = block.getDimensions();
-        return (position.x >= blockPos.x - blockSize.x / 2 && position.x <= blockPos.x + blockSize.x / 2 &&
-            position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
-    }
+    bool isChunkLoaded(int x, int y);
+
+    void loadChunk(int x, int y);
+
+    bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
+
+    void unloadChunks(const glm::vec2& playerPos);
+
+    void unloadChunk(int x, int y);
 
 private:
+    std::vector<std::vector<Chunk>> m_chunks;
+
     BlockMeshManager& m_MeshManager;
     std::vector<Block> m_blocks;
     b2WorldId m_world = b2_nullWorldId;

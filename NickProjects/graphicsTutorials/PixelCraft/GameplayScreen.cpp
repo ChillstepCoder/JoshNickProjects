@@ -74,7 +74,7 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(8.0f);
+    m_camera.setScale(20.0f);
     m_player = Player(&m_camera, m_blockManager);
 
     Bengine::ColorRGBA8 textureColor;
@@ -84,7 +84,7 @@ void GameplayScreen::onEntry() {
     textureColor.a = 255;
 
     // Init player
-    m_player.init(&m_world, glm::vec2(0.0f, 60.0f), glm::vec2(3.5f, 8.0f), textureColor, &m_camera);
+    m_player.init(&m_world, glm::vec2(0.0f, 60.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
 }
 
 void GameplayScreen::onExit() {
@@ -254,8 +254,8 @@ void GameplayScreen::generateWorld() {
 #else
     const int NUM_BLOCKS_X = 1500;  // Width of the terrain
 #endif
-    const float BLOCK_WIDTH = 2.5f;
-    const float BLOCK_HEIGHT = 2.5f;
+    const float BLOCK_WIDTH = 1.0f;
+    const float BLOCK_HEIGHT = 1.0f;
     const float START_X = -NUM_BLOCKS_X / 2;
     // Parameters for noise
     const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
@@ -326,6 +326,7 @@ void GameplayScreen::generateWorld() {
                             pos.y >= worldY - BLOCK_HEIGHT / 2 &&
                             pos.y <= worldY + BLOCK_HEIGHT / 2);
                     });
+
                 m_blockManager->getBlocks().erase(it, m_blockManager->getBlocks().end());
             }
         }

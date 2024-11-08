@@ -80,7 +80,7 @@ void Player::update(Bengine::InputManager& inputManager, const std::vector<Block
     }
 
     // Handle movement input
-    float force = 1000.0f; // Define a base force for movement
+    float force = 50.0f; // Define a base force for movement
     if (inputManager.isKeyDown(SDLK_a)) {
         b2Body_ApplyForceToCenter(getID(), b2Vec2(-force, 0.0f), true);
     }
