@@ -17,16 +17,40 @@ public:
   void createDefaultTrack();
   void addNode(const glm::vec2& position);
   void removeNode(size_t index);
-  TrackNode* getNodeAtPosition(const glm::vec2& position, float threshold = 10.0f);
-  std::vector<SplinePointInfo> getSplinePoints(int subdivisions = 50) const;
-  const std::vector<TrackNode>& getNodes() const { return m_nodes; }
-  std::vector<TrackNode>& getNodes() { return m_nodes; }
 
   void insertNode(size_t index, const TrackNode& node) {
     if (index <= m_nodes.size()) {
       m_nodes.insert(m_nodes.begin() + index, node);
     }
   }
+
+  // Getters
+  TrackNode* getNodeAtPosition(const glm::vec2& position, float threshold = 10.0f);
+  std::vector<SplinePointInfo> getSplinePoints(int subdivisions = 50) const;
+  const std::vector<TrackNode>& getNodes() const { return m_nodes; }
+  std::vector<TrackNode>& getNodes() { return m_nodes; }
+
+  TrackNode* getStartLineNode() {
+    for (auto& node : m_nodes) {
+      if (node.isStartLine()) {
+        return &node;
+      }
+    }
+    return nullptr;
+  }
+
+  const TrackNode* getStartLineNode() const {
+    for (const auto& node : m_nodes) {
+      if (node.isStartLine()) {
+        return &node;
+      }
+    }
+    return nullptr;
+  }
+
+  // Setters
+  void setStartLine(TrackNode* node);
+
 
 private:
   std::vector<TrackNode> m_nodes;

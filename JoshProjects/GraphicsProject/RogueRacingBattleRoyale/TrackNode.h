@@ -15,30 +15,19 @@ public:
     , m_offroadWidth(offroadWidth)
     , m_barrierDistance(barrierDistance) {}
 
-  const glm::vec2& getPosition() const { return m_position; }
-  void setPosition(const glm::vec2& pos) { m_position = pos; }
 
   bool isSelected() const { return m_isSelected; }
-  void setSelected(bool selected) { m_isSelected = selected; }
-
   bool isHovered() const { return m_isHovered; }
-  void setHovered(bool hovered) { m_isHovered = hovered; }
+  bool isStartLine() const { return m_isStartLine; }
 
-  void setRoadWidth(float width) {
-    // Use min/max instead of clamp
-    m_roadWidth = std::max(10.0f, std::min(width, 100.0f));
-    std::cout << "Node road width set to: " << m_roadWidth << std::endl;
-  }
-
+  // Getters
+  const glm::vec2& getOffroadWidth() const { return m_offroadWidth; }
   float getRoadWidth() const {
     return m_roadWidth;
   }
 
-  const glm::vec2& getOffroadWidth() const { return m_offroadWidth; }
-  void setOffroadWidth(const glm::vec2& width) {
-    // Left side (x) and right side (y)
-    m_offroadWidth = glm::clamp(width, glm::vec2(0.0f), glm::vec2(100.0f));
-  }
+  const glm::vec2& getPosition() const { return m_position; }
+  const glm::vec2& getBarrierDistance() const { return m_barrierDistance; }
 
   std::pair<glm::vec2, glm::vec2> getRoadEdgePoints(const glm::vec2& nextNodePos) const {
     glm::vec2 direction = nextNodePos - m_position;
@@ -49,7 +38,24 @@ public:
     return { leftEdge, rightEdge };
   }
 
-  const glm::vec2& getBarrierDistance() const { return m_barrierDistance; }
+
+  // Setters
+  void setPosition(const glm::vec2& pos) { m_position = pos; }
+  void setSelected(bool selected) { m_isSelected = selected; }
+  void setStartLine(bool isStart) { m_isStartLine = isStart; }
+  void setHovered(bool hovered) { m_isHovered = hovered; }
+
+  void setRoadWidth(float width) {
+    // Use min/max instead of clamp
+    m_roadWidth = std::max(10.0f, std::min(width, 100.0f));
+    std::cout << "Node road width set to: " << m_roadWidth << std::endl;
+  }
+
+  void setOffroadWidth(const glm::vec2& width) {
+    // Left side (x) and right side (y)
+    m_offroadWidth = glm::clamp(width, glm::vec2(0.0f), glm::vec2(100.0f));
+  }
+
   void setBarrierDistance(const glm::vec2& distance) {
     // x = left side, y = right side
     m_barrierDistance = glm::clamp(distance, glm::vec2(0.0f), glm::vec2(100.0f));
@@ -63,4 +69,5 @@ private:
 
   bool m_isSelected = false;
   bool m_isHovered = false;
+  bool m_isStartLine = false;
 };

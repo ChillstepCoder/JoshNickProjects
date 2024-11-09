@@ -58,15 +58,13 @@ public:
   }
 
   bool isValidPlacement(const PlaceableObject* obj, const glm::vec2& position) const {
-    if (!obj || !m_track) {
-      std::cout << "Invalid placement check - null object or track\n";
-      return false;
-    }
+    if (!obj || !m_track) return false;
 
     auto splinePoints = m_track->getSplinePoints(100);
     float minDist = std::numeric_limits<float>::max();
     SplineTrack::SplinePointInfo nearestPoint;
 
+    // Find nearest spline point
     for (const auto& point : splinePoints) {
       float dist = glm::distance(position, point.position);
       if (dist < minDist) {
@@ -75,31 +73,29 @@ public:
       }
     }
 
+    // Calculate distances for different zones
     float roadDist = minDist;
-    float offroadEdge = nearestPoint.roadWidth +
-      std::max(nearestPoint.offroadWidth.x, nearestPoint.offroadWidth.y);
+    float roadWidth = nearestPoint.roadWidth;
+    float offroadWidth = std::max(nearestPoint.offroadWidth.x, nearestPoint.offroadWidth.y);
+    float offroadEdge = roadWidth + offroadWidth;
 
-    bool isValid = false;
+    // Check placement validity based on zone
     switch (obj->getZone()) {
     case PlacementZone::Road:
-      isValid = roadDist <= nearestPoint.roadWidth;
-      std::cout << "Road placement check - distance: " << roadDist << ", limit: " << nearestPoint.roadWidth << "\n";
-      break;
-    case PlacementZone::Offroad:
-      isValid = roadDist > nearestPoint.roadWidth && roadDist <= offroadEdge;
-      std::cout << "Offroad placement check - distance: " << roadDist << ", range: " << nearestPoint.roadWidth << " to " << offroadEdge << "\n";
-      break;
-    case PlacementZone::Grass:
-      isValid = roadDist > offroadEdge;
-      std::cout << "Grass placement check - distance: " << roadDist << ", minimum: " << offroadEdge << "\n";
-      break;
-    case PlacementZone::Anywhere:
-      isValid = true;
-      break;
-    }
+      return roadDist <= roadWidth;
 
-    std::cout << "Placement valid: " << (isValid ? "yes" : "no") << "\n";
-    return isValid;
+    case PlacementZone::Offroad:
+      return roadDist > roadWidth && roadDist <= offroadEdge;
+
+    case PlacementZone::Grass:
+      return roadDist > offroadEdge;
+
+    case PlacementZone::Anywhere:
+      return true;
+
+    default:
+      return false;
+    }
   }
 
   const std::vector<std::unique_ptr<PlaceableObject>>& getPlacedObjects() const {
@@ -109,9 +105,48 @@ public:
   const std::vector<std::unique_ptr<PlaceableObject>>& getObjectTemplates() const {
     return m_objectTemplates;
   }
+  void removeInvalidObjects(const std::vector<PlaceableObject*>& objectsToRemove) {
+    size_t originalSize = m_placedObjects.size();
+
+    // Remove objects that are no longer valid
+    m_placedObjects.erase(
+      std::remove_if(m_placedObjects.begin(), m_placedObjects.end(),
+        [&](const std::unique_ptr<PlaceableObject>& obj) {
+          bool shouldRemove = std::find(objectsToRemove.begin(),
+            objectsToRemove.end(),
+            obj.get()) != objectsToRemove.end();
+          if (shouldRemove) {
+            std::cout << "Removing invalid object at position ("
+              << obj->getPosition().x << ", "
+              << obj->getPosition().y << ")\n";
+          }
+          return shouldRemove;
+        }
+      ),
+      m_placedObjects.end()
+    );
+
+    size_t removedCount = originalSize - m_placedObjects.size();
+    std::cout << "Removed " << removedCount << " invalid objects\n";
+
+    // If the selected object was removed, clear the selection
+    if (removedCount > 0) {
+      for (const auto& obj : objectsToRemove) {
+        if (obj == m_selectedObject) {
+          m_selectedObject = nullptr;
+          break;
+        }
+      }
+    }
+  }
+
+  bool isSelected(const PlaceableObject* obj) const {
+    return m_selectedObject == obj;
+  }
 
 private:
   SplineTrack* m_track;
   std::vector<std::unique_ptr<PlaceableObject>> m_objectTemplates;
   std::vector<std::unique_ptr<PlaceableObject>> m_placedObjects;
+  PlaceableObject* m_selectedObject = nullptr;
 };

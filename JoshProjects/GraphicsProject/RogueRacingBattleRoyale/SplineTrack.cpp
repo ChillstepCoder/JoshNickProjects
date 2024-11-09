@@ -50,6 +50,22 @@ TrackNode* SplineTrack::getNodeAtPosition(const glm::vec2& position, float thres
   return nullptr;
 }
 
+void SplineTrack::setStartLine(TrackNode* node) {
+  // Clear existing start line
+  for (auto& existingNode : m_nodes) {
+    if (&existingNode != node && existingNode.isStartLine()) {
+      std::cout << "Clearing previous start line\n";
+      existingNode.setStartLine(false);
+    }
+  }
+
+  // Set new start line
+  if (node) {
+    node->setStartLine(true);
+    std::cout << "Set new start line\n";
+  }
+}
+
 std::vector<SplineTrack::SplinePointInfo> SplineTrack::getSplinePoints(int subdivisions) const {
   std::vector<SplinePointInfo> points;
   if (m_nodes.size() < 4) return points;

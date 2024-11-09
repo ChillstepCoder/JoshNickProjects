@@ -52,6 +52,7 @@ private:
   void drawRoadEdges();
   void updateRoadMesh();
   void initDefaultTrack();
+  void validatePlacedObjects();
 
   glm::vec2 findClosestSplinePoint(const glm::vec2& mousePos);
   void addNodeAtPosition(const glm::vec2& position);
@@ -63,6 +64,7 @@ private:
   TrackNode* m_draggedNode = nullptr;
   bool m_isDragging = false;
   glm::vec2 m_lastMousePos;
+  RoadMeshGenerator::StartLineMeshData m_startLineMesh;
 
   bool m_addNodeMode = false;
   glm::vec2 m_previewNodePosition = glm::vec2(0.0f);
@@ -97,6 +99,7 @@ private:
 
   RoadMeshGenerator::OffroadMeshData m_offroadMesh;
   JAGEngine::GLSLProgram m_offroadShader;
+  JAGEngine::GLSLProgram m_startLineShader;
 
   JAGEngine::GLSLProgram m_grassShader;
   RoadMeshGenerator::MeshData m_backgroundQuad;

@@ -1,6 +1,5 @@
 // textureShading.vert
 #version 130
-
 in vec2 vertexPosition;
 in vec4 vertexColor;
 in vec2 vertexUV;
@@ -17,4 +16,3 @@ void main() {
     fragmentColor = vertexColor;
     fragmentUV = vertexUV;
 }
-

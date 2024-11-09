@@ -24,8 +24,22 @@ void LevelEditorScreen::destroy() {
 void LevelEditorScreen::onEntry() {
   std::cout << "LevelEditorScreen::onEntry() start\n";
 
-  initShaders();
+  // Initialize regular texture shader for sprites
+  m_program.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
+  m_program.addAttribute("vertexPosition");
+  m_program.addAttribute("vertexColor");
+  m_program.addAttribute("vertexUV");
+  m_program.linkShaders();
+
   m_spriteBatch.init();
+
+  // Initialize start line shader
+  m_startLineShader.compileShaders("Shaders/startLine.vert", "Shaders/startLine.frag");
+  m_startLineShader.addAttribute("vertexPosition");
+  m_startLineShader.addAttribute("vertexUV");
+  m_startLineShader.addAttribute("distanceAlong");
+  m_startLineShader.addAttribute("depth");
+  m_startLineShader.linkShaders();
 
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   int screenWidth = game->getWindow().getScreenWidth();
@@ -39,7 +53,7 @@ void LevelEditorScreen::onEntry() {
   m_track = std::make_unique<SplineTrack>();
   initDefaultTrack();
 
-  // Initialize shaders
+  // Initialize road shaders
   m_roadShader.compileShaders("Shaders/road.vert", "Shaders/road.frag");
   m_roadShader.addAttribute("vertexPosition");
   m_roadShader.addAttribute("vertexUV");
@@ -52,7 +66,6 @@ void LevelEditorScreen::onEntry() {
   m_offroadShader.addAttribute("distanceAlong");
   m_offroadShader.linkShaders();
 
-  // Initialize grass shader
   m_grassShader.compileShaders("Shaders/grass.vert", "Shaders/grass.frag");
   m_grassShader.addAttribute("vertexPosition");
   m_grassShader.addAttribute("vertexUV");
@@ -66,20 +79,6 @@ void LevelEditorScreen::onEntry() {
   m_barrierShader.addAttribute("distanceAlong");
   m_barrierShader.addAttribute("depth");
   m_barrierShader.linkShaders();
-
-  // After linking, get and verify all uniforms
-  m_barrierShader.use();
-  GLint pLoc = m_barrierShader.getUniformLocation("P");
-  GLint primaryColorLoc = m_barrierShader.getUniformLocation("primaryColor");
-  GLint secondaryColorLoc = m_barrierShader.getUniformLocation("secondaryColor");
-  GLint patternScaleLoc = m_barrierShader.getUniformLocation("patternScale");
-
-  std::cout << "Barrier shader uniform locations:\n"
-    << "P: " << pLoc << "\n"
-    << "primaryColor: " << primaryColorLoc << "\n"
-    << "secondaryColor: " << secondaryColorLoc << "\n"
-    << "patternScale: " << patternScaleLoc << "\n";
-  m_barrierShader.unuse();
 
   // Initialize background quad
   initBackgroundQuad();
@@ -98,6 +97,7 @@ void LevelEditorScreen::onExit() {
   // Clear any selected nodes
   m_selectedNode = nullptr;
   m_isDragging = false;
+  m_startLineMesh.cleanup();
 
   std::cout << "LevelEditorScreen::onExit() complete\n";
 }
@@ -158,7 +158,6 @@ void LevelEditorScreen::drawImGui() {
   ImGui::End();
 }
 
-
 void LevelEditorScreen::draw() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -169,7 +168,6 @@ void LevelEditorScreen::draw() {
   if (m_roadViewMode == RoadViewMode::Shaded) {
     // Draw grass background
     m_grassShader.use();
-
     glUniformMatrix4fv(m_grassShader.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
     glUniform3fv(m_grassShader.getUniformLocation("grassColor"), 1, &m_grassColor[0]);
     glUniform1f(m_grassShader.getUniformLocation("noiseScale"), m_grassNoiseScale);
@@ -178,118 +176,74 @@ void LevelEditorScreen::draw() {
     glBindVertexArray(m_backgroundQuad.vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
-
     m_grassShader.unuse();
 
-    // Draw offroad (it goes under the road)
+    // Draw offroad
     m_offroadShader.use();
     GLint offroadColorUniform = m_offroadShader.getUniformLocation("offroadColor");
     if (offroadColorUniform != -1) {
       glUniform3fv(offroadColorUniform, 1, &m_offroadColor[0]);
     }
+    glUniformMatrix4fv(m_offroadShader.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
 
-    GLint offroadPUniform = m_offroadShader.getUniformLocation("P");
-    glUniformMatrix4fv(offroadPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
-
-    // Draw left offroad
-    if (m_offroadMesh.leftSide.vao != 0) {
-      glBindVertexArray(m_offroadMesh.leftSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_offroadMesh.leftSide.indices.size()),
-        GL_UNSIGNED_INT, nullptr);
+    // Draw left and right offroad
+    for (auto* mesh : { &m_offroadMesh.leftSide, &m_offroadMesh.rightSide }) {
+      if (mesh->vao != 0) {
+        glBindVertexArray(mesh->vao);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->indices.size()), GL_UNSIGNED_INT, nullptr);
+      }
     }
-
-    // Draw right offroad
-    if (m_offroadMesh.rightSide.vao != 0) {
-      glBindVertexArray(m_offroadMesh.rightSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_offroadMesh.rightSide.indices.size()),
-        GL_UNSIGNED_INT, nullptr);
-    }
-
     glBindVertexArray(0);
     m_offroadShader.unuse();
 
-    // Draw the shaded road
+    // Draw road
     m_roadShader.use();
-    GLint roadPUniform = m_roadShader.getUniformLocation("P");
-    glUniformMatrix4fv(roadPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
-
+    glUniformMatrix4fv(m_roadShader.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
     if (m_roadMesh.vao != 0 && !m_roadMesh.indices.empty()) {
       glBindVertexArray(m_roadMesh.vao);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_roadMesh.ibo);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_roadMesh.indices.size()),
-        GL_UNSIGNED_INT,
-        nullptr);
+      glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_roadMesh.indices.size()), GL_UNSIGNED_INT, nullptr);
       glBindVertexArray(0);
     }
     m_roadShader.unuse();
 
-    // In LevelEditorScreen::draw(), in the barrier drawing section:
-
+    // Draw barriers
     m_barrierShader.use();
+    glUniformMatrix4fv(m_barrierShader.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
+    glUniform3fv(m_barrierShader.getUniformLocation("primaryColor"), 1, &m_barrierPrimaryColor[0]);
+    glUniform3fv(m_barrierShader.getUniformLocation("secondaryColor"), 1, &m_barrierSecondaryColor[0]);
+    glUniform1f(m_barrierShader.getUniformLocation("patternScale"), m_barrierPatternScale);
 
-    // Set camera matrix with validation
-    GLint barrierPUniform = m_barrierShader.getUniformLocation("P");
-    if (barrierPUniform != -1) {
-      glUniformMatrix4fv(barrierPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
+    for (auto* mesh : { &m_barrierMesh.leftSide, &m_barrierMesh.rightSide }) {
+      if (mesh->vao != 0) {
+        glBindVertexArray(mesh->vao);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->indices.size()), GL_UNSIGNED_INT, nullptr);
+      }
     }
-    else {
-      std::cout << "Warning: P uniform not found in barrier shader\n";
-    }
-
-    // Set uniforms with validation
-    GLint primaryColorUniform = m_barrierShader.getUniformLocation("primaryColor");
-    GLint secondaryColorUniform = m_barrierShader.getUniformLocation("secondaryColor");
-    GLint patternScaleUniform = m_barrierShader.getUniformLocation("patternScale");
-
-    if (primaryColorUniform != -1) {
-      glUniform3fv(primaryColorUniform, 1, &m_barrierPrimaryColor[0]);
-    }
-    else {
-      std::cout << "Warning: primaryColor uniform not found\n";
-    }
-
-    if (secondaryColorUniform != -1) {
-      glUniform3fv(secondaryColorUniform, 1, &m_barrierSecondaryColor[0]);
-    }
-    else {
-      std::cout << "Warning: secondaryColor uniform not found\n";
-    }
-
-    if (patternScaleUniform != -1) {
-      glUniform1f(patternScaleUniform, m_barrierPatternScale);
-    }
-    else {
-      std::cout << "Warning: patternScale uniform not found\n";
-    }
-
-    // Draw left barrier
-    if (m_barrierMesh.leftSide.vao != 0) {
-      glBindVertexArray(m_barrierMesh.leftSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_barrierMesh.leftSide.indices.size()),
-        GL_UNSIGNED_INT, nullptr);
-    }
-
-    // Draw right barrier
-    if (m_barrierMesh.rightSide.vao != 0) {
-      glBindVertexArray(m_barrierMesh.rightSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_barrierMesh.rightSide.indices.size()),
-        GL_UNSIGNED_INT, nullptr);
-    }
-
     glBindVertexArray(0);
     m_barrierShader.unuse();
+
+    // Draw start line
+    if (m_startLineMesh.vao != 0) {
+      m_startLineShader.use();
+      GLint pLoc = m_startLineShader.getUniformLocation("P");
+      if (pLoc != -1) {
+        glUniformMatrix4fv(pLoc, 1, GL_FALSE, &cameraMatrix[0][0]);
+      }
+
+      glBindVertexArray(m_startLineMesh.vao);
+      glDrawElements(GL_TRIANGLES,
+        static_cast<GLsizei>(m_startLineMesh.indices.size()),
+        GL_UNSIGNED_INT, nullptr);
+      glBindVertexArray(0);
+
+      m_startLineShader.unuse();
+    }
   }
 
-  // Draw spline points and control nodes if enabled
+  // Draw nodes and spline points if enabled
   if (m_showSplinePoints || m_roadViewMode == RoadViewMode::Spline) {
     m_program.use();
-    GLint spritePUniform = m_program.getUniformLocation("P");
-    glUniformMatrix4fv(spritePUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
+    glUniformMatrix4fv(m_program.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
 
     m_spriteBatch.begin();
 
@@ -315,13 +269,13 @@ void LevelEditorScreen::draw() {
         nodeColor = JAGEngine::ColorRGBA8(0, 150, 255, 255);
       }
       else {
-        nodeColor = JAGEngine::ColorRGBA8(0, 255, 0, 255);
+        nodeColor = JAGEngine::ColorRGBA8(0, 0, 0, 255);
       }
 
       m_spriteBatch.draw(nodeRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, nodeColor);
     }
 
-    // Draw preview node if in add mode
+    // Draw preview node
     if (m_addNodeMode && m_showPreviewNode) {
       glm::vec4 previewRect(
         m_previewNodePosition.x - 10.0f,
@@ -329,99 +283,28 @@ void LevelEditorScreen::draw() {
         20.0f,
         20.0f
       );
-      JAGEngine::ColorRGBA8 previewColor(255, 255, 0, 200);
-      m_spriteBatch.draw(previewRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, previewColor);
+      m_spriteBatch.draw(previewRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, JAGEngine::ColorRGBA8(255, 255, 0, 200));
     }
 
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();
-
     m_program.unuse();
   }
 
-  // Draw wireframe mode
-  if (m_roadViewMode == RoadViewMode::Wireframe) {
-    m_roadShader.use();
-    GLint roadPUniform = m_roadShader.getUniformLocation("P");
-    glUniformMatrix4fv(roadPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    // Draw road mesh
-    if (m_roadMesh.vao != 0 && !m_roadMesh.indices.empty()) {
-      glBindVertexArray(m_roadMesh.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_roadMesh.indices.size()),
-        GL_UNSIGNED_INT,
-        nullptr);
-    }
-
-    // Draw offroad meshes in a different color
-    m_offroadShader.use();
-    GLint offroadPUniform = m_offroadShader.getUniformLocation("P");
-    glUniformMatrix4fv(offroadPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
-
-    // Left offroad
-    if (m_offroadMesh.leftSide.vao != 0) {
-      glBindVertexArray(m_offroadMesh.leftSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_offroadMesh.leftSide.indices.size()),
-        GL_UNSIGNED_INT,
-        nullptr);
-    }
-
-    // Right offroad
-    if (m_offroadMesh.rightSide.vao != 0) {
-      glBindVertexArray(m_offroadMesh.rightSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_offroadMesh.rightSide.indices.size()),
-        GL_UNSIGNED_INT,
-        nullptr);
-    }
-
-    glBindVertexArray(0);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    m_offroadShader.unuse();
-
-    m_barrierShader.use();
-    GLint barrierPUniform = m_barrierShader.getUniformLocation("P");
-    glUniformMatrix4fv(barrierPUniform, 1, GL_FALSE, &(cameraMatrix[0][0]));
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    // Draw left barrier wireframe
-    if (m_barrierMesh.leftSide.vao != 0) {
-      glBindVertexArray(m_barrierMesh.leftSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_barrierMesh.leftSide.indices.size()),
-        GL_UNSIGNED_INT, nullptr);
-    }
-
-    // Draw right barrier wireframe
-    if (m_barrierMesh.rightSide.vao != 0) {
-      glBindVertexArray(m_barrierMesh.rightSide.vao);
-      glDrawElements(GL_TRIANGLES,
-        static_cast<GLsizei>(m_barrierMesh.rightSide.indices.size()),
-        GL_UNSIGNED_INT, nullptr);
-    }
-
-    glBindVertexArray(0);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    m_barrierShader.unuse();
-  }
-
-  // Draw placed objects
+  // Draw placed objects (moved outside the spline points condition)
   m_program.use();
+  glUniformMatrix4fv(m_program.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
+
   m_spriteBatch.begin();
 
-  // Draw all placed objects
+  // Draw placed objects
   for (const auto& obj : m_objectManager->getPlacedObjects()) {
     drawObject(*obj, obj->isSelected() ?
       JAGEngine::ColorRGBA8(255, 255, 255, 255) :
       JAGEngine::ColorRGBA8(200, 200, 200, 255));
   }
 
-  // Draw preview object if in placement mode
+  // Draw object placement preview
   if (m_objectPlacementMode && m_selectedTemplateIndex >= 0) {
     const auto& templates = m_objectManager->getObjectTemplates();
     if (m_selectedTemplateIndex < templates.size()) {
@@ -442,8 +325,45 @@ void LevelEditorScreen::draw() {
 
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
-
   m_program.unuse();
+
+  // Draw wireframe mode
+  if (m_roadViewMode == RoadViewMode::Wireframe) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    // Draw road wireframe
+    m_roadShader.use();
+    glUniformMatrix4fv(m_roadShader.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
+    if (m_roadMesh.vao != 0 && !m_roadMesh.indices.empty()) {
+      glBindVertexArray(m_roadMesh.vao);
+      glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_roadMesh.indices.size()), GL_UNSIGNED_INT, nullptr);
+    }
+    m_roadShader.unuse();
+
+    // Draw offroad wireframes
+    m_offroadShader.use();
+    glUniformMatrix4fv(m_offroadShader.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
+    for (auto* mesh : { &m_offroadMesh.leftSide, &m_offroadMesh.rightSide }) {
+      if (mesh->vao != 0) {
+        glBindVertexArray(mesh->vao);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->indices.size()), GL_UNSIGNED_INT, nullptr);
+      }
+    }
+    m_offroadShader.unuse();
+
+    // Draw barrier wireframes
+    m_barrierShader.use();
+    glUniformMatrix4fv(m_barrierShader.getUniformLocation("P"), 1, GL_FALSE, &(cameraMatrix[0][0]));
+    for (auto* mesh : { &m_barrierMesh.leftSide, &m_barrierMesh.rightSide }) {
+      if (mesh->vao != 0) {
+        glBindVertexArray(mesh->vao);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->indices.size()), GL_UNSIGNED_INT, nullptr);
+      }
+    }
+    m_barrierShader.unuse();
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
 
   // Draw ImGui windows last
   drawImGui();
@@ -668,6 +588,23 @@ void LevelEditorScreen::drawDebugWindow() {
         updateRoadMesh();
       }
 
+      // Starting line
+      bool isStartLine = m_selectedNode->isStartLine();
+      if (ImGui::Checkbox("Start Line##NodeStart", &isStartLine)) {
+        if (isStartLine) {
+          m_track->setStartLine(m_selectedNode);
+        }
+        else {
+          m_track->setStartLine(nullptr);
+        }
+        updateRoadMesh();
+      }
+
+      if (m_selectedNode->isStartLine()) {
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
+          "This node is the start/finish line");
+      }
+
       // Add delete node button
       if (ImGui::Button("Delete Node", ImVec2(180, 30))) {
         deleteSelectedNode();
@@ -885,15 +822,11 @@ void LevelEditorScreen::handleInput() {
       m_isDraggingObject = false;
     }
     else {
-      // Handle normal node editing mode
-      m_showPreviewNode = false;
-
-      // Reset hover states for nodes
+      // Reset hover states
       for (auto& node : m_track->getNodes()) {
         node.setHovered(false);
       }
 
-      // Scale selection radius with camera zoom
       float baseRadius = 20.0f;
       float scaledRadius = baseRadius / m_camera.getScale();
 
@@ -904,19 +837,12 @@ void LevelEditorScreen::handleInput() {
 
       if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
         if (!m_isDragging && hoveredNode) {
-          // Select node
           if (m_selectedNode && m_selectedNode != hoveredNode) {
             m_selectedNode->setSelected(false);
           }
           m_selectedNode = hoveredNode;
           m_selectedNode->setSelected(true);
           m_isDragging = true;
-
-          // Reset object selection when dragging nodes
-          if (m_selectedObject) {
-            m_selectedObject->setSelected(false);
-            m_selectedObject = nullptr;
-          }
         }
 
         if (m_isDragging && m_selectedNode) {
@@ -925,11 +851,14 @@ void LevelEditorScreen::handleInput() {
         }
       }
       else {
+        // Mouse released after dragging
+        if (m_isDragging) {
+          validatePlacedObjects();
+        }
         m_isDragging = false;
       }
     }
 
-    // Update mouse state
     m_wasMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
   }
 }
@@ -1043,10 +972,12 @@ void LevelEditorScreen::updateRoadMesh() {
   m_offroadMesh.rightSide.cleanup();
   m_barrierMesh.leftSide.cleanup();
   m_barrierMesh.rightSide.cleanup();
+  m_startLineMesh.cleanup();
 
   m_roadMesh = RoadMeshGenerator::generateRoadMesh(*m_track, m_roadLOD);
   m_offroadMesh = RoadMeshGenerator::generateOffroadMesh(*m_track, m_roadLOD);
   m_barrierMesh = RoadMeshGenerator::generateBarrierMesh(*m_track, m_roadLOD);
+  m_startLineMesh = RoadMeshGenerator::generateStartLineMesh(*m_track);  // Regenerate start line mesh
 }
 
 void LevelEditorScreen::initDefaultTrack() {
@@ -1055,6 +986,30 @@ void LevelEditorScreen::initDefaultTrack() {
     m_track = std::make_unique<SplineTrack>();
     m_track->createDefaultTrack();
     std::cout << "Track created with " << m_track->getNodes().size() << " nodes\n";
+  }
+}
+
+void LevelEditorScreen::validatePlacedObjects() {
+  if (!m_objectManager) return;
+
+  std::cout << "Validating placed objects after track modification...\n";
+
+  std::vector<PlaceableObject*> objectsToRemove;
+  const auto& placedObjects = m_objectManager->getPlacedObjects();
+
+  // First pass: identify invalid objects
+  for (const auto& obj : placedObjects) {
+    if (!m_objectManager->isValidPlacement(obj.get(), obj->getPosition())) {
+      objectsToRemove.push_back(obj.get());
+      std::cout << "Object at position (" << obj->getPosition().x << ", "
+        << obj->getPosition().y << ") is now invalid\n";
+    }
+  }
+
+  // Second pass: remove invalid objects
+  if (!objectsToRemove.empty()) {
+    std::cout << "Removing " << objectsToRemove.size() << " invalid objects\n";
+    m_objectManager->removeInvalidObjects(objectsToRemove);
   }
 }
 

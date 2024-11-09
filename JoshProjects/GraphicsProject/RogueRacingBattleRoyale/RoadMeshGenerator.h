@@ -96,6 +96,46 @@ public:
   struct BarrierMeshData {
     RoadMeshGenerator::MeshData leftSide;
     RoadMeshGenerator::MeshData rightSide;
+
+    BarrierMeshData() = default;
+
+    // Add copy constructor if needed
+    BarrierMeshData(const BarrierMeshData& other)
+      : leftSide(other.leftSide)
+      , rightSide(other.rightSide) {
+    }
+
+    // Add assignment operator if needed
+    BarrierMeshData& operator=(const BarrierMeshData& other) {
+      if (this != &other) {
+        leftSide = other.leftSide;
+        rightSide = other.rightSide;
+      }
+      return *this;
+    }
+  };
+
+  struct StartLineMeshData {
+    std::vector<RoadVertex> vertices;
+    std::vector<GLuint> indices;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLuint ibo = 0;
+
+    void cleanup() {
+      if (vao != 0) {
+        glDeleteVertexArrays(1, &vao);
+        vao = 0;
+      }
+      if (vbo != 0) {
+        glDeleteBuffers(1, &vbo);
+        vbo = 0;
+      }
+      if (ibo != 0) {
+        glDeleteBuffers(1, &ibo);
+        ibo = 0;
+      }
+    }
   };
 
   static void createBuffers(MeshData& mesh) {
@@ -438,137 +478,146 @@ public:
     return mesh;
   }
 
-  static BarrierMeshData generateBarrierMesh(const SplineTrack& track, int baseLOD = 10) {
-    BarrierMeshData mesh;
-    auto splinePoints = track.getSplinePoints(baseLOD);
+  static BarrierMeshData generateBarrierMesh(const SplineTrack& track, int baseLOD = 10);
 
-    if (splinePoints.size() < 2) return mesh;
+  static void createStartLineBuffers(StartLineMeshData& mesh) {
+    // Cleanup any existing buffers
+    mesh.cleanup();
 
-    const float BARRIER_WIDTH = 7.5f;
-    std::vector<RoadVertex> leftVertices, rightVertices;
-    std::vector<GLuint> leftIndices, rightIndices;
-
-    float totalDistance = 0.0f;
-    size_t numPoints = splinePoints.size();
-
-    for (size_t i = 0; i < numPoints; ++i) {
-      const auto& current = splinePoints[i];
-      const auto& next = splinePoints[(i + 1) % numPoints];
-
-      // Calculate direction and perpendicular
-      glm::vec2 direction = next.position - current.position;
-      glm::vec2 perp = glm::normalize(glm::vec2(-direction.y, direction.x));
-
-      // Calculate barrier positions
-      glm::vec2 leftRoadEdge = current.position + perp * current.roadWidth;
-      glm::vec2 rightRoadEdge = current.position - perp * current.roadWidth;
-
-      // Left barrier vertices
-      if (current.barrierDistance.x > 0.0f) {
-        // Start from road edge, move out past offroad area by barrier distance
-        glm::vec2 leftBarrierPos = leftRoadEdge + perp * current.barrierDistance.x;
-        glm::vec2 leftBarrierEnd = leftBarrierPos + perp * BARRIER_WIDTH;
-
-        RoadVertex v1, v2;
-        v1.position = leftBarrierPos;
-        v2.position = leftBarrierEnd;
-        v1.uv = glm::vec2(0.0f, totalDistance * 0.01f);
-        v2.uv = glm::vec2(1.0f, totalDistance * 0.01f);
-        v1.distanceAlong = totalDistance;
-        v2.distanceAlong = totalDistance;
-        v1.depth = 0.2f;
-        v2.depth = 0.2f;
-
-        leftVertices.push_back(v1);
-        leftVertices.push_back(v2);
-      }
-
-      // Right barrier vertices
-      if (current.barrierDistance.y > 0.0f) {
-        // Start from road edge, move out past offroad area by barrier distance
-        glm::vec2 rightBarrierPos = rightRoadEdge - perp * current.barrierDistance.y;
-        glm::vec2 rightBarrierEnd = rightBarrierPos - perp * BARRIER_WIDTH;
-
-        RoadVertex v1, v2;
-        v1.position = rightBarrierPos;
-        v2.position = rightBarrierEnd;
-        v1.uv = glm::vec2(0.0f, totalDistance * 0.01f);
-        v2.uv = glm::vec2(1.0f, totalDistance * 0.01f);
-        v1.distanceAlong = totalDistance;
-        v2.distanceAlong = totalDistance;
-        v1.depth = 0.2f;
-        v2.depth = 0.2f;
-
-        rightVertices.push_back(v1);
-        rightVertices.push_back(v2);
-      }
-
-      // Create indices
-      if (i < numPoints - 1) {
-        if (current.barrierDistance.x > 0.0f && next.barrierDistance.x > 0.0f) {
-          GLuint baseIndex = static_cast<GLuint>((leftVertices.size() / 2 - 1) * 2);
-          leftIndices.push_back(baseIndex);
-          leftIndices.push_back(baseIndex + 1);
-          leftIndices.push_back(baseIndex + 2);
-
-          leftIndices.push_back(baseIndex + 2);
-          leftIndices.push_back(baseIndex + 1);
-          leftIndices.push_back(baseIndex + 3);
-        }
-
-        if (current.barrierDistance.y > 0.0f && next.barrierDistance.y > 0.0f) {
-          GLuint baseIndex = static_cast<GLuint>((rightVertices.size() / 2 - 1) * 2);
-          rightIndices.push_back(baseIndex);
-          rightIndices.push_back(baseIndex + 1);
-          rightIndices.push_back(baseIndex + 2);
-
-          rightIndices.push_back(baseIndex + 2);
-          rightIndices.push_back(baseIndex + 1);
-          rightIndices.push_back(baseIndex + 3);
-        }
-      }
-
-      totalDistance += 1.0;
+    if (mesh.vertices.empty() || mesh.indices.empty()) {
+      std::cout << "Cannot create start line buffers: No vertex or index data\n";
+      return;
     }
 
-    // Close the loop
-    if (numPoints > 2) {
-      if (splinePoints[0].barrierDistance.x > 0.0f &&
-        splinePoints[numPoints - 1].barrierDistance.x > 0.0f &&
-        !leftVertices.empty()) {
-        GLuint lastIndex = static_cast<GLuint>((leftVertices.size() / 2 - 1) * 2);
-        leftIndices.push_back(lastIndex);
-        leftIndices.push_back(lastIndex + 1);
-        leftIndices.push_back(0);
+    // Generate and bind VAO
+    glGenVertexArrays(1, &mesh.vao);
+    glBindVertexArray(mesh.vao);
 
-        leftIndices.push_back(0);
-        leftIndices.push_back(lastIndex + 1);
-        leftIndices.push_back(1);
-      }
+    // Create and populate vertex buffer
+    glGenBuffers(1, &mesh.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+    glBufferData(GL_ARRAY_BUFFER,
+      mesh.vertices.size() * sizeof(RoadVertex),
+      mesh.vertices.data(),
+      GL_STATIC_DRAW);
 
-      if (splinePoints[0].barrierDistance.y > 0.0f &&
-        splinePoints[numPoints - 1].barrierDistance.y > 0.0f &&
-        !rightVertices.empty()) {
-        GLuint lastIndex = static_cast<GLuint>((rightVertices.size() / 2 - 1) * 2);
-        rightIndices.push_back(lastIndex);
-        rightIndices.push_back(lastIndex + 1);
-        rightIndices.push_back(0);
+    // Create and populate index buffer
+    glGenBuffers(1, &mesh.ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+      mesh.indices.size() * sizeof(GLuint),
+      mesh.indices.data(),
+      GL_STATIC_DRAW);
 
-        rightIndices.push_back(0);
-        rightIndices.push_back(lastIndex + 1);
-        rightIndices.push_back(1);
-      }
+    // Position attribute (vec2)
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(RoadVertex),
+      (void*)offsetof(RoadVertex, position));
+
+    // UV attribute (vec2)
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(RoadVertex),
+      (void*)offsetof(RoadVertex, uv));
+
+    // Distance attribute (float)
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(RoadVertex),
+      (void*)offsetof(RoadVertex, distanceAlong));
+
+    // Depth attribute (float)
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(RoadVertex),
+      (void*)offsetof(RoadVertex, depth));
+
+    glBindVertexArray(0);
+  }
+
+  static StartLineMeshData generateStartLineMesh(const SplineTrack& track) {
+    StartLineMeshData mesh;
+    const float LINE_WIDTH = 5.0f;  // Made wider for better visibility
+
+    const TrackNode* startNode = track.getStartLineNode();
+    if (!startNode) {
+      std::cout << "No start node found\n";
+      return mesh;
     }
 
-    mesh.leftSide.vertices = std::move(leftVertices);
-    mesh.leftSide.indices = std::move(leftIndices);
-    mesh.rightSide.vertices = std::move(rightVertices);
-    mesh.rightSide.indices = std::move(rightIndices);
+    std::cout << "Generating start line at position: "
+      << startNode->getPosition().x << ", "
+      << startNode->getPosition().y << "\n";
 
-    createBuffers(mesh.leftSide);
-    createBuffers(mesh.rightSide);
+    // Find the previous and next nodes to compute proper direction
+    const auto& nodes = track.getNodes();
+    size_t nodeIdx = std::find_if(nodes.begin(), nodes.end(),
+      [startNode](const TrackNode& node) { return &node == startNode; }) - nodes.begin();
+
+    size_t prevIdx = (nodeIdx > 0) ? (nodeIdx - 1) : (nodes.size() - 1);
+    size_t nextIdx = (nodeIdx + 1) % nodes.size();
+
+    // Get positions and calculate directions
+    const glm::vec2& prevPos = nodes[prevIdx].getPosition();
+    const glm::vec2& currentPos = startNode->getPosition();
+    const glm::vec2& nextPos = nodes[nextIdx].getPosition();
+
+    glm::vec2 inDir = glm::normalize(currentPos - prevPos);
+    glm::vec2 outDir = glm::normalize(nextPos - currentPos);
+
+    // Calculate perpendicular
+    glm::vec2 perpendicular(-outDir.y, outDir.x);  // Simplified for now
+    float roadWidth = startNode->getRoadWidth();
+
+    std::cout << "Road width: " << roadWidth << "\n";
+    std::cout << "Perpendicular vector: " << perpendicular.x << ", " << perpendicular.y << "\n";
+
+    // Create line vertices
+    RoadVertex v1, v2, v3, v4;
+
+    // Create centerline points
+    glm::vec2 lineStart = currentPos - perpendicular * roadWidth;
+    glm::vec2 lineEnd = currentPos + perpendicular * roadWidth;
+
+    // Create rectangle vertices
+    glm::vec2 linePerp(-perpendicular.y, perpendicular.x);
+    v1.position = lineStart - linePerp * LINE_WIDTH;
+    v2.position = lineStart + linePerp * LINE_WIDTH;
+    v3.position = lineEnd + linePerp * LINE_WIDTH;
+    v4.position = lineEnd - linePerp * LINE_WIDTH;
+
+    // Print vertex positions for debugging
+    std::cout << "Start line vertices:\n";
+    std::cout << "v1: " << v1.position.x << ", " << v1.position.y << "\n";
+    std::cout << "v2: " << v2.position.x << ", " << v2.position.y << "\n";
+    std::cout << "v3: " << v3.position.x << ", " << v3.position.y << "\n";
+    std::cout << "v4: " << v4.position.x << ", " << v4.position.y << "\n";
+
+    // Set UV coordinates
+    v1.uv = glm::vec2(0.0f, 0.0f);
+    v2.uv = glm::vec2(1.0f, 0.0f);
+    v3.uv = glm::vec2(1.0f, 1.0f);
+    v4.uv = glm::vec2(0.0f, 1.0f);
+
+    // Set depth to ensure it's drawn above the road
+    v1.depth = 0.0f;  // Changed to 0 to make sure it's visible
+    v2.depth = 0.0f;
+    v3.depth = 0.0f;
+    v4.depth = 0.0f;
+
+    // Set distance along road
+    v1.distanceAlong = 0.0f;
+    v2.distanceAlong = 0.0f;
+    v3.distanceAlong = 0.0f;
+    v4.distanceAlong = 0.0f;
+
+    mesh.vertices = { v1, v2, v3, v4 };
+    mesh.indices = { 0, 1, 2, 2, 3, 0 };
+
+    createStartLineBuffers(mesh);
+
+    // Verify buffer creation
+    std::cout << "Start line mesh created with VAO: " << mesh.vao
+      << ", VBO: " << mesh.vbo
+      << ", IBO: " << mesh.ibo << "\n";
 
     return mesh;
   }
-
 };
