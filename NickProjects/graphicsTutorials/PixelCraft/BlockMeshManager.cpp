@@ -122,3 +122,81 @@ inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Blo
     return (position.x >= blockPos.x - blockSize.x / 2 && position.x <= blockPos.x + blockSize.x / 2 &&
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
 }
+
+void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
+    // Calc player chunk position
+    int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
+    int playerChunkY = static_cast<int>(playerPos.y) / CHUNK_WIDTH;
+
+    // Loop through the chunks within the radius and load them
+    for (int dx = -loadRadius; dx <= loadRadius; ++dx) {
+        for (int dy = -loadRadius; dy <= loadRadius; ++dy) {
+            int chunkX = playerChunkX + dx;
+            int chunkY = playerChunkY + dy;
+            if (!isChunkLoaded(chunkX, chunkY)) {
+                loadChunk(chunkX, chunkY);
+            }
+        }
+    }
+}
+
+bool BlockManager::isChunkLoaded(int x, int y) {
+    // Makes sure the chunk is within world bounds
+    if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
+        return false;
+    }
+
+    return m_chunks[x][y].getWorldPosition() != glm::vec2(0.0f, 0.0f);
+}
+
+void BlockManager::loadChunk(int x, int y) {
+    if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
+        return; // Out of bounds
+    }
+
+    Chunk chunk;
+    chunk.m_worldPosition = glm::vec2(x * CHUNK_WIDTH, y * CHUNK_WIDTH);
+
+    // might remove later, dont want to generate all the chunks when i really want to generate one
+    chunk.generateChunks();
+
+    m_chunks[x][y] = chunk;
+}
+
+bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {
+    // Calcs the distance between the player and the chunk
+    float distance = glm::distance(playerPos, chunkPos);
+
+    const float farthestChunkAllowed = 10.0f;
+
+    const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
+
+    return distance > unloadDistance;
+
+}
+
+void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
+    // Calc player chunk position
+    int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
+    int playerChunkY = static_cast<int>(playerPos.y) / CHUNK_WIDTH;
+
+    // Loop through all loaded chunks and unload ones that are far away
+    for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
+        for (int y = 0; y <= WORLD_WIDTH_CHUNKS; ++y) {
+            if (isChunkLoaded(x, y)) {
+                glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
+                if (isChunkFarAway(playerPos, chunkPos)) {
+                    unloadChunk(x, y);
+                }
+            }
+        }
+    }
+}
+
+void BlockManager::unloadChunk(int x, int y) {
+    if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
+        return; // Out of bounds
+    }
+
+    m_chunks[x][y] = Chunk(); // Reset chunk to default
+}
