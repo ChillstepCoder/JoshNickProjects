@@ -148,6 +148,7 @@
     <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="imgui_impls.cpp" />
     <ClCompile Include="LevelEditorScreen.cpp" />
+    <ClCompile Include="LevelRenderer.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="RoadMeshGenerator.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="imgui_impls.h" />
     <ClInclude Include="InputState.h" />
     <ClInclude Include="LevelEditorScreen.h" />
+    <ClInclude Include="LevelRenderer.h" />
     <ClInclude Include="ObjectManager.h" />
     <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="PlaceableObject.h" />

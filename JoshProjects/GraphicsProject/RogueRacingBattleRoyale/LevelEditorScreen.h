@@ -10,6 +10,8 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <ImGui/imgui.h>
+#include "LevelRenderer.h"
+
 
 // Forward declarations
 class SplineTrack;
@@ -39,17 +41,12 @@ public:
 private:
 
   glm::vec2 screenToWorld(const glm::vec2& screenCoords);
-  void initShaders();
-  void initBackgroundQuad();
   void drawImGui();
-  void drawObject(const PlaceableObject& obj, const JAGEngine::ColorRGBA8& color);
   void checkImGuiState();
   void drawDebugWindow();
-  void drawMeshDebug();
   void exitGame();
   void handleInput();
   void handleObjectPlacement(const glm::vec2& worldPos);
-  void drawRoadEdges();
   void updateRoadMesh();
   void initDefaultTrack();
   void validatePlacedObjects();
@@ -64,7 +61,6 @@ private:
   TrackNode* m_draggedNode = nullptr;
   bool m_isDragging = false;
   glm::vec2 m_lastMousePos;
-  RoadMeshGenerator::StartLineMeshData m_startLineMesh;
 
   bool m_addNodeMode = false;
   glm::vec2 m_previewNodePosition = glm::vec2(0.0f);
@@ -72,8 +68,8 @@ private:
 
   // Rendering
   JAGEngine::SpriteBatch m_spriteBatch;
-  JAGEngine::GLSLProgram m_program;
   glm::mat4 m_projectionMatrix;
+  std::unique_ptr<LevelRenderer> m_levelRenderer;
 
   // ImGui state
   bool m_imguiInitialized = false;
@@ -94,22 +90,11 @@ private:
 
   // Shading
 
-  RoadMeshGenerator::MeshData m_roadMesh;
-  JAGEngine::GLSLProgram m_roadShader;
-
-  RoadMeshGenerator::OffroadMeshData m_offroadMesh;
-  JAGEngine::GLSLProgram m_offroadShader;
-  JAGEngine::GLSLProgram m_startLineShader;
-
-  JAGEngine::GLSLProgram m_grassShader;
-  RoadMeshGenerator::MeshData m_backgroundQuad;
   glm::vec3 m_grassColor = glm::vec3(0.2f, 0.5f, 0.1f);
   glm::vec3 m_offroadColor = glm::vec3(0.45f, 0.32f, 0.15f);
   float m_grassNoiseScale = 100.0f;
   float m_grassNoiseIntensity = 1.0f;
 
-  JAGEngine::GLSLProgram m_barrierShader;
-  RoadMeshGenerator::BarrierMeshData m_barrierMesh;
   glm::vec3 m_barrierPrimaryColor = glm::vec3(1.0f, 1.0f, 1.0f);
   glm::vec3 m_barrierSecondaryColor = glm::vec3(0.0f, 0.0f, 0.0f);
   float m_barrierPatternScale = 5.0f;
