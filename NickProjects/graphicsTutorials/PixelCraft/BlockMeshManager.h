@@ -40,6 +40,7 @@ public:
 
 const int WORLD_WIDTH_CHUNKS = 128;
 const int WORLD_HEIGHT_CHUNKS = 64;
+const int loadRadius = 5;
 
 class BlockManager {
 public:
@@ -73,7 +74,7 @@ public:
 
     bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
 
-    void unloadChunks(const glm::vec2& playerPos);
+    void unloadFarChunks(const glm::vec2& playerPos);
 
     void unloadChunk(int x, int y);
 
