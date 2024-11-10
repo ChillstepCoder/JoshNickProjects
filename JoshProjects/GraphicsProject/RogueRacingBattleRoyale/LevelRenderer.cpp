@@ -266,14 +266,16 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
       color);
   }
 
-  // Add object placement preview
-  if (m_objectPlacementMode && m_selectedTemplateIndex >= 0) {
-    const auto& templates = objectManager->getObjectTemplates();
-    if (m_selectedTemplateIndex < templates.size()) {
-      const auto& template_obj = templates[m_selectedTemplateIndex];
-      const auto& texture = template_obj->getTexture();
-      float baseWidth = texture.width * template_obj->getScale().x;
-      float baseHeight = texture.height * template_obj->getScale().y;
+  // Add preview rendering for both placement and dragging
+  if ((m_objectPlacementMode && m_selectedTemplateIndex >= 0) || m_showObjectPreview) {
+    const PlaceableObject* previewObj = m_showObjectPreview ?
+      m_previewObject :
+      objectManager->getObjectTemplates()[m_selectedTemplateIndex].get();
+
+    if (previewObj) {
+      const auto& texture = previewObj->getTexture();
+      float baseWidth = texture.width * previewObj->getScale().x;
+      float baseHeight = texture.height * previewObj->getScale().y;
 
       glm::vec4 destRect(
         m_previewPosition.x - baseWidth * 0.5f,
@@ -282,15 +284,15 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
         baseHeight
       );
 
-      bool validPlacement = objectManager->isValidPlacement(template_obj.get(), m_previewPosition);
+      bool validPlacement = objectManager->isValidPlacement(previewObj, m_previewPosition);
       JAGEngine::ColorRGBA8 previewColor = validPlacement ?
-        JAGEngine::ColorRGBA8(0, 255, 0, 128) :  // Green with transparency
-        JAGEngine::ColorRGBA8(255, 0, 0, 128);   // Red with transparency
+        JAGEngine::ColorRGBA8(0, 255, 0, 128) :
+        JAGEngine::ColorRGBA8(255, 0, 0, 128);
 
       m_spriteBatch.draw(destRect,
         glm::vec4(0, 0, 1, 1),
         texture.id,
-        template_obj->getRotation(),
+        previewObj->getRotation(),
         previewColor);
     }
   }

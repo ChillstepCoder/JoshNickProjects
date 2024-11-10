@@ -44,6 +44,13 @@ public:
     m_barrierPrimaryColor = primary;
     m_barrierSecondaryColor = secondary;
   }
+
+  void setObjectPlacementPreview(bool show, PlaceableObject* obj, const glm::vec2& pos) {
+    m_showObjectPreview = show;
+    m_previewObject = obj;
+    m_previewPosition = pos;
+  }
+
   void setBarrierPatternScale(float scale) { m_barrierPatternScale = scale; }
   void setRoadLOD(int lod) { m_roadLOD = glm::clamp(lod, MIN_LOD, MAX_LOD); }
 
@@ -115,4 +122,7 @@ private:
   bool m_objectPlacementMode = false;
   int m_selectedTemplateIndex = -1;
   glm::vec2 m_previewPosition = glm::vec2(0.0f);
+
+  bool m_showObjectPreview = false;
+  PlaceableObject* m_previewObject = nullptr;
 };

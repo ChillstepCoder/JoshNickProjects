@@ -63,6 +63,7 @@ private:
   glm::vec2 m_lastMousePos;
 
   bool m_addNodeMode = false;
+  bool m_deleteObjectMode = false;
   glm::vec2 m_previewNodePosition = glm::vec2(0.0f);
   bool m_showPreviewNode = false;
 

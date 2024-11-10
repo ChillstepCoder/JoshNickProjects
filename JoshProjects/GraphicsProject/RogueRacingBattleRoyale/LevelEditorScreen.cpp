@@ -151,6 +151,7 @@ void LevelEditorScreen::checkImGuiState() {
 }
 
 void LevelEditorScreen::drawDebugWindow() {
+  bool modeChanged = false;
   ImGui::SetNextWindowPos(ImVec2(10, 220), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);
 
@@ -192,9 +193,11 @@ void LevelEditorScreen::drawDebugWindow() {
   }
 
   // Add node mode toggle
-  ImGui::Checkbox("Add Node Mode", &m_addNodeMode);
-  if (m_addNodeMode) {
-    ImGui::TextWrapped("Click on the track to add a new node");
+  if (ImGui::Checkbox("Add Node Mode", &m_addNodeMode)) {
+    if (m_addNodeMode) {
+      m_objectPlacementMode = false;
+      m_deleteObjectMode = false;
+    }
   }
 
   // Node Properties
@@ -270,8 +273,19 @@ void LevelEditorScreen::drawDebugWindow() {
 
   // Object Placement
   if (ImGui::CollapsingHeader("Object Placement", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::Checkbox("Place Objects", &m_objectPlacementMode);
-
+    if (ImGui::Checkbox("Place Objects", &m_objectPlacementMode)) {
+      if (m_objectPlacementMode) {
+        m_addNodeMode = false;
+        m_deleteObjectMode = false;
+      }
+    }
+    // Delete Objects Mode
+    if (ImGui::Checkbox("Delete Objects", &m_deleteObjectMode)) {
+      if (m_deleteObjectMode) {
+        m_addNodeMode = false;
+        m_objectPlacementMode = false;
+      }
+    }
     const auto& templates = m_objectManager->getObjectTemplates();
 
     // Create preview label
@@ -371,11 +385,12 @@ void LevelEditorScreen::handleInput() {
   bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse;
   bool imguiWantsKeyboard = ImGui::GetIO().WantCaptureKeyboard;
 
-  // Handle camera controls if ImGui isn't capturing keyboard
+  // ====================================
+  // Handle keyboard input for camera
+  // ====================================
   if (!imguiWantsKeyboard) {
     // Handle zoom
     float currentScale = m_camera.getScale();
-
     if (inputManager.isKeyDown(SDLK_q) || inputManager.isKeyDown(SDLK_MINUS) ||
       inputManager.isKeyDown(SDLK_UNDERSCORE)) {
       currentScale /= m_zoomFactor;
@@ -384,15 +399,12 @@ void LevelEditorScreen::handleInput() {
       inputManager.isKeyDown(SDLK_PLUS)) {
       currentScale *= m_zoomFactor;
     }
-
-    // Clamp zoom
     currentScale = glm::clamp(currentScale, m_minZoom, m_maxZoom);
     m_camera.setScale(currentScale);
 
     // Handle camera movement
     glm::vec2 cameraPosition = m_camera.getPosition();
     float adjustedSpeed = m_cameraSpeed;
-
     if (inputManager.isKeyDown(SDLK_w) || inputManager.isKeyDown(SDLK_UP)) {
       cameraPosition.y += adjustedSpeed;
     }
@@ -405,30 +417,38 @@ void LevelEditorScreen::handleInput() {
     if (inputManager.isKeyDown(SDLK_d) || inputManager.isKeyDown(SDLK_RIGHT)) {
       cameraPosition.x += adjustedSpeed;
     }
-
     m_camera.setPosition(cameraPosition);
   }
 
+  // ====================================
   // Handle mouse input
+  // ====================================
   if (!imguiWantsMouse) {
-    // Convert screen coordinates to world coordinates
     glm::vec2 screenCoords = inputManager.getMouseCoords();
     glm::vec2 worldPos = m_camera.convertScreenToWorld(screenCoords);
 
+    // -----------------------------
+    // Handle different modes
+    // -----------------------------
     if (m_objectPlacementMode) {
-      // Handle object placement mode
+      // Object placement mode - handle placing new objects
       handleObjectPlacement(worldPos);
-
-      // Reset node-related states when in object placement mode
-      m_showPreviewNode = false;
-      m_isDragging = false;
-      if (m_selectedNode) {
-        m_selectedNode->setSelected(false);
-        m_selectedNode = nullptr;
+    }
+    else if (m_deleteObjectMode) {
+      // Delete mode - remove objects on click
+      if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+        PlaceableObject* clickedObject = m_objectManager->getObjectAtPosition(worldPos);
+        if (clickedObject) {
+          if (m_selectedObject) m_selectedObject->setSelected(false);
+          m_selectedObject = clickedObject;
+          m_selectedObject->setSelected(true);
+          m_objectManager->removeSelectedObject();
+          m_selectedObject = nullptr;
+        }
       }
     }
     else if (m_addNodeMode) {
-      // Handle node addition mode
+      // Add node mode - preview and add new track nodes
       m_previewNodePosition = findClosestSplinePoint(worldPos);
       m_showPreviewNode = true;
 
@@ -436,7 +456,7 @@ void LevelEditorScreen::handleInput() {
         addNodeAtPosition(m_previewNodePosition);
       }
 
-      // Reset object-related states when in node addition mode
+      // Clear any selected objects in add node mode
       if (m_selectedObject) {
         m_selectedObject->setSelected(false);
         m_selectedObject = nullptr;
@@ -444,40 +464,100 @@ void LevelEditorScreen::handleInput() {
       m_isDraggingObject = false;
     }
     else {
-      // Reset hover states
-      for (auto& node : m_track->getNodes()) {
-        node.setHovered(false);
-      }
+      // -----------------------------
+      // Free manipulation mode
+      // -----------------------------
 
-      float baseRadius = 20.0f;
-      float scaledRadius = baseRadius / m_camera.getScale();
-
-      TrackNode* hoveredNode = m_track->getNodeAtPosition(worldPos, scaledRadius);
-      if (hoveredNode) {
-        hoveredNode->setHovered(true);
-      }
-
-      if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
-        if (!m_isDragging && hoveredNode) {
-          if (m_selectedNode && m_selectedNode != hoveredNode) {
-            m_selectedNode->setSelected(false);
-          }
-          m_selectedNode = hoveredNode;
-          m_selectedNode->setSelected(true);
-          m_isDragging = true;
+      // Update node hover states if not dragging an object
+      if (!m_isDraggingObject) {
+        for (auto& node : m_track->getNodes()) {
+          node.setHovered(false);
         }
 
-        if (m_isDragging && m_selectedNode) {
-          m_selectedNode->setPosition(worldPos);
-          updateRoadMesh();
+        float baseRadius = 20.0f;
+        float scaledRadius = baseRadius / m_camera.getScale();
+        TrackNode* hoveredNode = m_track->getNodeAtPosition(worldPos, scaledRadius);
+        if (hoveredNode) {
+          hoveredNode->setHovered(true);
+        }
+
+        // Handle node selection and dragging
+        if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+          if (!m_isDragging && hoveredNode && !m_isDraggingObject) {
+            // Select new node
+            if (m_selectedNode && m_selectedNode != hoveredNode) {
+              m_selectedNode->setSelected(false);
+            }
+            m_selectedNode = hoveredNode;
+            m_selectedNode->setSelected(true);
+            m_isDragging = true;
+          }
+
+          if (m_isDragging && m_selectedNode) {
+            // Move selected node
+            m_selectedNode->setPosition(worldPos);
+            updateRoadMesh();
+          }
+        }
+        else {
+          // Handle node drag release
+          if (m_isDragging) {
+            validatePlacedObjects();
+          }
+          m_isDragging = false;
+        }
+      }
+
+      // Handle object manipulation
+      if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+        if (!m_isDraggingObject && !m_isDragging) {
+          // Try to select an object if not already dragging anything
+          PlaceableObject* clickedObject = m_objectManager->getObjectAtPosition(worldPos);
+          if (clickedObject) {
+            // Clear any selected node when starting object drag
+            if (m_selectedNode) {
+              m_selectedNode->setSelected(false);
+              m_selectedNode = nullptr;
+            }
+
+            // Select the object
+            if (m_selectedObject) m_selectedObject->setSelected(false);
+            m_selectedObject = clickedObject;
+            m_selectedObject->setSelected(true);
+            m_isDraggingObject = true;
+            m_lastDragPos = worldPos;
+          }
+          else {
+            if (m_selectedObject) {
+              m_selectedObject->setSelected(false);
+              m_selectedObject = nullptr;
+            }
+          }
+        }
+        else if (m_isDraggingObject && m_selectedObject) {
+          // Continue dragging selected object
+          glm::vec2 dragDelta = worldPos - m_lastDragPos;
+          glm::vec2 newPos = m_selectedObject->getPosition() + dragDelta;
+
+          // Update object position and show preview
+          m_selectedObject->setPosition(newPos);
+          m_lastDragPos = worldPos;
+
+          bool validPlacement = m_objectManager->isValidPlacement(m_selectedObject, newPos);
+          m_levelRenderer->setObjectPlacementPreview(true, m_selectedObject, newPos);
         }
       }
       else {
-        // Mouse released after dragging
-        if (m_isDragging) {
-          validatePlacedObjects();
+        // Handle object drag release
+        if (m_isDraggingObject && m_selectedObject) {
+          glm::vec2 finalPos = m_selectedObject->getPosition();
+          if (!m_objectManager->isValidPlacement(m_selectedObject, finalPos)) {
+            m_objectManager->removeSelectedObject();
+            m_selectedObject = nullptr;
+          }
+          m_isDraggingObject = false;
+          m_levelRenderer->setObjectPlacementPreview(false, nullptr, glm::vec2(0.0f));
         }
-        m_isDragging = false;
       }
     }
 
@@ -488,92 +568,21 @@ void LevelEditorScreen::handleInput() {
 void LevelEditorScreen::handleObjectPlacement(const glm::vec2& worldPos) {
   if (!m_objectManager) return;
 
-  // Don't handle placement if ImGui is using the mouse
-  ImGuiIO& io = ImGui::GetIO();
-  if (io.WantCaptureMouse) return;
-
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   JAGEngine::InputManager& inputManager = game->getInputManager();
 
-  if (m_objectPlacementMode && m_selectedTemplateIndex >= 0) {
+  if (m_selectedTemplateIndex >= 0) {
     const auto& templates = m_objectManager->getObjectTemplates();
     if (m_selectedTemplateIndex < templates.size()) {
       const auto& template_obj = templates[m_selectedTemplateIndex];
 
-      // Debug output for world position
-      std::cout << "Current world position: " << worldPos.x << ", " << worldPos.y << "\n";
-
+      // Place object on mouse click
       if (inputManager.isKeyDown(SDL_BUTTON_LEFT) && !m_wasMouseDown) {
         if (m_objectManager->isValidPlacement(template_obj.get(), worldPos)) {
           m_objectManager->addObject(m_selectedTemplateIndex, worldPos);
-          std::cout << "Object placed at world position: " << worldPos.x << ", " << worldPos.y << "\n";
         }
       }
     }
-  }
-  else {
-    // Handle selection and dragging in world space
-    if (inputManager.isKeyDown(SDL_BUTTON_LEFT) && !m_wasMouseDown) {
-      PlaceableObject* clickedObject = m_objectManager->getObjectAtPosition(worldPos);
-
-      if (clickedObject) {
-        if (m_selectedObject) m_selectedObject->setSelected(false);
-        m_selectedObject = clickedObject;
-        m_selectedObject->setSelected(true);
-        m_isDraggingObject = true;
-        m_lastDragPos = worldPos;
-      }
-      else {
-        if (m_selectedObject) {
-          m_selectedObject->setSelected(false);
-          m_selectedObject = nullptr;
-        }
-      }
-    }
-
-    // Handle dragging in world space
-    if (m_isDraggingObject && m_selectedObject) {
-      if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
-        glm::vec2 dragDelta = worldPos - m_lastDragPos;
-        glm::vec2 newPos = m_selectedObject->getPosition() + dragDelta;
-
-        if (m_objectManager->isValidPlacement(m_selectedObject, newPos)) {
-          m_selectedObject->setPosition(newPos);
-        }
-        m_lastDragPos = worldPos;
-      }
-      else {
-        m_isDraggingObject = false;
-      }
-    }
-  }
-
-  // Update mouse state
-  m_wasMouseDown = inputManager.isKeyDown(SDL_BUTTON_LEFT);
-
-  // Handle object rotation with R key
-  if (m_selectedObject && inputManager.isKeyDown(SDLK_r)) {
-    float rotation = m_selectedObject->getRotation();
-    rotation += 2.0f;
-    m_selectedObject->setRotation(rotation);
-  }
-
-  // Handle object scaling with + and - keys
-  if (m_selectedObject) {
-    glm::vec2 scale = m_selectedObject->getScale();
-    if (inputManager.isKeyDown(SDLK_EQUALS)) {
-      scale *= 1.02f;
-    }
-    if (inputManager.isKeyDown(SDLK_MINUS)) {
-      scale *= 0.98f;
-    }
-    m_selectedObject->setScale(glm::clamp(scale, glm::vec2(0.1f), glm::vec2(10.0f)));
-  }
-
-  // Handle object deletion with Delete key
-  if (m_selectedObject && inputManager.isKeyDown(SDLK_DELETE)) {
-    m_objectManager->removeSelectedObject();
-    m_selectedObject = nullptr;
   }
 }
 
