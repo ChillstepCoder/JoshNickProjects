@@ -75,6 +75,7 @@ void LevelRenderer::render(const JAGEngine::Camera2D& camera,
   ObjectManager* objectManager,
   bool showSplinePoints,
   RoadViewMode viewMode) {
+
   glm::mat4 cameraMatrix = camera.getCameraMatrix();
 
   if (viewMode == RoadViewMode::Shaded) {
@@ -85,24 +86,28 @@ void LevelRenderer::render(const JAGEngine::Camera2D& camera,
     renderStartLine(cameraMatrix);
   }
 
-  // Show spline points only in spline view mode
+  // Show spline points in spline view mode
   if (viewMode == RoadViewMode::Spline) {
     renderSplinePoints(cameraMatrix, track);
   }
 
-  // Show nodes whenever showSplinePoints is true, regardless of view mode
+  // Show nodes when requested
   if (showSplinePoints) {
     renderNodes(cameraMatrix, track);
   }
 
-  // Always render objects regardless of view mode
+  // Render start positions if enabled
+  if (m_showStartPositions) {
+    renderStartPositions(cameraMatrix, track);
+  }
+
+  // Always render objects and previews
   renderObjects(cameraMatrix, objectManager);
 
   if (viewMode == RoadViewMode::Wireframe) {
     renderWireframe(cameraMatrix);
   }
 }
-
 void LevelRenderer::renderBackground(const glm::mat4& cameraMatrix) {
   m_grassShader.use();
   glUniformMatrix4fv(m_grassShader.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
@@ -196,7 +201,7 @@ void LevelRenderer::renderNodes(const glm::mat4& cameraMatrix, SplineTrack* trac
   glUniformMatrix4fv(m_textureProgram.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
   m_spriteBatch.begin();
 
-  // Draw nodes
+  // Draw existing nodes
   for (const auto& node : track->getNodes()) {
     glm::vec4 nodeRect(
       node.getPosition().x - 10.0f,
@@ -227,7 +232,8 @@ void LevelRenderer::renderNodes(const glm::mat4& cameraMatrix, SplineTrack* trac
       20.0f,
       20.0f
     );
-    m_spriteBatch.draw(previewRect, glm::vec4(0, 0, 1, 1), 0, 0.0f, JAGEngine::ColorRGBA8(255, 255, 0, 200));
+    m_spriteBatch.draw(previewRect, glm::vec4(0, 0, 1, 1), 0, 0.0f,
+      JAGEngine::ColorRGBA8(255, 255, 0, 200));
   }
 
   m_spriteBatch.end();
@@ -266,7 +272,7 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
       color);
   }
 
-  // Add preview rendering for both placement and dragging
+  // Draw preview objects (both placement and dragging)
   if ((m_objectPlacementMode && m_selectedTemplateIndex >= 0) || m_showObjectPreview) {
     const PlaceableObject* previewObj = m_showObjectPreview ?
       m_previewObject :
@@ -391,4 +397,38 @@ void LevelRenderer::updateRoadMesh(SplineTrack* track) {
   m_offroadMesh = RoadMeshGenerator::generateOffroadMesh(*track, m_roadLOD);
   m_barrierMesh = RoadMeshGenerator::generateBarrierMesh(*track, m_roadLOD);
   m_startLineMesh = RoadMeshGenerator::generateStartLineMesh(*track);
+}
+
+void LevelRenderer::renderStartPositions(const glm::mat4& cameraMatrix, SplineTrack* track) {
+  if (!track || !m_showStartPositions) return;
+
+  m_textureProgram.use();
+  glUniformMatrix4fv(m_textureProgram.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
+  m_spriteBatch.begin();
+
+  const float MARKER_SIZE = 20.0f;
+  auto positions = track->calculateStartPositions();
+
+  for (size_t i = 0; i < positions.size(); i++) {
+    const auto& pos = positions[i];
+
+    // Draw position markers
+    glm::vec4 markerRect(
+      pos.position.x - MARKER_SIZE * 0.5f,
+      pos.position.y - MARKER_SIZE * 0.5f,
+      MARKER_SIZE,
+      MARKER_SIZE
+    );
+
+    // Alternate colors for left/right lanes
+    JAGEngine::ColorRGBA8 markerColor = (i % 2 == 0) ?
+      JAGEngine::ColorRGBA8(0, 255, 0, 200) :  // Left lane
+      JAGEngine::ColorRGBA8(255, 255, 0, 200); // Right lane
+
+    m_spriteBatch.draw(markerRect, glm::vec4(0, 0, 1, 1), 0, pos.angle, markerColor);
+  }
+
+  m_spriteBatch.end();
+  m_spriteBatch.renderBatch();
+  m_textureProgram.unuse();
 }

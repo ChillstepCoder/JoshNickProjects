@@ -33,6 +33,8 @@ public:
   // Mesh update function
   void updateRoadMesh(SplineTrack* track);
 
+  void renderStartPositions(const glm::mat4& cameraMatrix, SplineTrack* track);
+
   // Getters and setters for appearance
   void setGrassColor(const glm::vec3& color) { m_grassColor = color; }
   void setOffroadColor(const glm::vec3& color) { m_offroadColor = color; }
@@ -67,6 +69,10 @@ public:
   void setPreviewPosition(const glm::vec2& pos) {
     m_previewPosition = pos;
   }
+
+  void setShowStartPositions(bool show) { m_showStartPositions = show; }
+  bool getShowStartPositions() const { return m_showStartPositions; }
+
 
 private:
   // Helper rendering functions
@@ -125,4 +131,8 @@ private:
 
   bool m_showObjectPreview = false;
   PlaceableObject* m_previewObject = nullptr;
+
+  bool m_showStartPositions = true;
+
+
 };

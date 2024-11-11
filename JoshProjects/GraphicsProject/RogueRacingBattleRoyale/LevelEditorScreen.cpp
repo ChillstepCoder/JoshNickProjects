@@ -91,6 +91,8 @@ void LevelEditorScreen::drawImGui() {
   ImGui::End();
 }
 
+// In LevelEditorScreen::draw(), add back the preview setup code before the main render call:
+
 void LevelEditorScreen::draw() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -105,6 +107,7 @@ void LevelEditorScreen::draw() {
   m_levelRenderer->setBarrierPatternScale(m_barrierPatternScale);
   m_levelRenderer->setRoadLOD(m_roadLOD);
 
+  // Add back this critical preview setup code
   // Set preview node if in add node mode
   if (m_addNodeMode) {
     m_levelRenderer->setPreviewNode(m_previewNodePosition, m_showPreviewNode);
@@ -121,12 +124,17 @@ void LevelEditorScreen::draw() {
     m_levelRenderer->setPreviewPosition(mousePos);
   }
 
-  // Render the level
+  // Main render call
   m_levelRenderer->render(m_camera,
     m_track.get(),
     m_objectManager.get(),
     m_showSplinePoints,
     static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
+
+  // Draw start positions after main render
+  if (m_levelRenderer->getShowStartPositions()) {
+    m_levelRenderer->renderStartPositions(m_camera.getCameraMatrix(), m_track.get());
+  }
 
   // Draw ImGui windows last
   drawImGui();
@@ -350,6 +358,68 @@ void LevelEditorScreen::drawDebugWindow() {
     float offroadColor[3] = { m_offroadColor.r, m_offroadColor.g, m_offroadColor.b };
     if (ImGui::ColorEdit3("Offroad Color", offroadColor)) {
       m_offroadColor = glm::vec3(offroadColor[0], offroadColor[1], offroadColor[2]);
+    }
+  }
+
+  // Start Line Configuration
+
+  if (ImGui::CollapsingHeader("Start Line Configuration", ImGuiTreeNodeFlags_DefaultOpen)) {
+    SplineTrack::StartPositionConfig& config = m_track->getStartPositionConfig();
+
+    if (ImGui::Checkbox("Clockwise Track", &config.isClockwise)) {
+      updateRoadMesh();
+    }
+
+    if (ImGui::SliderInt("Number of Cars", &config.numPositions, 2, 20)) {
+      config.numPositions = glm::clamp(config.numPositions, 2, 20);
+      updateRoadMesh();
+    }
+
+    // Only show car spacing control (front-to-back distance)
+    if (ImGui::DragFloat("Car Spacing", &config.carSpacing, 0.5f, 20.0f, 150.0f)) {
+      updateRoadMesh();
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Distance between cars front-to-back");
+    }
+
+    // Visualization toggle
+    bool showPositions = m_levelRenderer->getShowStartPositions();
+    if (ImGui::Checkbox("Show Start Positions", &showPositions)) {
+      m_levelRenderer->setShowStartPositions(showPositions);
+    }
+
+    // Start line info
+    TrackNode* startNode = m_track->getStartLineNode();
+    if (startNode) {
+      ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
+        "Start line is set at node position (%.1f, %.1f)",
+        startNode->getPosition().x,
+        startNode->getPosition().y);
+
+      // Show direction info
+      glm::vec2 direction = m_track->getTrackDirectionAtNode(startNode);
+      if (config.isClockwise) {
+        direction = -direction;
+      }
+      ImGui::Text("Track Direction: (%.2f, %.2f)", direction.x, direction.y);
+    }
+    else {
+      ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
+        "No start line set! Select a node and mark it as start line.");
+    }
+
+    // Show starting position information
+    if (ImGui::TreeNode("Starting Position Info")) {
+      auto positions = m_track->calculateStartPositions();
+      for (size_t i = 0; i < positions.size(); i++) {
+        ImGui::Text("Car %zu: Position (%.1f, %.1f) Angle: %.1f°",
+          i + 1,
+          positions[i].position.x,
+          positions[i].position.y,
+          glm::degrees(positions[i].angle));
+      }
+      ImGui::TreePop();
     }
   }
 
