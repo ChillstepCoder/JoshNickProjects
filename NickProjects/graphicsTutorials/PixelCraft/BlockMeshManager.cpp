@@ -1,3 +1,4 @@
+#include <Bengine/ResourceManager.h>
 #include "BlockMeshManager.h"
 #include "DebugDraw.h"
 #include "PerlinNoise.hpp"
@@ -29,7 +30,7 @@ void BlockMeshManager::renderMesh() {
     m_spriteBatch.renderBatch();
 }
 
-void Chunk::generateChunks() {
+void BlockManager::generateChunks() {
     // Create Perlin noise instance with random seed
     siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
 
@@ -66,31 +67,135 @@ void Chunk::generateChunks() {
         float worldX = START_X + x * BLOCK_WIDTH;
         Block surfaceBlock;
         glm::vec2 position(worldX, height * BLOCK_HEIGHT);
-        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png");
         surfaceBlock.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-            m_texture, textureColor, false);
-        m_blockManager->addBlock(surfaceBlock);
+            Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor, false);
+        m_blocks.push_back(surfaceBlock);
 
         // Fill blocks below surface with dirt
-        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png");
         for (int y = height - 1; y > height - 10; y--) {
             Block dirtBlock;
             glm::vec2 dirtPos(worldX, y * BLOCK_HEIGHT);
             dirtBlock.init(&m_world, dirtPos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                m_texture, textureColor, false);
-            m_blockManager->addBlock(dirtBlock);
+                Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor, false);
+            m_blocks.push_back(dirtBlock);
         }
 
         // Fill deeper blocks with stone
-        m_texture = Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png");
         for (int y = height - 10; y > height - 50; y--) {
             Block stoneBlock;
             glm::vec2 stonePos(worldX, y * BLOCK_HEIGHT);
             stoneBlock.init(&m_world, stonePos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                m_texture, textureColor, false);
-            m_blockManager->addBlock(stoneBlock);
+                Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor, false);
+            m_blocks.push_back(stoneBlock);
         }
     }
+
+    rebuildMesh();
+
+    /*
+    // Generate caves using 2D Perlin noise
+    const float CAVE_SCALE = 0.4f;
+    const float CAVE_THRESHOLD = 0.4f; // Adjust this to control cave density
+
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        for (int y = heightMap[x] - 8; y > heightMap[x] - 35; y--) {
+            float caveNoise = perlin.noise2D(x * CAVE_SCALE, y * CAVE_SCALE);
+            if (caveNoise > CAVE_THRESHOLD) {
+                // Find and remove blocks at this position
+                float worldX = START_X + x * BLOCK_WIDTH;
+                float worldY = y * BLOCK_HEIGHT;
+
+                auto it = std::remove_if(m_blockManager->getBlocks().begin(), m_blockManager->getBlocks().end(),
+                    [worldX, worldY, BLOCK_WIDTH, BLOCK_HEIGHT](Block& block) {
+                        b2Vec2 pos = block.getPosition();
+                        return (pos.x >= worldX - BLOCK_WIDTH / 2 &&
+                            pos.x <= worldX + BLOCK_WIDTH / 2 &&
+                            pos.y >= worldY - BLOCK_HEIGHT / 2 &&
+                            pos.y <= worldY + BLOCK_HEIGHT / 2);
+                    });
+
+                m_blockManager->getBlocks().erase(it, m_blockManager->getBlocks().end());
+            }
+        }
+    }
+
+    // Load the copper ore texture
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedCopperBlock.png");
+
+    // Parameters for ore vein generation
+    const float ORE_VEIN_SCALE = 0.03f;  // Controls how stretched the ore veins are
+    const float ORE_VEIN_THRESHOLD = 0.25f; // Adjust this to control ore vein density
+    const int MIN_VEIN_LENGTH = 5;      // Minimum length of an ore vein
+    const int MAX_VEIN_LENGTH = 9;     // Maximum length of an ore vein
+
+    // Generate copper ore veins
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        for (int y = heightMap[x] - 12; y > heightMap[x] - 35; y--) {
+            float oreNoise = perlin.noise2D(x * ORE_VEIN_SCALE, y * ORE_VEIN_SCALE);
+            if (oreNoise > ORE_VEIN_THRESHOLD) {
+                // Start a new ore vein
+                int veinLength = MIN_VEIN_LENGTH + rand() % (MAX_VEIN_LENGTH - MIN_VEIN_LENGTH + 1);
+                int veinStartX = x;
+                int veinStartY = y;
+
+                for (int i = 0; i < veinLength; i++) {
+                    // Create ore blocks along the vein
+                    float worldX = START_X + veinStartX * BLOCK_WIDTH;
+                    float worldY = veinStartY * BLOCK_HEIGHT;
+                    Block oreBlock;
+                    oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                        m_texture, textureColor, false);
+                    m_blockManager->addBlock(oreBlock);
+
+                    // Move to the next position in the vein
+                    veinStartX++;
+                    if (veinStartX >= NUM_BLOCKS_X) {
+                        // Wrap around to the beginning if we reach the end
+                        veinStartX = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedIronBlock.png");
+
+    // Parameters for iron vein generation
+    const float ORE_VEIN_SCALE2 = 0.02f;  // Controls how stretched the ore veins are
+    const float ORE_VEIN_THRESHOLD2 = 0.45f; // Adjust this to control ore vein density
+    const int MIN_VEIN_LENGTH2 = 5;      // Minimum length of an ore vein
+    const int MAX_VEIN_LENGTH2 = 9;     // Maximum length of an ore vein
+
+    // Generate iron ore veins
+    for (int x = 0; x < NUM_BLOCKS_X; x++) {
+        for (int y = heightMap[x] - 12; y > heightMap[x] - 35; y--) {
+            float oreNoise = perlin.noise2D(x * ORE_VEIN_SCALE2, y * ORE_VEIN_SCALE2);
+            if (oreNoise > ORE_VEIN_THRESHOLD2) {
+                // Start a new ore vein
+                int veinLength = MIN_VEIN_LENGTH2 + rand() % (MAX_VEIN_LENGTH2 - MIN_VEIN_LENGTH2 + 1);
+                int veinStartX = x;
+                int veinStartY = y;
+
+                for (int i = 0; i < veinLength; i++) {
+                    // Create ore blocks along the vein
+                    float worldX = START_X + veinStartX * BLOCK_WIDTH;
+                    float worldY = veinStartY * BLOCK_HEIGHT;
+                    Block oreBlock;
+                    oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                        m_texture, textureColor, false);
+                    m_blockManager->addBlock(oreBlock);
+
+                    // Move to the next position in the vein
+                    veinStartX++;
+                    if (veinStartX >= NUM_BLOCKS_X) {
+                        // Wrap around to the beginning if we reach the end
+                        veinStartX = 0;
+                    }
+                }
+            }
+        }
+    }
+    */
 }
 
 
@@ -145,8 +250,10 @@ bool BlockManager::isChunkLoaded(int x, int y) {
     if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
         return false;
     }
-
-    return m_chunks[x][y].getWorldPosition() != glm::vec2(0.0f, 0.0f);
+    if (x >= 0 && x < m_chunks.size() && y >= 0 && y < m_chunks[x].size()) {
+        return m_chunks[x][y].getWorldPosition() != glm::vec2(0.0f, 0.0f);
+    }
+    return false;
 }
 
 void BlockManager::loadChunk(int x, int y) {
@@ -154,11 +261,17 @@ void BlockManager::loadChunk(int x, int y) {
         return; // Out of bounds
     }
 
+    if (x >= m_chunks.size()) {
+        m_chunks.resize(x + 1);  // Resize outer vector if x is out of bounds
+    }
+
+    if (y >= m_chunks[x].size()) {
+        m_chunks[x].resize(y + 1);  // Resize the inner vector if y is out of bounds
+    }
+
+
     Chunk chunk;
     chunk.m_worldPosition = glm::vec2(x * CHUNK_WIDTH, y * CHUNK_WIDTH);
-
-    // might remove later, dont want to generate all the chunks when i really want to generate one
-    chunk.generateChunks();
 
     m_chunks[x][y] = chunk;
 }

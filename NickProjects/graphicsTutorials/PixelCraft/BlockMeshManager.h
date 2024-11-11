@@ -32,8 +32,6 @@ public:
         return m_worldPosition;
     }
 
-    void generateChunks();
-
     glm::vec2 m_worldPosition;
 
 };
@@ -61,6 +59,8 @@ public:
     std::vector<Block>& getBlocks() {
         return m_blocks;
     }
+
+    void generateChunks();
 
     void breakBlockAtPosition(const glm::vec2& position);
 
