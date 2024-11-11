@@ -51,8 +51,6 @@ private:
 
     void drawHud();
 
-    void generateWorld();
-
     Bengine::SpriteBatch m_spriteBatch;
     Bengine::GLSLProgram m_textureProgram;
     Bengine::GLSLProgram m_textRenderingProgram; ///< Shader for text

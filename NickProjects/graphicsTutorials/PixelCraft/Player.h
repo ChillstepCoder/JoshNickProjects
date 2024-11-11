@@ -37,6 +37,7 @@ public:
 private:
     b2BodyId m_bodyId;
     b2BodyDef* m_body = nullptr;
+    glm::vec2 m_position;
     glm::vec2 m_dimensions;
     Bengine::ColorRGBA8 m_color;
     Bengine::GLTexture m_texture;

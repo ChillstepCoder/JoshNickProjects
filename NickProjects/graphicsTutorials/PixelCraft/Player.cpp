@@ -24,6 +24,7 @@ b2Vec2 Player::getPosition() {
 void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color, Bengine::Camera2D* camera) {
     Bengine::GLTexture texture = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
     m_camera = camera;
+    m_position = position;
     m_dimensions = dimensions;
     m_color = color;
     m_texture = texture;
