@@ -88,6 +88,64 @@ public:
     }
   };
 
+  struct StartLineMeshData {
+    std::vector<RoadVertex> vertices;
+    std::vector<GLuint> indices;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLuint ibo = 0;
+
+    StartLineMeshData() = default;
+
+    // Copy constructor
+    StartLineMeshData(const StartLineMeshData& other) {
+      vertices = other.vertices;
+      indices = other.indices;
+      vao = 0;
+      vbo = 0;
+      ibo = 0;
+      if (!vertices.empty() && !indices.empty()) {
+        createStartLineBuffers(*this);
+      }
+    }
+
+    // Assignment operator
+    StartLineMeshData& operator=(const StartLineMeshData& other) {
+      if (this != &other) {
+        cleanup();
+        vertices = other.vertices;
+        indices = other.indices;
+        vao = 0;
+        vbo = 0;
+        ibo = 0;
+        if (!vertices.empty() && !indices.empty()) {
+          createStartLineBuffers(*this);
+        }
+      }
+      return *this;
+    }
+
+    void cleanup() {
+      if (vao != 0) {
+        glDeleteVertexArrays(1, &vao);
+        vao = 0;
+      }
+      if (vbo != 0) {
+        glDeleteBuffers(1, &vbo);
+        vbo = 0;
+      }
+      if (ibo != 0) {
+        glDeleteBuffers(1, &ibo);
+        ibo = 0;
+      }
+    }
+
+    // Destructor
+    ~StartLineMeshData() {
+      cleanup();
+    }
+  };
+
   struct OffroadMeshData {
     RoadMeshGenerator::MeshData leftSide;
     RoadMeshGenerator::MeshData rightSide;
@@ -112,29 +170,6 @@ public:
         rightSide = other.rightSide;
       }
       return *this;
-    }
-  };
-
-  struct StartLineMeshData {
-    std::vector<RoadVertex> vertices;
-    std::vector<GLuint> indices;
-    GLuint vao = 0;
-    GLuint vbo = 0;
-    GLuint ibo = 0;
-
-    void cleanup() {
-      if (vao != 0) {
-        glDeleteVertexArrays(1, &vao);
-        vao = 0;
-      }
-      if (vbo != 0) {
-        glDeleteBuffers(1, &vbo);
-        vbo = 0;
-      }
-      if (ibo != 0) {
-        glDeleteBuffers(1, &ibo);
-        ibo = 0;
-      }
     }
   };
 
@@ -491,6 +526,10 @@ public:
 
     // Generate and bind VAO
     glGenVertexArrays(1, &mesh.vao);
+    if (mesh.vao == 0) {
+      std::cout << "Failed to generate VAO for start line mesh\n";
+      return;
+    }
     glBindVertexArray(mesh.vao);
 
     // Create and populate vertex buffer
@@ -509,6 +548,7 @@ public:
       mesh.indices.data(),
       GL_STATIC_DRAW);
 
+    // Setup vertex attributes
     // Position attribute (vec2)
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(RoadVertex),
@@ -530,11 +570,17 @@ public:
       (void*)offsetof(RoadVertex, depth));
 
     glBindVertexArray(0);
+
+    // Debug output
+    std::cout << "Created start line buffers - VAO: " << mesh.vao
+      << ", VBO: " << mesh.vbo
+      << ", IBO: " << mesh.ibo
+      << ", Vertices: " << mesh.vertices.size()
+      << ", Indices: " << mesh.indices.size() << "\n";
   }
 
   static StartLineMeshData generateStartLineMesh(const SplineTrack& track) {
     StartLineMeshData mesh;
-    const float LINE_WIDTH = 5.0f;  // Made wider for better visibility
 
     const TrackNode* startNode = track.getStartLineNode();
     if (!startNode) {
@@ -542,82 +588,58 @@ public:
       return mesh;
     }
 
-    std::cout << "Generating start line at position: "
-      << startNode->getPosition().x << ", "
-      << startNode->getPosition().y << "\n";
+    // Get the direction at the start node using the updated method
+    glm::vec2 direction = track.getTrackDirectionAtNode(startNode);
 
-    // Find the previous and next nodes to compute proper direction
-    const auto& nodes = track.getNodes();
-    size_t nodeIdx = std::find_if(nodes.begin(), nodes.end(),
-      [startNode](const TrackNode& node) { return &node == startNode; }) - nodes.begin();
+    // Normalize direction
+    direction = glm::normalize(direction);
 
-    size_t prevIdx = (nodeIdx > 0) ? (nodeIdx - 1) : (nodes.size() - 1);
-    size_t nextIdx = (nodeIdx + 1) % nodes.size();
+    // Calculate perpendicular vector
+    glm::vec2 perp = glm::vec2(-direction.y, direction.x);
 
-    // Get positions and calculate directions
-    const glm::vec2& prevPos = nodes[prevIdx].getPosition();
-    const glm::vec2& currentPos = startNode->getPosition();
-    const glm::vec2& nextPos = nodes[nextIdx].getPosition();
-
-    glm::vec2 inDir = glm::normalize(currentPos - prevPos);
-    glm::vec2 outDir = glm::normalize(nextPos - currentPos);
-
-    // Calculate perpendicular
-    glm::vec2 perpendicular(-outDir.y, outDir.x);  // Simplified for now
+    // Define the width and thickness of the start line
     float roadWidth = startNode->getRoadWidth();
+    float lineWidth = roadWidth * 2.0f;      // Span the full road width
+    float lineThickness = 10.0f;
 
-    std::cout << "Road width: " << roadWidth << "\n";
-    std::cout << "Perpendicular vector: " << perpendicular.x << ", " << perpendicular.y << "\n";
+    // Calculate the four corners of the start line quad
+    glm::vec2 center = startNode->getPosition();
 
-    // Create line vertices
+    glm::vec2 halfWidth = perp * (lineWidth * 0.5f);
+    glm::vec2 halfThickness = direction * (lineThickness * 0.5f);
+
+    glm::vec2 corner1 = center - halfWidth - halfThickness;
+    glm::vec2 corner2 = center + halfWidth - halfThickness;
+    glm::vec2 corner3 = center + halfWidth + halfThickness;
+    glm::vec2 corner4 = center - halfWidth + halfThickness;
+
+    // Create vertices
     RoadVertex v1, v2, v3, v4;
+    v1.position = corner1;
+    v2.position = corner2;
+    v3.position = corner3;
+    v4.position = corner4;
 
-    // Create centerline points
-    glm::vec2 lineStart = currentPos - perpendicular * roadWidth;
-    glm::vec2 lineEnd = currentPos + perpendicular * roadWidth;
-
-    // Create rectangle vertices
-    glm::vec2 linePerp(-perpendicular.y, perpendicular.x);
-    v1.position = lineStart - linePerp * LINE_WIDTH;
-    v2.position = lineStart + linePerp * LINE_WIDTH;
-    v3.position = lineEnd + linePerp * LINE_WIDTH;
-    v4.position = lineEnd - linePerp * LINE_WIDTH;
-
-    // Print vertex positions for debugging
-    std::cout << "Start line vertices:\n";
-    std::cout << "v1: " << v1.position.x << ", " << v1.position.y << "\n";
-    std::cout << "v2: " << v2.position.x << ", " << v2.position.y << "\n";
-    std::cout << "v3: " << v3.position.x << ", " << v3.position.y << "\n";
-    std::cout << "v4: " << v4.position.x << ", " << v4.position.y << "\n";
-
-    // Set UV coordinates
+    // UVs (cover the entire texture)
     v1.uv = glm::vec2(0.0f, 0.0f);
     v2.uv = glm::vec2(1.0f, 0.0f);
     v3.uv = glm::vec2(1.0f, 1.0f);
     v4.uv = glm::vec2(0.0f, 1.0f);
 
-    // Set depth to ensure it's drawn above the road
-    v1.depth = 0.0f;  // Changed to 0 to make sure it's visible
-    v2.depth = 0.0f;
-    v3.depth = 0.0f;
-    v4.depth = 0.0f;
+    // Distance along (can be zero)
+    v1.distanceAlong = v2.distanceAlong = v3.distanceAlong = v4.distanceAlong = 0.0f;
 
-    // Set distance along road
-    v1.distanceAlong = 0.0f;
-    v2.distanceAlong = 0.0f;
-    v3.distanceAlong = 0.0f;
-    v4.distanceAlong = 0.0f;
+    // Depth (drawn above the road)
+    float startLineDepth = -0.01f;  // Negative value to render above the road
+    v1.depth = v2.depth = v3.depth = v4.depth = startLineDepth;
 
+    // Indices
     mesh.vertices = { v1, v2, v3, v4 };
     mesh.indices = { 0, 1, 2, 2, 3, 0 };
 
     createStartLineBuffers(mesh);
 
-    // Verify buffer creation
-    std::cout << "Start line mesh created with VAO: " << mesh.vao
-      << ", VBO: " << mesh.vbo
-      << ", IBO: " << mesh.ibo << "\n";
-
     return mesh;
   }
 };
+

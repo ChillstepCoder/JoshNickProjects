@@ -11,6 +11,11 @@
 #include <vector>
 #include <ImGui/imgui.h>
 #include "LevelRenderer.h"
+#include "Car.h"
+#include "PhysicsSystem.h"
+#include "InputState.h"
+#include <JAGEngine/ResourceManager.h>
+#include <JAGEngine/GLTexture.h>
 
 
 // Forward declarations
@@ -54,6 +59,12 @@ private:
   glm::vec2 findClosestSplinePoint(const glm::vec2& mousePos);
   void addNodeAtPosition(const glm::vec2& position);
   void deleteSelectedNode();
+
+  void initTestMode();
+  void updateTestMode();
+  void cleanupTestMode();
+  void drawTestMode();
+  void drawTestModeUI();
 
   // Track editing
   std::unique_ptr<SplineTrack> m_track;
@@ -102,6 +113,7 @@ private:
 
   RoadViewMode m_roadViewMode = RoadViewMode::Shaded;
   bool m_showSplinePoints = true;
+  bool m_showStartPositions = true;
 
   int m_roadLOD = 10;            // Default subdivisions
   const int MIN_LOD = 4;         // Minimum subdivisions
@@ -114,5 +126,10 @@ private:
   PlaceableObject* m_selectedObject = nullptr;
   bool m_isDraggingObject = false;
   glm::vec2 m_lastDragPos;
+
+  bool m_testMode = false;
+  std::vector<std::unique_ptr<Car>> m_testCars;
+  std::unique_ptr<PhysicsSystem> m_physicsSystem;
+  GLuint m_carTexture;
 
 };

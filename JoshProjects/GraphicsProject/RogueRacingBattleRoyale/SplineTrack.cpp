@@ -1,5 +1,6 @@
 // SplineTrack.cpp
 #include "SplineTrack.h"
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 SplineTrack::SplineTrack() {
@@ -55,11 +56,10 @@ std::vector<SplineTrack::StartPosition> SplineTrack::calculateStartPositions() c
   const TrackNode* startNode = getStartLineNode();
   if (!startNode || m_nodes.size() < 4) return positions;
 
-  // Get detailed spline points for smooth curve following
-  auto splinePoints = getSplinePoints(200);
+  auto splinePoints = getSplinePoints(200);  // Get higher resolution for smoother curves
   if (splinePoints.empty()) return positions;
 
-  // Find start line index in spline points
+  // Find start line index
   size_t startIndex = 0;
   float minDist = std::numeric_limits<float>::max();
   for (size_t i = 0; i < splinePoints.size(); i++) {
@@ -70,88 +70,93 @@ std::vector<SplineTrack::StartPosition> SplineTrack::calculateStartPositions() c
     }
   }
 
-  // Calculate initial direction and perpendicular
-  glm::vec2 direction;
-  if (startIndex < splinePoints.size() - 1) {
-    direction = glm::normalize(splinePoints[startIndex + 1].position - splinePoints[startIndex].position);
-  }
-  else {
-    direction = glm::normalize(splinePoints[0].position - splinePoints[startIndex].position);
-  }
+  // Calculate rows and positions per row
+  int carsPerRow = (m_startConfig.numPositions + m_startConfig.numLanes - 1) / m_startConfig.numLanes;
 
-  if (m_startConfig.isClockwise) {
-    direction = -direction;
-  }
+  size_t numPoints = splinePoints.size();
 
-  // Calculate perpendicular for lane offset
-  glm::vec2 perpDirection(-direction.y, direction.x);
-
-  // Calculate dynamic lane spacing based on road width at each position
-  float baseRoadWidth = startNode->getRoadWidth();
-  float baseLaneOffset = baseRoadWidth * m_startConfig.laneWidthRatio;
-
-  // Calculate positions for each car
+  // For each starting position
   for (int i = 0; i < m_startConfig.numPositions; i++) {
-    bool isLeftLane = i % 2 == 0;
-    int rowIndex = i / 2;
+    StartPosition pos;
+    int laneIndex = i % m_startConfig.numLanes;  // Which lane (0 to numLanes-1)
+    int rowIndex = i / m_startConfig.numLanes;   // Which row back from start
 
-    // Calculate back distance along track
-    float backDistance = rowIndex * m_startConfig.carSpacing;
+    // Calculate position index along spline by walking along the track
+    float targetDistance = (rowIndex + 1) * m_startConfig.carSpacing;
+    size_t currentIndex = startIndex;
+    float accumulatedDistance = 0.0f;
 
-    // Find position along spline at this distance
-    size_t pointIndex = startIndex;
-    float remainingDist = backDistance;
+    // Determine direction to walk along spline based on track direction
+    int indexStep = m_startConfig.isClockwise ? 1 : -1;
 
-    // Walk backwards along spline points
-    while (remainingDist > 0 && pointIndex > 0) {
+    // Variables to store position and direction
+    glm::vec2 position;
+    glm::vec2 direction;
+
+    // Walk along spline points to find correct position
+    std::vector<size_t> pathIndices;
+    pathIndices.push_back(startIndex);
+
+    while (accumulatedDistance < targetDistance) {
+      size_t nextIndex = (currentIndex + indexStep + numPoints) % numPoints;
       float segmentLength = glm::distance(
-        splinePoints[pointIndex].position,
-        splinePoints[pointIndex - 1].position
+        splinePoints[currentIndex].position,
+        splinePoints[nextIndex].position
       );
-      if (remainingDist > segmentLength) {
-        remainingDist -= segmentLength;
-        pointIndex--;
+
+      if (accumulatedDistance + segmentLength > targetDistance) {
+        float remainingDist = targetDistance - accumulatedDistance;
+        float t = remainingDist / segmentLength;
+        pathIndices.push_back(nextIndex);
+
+        // Interpolate position and direction
+        glm::vec2 p1 = splinePoints[currentIndex].position;
+        glm::vec2 p2 = splinePoints[nextIndex].position;
+        position = glm::mix(p1, p2, t);
+        direction = glm::normalize(p1 - p2);
+
+        break;
       }
-      else {
+
+      accumulatedDistance += segmentLength;
+      currentIndex = nextIndex;
+      pathIndices.push_back(currentIndex);
+
+      // Prevent infinite loop
+      if (pathIndices.size() > numPoints) {
         break;
       }
     }
 
-    // Calculate local road width at this point for dynamic lane spacing
-    float localRoadWidth = splinePoints[pointIndex].roadWidth;
-    float localLaneOffset = localRoadWidth * m_startConfig.laneWidthRatio;
+    // If we didn't break early, use the last known position
+    if (accumulatedDistance >= targetDistance) {
+      position = splinePoints[currentIndex].position;
+      size_t prevIndex = (currentIndex - indexStep + numPoints) % numPoints;
+      direction = glm::normalize(position - splinePoints[prevIndex].position);
+    }
 
-    // Calculate final position and direction
-    glm::vec2 pointDirection;
-    if (pointIndex > 0) {
-      pointDirection = glm::normalize(
-        splinePoints[pointIndex].position -
-        splinePoints[pointIndex - 1].position
-      );
+    // Calculate lane offset
+    glm::vec2 perpDirection(-direction.y, direction.x);
+    float roadWidth = splinePoints[currentIndex].roadWidth;
+    float totalLaneWidth = roadWidth * 1.0f;  // Use full road width
+
+    float laneOffset = 0.0f;
+    if (m_startConfig.numLanes == 1) {
+      laneOffset = 0.0f;
     }
     else {
-      pointDirection = glm::normalize(
-        splinePoints[0].position -
-        splinePoints.back().position
-      );
+      float normalizedLanePosition = (float)laneIndex / (float)(m_startConfig.numLanes - 1) - 0.5f;
+      laneOffset = normalizedLanePosition * totalLaneWidth;
+
+      // Flip the offset for clockwise tracks to put cars on the correct side
+      if (m_startConfig.isClockwise) {
+        laneOffset = -laneOffset;
+      }
     }
 
-    if (m_startConfig.isClockwise) {
-      pointDirection = -pointDirection;
-    }
-
-    // Calculate perpendicular at this point
-    glm::vec2 pointPerp(-pointDirection.y, pointDirection.x);
-
-    StartPosition pos;
-    // Base position on spline
-    pos.position = splinePoints[pointIndex].position;
-    // Apply remaining distance
-    pos.position -= pointDirection * remainingDist;
-    // Apply lane offset using local road width
-    pos.position += (isLeftLane ? pointPerp : -pointPerp) * localLaneOffset;
-    // Set angle based on local track direction
-    pos.angle = atan2(pointDirection.y, pointDirection.x);
+    // Set position and angle
+    pos.position = position + perpDirection * laneOffset;
+    pos.angle = atan2(direction.y, direction.x);
 
     positions.push_back(pos);
   }
@@ -244,6 +249,17 @@ glm::vec2 SplineTrack::catmullRomVec2(const glm::vec2& p0, const glm::vec2& p1,
   return result;
 }
 
+glm::vec2 SplineTrack::catmullRomDerivative(const glm::vec2& p0, const glm::vec2& p1,
+  const glm::vec2& p2, const glm::vec2& p3, float t) const {
+  float t2 = t * t;
+
+  glm::vec2 result = (-p0 + p2) * 0.5f;
+  result += (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t;
+  result += (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * 1.5f * t2;
+
+  return result;
+}
+
 float SplineTrack::catmullRomValue(float p0, float p1, float p2, float p3, float t) const {
   float t2 = t * t;
   float t3 = t2 * t;
@@ -257,21 +273,46 @@ float SplineTrack::catmullRomValue(float p0, float p1, float p2, float p3, float
   return result;
 }
 
+// SplineTrack.cpp
+
 glm::vec2 SplineTrack::getTrackDirectionAtNode(const TrackNode* node) const {
-  if (!node || m_nodes.size() < 2) return glm::vec2(1, 0);
+  if (!node || m_nodes.size() < 4) return glm::vec2(1, 0);
 
-  // Find the node's index
-  auto it = std::find_if(m_nodes.begin(), m_nodes.end(),
-    [node](const TrackNode& n) { return &n == node; });
+  // Get detailed spline points
+  auto splinePoints = getSplinePoints(200);  // High-resolution spline
+  if (splinePoints.empty()) return glm::vec2(1, 0);
 
-  if (it == m_nodes.end()) return glm::vec2(1, 0);
+  // Find the index of the spline point closest to the node
+  size_t closestIndex = 0;
+  float minDist = std::numeric_limits<float>::max();
+  for (size_t i = 0; i < splinePoints.size(); ++i) {
+    float dist = glm::distance(node->getPosition(), splinePoints[i].position);
+    if (dist < minDist) {
+      minDist = dist;
+      closestIndex = i;
+    }
+  }
 
-  size_t nodeIndex = std::distance(m_nodes.begin(), it);
-  size_t nextIndex = (nodeIndex + 1) % m_nodes.size();
+  size_t numPoints = splinePoints.size();
 
-  // Calculate direction to next node
-  glm::vec2 direction = m_nodes[nextIndex].getPosition() - node->getPosition();
-  return glm::normalize(direction);
+  // Determine direction at that point
+  int indexStep = 1; // Counter-clockwise by default
+  if (getStartPositionConfig().isClockwise) {
+    indexStep = -1;
+  }
+
+  size_t nextIndex = (closestIndex + indexStep + numPoints) % numPoints;
+  glm::vec2 pCurr = splinePoints[closestIndex].position;
+  glm::vec2 pNext = splinePoints[nextIndex].position;
+
+  glm::vec2 direction = glm::normalize(pNext - pCurr);
+
+  // For clockwise tracks, reverse the direction
+  if (getStartPositionConfig().isClockwise) {
+    direction = -direction;
+  }
+
+  return direction;
 }
 
 std::pair<std::vector<glm::vec2>, std::vector<glm::vec2>>

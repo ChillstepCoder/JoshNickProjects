@@ -218,6 +218,7 @@ Car::DebugInfo Car::getDebugInfo() const {
   b2Vec2 forwardDir = getForwardVector();
   info.forwardSpeed = vel.x * forwardDir.x + vel.y * forwardDir.y;
   info.effectiveFriction = getEffectiveFriction();
+  info.bodyId = m_bodyId;
 
   return info;
 }

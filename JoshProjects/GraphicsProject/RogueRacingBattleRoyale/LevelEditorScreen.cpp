@@ -40,6 +40,8 @@ void LevelEditorScreen::onEntry() {
   m_levelRenderer = std::make_unique<LevelRenderer>();
   m_levelRenderer->init();
 
+  m_spriteBatch.init();
+
   // Initialize object manager
   m_objectManager = std::make_unique<ObjectManager>(m_track.get());
 
@@ -61,11 +63,19 @@ void LevelEditorScreen::onExit() {
     m_levelRenderer->destroy();
   }
 
+  // Clean up test mode resources
+  cleanupTestMode();
+
   std::cout << "LevelEditorScreen::onExit() complete\n";
 }
 
 void LevelEditorScreen::update() {
-  handleInput();
+  if (m_testMode) {
+    updateTestMode();
+  }
+  else {
+    handleInput();
+  }
 }
 
 
@@ -91,8 +101,6 @@ void LevelEditorScreen::drawImGui() {
   ImGui::End();
 }
 
-// In LevelEditorScreen::draw(), add back the preview setup code before the main render call:
-
 void LevelEditorScreen::draw() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -106,6 +114,11 @@ void LevelEditorScreen::draw() {
   m_levelRenderer->setBarrierColors(m_barrierPrimaryColor, m_barrierSecondaryColor);
   m_levelRenderer->setBarrierPatternScale(m_barrierPatternScale);
   m_levelRenderer->setRoadLOD(m_roadLOD);
+
+  // Automatically hide start positions in test mode
+  if (m_testMode) {
+    m_levelRenderer->setShowStartPositions(false);
+  }
 
   // Add back this critical preview setup code
   // Set preview node if in add node mode
@@ -124,21 +137,32 @@ void LevelEditorScreen::draw() {
     m_levelRenderer->setPreviewPosition(mousePos);
   }
 
+  bool showSplinePoints = m_showSplinePoints;
+  if (m_testMode) showSplinePoints = false;
+
   // Main render call
   m_levelRenderer->render(m_camera,
     m_track.get(),
     m_objectManager.get(),
-    m_showSplinePoints,
+    showSplinePoints,
     static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
 
-  // Draw start positions after main render
-  if (m_levelRenderer->getShowStartPositions()) {
+  // Draw start positions after main render, but only if not in test mode
+  if (m_levelRenderer->getShowStartPositions() && !m_testMode) {
     m_levelRenderer->renderStartPositions(m_camera.getCameraMatrix(), m_track.get());
   }
 
-  // Draw ImGui windows last
-  drawImGui();
-  drawDebugWindow();
+  // Draw test mode cars if in test mode
+  if (m_testMode) {
+    drawTestMode();
+    drawTestModeUI();
+  }
+
+  // Draw ImGui windows last, but only if not in test mode
+  if (!m_testMode) {
+    drawImGui();
+    drawDebugWindow();
+  }
 }
 
 void LevelEditorScreen::checkImGuiState() {
@@ -159,11 +183,20 @@ void LevelEditorScreen::checkImGuiState() {
 }
 
 void LevelEditorScreen::drawDebugWindow() {
+  if (m_testMode) return;
+
   bool modeChanged = false;
   ImGui::SetNextWindowPos(ImVec2(10, 220), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);
 
+
   ImGui::Begin("Track Editor", nullptr, ImGuiWindowFlags_NoCollapse);
+
+  if (ImGui::CollapsingHeader("Test Mode", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::Button("Test Level", ImVec2(180, 30))) {
+      initTestMode();
+    }
+  }
 
   if (ImGui::Button("Reset Track", ImVec2(180, 30))) {
     m_selectedNode = nullptr;
@@ -366,8 +399,12 @@ void LevelEditorScreen::drawDebugWindow() {
   if (ImGui::CollapsingHeader("Start Line Configuration", ImGuiTreeNodeFlags_DefaultOpen)) {
     SplineTrack::StartPositionConfig& config = m_track->getStartPositionConfig();
 
-    if (ImGui::Checkbox("Clockwise Track", &config.isClockwise)) {
+    // Update checkbox label to be more clear
+    if (ImGui::Checkbox("Clockwise Direction (Default is Counter-clockwise)", &config.isClockwise)) {
       updateRoadMesh();
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Counter-clockwise is the default direction.\nToggle to change racing direction.");
     }
 
     if (ImGui::SliderInt("Number of Cars", &config.numPositions, 2, 20)) {
@@ -375,18 +412,22 @@ void LevelEditorScreen::drawDebugWindow() {
       updateRoadMesh();
     }
 
-    // Only show car spacing control (front-to-back distance)
+    if (ImGui::SliderInt("Number of Lanes", &config.numLanes, 1, 4)) {
+      config.numLanes = glm::clamp(config.numLanes, 1, 4);
+      updateRoadMesh();
+    }
+
     if (ImGui::DragFloat("Car Spacing", &config.carSpacing, 0.5f, 20.0f, 150.0f)) {
       updateRoadMesh();
     }
     if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Distance between cars front-to-back");
+      ImGui::SetTooltip("Distance between rows of cars");
     }
 
     // Visualization toggle
-    bool showPositions = m_levelRenderer->getShowStartPositions();
-    if (ImGui::Checkbox("Show Start Positions", &showPositions)) {
-      m_levelRenderer->setShowStartPositions(showPositions);
+    m_showStartPositions = m_levelRenderer->getShowStartPositions();
+    if (ImGui::Checkbox("Show Start Positions", &m_showStartPositions)) {
+      m_levelRenderer->setShowStartPositions(m_showStartPositions);
     }
 
     // Start line info
@@ -397,11 +438,14 @@ void LevelEditorScreen::drawDebugWindow() {
         startNode->getPosition().x,
         startNode->getPosition().y);
 
-      // Show direction info
+      // Get the track direction at the start node
       glm::vec2 direction = m_track->getTrackDirectionAtNode(startNode);
+
+      // Adjust direction for clockwise tracks if needed
       if (config.isClockwise) {
         direction = -direction;
       }
+
       ImGui::Text("Track Direction: (%.2f, %.2f)", direction.x, direction.y);
     }
     else {
@@ -837,4 +881,177 @@ void LevelEditorScreen::deleteSelectedNode() {
   }
 
 
+}
+
+void LevelEditorScreen::initTestMode() {
+  m_testMode = true;
+
+  // Initialize physics system
+  m_physicsSystem = std::make_unique<PhysicsSystem>();
+  m_physicsSystem->init(0.0f, 0.0f);
+
+  // Load car texture
+  m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
+
+  // Get start positions
+  auto startPositions = m_track->calculateStartPositions();
+  if (startPositions.empty()) {
+    std::cout << "No valid start positions found!\n";
+    return;
+  }
+
+  // Calculate colors before creating cars
+  int numCars = startPositions.size();
+  std::vector<JAGEngine::ColorRGBA8> carColors(numCars);
+
+  for (int i = 0; i < numCars; i++) {
+    float hue = float(i) / float(numCars);
+    float saturation = 1.0f;
+    float value = 1.0f;
+
+    float c = value * saturation;
+    float x = c * (1 - std::abs(std::fmod(hue * 6, 2.0f) - 1));
+    float m = value - c;
+
+    float r = 0, g = 0, b = 0;
+
+    if (hue < 1.0f / 6.0f) {
+      r = c; g = x; b = 0;
+    }
+    else if (hue < 2.0f / 6.0f) {
+      r = x; g = c; b = 0;
+    }
+    else if (hue < 3.0f / 6.0f) {
+      r = 0; g = c; b = x;
+    }
+    else if (hue < 4.0f / 6.0f) {
+      r = 0; g = x; b = c;
+    }
+    else if (hue < 5.0f / 6.0f) {
+      r = x; g = 0; b = c;
+    }
+    else {
+      r = c; g = 0; b = x;
+    }
+
+    carColors[i] = JAGEngine::ColorRGBA8(
+      uint8_t((r + m) * 255),
+      uint8_t((g + m) * 255),
+      uint8_t((b + m) * 255),
+      255
+    );
+  }
+
+  // Create cars for each position
+  for (size_t i = 0; i < startPositions.size(); i++) {
+    const auto& pos = startPositions[i];
+    b2BodyId carBody = m_physicsSystem->createDynamicBody(pos.position.x, pos.position.y);
+    m_physicsSystem->createBoxShape(carBody, 15.0f, 15.0f);
+
+    auto car = std::make_unique<Car>(carBody);
+
+    // Make sure to set the initial rotation properly
+    car->resetPosition({ pos.position.x, pos.position.y }, pos.angle);
+
+    car->setProperties(Car::CarProperties());
+    car->setColor(carColors[i]);
+
+    m_testCars.push_back(std::move(car));
+  }
+}
+
+void LevelEditorScreen::updateTestMode() {
+  if (!m_testMode) return;
+
+  const float timeStep = 1.0f / 60.0f;
+  m_physicsSystem->update(timeStep);
+
+  // Update only the player car (first car) with input
+  if (!m_testCars.empty()) {
+    JAGEngine::InputManager& inputManager = m_game->getInputManager();
+
+    InputState input;
+    input.accelerating = inputManager.isKeyDown(SDLK_UP) || inputManager.isKeyDown(SDLK_w);
+    input.braking = inputManager.isKeyDown(SDLK_DOWN) || inputManager.isKeyDown(SDLK_s);
+    input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a);
+    input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d);
+    input.handbrake = inputManager.isKeyDown(SDLK_SPACE);
+
+    m_testCars[0]->update(input);
+
+    // Update other cars with no input
+    for (size_t i = 1; i < m_testCars.size(); i++) {
+      InputState noInput;
+      m_testCars[i]->update(noInput);
+    }
+  }
+}
+
+void LevelEditorScreen::drawTestMode() {
+  if (!m_testMode) return;
+
+  m_levelRenderer->getTextureProgram().use();
+  glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
+  GLint pUniform = m_levelRenderer->getTextureProgram().getUniformLocation("P");
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &cameraMatrix[0][0]);
+
+  m_spriteBatch.begin();
+
+  // Draw all cars
+  for (const auto& car : m_testCars) {
+    b2BodyId bodyId = car->getDebugInfo().bodyId;
+
+    if (b2Body_IsValid(bodyId)) {
+      b2Vec2 position = b2Body_GetPosition(bodyId);
+      float angle = b2Rot_GetAngle(b2Body_GetRotation(bodyId));
+
+      float carWidth = 20.0f;
+      float carHeight = 10.0f;
+
+      glm::vec4 destRect(
+        position.x - carWidth / 2.0f,
+        position.y - carHeight / 2.0f,
+        carWidth,
+        carHeight
+      );
+
+      glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
+
+      // Make sure angle is in radians - Box2D uses radians
+      // and pass it directly to the sprite batch
+      m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, car->getColor(), angle);
+    }
+  }
+
+  m_spriteBatch.end();
+  m_spriteBatch.renderBatch();
+  m_levelRenderer->getTextureProgram().unuse();
+}
+
+void LevelEditorScreen::drawTestModeUI() {
+  if (!m_testMode) return;
+
+  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
+
+  ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
+
+  if (ImGui::Button("Return to Editor", ImVec2(180, 30))) {
+    cleanupTestMode();
+  }
+
+  ImGui::End();
+}
+
+void LevelEditorScreen::cleanupTestMode() {
+  m_testCars.clear();
+  if (m_physicsSystem) {
+    m_physicsSystem->cleanup();
+    m_physicsSystem.reset();
+  }
+
+  // Restore the start position visibility state
+  m_levelRenderer->setShowStartPositions(m_showStartPositions);
+
+  m_testMode = false;
 }

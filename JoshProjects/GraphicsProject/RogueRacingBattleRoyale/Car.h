@@ -3,6 +3,7 @@
 #include <Box2D/box2d.h>
 #include <glm/glm.hpp>
 #include "InputState.h"
+#include "JAGEngine/Vertex.h"
 
 class Car {
 public:
@@ -30,7 +31,8 @@ public:
     float forwardSpeed = 0.0f;
     float angle = 0.0f;
     float angularVelocity = 0.0f;
-    float effectiveFriction = 0.0f;   // Combined wheel and surface friction
+    float effectiveFriction = 0.0f;
+    b2BodyId bodyId;
   };
 
   Car(b2BodyId bodyId);
@@ -43,10 +45,13 @@ public:
   const CarProperties& getProperties() const { return m_properties; }
   void setProperties(const CarProperties& props) { m_properties = props; }
   DebugInfo getDebugInfo() const;
+  void setColor(const JAGEngine::ColorRGBA8& color) { m_color = color; }
 
   float getEffectiveFriction() const {
     return m_properties.wheelFriction * m_properties.baseFriction;
   }
+
+  const JAGEngine::ColorRGBA8& getColor() const { return m_color; }
 
 private:
   static b2Rot angleToRotation(float angle) {
@@ -61,4 +66,5 @@ private:
   void handleTurning(const InputState& input, float forwardSpeed);
   void applyDrag(const b2Vec2& currentVel, float forwardSpeed);
   void applyFriction(const b2Vec2& currentVel);
+  JAGEngine::ColorRGBA8 m_color{ 255, 0, 0, 255 };
 };

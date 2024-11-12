@@ -72,6 +72,7 @@ public:
 
   void setShowStartPositions(bool show) { m_showStartPositions = show; }
   bool getShowStartPositions() const { return m_showStartPositions; }
+  JAGEngine::GLSLProgram& getTextureProgram() { return m_textureProgram; }
 
 
 private:
@@ -80,7 +81,7 @@ private:
   void renderRoad(const glm::mat4& cameraMatrix);
   void renderOffroad(const glm::mat4& cameraMatrix);
   void renderBarriers(const glm::mat4& cameraMatrix);
-  void renderStartLine(const glm::mat4& cameraMatrix);
+  void renderStartLine(const glm::mat4& cameraMatrix, SplineTrack* track);
   void renderSplinePoints(const glm::mat4& cameraMatrix, SplineTrack* track);
   void renderNodes(const glm::mat4& cameraMatrix, SplineTrack* track);
   void renderObjects(const glm::mat4& cameraMatrix, ObjectManager* objectManager);
@@ -93,7 +94,7 @@ private:
 
   // Rendering components
   JAGEngine::SpriteBatch m_spriteBatch;
-  JAGEngine::GLSLProgram m_textureProgram;      // For sprites
+  JAGEngine::GLSLProgram m_textureProgram;
   JAGEngine::GLSLProgram m_roadShader;
   JAGEngine::GLSLProgram m_offroadShader;
   JAGEngine::GLSLProgram m_grassShader;

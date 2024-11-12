@@ -21,8 +21,8 @@ void LevelRenderer::destroy() {
   m_offroadMesh.rightSide.cleanup();
   m_barrierMesh.leftSide.cleanup();
   m_barrierMesh.rightSide.cleanup();
-  m_startLineMesh.cleanup();
   m_backgroundQuad.cleanup();
+  m_startLineMesh.cleanup();
 }
 
 void LevelRenderer::initShaders() {
@@ -83,7 +83,7 @@ void LevelRenderer::render(const JAGEngine::Camera2D& camera,
     renderOffroad(cameraMatrix);
     renderRoad(cameraMatrix);
     renderBarriers(cameraMatrix);
-    renderStartLine(cameraMatrix);
+    renderStartLine(cameraMatrix, track);
   }
 
   // Show spline points in spline view mode
@@ -108,6 +108,7 @@ void LevelRenderer::render(const JAGEngine::Camera2D& camera,
     renderWireframe(cameraMatrix);
   }
 }
+
 void LevelRenderer::renderBackground(const glm::mat4& cameraMatrix) {
   m_grassShader.use();
   glUniformMatrix4fv(m_grassShader.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
@@ -165,19 +166,22 @@ void LevelRenderer::renderBarriers(const glm::mat4& cameraMatrix) {
   m_barrierShader.unuse();
 }
 
-void LevelRenderer::renderStartLine(const glm::mat4& cameraMatrix) {
-  if (m_startLineMesh.vao != 0) {
-    m_startLineShader.use();
-    glUniformMatrix4fv(m_startLineShader.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
+void LevelRenderer::renderStartLine(const glm::mat4& cameraMatrix, SplineTrack* track) {
+  if (!track) return;
 
+  m_startLineShader.use();
+  glUniformMatrix4fv(m_startLineShader.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
+
+  if (m_startLineMesh.vao != 0 && !m_startLineMesh.indices.empty()) {
     glBindVertexArray(m_startLineMesh.vao);
-    glDrawElements(GL_TRIANGLES,
-      static_cast<GLsizei>(m_startLineMesh.indices.size()),
-      GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_startLineMesh.indices.size()), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
-
-    m_startLineShader.unuse();
   }
+  else {
+    std::cout << "Start line mesh VAO is invalid or indices are empty.\n";
+  }
+
+  m_startLineShader.unuse();
 }
 
 void LevelRenderer::renderSplinePoints(const glm::mat4& cameraMatrix, SplineTrack* track) {
@@ -386,6 +390,7 @@ void LevelRenderer::initBackgroundQuad() {
 void LevelRenderer::updateRoadMesh(SplineTrack* track) {
   if (!track) return;
 
+  // Cleanup existing meshes
   m_roadMesh.cleanup();
   m_offroadMesh.leftSide.cleanup();
   m_offroadMesh.rightSide.cleanup();
@@ -393,10 +398,11 @@ void LevelRenderer::updateRoadMesh(SplineTrack* track) {
   m_barrierMesh.rightSide.cleanup();
   m_startLineMesh.cleanup();
 
+  // Generate new meshes
   m_roadMesh = RoadMeshGenerator::generateRoadMesh(*track, m_roadLOD);
   m_offroadMesh = RoadMeshGenerator::generateOffroadMesh(*track, m_roadLOD);
   m_barrierMesh = RoadMeshGenerator::generateBarrierMesh(*track, m_roadLOD);
-  m_startLineMesh = RoadMeshGenerator::generateStartLineMesh(*track);
+  m_startLineMesh = RoadMeshGenerator::generateStartLineMesh(*track); // Properly assigns without sharing buffers
 }
 
 void LevelRenderer::renderStartPositions(const glm::mat4& cameraMatrix, SplineTrack* track) {

@@ -13,10 +13,11 @@ public:
   };
 
   struct StartPositionConfig {
-    int numPositions = 10;        // Default to 10 positions
-    bool isClockwise = true;      // Track direction
-    float carSpacing = 30.0f;     // Distance between cars front-to-back (user configurable)
-    float laneWidthRatio = 0.4f;  // What fraction of road width to use for lane spacing (0.4 = 40% from center)
+    int numPositions = 10;        // Total number of cars
+    int numLanes = 2;             // Number of parallel lanes (1-4)
+    bool isClockwise = false;      // Track direction
+    float carSpacing = 30.0f;     // Distance between cars front-to-back
+    float laneWidthRatio = 0.4f;  // What fraction of total road width to use for lanes
   };
 
   struct StartPosition {
@@ -34,7 +35,14 @@ public:
     }
   }
 
+  bool isDefaultDirection() const {
+      return !m_startConfig.isClockwise;  // Counter-clockwise is default
+  }
+
   // Getters
+  std::string getDirectionString() const {
+      return m_startConfig.isClockwise ? "Clockwise" : "Counter-clockwise";
+  }
   TrackNode* getNodeAtPosition(const glm::vec2& position, float threshold = 10.0f);
   std::vector<SplinePointInfo> getSplinePoints(int subdivisions = 50) const;
   const std::vector<TrackNode>& getNodes() const { return m_nodes; }
@@ -79,6 +87,8 @@ private:
   glm::vec2 catmullRom(const glm::vec2& p0, const glm::vec2& p1,
     const glm::vec2& p2, const glm::vec2& p3, float t) const;
   glm::vec2 catmullRomVec2(const glm::vec2& p0, const glm::vec2& p1,
+    const glm::vec2& p2, const glm::vec2& p3, float t) const;
+  glm::vec2 catmullRomDerivative(const glm::vec2& p0, const glm::vec2& p1,
     const glm::vec2& p2, const glm::vec2& p3, float t) const;
   float catmullRomValue(float p0, float p1, float p2, float p3, float t) const;
 
