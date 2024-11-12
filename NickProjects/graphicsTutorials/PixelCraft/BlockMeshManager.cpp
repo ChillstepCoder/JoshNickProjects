@@ -14,15 +14,22 @@ BlockMeshManager::~BlockMeshManager() {
 void BlockMeshManager::init() {
     m_spriteBatch.init();
 }
-void BlockMeshManager::buildMesh(const std::vector<Block>& blocks) {
+void BlockMeshManager::buildMesh(const std::vector<std::vector<Chunk>>& chunks) {
     m_spriteBatch.begin();
-    for (const auto& block : blocks) {
-        auto destRect = block.getDestRect();
-        auto uvRect = block.getUVRect();
-        auto textureID = block.getTextureID();
-        auto color = block.getColor();
+    for (const auto& chunkRow : chunks) {
+        for (const auto& chunk : chunkRow) {
+            for (int x = 0; x < CHUNK_WIDTH; ++x) {
+                for (int y = 0; y < CHUNK_WIDTH; ++y) {
+                    const Block& block = chunk.blocks[x][y];
+                    auto destRect = block.getDestRect();
+                    auto uvRect = block.getUVRect();
+                    auto textureID = block.getTextureID();
+                    auto color = block.getColor();
 
-        m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                }
+            }
+        }
     }
     m_spriteBatch.end();
 }
@@ -31,6 +38,45 @@ void BlockMeshManager::renderMesh() {
 }
 
 void BlockManager::generateChunks() {
+    Bengine::ColorRGBA8 textureColor;
+    textureColor.r = 255;
+    textureColor.g = 255;
+    textureColor.b = 255;
+    textureColor.a = 255;
+
+
+
+    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
+            Chunk& chunk = m_chunks[chunkX][chunkY];  // Reference the chunk in the grid
+            float worldX = chunkX * CHUNK_WIDTH;
+            float worldY = chunkY * CHUNK_WIDTH;
+            chunk.m_worldPosition = glm::vec2(worldX, worldY);
+
+            // Use Perlin noise or whatever generation method you prefer
+            siv::PerlinNoise perlin(12345);  // Perlin noise generator
+            for (int x = 0; x < CHUNK_WIDTH; ++x) {
+                for (int y = 0; y < CHUNK_WIDTH; ++y) {
+                    // Calculate the block's world position
+                    float noiseValue = perlin.noise1D(x * 0.1f);  // Noise to vary the height
+                    int height = 10 + static_cast<int>(noiseValue * 10);  // Generate height based on noise
+                    glm::vec2 position(worldX + x, worldY + y);
+
+                    // Create a block based on the height
+                    Block block;
+                    block.init(&m_world, position, glm::vec2(1.0f, 1.0f), Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor, false);
+                    chunk.blocks[x][y] = block;  // Place block in the chunk
+                }
+            }
+        }
+    }
+}
+
+
+
+/*
+
+
     // Create Perlin noise instance with random seed
     siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
 
@@ -92,7 +138,7 @@ void BlockManager::generateChunks() {
 
     rebuildMesh();
 
-    /*
+    
     // Generate caves using 2D Perlin noise
     const float CAVE_SCALE = 0.4f;
     const float CAVE_THRESHOLD = 0.4f; // Adjust this to control cave density
@@ -195,9 +241,10 @@ void BlockManager::generateChunks() {
             }
         }
     }
-    */
 }
+*/
 
+/*
 
 void BlockManager::breakBlockAtPosition(const glm::vec2& position) {  //destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
     // Iterate through blocks and find the one that contains the given position
@@ -217,6 +264,8 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position) {  //destRect
 
     }
 }
+
+*/
 
 inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Block& block) {
     // Check if the position is within the block's bounding box
@@ -246,14 +295,45 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
 }
 
 bool BlockManager::isChunkLoaded(int x, int y) {
-    // Makes sure the chunk is within world bounds
+    // Prevent out-of-bounds access
     if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
-        return false;
+        return false; // Out of bounds
     }
-    if (x >= 0 && x < m_chunks.size() && y >= 0 && y < m_chunks[x].size()) {
-        return m_chunks[x][y].getWorldPosition() != glm::vec2(0.0f, 0.0f);
+
+    // Resize the m_chunks vector if necessary
+    if (x >= m_chunks.size()) {
+        m_chunks.resize(x + 1);  // Resize outer vector if x is out of bounds
     }
-    return false;
+
+    if (y >= m_chunks[x].size()) {
+        m_chunks[x].resize(y + 1);  // Resize the inner vector if y is out of bounds
+    }
+
+    // If the chunk already exists, return (don't load it again)
+    if (m_chunks[x][y].blocks[0][0].getTextureID() != 0) { // Assuming 0 means uninitialized block
+        return true;
+    }
+
+    // Create the new chunk
+    Chunk chunk;
+    chunk.m_worldPosition = glm::vec2(x * CHUNK_WIDTH, y * CHUNK_WIDTH);
+
+    // Populate the chunk with blocks (you can use Perlin noise or any other method)
+    for (int i = 0; i < CHUNK_WIDTH; ++i) {
+        for (int j = 0; j < CHUNK_WIDTH; ++j) {
+            Block block;
+            glm::vec2 blockPos(chunk.m_worldPosition.x + i, chunk.m_worldPosition.y + j);
+            // Example: Simple block generation
+            Bengine::ColorRGBA8 color(255, 255, 255, 255);
+            block.init(&m_world, blockPos, glm::vec2(1.0f, 1.0f), Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), color, 0.0f);
+
+            // Add the block to the chunk's blocks array
+            chunk.blocks[i][j] = block;
+        }
+    }
+
+    // Save the chunk in the m_chunks vector
+    m_chunks[x][y] = chunk;
 }
 
 void BlockManager::loadChunk(int x, int y) {
@@ -312,4 +392,33 @@ void BlockManager::unloadChunk(int x, int y) {
     }
 
     m_chunks[x][y] = Chunk(); // Reset chunk to default
+}
+
+std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {
+    std::vector<Block> blocksInRange;
+
+    // Determine the chunk coordinates around the player
+    int startChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
+    int startChunkY = static_cast<int>(playerPos.y) / CHUNK_WIDTH;
+
+    // Loop through the nearby chunks based on the range
+    for (int dx = -range; dx <= range; ++dx) {
+        for (int dy = -range; dy <= range; ++dy) {
+            int chunkX = startChunkX + dx;
+            int chunkY = startChunkY + dy;
+
+            // Check if the chunk is loaded
+            if (isChunkLoaded(chunkX, chunkY)) {
+                // If the chunk is loaded, add its blocks to the range
+                const Chunk& chunk = m_chunks[chunkX][chunkY];
+                for (int x = 0; x < CHUNK_WIDTH; ++x) {
+                    for (int y = 0; y < CHUNK_WIDTH; ++y) {
+                        blocksInRange.push_back(chunk.blocks[x][y]);
+                    }
+                }
+            }
+        }
+    }
+
+    return blocksInRange;
 }

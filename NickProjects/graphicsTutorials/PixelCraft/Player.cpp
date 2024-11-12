@@ -58,11 +58,15 @@ void Player::draw(Bengine::SpriteBatch& spriteBatch) {
     spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, m_color, 0.0f);
 }
 
-void Player::update(Bengine::InputManager& inputManager, const std::vector<Block>& blocks) {
+void Player::update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager) {
+    // Get the blocks in range around the player
+    std::vector<Block> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);  // Use a range of 2 chunks
+
+
     // Check for ground contact
     m_isGrounded = false;
     // Check contact with each block
-    for (const auto& block : blocks) {
+    for (const auto& block : blocksInRange) {
         b2ContactData contacts[8];
         int contactCount = b2Body_GetContactData(getID(), contacts, 8);
 
@@ -119,6 +123,6 @@ void Player::update(Bengine::InputManager& inputManager, const std::vector<Block
         glm::vec2 mouseWorldPos = m_camera->convertScreenToWorld(mouseCoords);
 
         // Check if the mouse position is over a block and break it
-        m_blockManager->breakBlockAtPosition(mouseWorldPos);
+        //m_blockManager->breakBlockAtPosition(mouseWorldPos);
     }
 }

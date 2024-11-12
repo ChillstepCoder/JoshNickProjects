@@ -8,20 +8,6 @@
 
 class DebugDraw;
 
-class BlockMeshManager
-{
-public:
-    BlockMeshManager();
-    ~BlockMeshManager();
-
-    void init();
-    void buildMesh(const std::vector<Block>& blocks); // Accept blocks from BlockManager
-    void renderMesh();
-
-private:
-    Bengine::SpriteBatch m_spriteBatch;
-};
-
 const int CHUNK_WIDTH = 64;
 
 class Chunk {
@@ -36,33 +22,47 @@ public:
 
 };
 
+class BlockMeshManager
+{
+public:
+    BlockMeshManager();
+    ~BlockMeshManager();
+
+    void init();
+    void buildMesh(const std::vector<std::vector<Chunk>>& chunks); // Accept blocks from BlockManager
+    void renderMesh();
+
+private:
+    Bengine::SpriteBatch m_spriteBatch;
+};
+
 const int WORLD_WIDTH_CHUNKS = 128;
 const int WORLD_HEIGHT_CHUNKS = 64;
 const int loadRadius = 5;
 
 class BlockManager {
 public:
-    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId) : m_MeshManager(meshManager) {}
+    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId) : m_MeshManager(meshManager), m_world(worldId) {}
 
-    void addBlock(const Block& block) {
-        m_blocks.push_back(block);
-    }
+    //void addBlock(const Block& block) {
+    //    m_blocks.push_back(block);
+    //}
 
     void rebuildMesh() {
-        m_MeshManager.buildMesh(m_blocks);
+        m_MeshManager.buildMesh(m_chunks);
     }
 
     void renderBlocks() {
         m_MeshManager.renderMesh();
     }
 
-    std::vector<Block>& getBlocks() {
-        return m_blocks;
-    }
+    //std::vector<Block>& getBlocks() {
+    //    return m_blocks;
+    //}
 
     void generateChunks();
 
-    void breakBlockAtPosition(const glm::vec2& position);
+    //void breakBlockAtPosition(const glm::vec2& position);
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
@@ -78,10 +78,11 @@ public:
 
     void unloadChunk(int x, int y);
 
+    std::vector<Block> getBlocksInRange(const glm::vec2& playerPos, int range);
+
 private:
     std::vector<std::vector<Chunk>> m_chunks;
 
     BlockMeshManager& m_MeshManager;
-    std::vector<Block> m_blocks;
-    b2WorldId m_world = b2_nullWorldId;
+    b2WorldId m_world;
 };

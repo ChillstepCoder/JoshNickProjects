@@ -24,7 +24,7 @@ public:
 
     void draw(Bengine::SpriteBatch& spriteBatch);
 
-    void update(Bengine::InputManager& inputManager, const std::vector<Block>& blocks);
+    void update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager);
 
     b2BodyId getID() const { return m_bodyId; }
 
