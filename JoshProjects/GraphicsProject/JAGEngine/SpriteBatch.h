@@ -108,6 +108,7 @@ namespace JAGEngine {
     void createRenderBatches();
     void createVertexArray();
     void sortGlyphs();
+    void createWhiteTexture();
 
     static bool compareFrontToBack(Glyph* a, Glyph* b);
     static bool compareBackToFront(Glyph* a, Glyph* b);
@@ -121,5 +122,7 @@ namespace JAGEngine {
     std::vector<Glyph*> _glyphPointers; //for sorting
     std::vector<Glyph> _glyphs; //aCTUAL GLYPHS
     std::vector<RenderBatch> _renderBatches;
+
+    GLuint m_whiteTexture;
   };
 }

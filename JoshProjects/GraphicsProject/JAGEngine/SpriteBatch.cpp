@@ -70,12 +70,16 @@ namespace JAGEngine {
   {
 
   }
-  SpriteBatch::~SpriteBatch() {
 
+  SpriteBatch::~SpriteBatch() {
+    if (m_whiteTexture != 0) {
+      glDeleteTextures(1, &m_whiteTexture);
+    }
   }
 
   void SpriteBatch::init() {
     createVertexArray();
+    createWhiteTexture();
   }
 
   void SpriteBatch::begin(GlyphSortType sortType /*GlyphSortType::TEXTURE*/ ) {
@@ -119,10 +123,14 @@ namespace JAGEngine {
   void SpriteBatch::renderBatch() {
     glBindVertexArray(_vao);
     for (int i = 0; i < _renderBatches.size(); i++) {
-      glBindTexture(GL_TEXTURE_2D, _renderBatches[i].texture);
-      std::cout << "Rendering batch " << i << " with texture ID: " << _renderBatches[i].texture
+      // Use white texture for texture ID 0
+      GLuint textureID = _renderBatches[i].texture == 0 ? m_whiteTexture : _renderBatches[i].texture;
+      glBindTexture(GL_TEXTURE_2D, textureID);
+
+      std::cout << "Rendering batch " << i << " with texture ID: " << textureID
         << ", offset: " << _renderBatches[i].offset
         << ", num vertices: " << _renderBatches[i].numVertices << std::endl;
+
       glDrawArrays(GL_TRIANGLES, _renderBatches[i].offset, _renderBatches[i].numVertices);
     }
     glBindVertexArray(0);
@@ -224,6 +232,20 @@ namespace JAGEngine {
 
   bool SpriteBatch::compareTexture(Glyph* a, Glyph* b) {
     return (a->texture < b->texture);
+  }
+
+  void SpriteBatch::createWhiteTexture() {
+    // Generate white texture
+    glGenTextures(1, &m_whiteTexture);
+    glBindTexture(GL_TEXTURE_2D, m_whiteTexture);
+
+    unsigned char white[] = { 255, 255, 255, 255 };
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   }
 
 }

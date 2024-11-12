@@ -114,9 +114,9 @@ void GameplayScreen::drawDebugWindow() {
     if (ImGui::CollapsingHeader("Car Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
       Car::CarProperties& props = m_car->getProperties();
 
-      ImGui::DragFloat("Max Speed", &props.maxSpeed, 1.0f, 200.0f, 1000.0f);
-      ImGui::DragFloat("Acceleration", &props.acceleration, 10.0f, 5000.0f, 20000.0f);
-      ImGui::DragFloat("Turn Speed", &props.turnSpeed, 0.1f, 5.0f, 20.0f);
+      ImGui::DragFloat("Max Speed", &props.maxSpeed, 1.0f, 200.0f, 4000.0f);
+      ImGui::DragFloat("Acceleration", &props.acceleration, 10.0f, 5000.0f, 40000.0f);
+      ImGui::DragFloat("Turn Speed", &props.turnSpeed, 0.1f, 5.0f, 40.0f);
       ImGui::DragFloat("Lateral Damping", &props.lateralDamping, 0.01f, 0.5f, 1.0f);
       ImGui::DragFloat("Drag Factor", &props.dragFactor, 0.001f, 0.9f, 1.0f);
       ImGui::DragFloat("Turn Reset Rate", &props.turnResetRate, 0.01f, 0.5f, 2.0f);

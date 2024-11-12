@@ -17,6 +17,9 @@
 #include <JAGEngine/ResourceManager.h>
 #include <JAGEngine/GLTexture.h>
 
+#include <numeric>
+#include <algorithm>
+
 
 // Forward declarations
 class SplineTrack;
@@ -29,6 +32,14 @@ public:
     Spline,      // Shows spline points and control nodes
     Wireframe,   // Shows triangle mesh wireframe
     Shaded       // Shows fully shaded road
+  };
+
+  // Car tracking
+  struct CarTrackingInfo {
+    glm::vec2 closestSplinePoint;
+    float distanceAlongSpline;
+    int racePosition;
+    bool showDebugPoint;
   };
 
   LevelEditorScreen();
@@ -66,6 +77,12 @@ private:
   void drawTestMode();
   void drawTestModeUI();
 
+  void updateCarTrackingInfo();
+  void updateTestCamera();
+  void drawCarTrackingDebug();
+  CarTrackingInfo calculateCarTrackingInfo(const Car* car) const;
+  glm::vec2 calculateLookAheadPoint(const CarTrackingInfo& carInfo) const;
+
   // Track editing
   std::unique_ptr<SplineTrack> m_track;
   TrackNode* m_selectedNode = nullptr;
@@ -97,6 +114,15 @@ private:
   float m_zoomFactor = 1.02f;
   float m_minZoom = 0.1f;
   float m_maxZoom = 5.0f;
+  glm::vec2 m_editorCameraPos = glm::vec2(0.0f);
+  float m_editorCameraScale = 1.0f;
+  float m_testCameraScale = 2.0f;  // Zoomed in for testing
+
+  std::vector<CarTrackingInfo> m_carTrackingInfo;
+
+  // Camera following
+  float m_lookAheadDistance = 100.0f;  // Distance to look ahead of car
+  float m_minCarScreenDistance = 100.0f;  // Minimum distance from screen edge
 
   using IGameScreen::m_game;
 
@@ -115,7 +141,7 @@ private:
   bool m_showSplinePoints = true;
   bool m_showStartPositions = true;
 
-  int m_roadLOD = 10;            // Default subdivisions
+  int m_roadLOD = 50;            // Default subdivisions
   const int MIN_LOD = 4;         // Minimum subdivisions
   const int MAX_LOD = 50;        // Maximum subdivisions
   bool m_autoUpdateMesh = true;  // Auto update when LOD changes

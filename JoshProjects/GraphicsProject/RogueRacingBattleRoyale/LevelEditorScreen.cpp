@@ -884,6 +884,10 @@ void LevelEditorScreen::deleteSelectedNode() {
 }
 
 void LevelEditorScreen::initTestMode() {
+  // Store editor camera state before switching
+  m_editorCameraPos = m_camera.getPosition();
+  m_editorCameraScale = m_camera.getScale();
+
   m_testMode = true;
 
   // Initialize physics system
@@ -957,34 +961,16 @@ void LevelEditorScreen::initTestMode() {
     car->setColor(carColors[i]);
 
     m_testCars.push_back(std::move(car));
+
+    // Initialize tracking info for each car
+    m_carTrackingInfo.push_back(CarTrackingInfo{
+        glm::vec2(0.0f),  // closestSplinePoint
+        0.0f,             // distanceAlongSpline
+        static_cast<int>(i + 1),  // racePosition
+        i == 0           // Only show debug point for player car
+      });
   }
-}
-
-void LevelEditorScreen::updateTestMode() {
-  if (!m_testMode) return;
-
-  const float timeStep = 1.0f / 60.0f;
-  m_physicsSystem->update(timeStep);
-
-  // Update only the player car (first car) with input
-  if (!m_testCars.empty()) {
-    JAGEngine::InputManager& inputManager = m_game->getInputManager();
-
-    InputState input;
-    input.accelerating = inputManager.isKeyDown(SDLK_UP) || inputManager.isKeyDown(SDLK_w);
-    input.braking = inputManager.isKeyDown(SDLK_DOWN) || inputManager.isKeyDown(SDLK_s);
-    input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a);
-    input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d);
-    input.handbrake = inputManager.isKeyDown(SDLK_SPACE);
-
-    m_testCars[0]->update(input);
-
-    // Update other cars with no input
-    for (size_t i = 1; i < m_testCars.size(); i++) {
-      InputState noInput;
-      m_testCars[i]->update(noInput);
-    }
-  }
+  m_camera.setScale(m_testCameraScale);
 }
 
 void LevelEditorScreen::drawTestMode() {
@@ -1026,13 +1012,15 @@ void LevelEditorScreen::drawTestMode() {
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
   m_levelRenderer->getTextureProgram().unuse();
+
+  drawCarTrackingDebug();
 }
 
 void LevelEditorScreen::drawTestModeUI() {
   if (!m_testMode) return;
 
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
 
   ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
 
@@ -1040,10 +1028,25 @@ void LevelEditorScreen::drawTestModeUI() {
     cleanupTestMode();
   }
 
+  // Add camera control parameters
+  ImGui::SliderFloat("Look Ahead Distance", &m_lookAheadDistance, 50.0f, 300.0f);
+  ImGui::SliderFloat("Min Screen Edge Distance", &m_minCarScreenDistance, 50.0f, 200.0f);
+  ImGui::SliderFloat("Test Camera Zoom", &m_testCameraScale, 0.5f, 5.0f);
+  if (ImGui::IsItemEdited()) {
+    m_camera.setScale(m_testCameraScale);
+  }
+
   ImGui::End();
 }
 
 void LevelEditorScreen::cleanupTestMode() {
+  // Restore editor camera state
+  m_camera.setPosition(m_editorCameraPos);
+  m_camera.setScale(m_editorCameraScale);
+
+  // Clear tracking info
+  m_carTrackingInfo.clear();
+
   m_testCars.clear();
   if (m_physicsSystem) {
     m_physicsSystem->cleanup();
@@ -1055,3 +1058,280 @@ void LevelEditorScreen::cleanupTestMode() {
 
   m_testMode = false;
 }
+
+LevelEditorScreen::CarTrackingInfo LevelEditorScreen::calculateCarTrackingInfo(const Car* car) const {
+  CarTrackingInfo info;
+  if (!car || !m_track) return info;
+
+  // Get car position
+  b2BodyId bodyId = car->getDebugInfo().bodyId;
+  if (!b2Body_IsValid(bodyId)) return info;
+
+  b2Vec2 carPos = b2Body_GetPosition(bodyId);
+  glm::vec2 carPosition(carPos.x, carPos.y);
+
+  // Get spline points
+  auto splinePoints = m_track->getSplinePoints(200);
+  if (splinePoints.empty()) return info;
+
+  // Find closest point
+  float minDist = std::numeric_limits<float>::max();
+  size_t closestIdx = 0;
+
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    float dist = glm::distance2(carPosition, splinePoints[i].position);
+    if (dist < minDist) {
+      minDist = dist;
+      closestIdx = i;
+      info.closestSplinePoint = splinePoints[i].position;
+    }
+  }
+
+  // Calculate distance along spline
+  float totalDist = 0.0f;
+  for (size_t i = 0; i < closestIdx; i++) {
+    totalDist += glm::distance(splinePoints[i].position,
+      splinePoints[i + 1].position);
+  }
+  info.distanceAlongSpline = totalDist;
+
+  return info;
+}
+
+void LevelEditorScreen::updateCarTrackingInfo() {
+  if (m_testCars.empty() || m_carTrackingInfo.empty()) return;
+
+  // Update tracking info for each car
+  for (size_t i = 0; i < m_testCars.size(); i++) {
+    if (i >= m_carTrackingInfo.size()) break;
+    m_carTrackingInfo[i] = calculateCarTrackingInfo(m_testCars[i].get());
+  }
+
+  // Sort cars by distance along spline to determine race positions
+  std::vector<size_t> indices(m_carTrackingInfo.size());
+  std::iota(indices.begin(), indices.end(), 0);
+
+  std::sort(indices.begin(), indices.end(),
+    [this](size_t a, size_t b) {
+      return m_carTrackingInfo[a].distanceAlongSpline >
+        m_carTrackingInfo[b].distanceAlongSpline;
+    });
+
+  // Update race positions
+  for (size_t i = 0; i < indices.size(); i++) {
+    m_carTrackingInfo[indices[i]].racePosition = static_cast<int>(i + 1);
+  }
+}
+
+void LevelEditorScreen::updateTestMode() {
+  if (!m_testMode) return;
+
+  // Existing physics update
+  const float timeStep = 1.0f / 60.0f;
+  m_physicsSystem->update(timeStep);
+
+  // Update cars
+  if (!m_testCars.empty()) {
+    // Update player car (first car)
+    JAGEngine::InputManager& inputManager = m_game->getInputManager();
+    InputState input;
+    input.accelerating = inputManager.isKeyDown(SDLK_UP) || inputManager.isKeyDown(SDLK_w);
+    input.braking = inputManager.isKeyDown(SDLK_DOWN) || inputManager.isKeyDown(SDLK_s);
+    input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a);
+    input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d);
+    input.handbrake = inputManager.isKeyDown(SDLK_SPACE);
+    m_testCars[0]->update(input);
+
+    // Update other cars
+    for (size_t i = 1; i < m_testCars.size(); i++) {
+      InputState noInput;
+      m_testCars[i]->update(noInput);
+    }
+  }
+
+  // Update tracking info and camera
+  updateCarTrackingInfo();
+  updateTestCamera();
+}
+
+void LevelEditorScreen::updateTestCamera() {
+  if (m_testCars.empty() || m_carTrackingInfo.empty()) return;
+
+  // Get player car position
+  const Car* playerCar = m_testCars[0].get();
+  b2BodyId bodyId = playerCar->getDebugInfo().bodyId;
+  if (!b2Body_IsValid(bodyId)) return;
+
+  b2Vec2 carPos = b2Body_GetPosition(bodyId);
+  glm::vec2 carPosition(carPos.x, carPos.y);
+
+  // Calculate look-ahead point
+  glm::vec2 lookAheadPoint = calculateLookAheadPoint(m_carTrackingInfo[0]);
+
+  // Calculate camera target position (midpoint between car and look-ahead point)
+  glm::vec2 targetPos = (carPosition + lookAheadPoint) * 0.5f;
+
+  // Get screen dimensions in world coordinates
+  JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
+  float screenWidth = static_cast<float>(game->getWindow().getScreenWidth());
+  float screenHeight = static_cast<float>(game->getWindow().getScreenHeight());
+  float worldScreenWidth = screenWidth / (m_camera.getScale() * 5.0f);  // Adjust the divisor as needed
+  float worldScreenHeight = screenHeight / (m_camera.getScale() * 5.0f);
+
+  // Calculate screen bounds
+  glm::vec2 screenMin = targetPos - glm::vec2(worldScreenWidth, worldScreenHeight) * 0.5f;
+  glm::vec2 screenMax = targetPos + glm::vec2(worldScreenWidth, worldScreenHeight) * 0.5f;
+
+  // Ensure car stays within bounds
+  float minDistanceFromEdge = m_minCarScreenDistance / m_camera.getScale();
+
+  // Adjust camera position if car is too close to screen edge
+  if (carPosition.x < screenMin.x + minDistanceFromEdge) {
+    targetPos.x += (screenMin.x + minDistanceFromEdge) - carPosition.x;
+  }
+  if (carPosition.x > screenMax.x - minDistanceFromEdge) {
+    targetPos.x -= carPosition.x - (screenMax.x - minDistanceFromEdge);
+  }
+  if (carPosition.y < screenMin.y + minDistanceFromEdge) {
+    targetPos.y += (screenMin.y + minDistanceFromEdge) - carPosition.y;
+  }
+  if (carPosition.y > screenMax.y - minDistanceFromEdge) {
+    targetPos.y -= carPosition.y - (screenMax.y - minDistanceFromEdge);
+  }
+
+  // Update camera position
+  m_camera.setPosition(targetPos);
+}
+
+void LevelEditorScreen::drawCarTrackingDebug() {
+  if (!m_testMode || m_carTrackingInfo.empty() || !m_levelRenderer) return;
+
+  auto& textureProgram = m_levelRenderer->getTextureProgram();
+  textureProgram.use();
+
+  glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
+  GLint pUniform = textureProgram.getUniformLocation("P");
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &cameraMatrix[0][0]);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  m_spriteBatch.begin(JAGEngine::GlyphSortType::BACK_TO_FRONT);
+
+  // Draw points for each car
+  for (size_t i = 0; i < m_carTrackingInfo.size() && i < m_testCars.size(); i++) {
+    const auto& info = m_carTrackingInfo[i];
+    const auto& car = m_testCars[i];
+
+    // Get the car's color and print it
+    JAGEngine::ColorRGBA8 pointColor = car->getColor();
+    std::cout << "Car " << i << " color: R=" << (int)pointColor.r
+      << " G=" << (int)pointColor.g
+      << " B=" << (int)pointColor.b
+      << " A=" << (int)pointColor.a << std::endl;
+
+    // Draw the tracking point
+    const float pointSize = 8.0f;
+    glm::vec4 pointRect(
+      info.closestSplinePoint.x - pointSize,
+      info.closestSplinePoint.y - pointSize,
+      pointSize * 2.0f,
+      pointSize * 2.0f
+    );
+
+    // Draw the colored point
+    m_spriteBatch.draw(pointRect,
+      glm::vec4(0, 0, 1, 1),  // UV coordinates
+      0,                       // No texture
+      0.0f,                    // Simple depth
+      pointColor);             // Use car's color directly
+
+    // Draw look-ahead point only for player car
+    if (i == 0) {
+      glm::vec2 lookAheadPoint = calculateLookAheadPoint(info);
+
+      // Make look-ahead point a lighter version of car color
+      JAGEngine::ColorRGBA8 lookAheadColor(
+        std::min(255, static_cast<int>(pointColor.r * 1.5f)),
+        std::min(255, static_cast<int>(pointColor.g * 1.5f)),
+        std::min(255, static_cast<int>(pointColor.b * 1.5f)),
+        255
+      );
+
+      glm::vec4 lookAheadRect(
+        lookAheadPoint.x - pointSize,
+        lookAheadPoint.y - pointSize,
+        pointSize * 2.0f,
+        pointSize * 2.0f
+      );
+
+      m_spriteBatch.draw(lookAheadRect,
+        glm::vec4(0, 0, 1, 1),
+        0,
+        0.0f,
+        lookAheadColor);
+    }
+  }
+
+  m_spriteBatch.end();
+  m_spriteBatch.renderBatch();
+  textureProgram.unuse();
+}
+
+glm::vec2 LevelEditorScreen::calculateLookAheadPoint(const CarTrackingInfo& carInfo) const {
+  if (!m_track) return carInfo.closestSplinePoint;
+
+  auto splinePoints = m_track->getSplinePoints(400); // Increased resolution
+  if (splinePoints.empty()) return carInfo.closestSplinePoint;
+
+  // Find the current point index
+  size_t currentIndex = 0;
+  float minDist = std::numeric_limits<float>::max();
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    float dist = glm::distance2(carInfo.closestSplinePoint, splinePoints[i].position);
+    if (dist < minDist) {
+      minDist = dist;
+      currentIndex = i;
+    }
+  }
+
+  // Build cumulative distances array
+  std::vector<float> cumulativeDistances;
+  cumulativeDistances.reserve(splinePoints.size() + 1);
+  cumulativeDistances.push_back(0.0f);
+
+  float totalLength = 0.0f;
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    size_t nextIdx = (i + 1) % splinePoints.size();
+    totalLength += glm::distance(splinePoints[i].position, splinePoints[nextIdx].position);
+    cumulativeDistances.push_back(totalLength);
+  }
+
+  // Calculate target distance along track
+  float currentDistance = cumulativeDistances[currentIndex];
+  float targetDistance = currentDistance + m_lookAheadDistance;
+
+  // Handle wrapping
+  if (targetDistance >= totalLength) {
+    targetDistance = std::fmod(targetDistance, totalLength);
+  }
+
+  // Find the segment containing our target distance
+  size_t segmentStart = 0;
+  for (size_t i = 0; i < cumulativeDistances.size() - 1; i++) {
+    if (cumulativeDistances[i] <= targetDistance && cumulativeDistances[i + 1] > targetDistance) {
+      segmentStart = i;
+      break;
+    }
+  }
+
+  // Calculate interpolation factor
+  size_t segmentEnd = (segmentStart + 1) % splinePoints.size();
+  float segmentLength = cumulativeDistances[segmentStart + 1] - cumulativeDistances[segmentStart];
+  float t = (targetDistance - cumulativeDistances[segmentStart]) / segmentLength;
+
+  // Interpolate position
+  return glm::mix(splinePoints[segmentStart].position, splinePoints[segmentEnd].position, t);
+}
+
+

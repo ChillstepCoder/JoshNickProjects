@@ -9,19 +9,19 @@ class Car {
 public:
   struct CarProperties {
     // Movement properties
-    float maxSpeed = 557.0f;         // Minimum good value from testing
-    float acceleration = 10000.0f;    // Minimum good value
-    float turnSpeed = 10.0f;          // Minimum good value
-    float lateralDamping = 0.95f;     // Good starting value
-    float dragFactor = 0.99f;         // Good starting value
-    float turnResetRate = 1.0f;       // Good starting value
-    float maxAngularVelocity = 2.7f;  // Good starting value
-    float brakingForce = 0.5f;        // Good starting value
-    float minSpeedForTurn = 1.0f;     // Good starting value
+    float maxSpeed = 2000.0f;         
+    float acceleration = 20000.0f;    
+    float turnSpeed = 20.0f;          
+    float lateralDamping = 0.95f;     
+    float dragFactor = 0.99f;         
+    float turnResetRate = 1.0f;       
+    float maxAngularVelocity = 2.7f;  
+    float brakingForce = 0.5f;        
+    float minSpeedForTurn = 1.0f;     
 
     // Friction properties
-    float wheelFriction = 1.0f;       // Base friction of the car's wheels
-    float baseFriction = 0.5f;        // Default surface friction
+    float wheelFriction = 1.0f;       
+    float baseFriction = 0.5f;        
   };
 
   struct DebugInfo {
