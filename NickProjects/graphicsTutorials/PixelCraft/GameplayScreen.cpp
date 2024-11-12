@@ -114,14 +114,9 @@ void GameplayScreen::update() {
     }
 
     {
-        PROFILE_SCOPE("player.update");
-        m_player.update(m_game->inputManager, m_blockManager->getBlocks());
-
-    }
-
-    {
-        PROFILE_SCOPE("camera.setPosition");
+        PROFILE_SCOPE("player.update + camera.setPosition");
         const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
+        m_player.update(m_game->inputManager, playerPos, m_blockManager);
 
         m_blockManager->loadNearbyChunks(playerPos);
         m_blockManager->unloadFarChunks(playerPos);
