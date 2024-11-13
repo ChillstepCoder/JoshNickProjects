@@ -2,6 +2,7 @@
 #include "BlockMeshManager.h"
 #include "DebugDraw.h"
 #include "PerlinNoise.hpp"
+#include <iostream>
 
 BlockMeshManager::BlockMeshManager() {
 
@@ -21,12 +22,14 @@ void BlockMeshManager::buildMesh(const std::vector<std::vector<Chunk>>& chunks) 
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
                 for (int y = 0; y < CHUNK_WIDTH; ++y) {
                     const Block& block = chunk.blocks[x][y];
-                    auto destRect = block.getDestRect();
-                    auto uvRect = block.getUVRect();
-                    auto textureID = block.getTextureID();
-                    auto color = block.getColor();
+                    if (!block.isEmpty()) {
+                        glm::vec4 destRect = block.getDestRect();
+                        glm::vec4 uvRect = block.getUVRect();
+                        GLuint textureID = block.getTextureID();
+                        Bengine::ColorRGBA8 color = block.getColor();
 
-                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                        m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                    }
                 }
             }
         }
@@ -37,235 +40,64 @@ void BlockMeshManager::renderMesh() {
     m_spriteBatch.renderBatch();
 }
 
-void BlockManager::generateChunks() {
-    Bengine::ColorRGBA8 textureColor;
-    textureColor.r = 255;
-    textureColor.g = 255;
-    textureColor.b = 255;
-    textureColor.a = 255;
+void BlockManager::initializeChunks() {
+    const float BLOCK_WIDTH = 1.0f;
+    const float BLOCK_HEIGHT = 1.0f;
 
-
-
-    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
-        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
-            Chunk& chunk = m_chunks[chunkX][chunkY];  // Reference the chunk in the grid
-            float worldX = chunkX * CHUNK_WIDTH;
-            float worldY = chunkY * CHUNK_WIDTH;
-            chunk.m_worldPosition = glm::vec2(worldX, worldY);
-
-            // Use Perlin noise or whatever generation method you prefer
-            siv::PerlinNoise perlin(12345);  // Perlin noise generator
-            for (int x = 0; x < CHUNK_WIDTH; ++x) {
-                for (int y = 0; y < CHUNK_WIDTH; ++y) {
-                    // Calculate the block's world position
-                    float noiseValue = perlin.noise1D(x * 0.1f);  // Noise to vary the height
-                    int height = 10 + static_cast<int>(noiseValue * 10);  // Generate height based on noise
-                    glm::vec2 position(worldX + x, worldY + y);
-
-                    // Create a block based on the height
-                    Block block;
-                    block.init(&m_world, position, glm::vec2(1.0f, 1.0f), Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor, false);
-                    chunk.blocks[x][y] = block;  // Place block in the chunk
-                }
-            }
-        }
+    // Resize the m_chunks vector to the correct size
+    m_chunks.resize(WORLD_WIDTH_CHUNKS);
+    for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
+        m_chunks[x].resize(WORLD_HEIGHT_CHUNKS);
     }
-}
-
-
-
-/*
-
 
     // Create Perlin noise instance with random seed
     siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
 
     // Parameters for terrain generation
-#ifdef _DEBUG
-    // MAKE A WAY SMALLER WORLD IN DEBUG MODE SO ITS FASTER TO LOAD
-    const int NUM_BLOCKS_X = 250;  // Width of the terrain
-#else
-    const int NUM_BLOCKS_X = 1500;  // Width of the terrain
-#endif
-    const float BLOCK_WIDTH = 1.0f;
-    const float BLOCK_HEIGHT = 1.0f;
-    const float START_X = -NUM_BLOCKS_X / 2;
-    // Parameters for noise
     const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
     const float AMPLITUDE = 10.0f;    // Controls the height variation
-    const float SURFACE_Y = 14.0f;    // Base height of the surface
+    const float SURFACE_Y = 64.0f;    // Base height of the surface
 
-    Bengine::ColorRGBA8 textureColor;
-    textureColor.r = 255;
-    textureColor.g = 255;
-    textureColor.b = 255;
-    textureColor.a = 255;
+    Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
 
-    // Generate surface terrain
-    std::vector<int> heightMap(NUM_BLOCKS_X);
-    for (int x = 0; x < NUM_BLOCKS_X; x++) {
-        // Generate height using Perlin noise
-        float noiseValue = perlin.noise1D(x * NOISE_SCALE);
-        int height = static_cast<int>(SURFACE_Y + noiseValue * AMPLITUDE);
-        heightMap[x] = height;
+    // Generate terrain for each chunk
+    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
+            Chunk& chunk = m_chunks[chunkX][chunkY];
+            chunk.m_worldPosition = glm::vec2(chunkX * CHUNK_WIDTH, chunkY * CHUNK_WIDTH);
 
-        // Create surface (grass) blocks
-        float worldX = START_X + x * BLOCK_WIDTH;
-        Block surfaceBlock;
-        glm::vec2 position(worldX, height * BLOCK_HEIGHT);
-        surfaceBlock.init(&m_world, position, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-            Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor, false);
-        m_blocks.push_back(surfaceBlock);
+            for (int x = 0; x < CHUNK_WIDTH; ++x) {
+                int worldX = chunkX * CHUNK_WIDTH + x;
+                float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
+                int height = static_cast<int>(SURFACE_Y + noiseValue * AMPLITUDE);
+                const float DIRT_BOTTOM = height - 10;
 
-        // Fill blocks below surface with dirt
-        for (int y = height - 1; y > height - 10; y--) {
-            Block dirtBlock;
-            glm::vec2 dirtPos(worldX, y * BLOCK_HEIGHT);
-            dirtBlock.init(&m_world, dirtPos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor, false);
-            m_blocks.push_back(dirtBlock);
-        }
+                for (int y = 0; y < CHUNK_WIDTH; ++y) {
+                    int worldY = chunkY * CHUNK_WIDTH + y;
+                    glm::vec2 position(worldX, worldY);
 
-        // Fill deeper blocks with stone
-        for (int y = height - 10; y > height - 50; y--) {
-            Block stoneBlock;
-            glm::vec2 stonePos(worldX, y * BLOCK_HEIGHT);
-            stoneBlock.init(&m_world, stonePos, glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor, false);
-            m_blocks.push_back(stoneBlock);
-        }
-    }
-
-    rebuildMesh();
-
-    
-    // Generate caves using 2D Perlin noise
-    const float CAVE_SCALE = 0.4f;
-    const float CAVE_THRESHOLD = 0.4f; // Adjust this to control cave density
-
-    for (int x = 0; x < NUM_BLOCKS_X; x++) {
-        for (int y = heightMap[x] - 8; y > heightMap[x] - 35; y--) {
-            float caveNoise = perlin.noise2D(x * CAVE_SCALE, y * CAVE_SCALE);
-            if (caveNoise > CAVE_THRESHOLD) {
-                // Find and remove blocks at this position
-                float worldX = START_X + x * BLOCK_WIDTH;
-                float worldY = y * BLOCK_HEIGHT;
-
-                auto it = std::remove_if(m_blockManager->getBlocks().begin(), m_blockManager->getBlocks().end(),
-                    [worldX, worldY, BLOCK_WIDTH, BLOCK_HEIGHT](Block& block) {
-                        b2Vec2 pos = block.getPosition();
-                        return (pos.x >= worldX - BLOCK_WIDTH / 2 &&
-                            pos.x <= worldX + BLOCK_WIDTH / 2 &&
-                            pos.y >= worldY - BLOCK_HEIGHT / 2 &&
-                            pos.y <= worldY + BLOCK_HEIGHT / 2);
-                    });
-
-                m_blockManager->getBlocks().erase(it, m_blockManager->getBlocks().end());
-            }
-        }
-    }
-
-    // Load the copper ore texture
-    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedCopperBlock.png");
-
-    // Parameters for ore vein generation
-    const float ORE_VEIN_SCALE = 0.03f;  // Controls how stretched the ore veins are
-    const float ORE_VEIN_THRESHOLD = 0.25f; // Adjust this to control ore vein density
-    const int MIN_VEIN_LENGTH = 5;      // Minimum length of an ore vein
-    const int MAX_VEIN_LENGTH = 9;     // Maximum length of an ore vein
-
-    // Generate copper ore veins
-    for (int x = 0; x < NUM_BLOCKS_X; x++) {
-        for (int y = heightMap[x] - 12; y > heightMap[x] - 35; y--) {
-            float oreNoise = perlin.noise2D(x * ORE_VEIN_SCALE, y * ORE_VEIN_SCALE);
-            if (oreNoise > ORE_VEIN_THRESHOLD) {
-                // Start a new ore vein
-                int veinLength = MIN_VEIN_LENGTH + rand() % (MAX_VEIN_LENGTH - MIN_VEIN_LENGTH + 1);
-                int veinStartX = x;
-                int veinStartY = y;
-
-                for (int i = 0; i < veinLength; i++) {
-                    // Create ore blocks along the vein
-                    float worldX = START_X + veinStartX * BLOCK_WIDTH;
-                    float worldY = veinStartY * BLOCK_HEIGHT;
-                    Block oreBlock;
-                    oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                        m_texture, textureColor, false);
-                    m_blockManager->addBlock(oreBlock);
-
-                    // Move to the next position in the vein
-                    veinStartX++;
-                    if (veinStartX >= NUM_BLOCKS_X) {
-                        // Wrap around to the beginning if we reach the end
-                        veinStartX = 0;
+                    if (worldY == height) { // Create surface (grass) blocks
+                        Block surfaceBlock;
+                        surfaceBlock.init(&m_world, glm::vec2(position.x, position.y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                            Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor);
+                        chunk.blocks[x][y] = surfaceBlock;
                     }
-                }
-            }
-        }
-    }
-
-    m_texture = Bengine::ResourceManager::getTexture("Textures/connectedIronBlock.png");
-
-    // Parameters for iron vein generation
-    const float ORE_VEIN_SCALE2 = 0.02f;  // Controls how stretched the ore veins are
-    const float ORE_VEIN_THRESHOLD2 = 0.45f; // Adjust this to control ore vein density
-    const int MIN_VEIN_LENGTH2 = 5;      // Minimum length of an ore vein
-    const int MAX_VEIN_LENGTH2 = 9;     // Maximum length of an ore vein
-
-    // Generate iron ore veins
-    for (int x = 0; x < NUM_BLOCKS_X; x++) {
-        for (int y = heightMap[x] - 12; y > heightMap[x] - 35; y--) {
-            float oreNoise = perlin.noise2D(x * ORE_VEIN_SCALE2, y * ORE_VEIN_SCALE2);
-            if (oreNoise > ORE_VEIN_THRESHOLD2) {
-                // Start a new ore vein
-                int veinLength = MIN_VEIN_LENGTH2 + rand() % (MAX_VEIN_LENGTH2 - MIN_VEIN_LENGTH2 + 1);
-                int veinStartX = x;
-                int veinStartY = y;
-
-                for (int i = 0; i < veinLength; i++) {
-                    // Create ore blocks along the vein
-                    float worldX = START_X + veinStartX * BLOCK_WIDTH;
-                    float worldY = veinStartY * BLOCK_HEIGHT;
-                    Block oreBlock;
-                    oreBlock.init(&m_world, glm::vec2(worldX, worldY), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                        m_texture, textureColor, false);
-                    m_blockManager->addBlock(oreBlock);
-
-                    // Move to the next position in the vein
-                    veinStartX++;
-                    if (veinStartX >= NUM_BLOCKS_X) {
-                        // Wrap around to the beginning if we reach the end
-                        veinStartX = 0;
+                    else if (worldY < height && worldY > DIRT_BOTTOM) { // Fill blocks below surface with dirt
+                        Block dirtBlock;
+                        dirtBlock.init(&m_world, glm::vec2(position.x, y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                            Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor);
+                        chunk.blocks[x][y] = dirtBlock;
+                    } else if (worldY <= DIRT_BOTTOM) { // Fill deeper blocks with stone
+                        Block stoneBlock;
+                        stoneBlock.init(&m_world, glm::vec2(position.x, y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                            Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor);
+                        chunk.blocks[x][y] = stoneBlock;
                     }
                 }
             }
         }
     }
 }
-*/
-
-/*
-
-void BlockManager::breakBlockAtPosition(const glm::vec2& position) {  //destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
-    // Iterate through blocks and find the one that contains the given position
-
-    for (int i = 0; i < m_blocks.size(); ++i) {
-        const Block& block = m_blocks[i];
-        if (isPositionInBlock(position, block)) {
-            // Remove the block from the world
-            b2DestroyBody(block.getID());
-            m_blocks.erase(m_blocks.begin() + i);
-
-            // Rebuild the mesh
-            rebuildMesh();
-            DebugDraw::getInstance().setVertexDataChanged(true);
-            break;
-        }
-
-    }
-}
-
-*/
 
 inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Block& block) {
     // Check if the position is within the block's bounding box
@@ -300,40 +132,13 @@ bool BlockManager::isChunkLoaded(int x, int y) {
         return false; // Out of bounds
     }
 
-    // Resize the m_chunks vector if necessary
-    if (x >= m_chunks.size()) {
-        m_chunks.resize(x + 1);  // Resize outer vector if x is out of bounds
-    }
-
-    if (y >= m_chunks[x].size()) {
-        m_chunks[x].resize(y + 1);  // Resize the inner vector if y is out of bounds
-    }
-
-    // If the chunk already exists, return (don't load it again)
-    if (m_chunks[x][y].blocks[0][0].getTextureID() != 0) { // Assuming 0 means uninitialized block
+    // If the chunk already exists and has been initialized, return true
+    if (m_chunks[x][y].blocks[0][0].getTextureID() != 0) {
         return true;
     }
 
-    // Create the new chunk
-    Chunk chunk;
-    chunk.m_worldPosition = glm::vec2(x * CHUNK_WIDTH, y * CHUNK_WIDTH);
+    return false;
 
-    // Populate the chunk with blocks (you can use Perlin noise or any other method)
-    for (int i = 0; i < CHUNK_WIDTH; ++i) {
-        for (int j = 0; j < CHUNK_WIDTH; ++j) {
-            Block block;
-            glm::vec2 blockPos(chunk.m_worldPosition.x + i, chunk.m_worldPosition.y + j);
-            // Example: Simple block generation
-            Bengine::ColorRGBA8 color(255, 255, 255, 255);
-            block.init(&m_world, blockPos, glm::vec2(1.0f, 1.0f), Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), color, 0.0f);
-
-            // Add the block to the chunk's blocks array
-            chunk.blocks[i][j] = block;
-        }
-    }
-
-    // Save the chunk in the m_chunks vector
-    m_chunks[x][y] = chunk;
 }
 
 void BlockManager::loadChunk(int x, int y) {
@@ -341,19 +146,25 @@ void BlockManager::loadChunk(int x, int y) {
         return; // Out of bounds
     }
 
-    if (x >= m_chunks.size()) {
-        m_chunks.resize(x + 1);  // Resize outer vector if x is out of bounds
+    // Create and initialize the chunk if it doesn't exist
+    /*
+    Chunk& chunk = m_chunks[x][y];
+    if (chunk.blocks[0][0].getTextureID() == 0) {
+        chunk.m_worldPosition = glm::vec2(x * CHUNK_WIDTH, y * CHUNK_WIDTH);
+
+        // Populate the chunk with blocks
+        for (int i = 0; i < CHUNK_WIDTH; ++i) {
+            for (int j = 0; j < CHUNK_WIDTH; ++j) {
+                Block block;
+                glm::vec2 blockPos(chunk.m_worldPosition.x + i, chunk.m_worldPosition.y + j);
+                // Example: Simple block generation
+                Bengine::ColorRGBA8 color(255, 255, 255, 255);
+                block.init(&m_world, blockPos, glm::vec2(1.0f, 1.0f), Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), color, 0.0f);
+                chunk.blocks[i][j] = block;
+            }
+        }
     }
-
-    if (y >= m_chunks[x].size()) {
-        m_chunks[x].resize(y + 1);  // Resize the inner vector if y is out of bounds
-    }
-
-
-    Chunk chunk;
-    chunk.m_worldPosition = glm::vec2(x * CHUNK_WIDTH, y * CHUNK_WIDTH);
-
-    m_chunks[x][y] = chunk;
+    */
 }
 
 bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {

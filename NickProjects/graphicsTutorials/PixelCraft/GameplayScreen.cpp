@@ -43,6 +43,8 @@ void GameplayScreen::onEntry() {
 
     m_blockManager = new BlockManager(m_blockMeshManager, m_world);
 
+    m_blockManager->initializeChunks();
+
     // Load chunks around the player (initial position)
     m_blockManager->loadNearbyChunks(glm::vec2(0.0f, 60.0f));
 
@@ -84,7 +86,7 @@ void GameplayScreen::onEntry() {
     textureColor.b = 255;
     textureColor.a = 255;
 
-    m_player.init(&m_world, glm::vec2(0.0f, 60.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
+    m_player.init(&m_world, glm::vec2(500.0f, 120.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
 
 }
 
