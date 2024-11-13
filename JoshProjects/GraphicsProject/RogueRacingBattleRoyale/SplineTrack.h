@@ -67,6 +67,7 @@ public:
   }
 
   glm::vec2 getTrackDirectionAtNode(const TrackNode* node) const;
+  std::vector<glm::vec2> getBarrierVertices() const;
 
   // Start Position Configuration - Keep only one set of these methods
   StartPositionConfig& getStartPositionConfig() { return m_startConfig; }

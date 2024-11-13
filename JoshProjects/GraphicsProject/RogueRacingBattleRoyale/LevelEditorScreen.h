@@ -16,6 +16,7 @@
 #include "InputState.h"
 #include <JAGEngine/ResourceManager.h>
 #include <JAGEngine/GLTexture.h>
+#include "DebugDraw.h"
 
 #include <numeric>
 #include <algorithm>
@@ -157,5 +158,8 @@ private:
   std::vector<std::unique_ptr<Car>> m_testCars;
   std::unique_ptr<PhysicsSystem> m_physicsSystem;
   GLuint m_carTexture;
+
+  std::unique_ptr<DebugDraw> m_debugDraw;
+  bool m_showDebugDraw = false;
 
 };

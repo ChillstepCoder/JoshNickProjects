@@ -88,7 +88,7 @@ void GameplayScreen::onEntry() {
 
     // Create car body
     m_playerCarBody = m_physicsSystem->createDynamicBody(-100.0f, -100.0f);
-    m_physicsSystem->createBoxShape(m_playerCarBody, 15.0f, 15.0f);
+    m_physicsSystem->createPillShape(m_playerCarBody, 15.0f, 15.0f);
 
     // Initialize default car properties
     m_defaultCarProps = Car::CarProperties();

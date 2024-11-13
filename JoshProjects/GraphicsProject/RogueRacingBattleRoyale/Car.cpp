@@ -192,14 +192,29 @@ void Car::applyDrag(const b2Vec2& currentVel, float forwardSpeed) {
       currentVel.y - forwardVel.y
   };
 
-  // Stronger lateral damping when not turning
+  // Apply stronger lateral damping during collisions
   float currentLateralDamping = m_properties.lateralDamping;
 
-  // Apply lateral damping and drag
+  // Check if we're in a collision (using the velocity as an indicator)
+  float lateralSpeed = b2Vec2Length(lateralVel);
+  if (lateralSpeed > m_properties.maxSpeed * 0.1f) {  // If significant sideways movement
+    currentLateralDamping *= 0.5f;  // Reduce damping to allow sliding
+  }
+
+  // Apply damping to avoid getting stuck
   b2Vec2 newVel = {
       (forwardVel.x + lateralVel.x * currentLateralDamping) * m_properties.dragFactor,
       (forwardVel.y + lateralVel.y * currentLateralDamping) * m_properties.dragFactor
   };
+
+  // If velocity is very low and we're in contact, give a small impulse
+  if (b2Vec2Length(newVel) < 1.0f) {
+    b2Vec2 impulse = {
+        forwardDir.x * m_properties.acceleration * 0.01f,
+        forwardDir.y * m_properties.acceleration * 0.01f
+    };
+    b2Body_ApplyLinearImpulseToCenter(m_bodyId, impulse, true);
+  }
 
   b2Body_SetLinearVelocity(m_bodyId, newVel);
 }

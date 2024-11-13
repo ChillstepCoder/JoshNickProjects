@@ -8,6 +8,7 @@
 #include "ObjectManager.h"
 #include "RoadMeshGenerator.h"
 #include <glm/glm.hpp>
+#include <Box2D/box2d.h>
 
 class LevelRenderer {
 public:
@@ -34,6 +35,9 @@ public:
   void updateRoadMesh(SplineTrack* track);
 
   void renderStartPositions(const glm::mat4& cameraMatrix, SplineTrack* track);
+
+  void createBarrierCollisions(SplineTrack* track, b2WorldId worldId);
+  void cleanupBarrierCollisions(b2WorldId world);
 
   // Getters and setters for appearance
   void setGrassColor(const glm::vec3& color) { m_grassColor = color; }
@@ -76,6 +80,27 @@ public:
 
 
 private:
+  struct BarrierCollisionData {
+    std::vector<b2BodyId> leftBarrierBodies;
+    std::vector<b2BodyId> rightBarrierBodies;
+    void cleanup(b2WorldId world) {
+      for (auto bodyId : leftBarrierBodies) {
+        if (b2Body_IsValid(bodyId)) {
+          b2DestroyBody(bodyId);
+        }
+      }
+      leftBarrierBodies.clear();
+
+      for (auto bodyId : rightBarrierBodies) {
+        if (b2Body_IsValid(bodyId)) {
+          b2DestroyBody(bodyId);
+        }
+      }
+      rightBarrierBodies.clear();
+    }
+  };
+
+  BarrierCollisionData m_barrierCollisions;
   // Helper rendering functions
   void renderBackground(const glm::mat4& cameraMatrix);
   void renderRoad(const glm::mat4& cameraMatrix);

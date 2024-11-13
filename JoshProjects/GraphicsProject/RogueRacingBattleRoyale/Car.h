@@ -12,12 +12,12 @@ public:
     float maxSpeed = 2000.0f;         
     float acceleration = 20000.0f;    
     float turnSpeed = 20.0f;          
-    float lateralDamping = 0.95f;     
-    float dragFactor = 0.99f;         
-    float turnResetRate = 1.0f;       
-    float maxAngularVelocity = 2.7f;  
-    float brakingForce = 0.5f;        
-    float minSpeedForTurn = 1.0f;     
+    float lateralDamping = 0.8f;     // Reduced from 0.95f for smoother slides
+    float dragFactor = 0.995f;       // Increased from 0.99f for less drag
+    float brakingForce = 0.7f;       // Increased from 0.5f for better control
+    float maxAngularVelocity = 4.0f;        
+    float minSpeedForTurn = 1.0f;
+    float turnResetRate = 5.0f;
 
     // Friction properties
     float wheelFriction = 1.0f;       

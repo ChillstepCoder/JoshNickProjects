@@ -273,8 +273,6 @@ float SplineTrack::catmullRomValue(float p0, float p1, float p2, float p3, float
   return result;
 }
 
-// SplineTrack.cpp
-
 glm::vec2 SplineTrack::getTrackDirectionAtNode(const TrackNode* node) const {
   if (!node || m_nodes.size() < 4) return glm::vec2(1, 0);
 
@@ -313,6 +311,38 @@ glm::vec2 SplineTrack::getTrackDirectionAtNode(const TrackNode* node) const {
   }
 
   return direction;
+}
+
+std::vector<glm::vec2> SplineTrack::getBarrierVertices() const {
+  std::vector<glm::vec2> barrierVertices;
+
+  auto splinePoints = getSplinePoints(200);  // Use appropriate subdivisions
+
+  if (splinePoints.size() < 2) return barrierVertices;
+
+  size_t numPoints = splinePoints.size();
+
+  for (size_t i = 0; i < numPoints; ++i) {
+    const auto& current = splinePoints[i];
+    const auto& next = splinePoints[(i + 1) % numPoints];
+
+    glm::vec2 direction = glm::normalize(next.position - current.position);
+    glm::vec2 perp(-direction.y, direction.x);
+
+    // Left barrier point
+    if (current.barrierDistance.x > 0.0f) {
+      glm::vec2 leftBarrierPos = current.position + perp * (current.roadWidth + current.barrierDistance.x);
+      barrierVertices.push_back(leftBarrierPos);
+    }
+
+    // Right barrier point
+    if (current.barrierDistance.y > 0.0f) {
+      glm::vec2 rightBarrierPos = current.position - perp * (current.roadWidth + current.barrierDistance.y);
+      barrierVertices.push_back(rightBarrierPos);
+    }
+  }
+
+  return barrierVertices;
 }
 
 std::pair<std::vector<glm::vec2>, std::vector<glm::vec2>>

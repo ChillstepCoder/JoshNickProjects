@@ -1,6 +1,7 @@
 // LevelRenderer.cpp
 
 #include "LevelRenderer.h"
+#include <Box2D/box2d.h>  
 
 LevelRenderer::LevelRenderer() {
 }
@@ -437,4 +438,83 @@ void LevelRenderer::renderStartPositions(const glm::mat4& cameraMatrix, SplineTr
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
   m_textureProgram.unuse();
+}
+
+void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId world) {
+  if (!track) return;
+  cleanupBarrierCollisions(world);
+
+  auto splinePoints = track->getSplinePoints(200);
+  if (splinePoints.size() < 2) return;
+
+  const float BARRIER_THICKNESS = 7.5f;
+
+  // Create barriers for each segment with proper rotation
+  for (size_t i = 0; i < splinePoints.size() - 1; i++) {
+    const auto& current = splinePoints[i];
+    const auto& next = splinePoints[i + 1];
+
+    // Calculate segment direction and length
+    glm::vec2 direction = next.position - current.position;
+    float length = glm::length(direction);
+    if (length == 0.0f) continue; // Avoid division by zero
+    float angle = atan2(direction.y, direction.x);
+
+    // Normalize direction for perpendicular calculation
+    glm::vec2 dirNorm = direction / length;
+    glm::vec2 perp(-dirNorm.y, dirNorm.x);
+
+    // **Adjust the total spacing from the center spline**
+    float leftSpacing = current.roadWidth + current.barrierDistance.x + BARRIER_THICKNESS * 0.5f;
+    float rightSpacing = current.roadWidth + current.barrierDistance.y + BARRIER_THICKNESS * 0.5f;
+
+    // **Left barrier collider**
+    if (current.barrierDistance.x > 0.0f) {
+      glm::vec2 leftBarrierCenter = current.position + perp * leftSpacing;
+      leftBarrierCenter += direction * 0.5f; // Center of segment
+
+      b2BodyDef bodyDef = b2DefaultBodyDef();
+      bodyDef.type = b2_staticBody;
+      bodyDef.position = { leftBarrierCenter.x, leftBarrierCenter.y };
+      bodyDef.rotation = b2MakeRot(angle);
+
+      b2BodyId bodyId = b2CreateBody(world, &bodyDef);
+
+      b2ShapeDef shapeDef = b2DefaultShapeDef();
+      shapeDef.friction = 0.3f;
+      shapeDef.restitution = 0.2f;
+
+      b2Polygon box = b2MakeBox(length * 0.5f, BARRIER_THICKNESS * 0.5f);
+      b2CreatePolygonShape(bodyId, &shapeDef, &box);
+
+      m_barrierCollisions.leftBarrierBodies.push_back(bodyId);
+    }
+
+    // **Right barrier collider**
+    if (current.barrierDistance.y > 0.0f) {
+      glm::vec2 rightBarrierCenter = current.position - perp * rightSpacing;
+      rightBarrierCenter += direction * 0.5f;
+
+      b2BodyDef bodyDef = b2DefaultBodyDef();
+      bodyDef.type = b2_staticBody;
+      bodyDef.position = { rightBarrierCenter.x, rightBarrierCenter.y };
+      bodyDef.rotation = b2MakeRot(angle);
+
+      b2BodyId bodyId = b2CreateBody(world, &bodyDef);
+
+      b2ShapeDef shapeDef = b2DefaultShapeDef();
+      shapeDef.friction = 0.3f;
+      shapeDef.restitution = 0.2f;
+
+      b2Polygon box = b2MakeBox(length * 0.5f, BARRIER_THICKNESS * 0.5f);
+      b2CreatePolygonShape(bodyId, &shapeDef, &box);
+
+      m_barrierCollisions.rightBarrierBodies.push_back(bodyId);
+    }
+  }
+}
+
+
+void LevelRenderer::cleanupBarrierCollisions(b2WorldId world) {
+  m_barrierCollisions.cleanup(world);
 }

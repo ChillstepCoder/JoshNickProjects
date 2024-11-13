@@ -1,3 +1,5 @@
+//PhysicsSystem.h
+
 #pragma once
 #include <Box2D/box2d.h>
 #include <memory>
@@ -15,8 +17,10 @@ public:
   // Body creation helpers
   b2BodyId createStaticBody(float x, float y);
   b2BodyId createDynamicBody(float x, float y);
-  void createBoxShape(b2BodyId bodyId, float width, float height,
+  void createPillShape(b2BodyId bodyId, float width, float height,
     float density = 1.0f, float friction = 0.3f);
+
+  b2WorldId getWorld() const { return m_worldId; }
 
 private:
   b2WorldId m_worldId;

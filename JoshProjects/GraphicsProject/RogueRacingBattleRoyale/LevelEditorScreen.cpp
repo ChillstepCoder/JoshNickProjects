@@ -890,9 +890,18 @@ void LevelEditorScreen::initTestMode() {
 
   m_testMode = true;
 
+  // Initialize debug drawer
+  m_debugDraw = std::make_unique<DebugDraw>();
+  m_debugDraw->init();
+
   // Initialize physics system
   m_physicsSystem = std::make_unique<PhysicsSystem>();
   m_physicsSystem->init(0.0f, 0.0f);
+
+  // Create barrier collisions with physics world
+  if (m_physicsSystem) {
+    m_levelRenderer->createBarrierCollisions(m_track.get(), m_physicsSystem->getWorld());
+  }
 
   // Load car texture
   m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
@@ -950,7 +959,7 @@ void LevelEditorScreen::initTestMode() {
   for (size_t i = 0; i < startPositions.size(); i++) {
     const auto& pos = startPositions[i];
     b2BodyId carBody = m_physicsSystem->createDynamicBody(pos.position.x, pos.position.y);
-    m_physicsSystem->createBoxShape(carBody, 15.0f, 15.0f);
+    m_physicsSystem->createPillShape(carBody, 15.0f, 15.0f);
 
     auto car = std::make_unique<Car>(carBody);
 
@@ -976,6 +985,7 @@ void LevelEditorScreen::initTestMode() {
 void LevelEditorScreen::drawTestMode() {
   if (!m_testMode) return;
 
+  // Draw normal car sprites
   m_levelRenderer->getTextureProgram().use();
   glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
   GLint pUniform = m_levelRenderer->getTextureProgram().getUniformLocation("P");
@@ -1013,6 +1023,12 @@ void LevelEditorScreen::drawTestMode() {
   m_spriteBatch.renderBatch();
   m_levelRenderer->getTextureProgram().unuse();
 
+  // Draw debug visualization if enabled
+  if (m_showDebugDraw && m_physicsSystem) {
+    b2WorldId worldId = m_physicsSystem->getWorld();
+    m_debugDraw->drawWorld(worldId, cameraMatrix);
+  }
+
   drawCarTrackingDebug();
 }
 
@@ -1020,7 +1036,7 @@ void LevelEditorScreen::drawTestModeUI() {
   if (!m_testMode) return;
 
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
 
   ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
 
@@ -1028,7 +1044,15 @@ void LevelEditorScreen::drawTestModeUI() {
     cleanupTestMode();
   }
 
-  // Add camera control parameters
+  // Add debug draw toggle
+  ImGui::Separator();
+  ImGui::Checkbox("Show Collision Shapes", &m_showDebugDraw);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Toggle visualization of physics collision shapes");
+  }
+
+  // Existing camera controls
+  ImGui::Separator();
   ImGui::SliderFloat("Look Ahead Distance", &m_lookAheadDistance, 50.0f, 300.0f);
   ImGui::SliderFloat("Min Screen Edge Distance", &m_minCarScreenDistance, 50.0f, 200.0f);
   ImGui::SliderFloat("Test Camera Zoom", &m_testCameraScale, 0.5f, 5.0f);
@@ -1040,6 +1064,11 @@ void LevelEditorScreen::drawTestModeUI() {
 }
 
 void LevelEditorScreen::cleanupTestMode() {
+  // Cleanup barrier collisions
+  if (m_physicsSystem) {
+    m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
+  }
+
   // Restore editor camera state
   m_camera.setPosition(m_editorCameraPos);
   m_camera.setScale(m_editorCameraScale);
@@ -1055,6 +1084,11 @@ void LevelEditorScreen::cleanupTestMode() {
 
   // Restore the start position visibility state
   m_levelRenderer->setShowStartPositions(m_showStartPositions);
+
+  // Clean up debug drawer
+  if (m_debugDraw) {
+    m_debugDraw.reset();
+  }
 
   m_testMode = false;
 }
