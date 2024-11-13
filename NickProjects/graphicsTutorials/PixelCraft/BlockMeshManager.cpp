@@ -69,26 +69,22 @@ void BlockManager::initializeChunks() {
                 float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
                 int height = static_cast<int>(SURFACE_Y + noiseValue * AMPLITUDE);
 
-                for (int y = 0; y < CHUNK_WIDTH; ++y) {
+                for (int y = 0; y > -CHUNK_WIDTH; --y) {
                     int worldY = chunkY * CHUNK_WIDTH + y;
                     glm::vec2 position(worldX, height);
 
-                    // Create surface (grass) blocks
-                    Block surfaceBlock;
-                    surfaceBlock.init(&m_world, glm::vec2(position.x, position.y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                        Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor, false);
-                    chunk.blocks[x][y] = surfaceBlock;
-
-                    // Fill blocks below surface with dirt
-                    for (int y = height - 1; y > height - 10; y--) {
+                    if (y == height) { // Create surface (grass) blocks
+                        Block surfaceBlock;
+                        surfaceBlock.init(&m_world, glm::vec2(position.x, position.y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
+                            Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor, false);
+                        chunk.blocks[x][y] = surfaceBlock;
+                    }
+                    else if (y < height && y > height - 10) { // Fill blocks below surface with dirt
                         Block dirtBlock;
                         dirtBlock.init(&m_world, glm::vec2(position.x, y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
                             Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor, false);
                         chunk.blocks[x][y] = dirtBlock;
-                    }
-
-                    // Fill deeper blocks with stone
-                    for (int y = height - 10; y > height - 50; y--) {
+                    } else { // Fill deeper blocks with stone
                         Block stoneBlock;
                         stoneBlock.init(&m_world, glm::vec2(position.x, y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
                             Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor, false);
@@ -148,6 +144,7 @@ void BlockManager::loadChunk(int x, int y) {
     }
 
     // Create and initialize the chunk if it doesn't exist
+    /*
     Chunk& chunk = m_chunks[x][y];
     if (chunk.blocks[0][0].getTextureID() == 0) {
         chunk.m_worldPosition = glm::vec2(x * CHUNK_WIDTH, y * CHUNK_WIDTH);
@@ -164,6 +161,7 @@ void BlockManager::loadChunk(int x, int y) {
             }
         }
     }
+    */
 }
 
 bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {
