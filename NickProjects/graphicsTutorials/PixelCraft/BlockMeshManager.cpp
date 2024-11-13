@@ -22,12 +22,14 @@ void BlockMeshManager::buildMesh(const std::vector<std::vector<Chunk>>& chunks) 
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
                 for (int y = 0; y < CHUNK_WIDTH; ++y) {
                     const Block& block = chunk.blocks[x][y];
-                    auto destRect = block.getDestRect();
-                    auto uvRect = block.getUVRect();
-                    auto textureID = block.getTextureID();
-                    auto color = block.getColor();
+                    if (!block.isEmpty()) {
+                        glm::vec4 destRect = block.getDestRect();
+                        glm::vec4 uvRect = block.getUVRect();
+                        GLuint textureID = block.getTextureID();
+                        Bengine::ColorRGBA8 color = block.getColor();
 
-                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                        m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                    }
                 }
             }
         }
@@ -54,7 +56,7 @@ void BlockManager::initializeChunks() {
     // Parameters for terrain generation
     const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
     const float AMPLITUDE = 10.0f;    // Controls the height variation
-    const float SURFACE_Y = 14.0f;    // Base height of the surface
+    const float SURFACE_Y = 64.0f;    // Base height of the surface
 
     Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
 
@@ -68,26 +70,27 @@ void BlockManager::initializeChunks() {
                 int worldX = chunkX * CHUNK_WIDTH + x;
                 float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
                 int height = static_cast<int>(SURFACE_Y + noiseValue * AMPLITUDE);
+                const float DIRT_BOTTOM = height - 10;
 
-                for (int y = 0; y > -CHUNK_WIDTH; --y) {
+                for (int y = 0; y < CHUNK_WIDTH; ++y) {
                     int worldY = chunkY * CHUNK_WIDTH + y;
-                    glm::vec2 position(worldX, height);
+                    glm::vec2 position(worldX, worldY);
 
-                    if (y == height) { // Create surface (grass) blocks
+                    if (worldY == height) { // Create surface (grass) blocks
                         Block surfaceBlock;
                         surfaceBlock.init(&m_world, glm::vec2(position.x, position.y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                            Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor, false);
+                            Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor);
                         chunk.blocks[x][y] = surfaceBlock;
                     }
-                    else if (y < height && y > height - 10) { // Fill blocks below surface with dirt
+                    else if (worldY < height && worldY > DIRT_BOTTOM) { // Fill blocks below surface with dirt
                         Block dirtBlock;
                         dirtBlock.init(&m_world, glm::vec2(position.x, y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                            Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor, false);
+                            Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor);
                         chunk.blocks[x][y] = dirtBlock;
-                    } else { // Fill deeper blocks with stone
+                    } else if (worldY <= DIRT_BOTTOM) { // Fill deeper blocks with stone
                         Block stoneBlock;
                         stoneBlock.init(&m_world, glm::vec2(position.x, y * BLOCK_HEIGHT), glm::vec2(BLOCK_WIDTH, BLOCK_HEIGHT),
-                            Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor, false);
+                            Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor);
                         chunk.blocks[x][y] = stoneBlock;
                     }
                 }

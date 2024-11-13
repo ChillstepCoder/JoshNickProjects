@@ -86,7 +86,7 @@ void GameplayScreen::onEntry() {
     textureColor.b = 255;
     textureColor.a = 255;
 
-    m_player.init(&m_world, glm::vec2(40.0f, 50.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
+    m_player.init(&m_world, glm::vec2(500.0f, 120.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
 
 }
 

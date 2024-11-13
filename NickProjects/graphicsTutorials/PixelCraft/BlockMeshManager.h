@@ -36,8 +36,8 @@ private:
     Bengine::SpriteBatch m_spriteBatch;
 };
 
-const int WORLD_WIDTH_CHUNKS = 2;
-const int WORLD_HEIGHT_CHUNKS = 2;
+const int WORLD_WIDTH_CHUNKS = 16;
+const int WORLD_HEIGHT_CHUNKS = 8;
 const int loadRadius = 5;
 
 class BlockManager {

@@ -13,7 +13,7 @@ b2Vec2 Block::getPosition() {
     return position;
 }
 
-void Block::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::GLTexture texture, Bengine::ColorRGBA8 color, bool fixedRotation) {
+void Block::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::GLTexture texture, Bengine::ColorRGBA8 color) {
     m_dimensions = dimensions;
     m_color = color;
     m_texture = texture;
@@ -21,7 +21,7 @@ void Block::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& d
     m_destRect = glm::vec4(position.x - (0.5 * dimensions.x), position.y - (0.5 * dimensions.y), dimensions.x, dimensions.y);
     b2BodyDef bodyDef = b2DefaultBodyDef();
     bodyDef.position = b2Vec2(position.x, position.y);
-    bodyDef.fixedRotation = fixedRotation;
+    bodyDef.fixedRotation = true;
     m_ID = b2CreateBody(*world, &bodyDef);
 
     b2Polygon dynamicBox = b2MakeBox(dimensions.x / 2.0f, dimensions.y / 2.0f);
