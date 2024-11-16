@@ -146,7 +146,9 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Block.cpp" />
-    <ClCompile Include="BlockMeshManager.cpp" />
+    <ClCompile Include="BlockMeshManager.cpp">
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
     <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="main.cpp" />
@@ -159,6 +161,7 @@
     <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Profiler.h" />
     <ClInclude Include="Timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -123,6 +123,6 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         glm::vec2 mouseWorldPos = m_camera->convertScreenToWorld(mouseCoords);
 
         // Check if the mouse position is over a block and break it
-        //m_blockManager->breakBlockAtPosition(mouseWorldPos);
+        m_blockManager->breakBlockAtPosition(mouseWorldPos, playerPos);
     }
 }
