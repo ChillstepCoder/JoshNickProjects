@@ -1,9 +1,13 @@
 // Car.h
+
 #pragma once
 #include <Box2D/box2d.h>
 #include <glm/glm.hpp>
 #include "InputState.h"
+#include "WheelCollider.h"
 #include "JAGEngine/Vertex.h"
+#include <array>
+#include <memory>
 
 class Car {
 public:
@@ -35,6 +39,12 @@ public:
     b2BodyId bodyId;
   };
 
+  struct WheelState {
+    WheelCollider::Surface surface;
+    float frictionMultiplier;
+    glm::vec2 position;
+  };
+
   Car(b2BodyId bodyId);
   ~Car() = default;
 
@@ -53,6 +63,8 @@ public:
 
   const JAGEngine::ColorRGBA8& getColor() const { return m_color; }
 
+  const std::array<WheelState, 4>& getWheelStates() const { return m_wheelStates; }
+
 private:
   static b2Rot angleToRotation(float angle) {
     return b2MakeRot(angle);
@@ -67,4 +79,10 @@ private:
   void applyDrag(const b2Vec2& currentVel, float forwardSpeed);
   void applyFriction(const b2Vec2& currentVel);
   JAGEngine::ColorRGBA8 m_color{ 255, 0, 0, 255 };
+
+  std::array<std::unique_ptr<WheelCollider>, 4> m_wheelColliders;
+  std::array<WheelState, 4> m_wheelStates;
+  void updateWheelColliders();
+  void initializeWheelColliders();
+  float calculateAverageWheelFriction() const;
 };

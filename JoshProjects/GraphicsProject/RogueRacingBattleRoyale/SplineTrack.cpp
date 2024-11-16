@@ -367,3 +367,4 @@ SplineTrack::calculateStartLanes(const TrackNode* startNode, const glm::vec2& di
 
   return { leftLane, rightLane };
 }
+

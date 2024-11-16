@@ -1,6 +1,9 @@
 // DebugDraw.cpp
 
+#include "Box2DColors.h"
 #include "DebugDraw.h"
+#include "Car.h"
+#include "WheelCollider.h"
 #include <GL/glew.h>
 #include <vector>
 
@@ -309,6 +312,57 @@ void DebugDraw::drawWorld(b2WorldId worldId, const glm::mat4& projectionMatrix) 
 
   // Draw the world
   b2World_Draw(worldId, &debugDraw);
+
+  m_program.unuse();
+}
+
+void DebugDraw::drawWheelColliders(const Car& car, const glm::mat4& projectionMatrix) {
+  // Use proper program validity check
+  if (!m_program.isValid()) return;  // Add this helper method to GLSLProgram if needed
+
+  m_program.use();
+  GLint pUniform = m_program.getUniformLocation("P");
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
+
+  const auto& wheelStates = car.getWheelStates();
+
+  for (const auto& state : wheelStates) {
+    glm::vec2 pos = state.position;
+    float width = 4.0f;
+    float height = 6.0f;
+
+    b2Vec2 vertices[4] = {
+        {pos.x - width / 2, pos.y - height / 2},
+        {pos.x + width / 2, pos.y - height / 2},
+        {pos.x + width / 2, pos.y + height / 2},
+        {pos.x - width / 2, pos.y + height / 2}
+    };
+
+    // Use updated color functions
+    b2HexColor color;
+    switch (state.surface) {
+    case WheelCollider::Surface::Road:
+      color = Colors::Green();
+      break;
+    case WheelCollider::Surface::RoadOffroad:
+      color = Colors::YellowGreen();
+      break;
+    case WheelCollider::Surface::Offroad:
+      color = Colors::Yellow();
+      break;
+    case WheelCollider::Surface::OffroadGrass:
+      color = Colors::Orange();
+      break;
+    case WheelCollider::Surface::Grass:
+      color = Colors::Red();
+      break;
+    default:
+      color = Colors::White();
+      break;
+    }
+
+    drawPolygon(vertices, 4, color, this);
+  }
 
   m_program.unuse();
 }

@@ -24,6 +24,10 @@ namespace JAGEngine {
     //Getters
     GLuint getProgramID() const { return _programID; }
 
+    bool isValid() const {
+      return _programID != 0;
+    }
+
   private:
     int _numAttributes;
 

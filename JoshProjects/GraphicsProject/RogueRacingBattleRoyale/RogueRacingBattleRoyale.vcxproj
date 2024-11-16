@@ -153,10 +153,12 @@
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="RoadMeshGenerator.cpp" />
     <ClCompile Include="SplineTrack.cpp" />
+    <ClCompile Include="WheelCollider.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Box.h" />
+    <ClInclude Include="Box2DColors.h" />
     <ClInclude Include="Car.h" />
     <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="GameplayScreen.h" />
@@ -172,6 +174,7 @@
     <ClInclude Include="ScreenState.h" />
     <ClInclude Include="SplineTrack.h" />
     <ClInclude Include="TrackNode.h" />
+    <ClInclude Include="WheelCollider.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

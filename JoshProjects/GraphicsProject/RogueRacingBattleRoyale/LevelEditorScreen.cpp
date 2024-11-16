@@ -1060,6 +1060,41 @@ void LevelEditorScreen::drawTestModeUI() {
     m_camera.setScale(m_testCameraScale);
   }
 
+  // Add wheel state information for player car
+  if (ImGui::CollapsingHeader("Wheel States", ImGuiTreeNodeFlags_DefaultOpen)) {
+    const auto& wheelStates = m_testCars[0]->getWheelStates();
+    const char* wheelNames[] = { "Front Left", "Front Right", "Back Left", "Back Right" };
+
+    for (size_t i = 0; i < wheelStates.size(); i++) {
+      const auto& state = wheelStates[i];
+
+      // Create colored text based on surface type
+      ImVec4 color;
+      switch (state.surface) {
+      case WheelCollider::Surface::Road:
+        color = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Green
+        break;
+      case WheelCollider::Surface::RoadOffroad:
+        color = ImVec4(0.7f, 1.0f, 0.0f, 1.0f);  // Yellow-green
+        break;
+      case WheelCollider::Surface::Offroad:
+        color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);  // Yellow
+        break;
+      case WheelCollider::Surface::OffroadGrass:
+        color = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);  // Orange
+        break;
+      case WheelCollider::Surface::Grass:
+        color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red
+        break;
+      }
+
+      ImGui::TextColored(color, "%s: %s (Friction: %.2f)",
+        wheelNames[i],
+        WheelCollider::getSurfaceName(state.surface),
+        state.frictionMultiplier);
+    }
+  }
+
   ImGui::End();
 }
 

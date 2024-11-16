@@ -15,10 +15,13 @@ namespace {
 }
 
 Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
+  initializeWheelColliders();
 }
 
 void Car::update(const InputState& input) {
   if (!b2Body_IsValid(m_bodyId)) return;
+
+  updateWheelColliders();  // Add this line
 
   b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
   float currentSpeed = b2Vec2Length(currentVel);
@@ -33,7 +36,8 @@ void Car::update(const InputState& input) {
 }
 
 void Car::applyFriction(const b2Vec2& currentVel) {
-  float effectiveFriction = getEffectiveFriction();
+  float averageWheelFriction = calculateAverageWheelFriction();
+  float effectiveFriction = m_properties.wheelFriction * m_properties.baseFriction * averageWheelFriction;
 
   // Apply friction as a force opposing current velocity
   if (b2Vec2Length(currentVel) > 0.1f) {
@@ -236,4 +240,46 @@ Car::DebugInfo Car::getDebugInfo() const {
   info.bodyId = m_bodyId;
 
   return info;
+}
+
+
+void Car::initializeWheelColliders() {
+  // Calculate wheel positions relative to car center
+  float wheelBaseWidth = 8.0f;   // Distance between left and right wheels
+  float wheelBaseLength = 16.0f;  // Distance between front and back wheels
+
+  WheelCollider::Config wheelConfigs[4] = {
+    // Front Left
+    { 4.0f, 6.0f, glm::vec2(-wheelBaseWidth / 2, wheelBaseLength / 2) },
+    // Front Right
+    { 4.0f, 6.0f, glm::vec2(wheelBaseWidth / 2, wheelBaseLength / 2) },
+    // Back Left
+    { 4.0f, 6.0f, glm::vec2(-wheelBaseWidth / 2, -wheelBaseLength / 2) },
+    // Back Right
+    { 4.0f, 6.0f, glm::vec2(wheelBaseWidth / 2, -wheelBaseLength / 2) }
+  };
+
+  // Create wheel colliders
+  for (int i = 0; i < 4; i++) {
+    m_wheelColliders[i] = std::make_unique<WheelCollider>(m_bodyId, wheelConfigs[i]);
+  }
+}
+
+void Car::updateWheelColliders() {
+  // Update each wheel collider and store states
+  for (size_t i = 0; i < m_wheelColliders.size(); i++) {
+    m_wheelColliders[i]->update();
+
+    m_wheelStates[i].surface = m_wheelColliders[i]->getSurface();
+    m_wheelStates[i].frictionMultiplier = m_wheelColliders[i]->getFrictionMultiplier();
+    m_wheelStates[i].position = m_wheelColliders[i]->getPosition();
+  }
+}
+
+float Car::calculateAverageWheelFriction() const {
+  float totalFriction = 0.0f;
+  for (const auto& state : m_wheelStates) {
+    totalFriction += state.frictionMultiplier;
+  }
+  return totalFriction / 4.0f;
 }

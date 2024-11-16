@@ -444,69 +444,79 @@ void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId world)
   if (!track) return;
   cleanupBarrierCollisions(world);
 
-  auto splinePoints = track->getSplinePoints(200);
+  auto splinePoints = track->getSplinePoints(100);
   if (splinePoints.size() < 2) return;
 
   const float BARRIER_THICKNESS = 7.5f;
+  const float CORNER_THRESHOLD = 0.3f;
 
-  // Create barriers for each segment with proper rotation
-  for (size_t i = 0; i < splinePoints.size() - 1; i++) {
+  // Create barrier pieces at each point
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    size_t prevIdx = (i > 0) ? i - 1 : splinePoints.size() - 1;
+    size_t nextIdx = (i + 1) % splinePoints.size();
+
+    const auto& prev = splinePoints[prevIdx];
     const auto& current = splinePoints[i];
-    const auto& next = splinePoints[i + 1];
+    const auto& next = splinePoints[nextIdx];
 
-    // Calculate segment direction and length
-    glm::vec2 direction = next.position - current.position;
-    float length = glm::length(direction);
-    if (length == 0.0f) continue; // Avoid division by zero
-    float angle = atan2(direction.y, direction.x);
+    // Calculate directions
+    glm::vec2 dirToPrev = glm::normalize(prev.position - current.position);
+    glm::vec2 dirToNext = glm::normalize(next.position - current.position);
 
-    // Normalize direction for perpendicular calculation
-    glm::vec2 dirNorm = direction / length;
-    glm::vec2 perp(-dirNorm.y, dirNorm.x);
+    // Calculate average direction for better positioning
+    glm::vec2 avgDir = glm::normalize(dirToNext - dirToPrev);
+    glm::vec2 avgPerp(-avgDir.y, avgDir.x);
 
-    // **Adjust the total spacing from the center spline**
-    float leftSpacing = current.roadWidth + current.barrierDistance.x + BARRIER_THICKNESS * 0.5f;
-    float rightSpacing = current.roadWidth + current.barrierDistance.y + BARRIER_THICKNESS * 0.5f;
+    // Calculate length based on distance to next point
+    float length = glm::distance(current.position, next.position);
 
-    // **Left barrier collider**
+    // Calculate angle for the barrier
+    float angle = atan2(dirToNext.y, dirToNext.x);
+
+    // Left barrier
     if (current.barrierDistance.x > 0.0f) {
-      glm::vec2 leftBarrierCenter = current.position + perp * leftSpacing;
-      leftBarrierCenter += direction * 0.5f; // Center of segment
+      glm::vec2 barrierPos = current.position +
+        avgPerp * (current.roadWidth + current.barrierDistance.x + BARRIER_THICKNESS * 0.5f);
 
       b2BodyDef bodyDef = b2DefaultBodyDef();
       bodyDef.type = b2_staticBody;
-      bodyDef.position = { leftBarrierCenter.x, leftBarrierCenter.y };
+      bodyDef.position = { barrierPos.x, barrierPos.y };
       bodyDef.rotation = b2MakeRot(angle);
 
       b2BodyId bodyId = b2CreateBody(world, &bodyDef);
 
       b2ShapeDef shapeDef = b2DefaultShapeDef();
-      shapeDef.friction = 0.3f;
-      shapeDef.restitution = 0.2f;
+      shapeDef.friction = 0.1f;
+      shapeDef.restitution = 0.4f;
+      shapeDef.density = 1.0f;
 
-      b2Polygon box = b2MakeBox(length * 0.5f, BARRIER_THICKNESS * 0.5f);
+      // Make barrier slightly longer to ensure overlap
+      float extendedLength = length * 1.3f;
+      b2Polygon box = b2MakeBox(extendedLength * 0.5f, BARRIER_THICKNESS * 0.5f);
       b2CreatePolygonShape(bodyId, &shapeDef, &box);
 
       m_barrierCollisions.leftBarrierBodies.push_back(bodyId);
     }
 
-    // **Right barrier collider**
+    // Right barrier
     if (current.barrierDistance.y > 0.0f) {
-      glm::vec2 rightBarrierCenter = current.position - perp * rightSpacing;
-      rightBarrierCenter += direction * 0.5f;
+      glm::vec2 barrierPos = current.position -
+        avgPerp * (current.roadWidth + current.barrierDistance.y + BARRIER_THICKNESS * 0.5f);
 
       b2BodyDef bodyDef = b2DefaultBodyDef();
       bodyDef.type = b2_staticBody;
-      bodyDef.position = { rightBarrierCenter.x, rightBarrierCenter.y };
+      bodyDef.position = { barrierPos.x, barrierPos.y };
       bodyDef.rotation = b2MakeRot(angle);
 
       b2BodyId bodyId = b2CreateBody(world, &bodyDef);
 
       b2ShapeDef shapeDef = b2DefaultShapeDef();
-      shapeDef.friction = 0.3f;
-      shapeDef.restitution = 0.2f;
+      shapeDef.friction = 0.1f;
+      shapeDef.restitution = 0.4f;
+      shapeDef.density = 1.0f;
 
-      b2Polygon box = b2MakeBox(length * 0.5f, BARRIER_THICKNESS * 0.5f);
+      float extendedLength = length * 1.3f;
+      b2Polygon box = b2MakeBox(extendedLength * 0.5f, BARRIER_THICKNESS * 0.5f);
       b2CreatePolygonShape(bodyId, &shapeDef, &box);
 
       m_barrierCollisions.rightBarrierBodies.push_back(bodyId);
