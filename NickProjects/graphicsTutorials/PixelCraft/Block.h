@@ -12,7 +12,7 @@ public:
     Block();
     ~Block();
 
-    void init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::GLTexture texture, Bengine::ColorRGBA8 color);
+    void init(b2WorldId world, const glm::vec2& position, Bengine::GLTexture texture, Bengine::ColorRGBA8 color);
 
     void draw(Bengine::SpriteBatch& spriteBatch);
 
@@ -27,6 +27,7 @@ public:
 
 private:
     b2BodyId m_ID;
+
     glm::vec2 m_dimensions;
     glm::vec4 m_destRect;
     glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);

@@ -6,8 +6,7 @@
 #include "Bengine/ImGuiManager.h"
 #include "PerlinNoise.hpp"
 #include "Timer.h"
-
-#define PROFILE_SCOPE(name) Timer timer##__LINE__(name,[&](ProfileResult profileResult) { m_profileResults.push_back(profileResult); })
+#include "Profiler.h"
 
 GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
 
@@ -86,7 +85,7 @@ void GameplayScreen::onEntry() {
     textureColor.b = 255;
     textureColor.a = 255;
 
-    m_player.init(&m_world, glm::vec2(500.0f, 120.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
+    m_player.init(&m_world, glm::vec2(500.0f, 400.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
 
 }
 

@@ -59,5 +59,8 @@
     <ClInclude Include="BlockMeshManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Profiler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

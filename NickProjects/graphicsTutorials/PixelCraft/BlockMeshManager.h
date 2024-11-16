@@ -22,6 +22,12 @@ public:
 
 };
 
+struct BlockHandle {
+    Block* block;
+    glm::ivec2 chunkCoords;
+    glm::ivec2 blockOffset;
+};
+
 class BlockMeshManager
 {
 public:
@@ -62,7 +68,11 @@ public:
 
     void initializeChunks();
 
-    //void breakBlockAtPosition(const glm::vec2& position);
+    BlockHandle getBlockAtPosition(glm::vec2 position);
+
+    void destroyBlock(const BlockHandle& blockHandle);
+
+    void breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 

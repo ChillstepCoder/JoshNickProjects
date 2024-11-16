@@ -67,13 +67,6 @@ private:
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
     float m_gravity = -80.0f;
 
-    struct ProfileResult
-    {
-        const char* Name;
-        float Time;
-    };
-    std::vector<ProfileResult> m_profileResults;
-
     BlockMeshManager m_blockMeshManager;
     BlockManager* m_blockManager;
 
