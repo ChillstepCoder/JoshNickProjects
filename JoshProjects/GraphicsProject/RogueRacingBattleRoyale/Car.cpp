@@ -242,37 +242,43 @@ Car::DebugInfo Car::getDebugInfo() const {
   return info;
 }
 
-
 void Car::initializeWheelColliders() {
-  // Calculate wheel positions relative to car center
-  float wheelBaseWidth = 8.0f;   // Distance between left and right wheels
-  float wheelBaseLength = 16.0f;  // Distance between front and back wheels
+  float wheelBaseWidth = 14.0f;
+  float wheelBaseLength = 7.0f;
+  float wheelWidth = 6.0f;
+  float wheelHeight = 3.0f;
 
+  // Create wheel colliders in the correct order to match the debug output
   WheelCollider::Config wheelConfigs[4] = {
-    // Front Left
-    { 4.0f, 6.0f, glm::vec2(-wheelBaseWidth / 2, wheelBaseLength / 2) },
-    // Front Right
-    { 4.0f, 6.0f, glm::vec2(wheelBaseWidth / 2, wheelBaseLength / 2) },
-    // Back Left
-    { 4.0f, 6.0f, glm::vec2(-wheelBaseWidth / 2, -wheelBaseLength / 2) },
-    // Back Right
-    { 4.0f, 6.0f, glm::vec2(wheelBaseWidth / 2, -wheelBaseLength / 2) }
+    // Back Left (index 0 should show as Front Left)
+    { wheelWidth, wheelHeight, glm::vec2(-wheelBaseWidth / 2, -wheelBaseLength / 2) },
+    // Back Right (index 1 should show as Front Right)
+    { wheelWidth, wheelHeight, glm::vec2(wheelBaseWidth / 2, -wheelBaseLength / 2) },
+    // Front Left (index 2 should show as Back Left)
+    { wheelWidth, wheelHeight, glm::vec2(-wheelBaseWidth / 2, wheelBaseLength / 2) },
+    // Front Right (index 3 should show as Back Right)
+    { wheelWidth, wheelHeight, glm::vec2(wheelBaseWidth / 2, wheelBaseLength / 2) }
   };
 
-  // Create wheel colliders
+  // Create wheel colliders in this order
   for (int i = 0; i < 4; i++) {
     m_wheelColliders[i] = std::make_unique<WheelCollider>(m_bodyId, wheelConfigs[i]);
   }
 }
 
 void Car::updateWheelColliders() {
-  // Update each wheel collider and store states
+  // Reorder the wheel states to match the expected debug output order
+  const int wheelOrder[4] = { 3, 1, 2, 0 };  // Maps physical wheels to debug output order
+
+  // Update each wheel collider
   for (size_t i = 0; i < m_wheelColliders.size(); i++) {
     m_wheelColliders[i]->update();
 
-    m_wheelStates[i].surface = m_wheelColliders[i]->getSurface();
-    m_wheelStates[i].frictionMultiplier = m_wheelColliders[i]->getFrictionMultiplier();
-    m_wheelStates[i].position = m_wheelColliders[i]->getPosition();
+    // Store states in the order expected by the debug output
+    int debugIndex = wheelOrder[i];
+    m_wheelStates[debugIndex].surface = m_wheelColliders[i]->getSurface();
+    m_wheelStates[debugIndex].frictionMultiplier = m_wheelColliders[i]->getFrictionMultiplier();
+    m_wheelStates[debugIndex].position = m_wheelColliders[i]->getPosition();
   }
 }
 

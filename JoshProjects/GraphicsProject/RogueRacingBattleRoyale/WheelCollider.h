@@ -18,8 +18,8 @@ public:
   };
 
   struct Config {
-    float width = 4.0f;   // Width of wheel collider
-    float height = 6.0f;  // Height of wheel collider
+    float width = 6.0f;   // Width of wheel collider
+    float height = 3.0f;  // Height of wheel collider
     glm::vec2 offset;     // Offset from car center
   };
 

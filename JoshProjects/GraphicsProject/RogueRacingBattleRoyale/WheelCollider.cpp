@@ -1,6 +1,10 @@
 // WheelCollider.cpp
 #include "WheelCollider.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp>
 #include <iostream>
+#include "SplineTrack.h"
+
 
 WheelCollider::WheelCollider(b2BodyId carBody, const Config& config)
   : m_carBody(carBody)
@@ -12,26 +16,22 @@ void WheelCollider::createCollider() {
   if (!b2Body_IsValid(m_carBody)) return;
 
   // Create a rectangular shape for the wheel
-  b2Polygon wheelShape = b2MakeBox(m_config.width * 0.5f, m_config.height * 0.5f);
+  b2Polygon wheelShape = b2MakeBox(m_config.height * 0.5f, m_config.width * 0.5f);
 
   // Create the shape definition
   b2ShapeDef shapeDef = b2DefaultShapeDef();
-  shapeDef.friction = 0.0f;  // We'll handle friction manually
-  shapeDef.density = 0.1f;   // Light weight for the wheels
-  shapeDef.isSensor = true;  // Make it a sensor so it doesn't affect physics
+  shapeDef.friction = 0.3f;
+  shapeDef.density = 0.1f;
+  shapeDef.isSensor = false;
 
-  // Set the shape's local position relative to car body
-  b2Transform localTransform = b2Transform_identity;
-  localTransform.p = { m_config.offset.x, m_config.offset.y };
-
-  // Create the shape and store its ID
+  // Store the shape and its ID
   m_shapeId = b2CreatePolygonShape(m_carBody, &shapeDef, &wheelShape);
   if (!b2Shape_IsValid(m_shapeId)) {
     std::cerr << "Failed to create wheel collider shape\n";
   }
 }
-
 void WheelCollider::update() {
+  if (!b2Body_IsValid(m_carBody)) return;
   detectSurface();
 }
 
@@ -57,10 +57,21 @@ glm::vec2 WheelCollider::getPosition() const {
 
   // Get car's transform
   b2Transform carTransform = b2Body_GetTransform(m_carBody);
+  float angle = b2Rot_GetAngle(carTransform.q);
 
-  // Transform wheel's local offset to world position
-  b2Vec2 worldPos = b2TransformPoint(carTransform, { m_config.offset.x, m_config.offset.y });
-  return glm::vec2(worldPos.x, worldPos.y);
+  // Calculate rotation using standard trig functions
+  float cos_a = std::cos(angle);
+  float sin_a = std::sin(angle);
+
+  // First rotate the offset
+  float rotatedX = m_config.offset.x * cos_a - m_config.offset.y * sin_a;
+  float rotatedY = m_config.offset.x * sin_a + m_config.offset.y * cos_a;
+
+  // Then add car's position
+  float worldX = carTransform.p.x + rotatedX;
+  float worldY = carTransform.p.y + rotatedY;
+
+  return glm::vec2(worldX, worldY);
 }
 
 float WheelCollider::getAngle() const {
@@ -82,106 +93,77 @@ const char* WheelCollider::getSurfaceName(Surface surface) {
 void WheelCollider::detectSurface() {
   if (!b2Body_IsValid(m_carBody)) return;
 
-  // Get the wheel's world position
-  b2Transform carTransform = b2Body_GetTransform(m_carBody);
-  b2Vec2 wheelPos = b2TransformPoint(carTransform, { m_config.offset.x, m_config.offset.y });
+  glm::vec2 wheelPos = getPosition();
 
-  // Create a small box for overlap testing
-  float halfWidth = m_config.width * 0.5f;
-  float halfHeight = m_config.height * 0.5f;
-
-  // Get the car's current angle
-  float angle = b2Rot_GetAngle(carTransform.q);
-
-  // Create vertices for the wheel box, rotated by the car's angle
-  b2Vec2 vertices[4];
-  float cosAngle = cosf(angle);
-  float sinAngle = sinf(angle);
-
-  vertices[0] = { // Top Left
-      wheelPos.x + (-halfWidth * cosAngle - halfHeight * sinAngle),
-      wheelPos.y + (-halfWidth * sinAngle + halfHeight * cosAngle)
-  };
-  vertices[1] = { // Top Right
-      wheelPos.x + (halfWidth * cosAngle - halfHeight * sinAngle),
-      wheelPos.y + (halfWidth * sinAngle + halfHeight * cosAngle)
-  };
-  vertices[2] = { // Bottom Right
-      wheelPos.x + (halfWidth * cosAngle + halfHeight * sinAngle),
-      wheelPos.y + (halfWidth * sinAngle - halfHeight * cosAngle)
-  };
-  vertices[3] = { // Bottom Left
-      wheelPos.x + (-halfWidth * cosAngle + halfHeight * sinAngle),
-      wheelPos.y + (-halfWidth * sinAngle - halfHeight * cosAngle)
-  };
-
-  // Get world ID
-  b2WorldId worldId = b2Body_GetWorld(m_carBody);
-
-  // Track what surfaces we're touching
-  bool touchingRoad = false;
-  bool touchingOffroad = false;
-  bool touchingGrass = false;
-
-  // Create polygon for overlap test
-  b2Polygon wheelPoly;
-  wheelPoly.count = 4;
-  for (int i = 0; i < 4; ++i) {
-    wheelPoly.vertices[i] = vertices[i];
-  }
-  wheelPoly.normals[0] = { cosAngle, sinAngle };
-  wheelPoly.normals[1] = { -sinAngle, cosAngle };
-  wheelPoly.normals[2] = { -cosAngle, -sinAngle };
-  wheelPoly.normals[3] = { sinAngle, -cosAngle };
-
-  // Setup query filter
-  b2QueryFilter filter;
-  filter.categoryBits = 0xFFFF;  // Match all categories
-  filter.maskBits = 0xFFFF;
-
-  // Overlap callback
-  auto overlapCallback = [](b2ShapeId shapeId, void* context) -> bool {
-    auto* surfaces = static_cast<std::tuple<bool*, bool*, bool*>*>(context);
-    b2Filter filter = b2Shape_GetFilter(shapeId);
-
-    // Use shape filter bits to determine surface type
-    // Adjust these category bits based on your game's setup
-    if (filter.categoryBits & 0x0001) { // Road
-      *std::get<0>(*surfaces) = true;
-    }
-    else if (filter.categoryBits & 0x0002) { // Offroad
-      *std::get<1>(*surfaces) = true;
-    }
-    else if (filter.categoryBits & 0x0004) { // Grass
-      *std::get<2>(*surfaces) = true;
-    }
-    return true;  // Continue checking other shapes
-    };
-
-  std::tuple<bool*, bool*, bool*> surfaces(&touchingRoad, &touchingOffroad, &touchingGrass);
-  b2World_OverlapPolygon(worldId, &wheelPoly, b2Transform_identity, filter, overlapCallback, &surfaces);
-
-  // Determine surface type based on what we're touching
-  if (touchingRoad) {
-    if (touchingOffroad) {
-      m_currentSurface = Surface::RoadOffroad;
-    }
-    else {
-      m_currentSurface = Surface::Road;
-    }
-  }
-  else if (touchingOffroad) {
-    if (touchingGrass) {
-      m_currentSurface = Surface::OffroadGrass;
-    }
-    else {
-      m_currentSurface = Surface::Offroad;
-    }
-  }
-  else if (touchingGrass) {
+  SplineTrack* track = static_cast<SplineTrack*>(b2Body_GetUserData(m_carBody));
+  if (!track) {
     m_currentSurface = Surface::Grass;
+    return;
+  }
+
+  auto splinePoints = track->getSplinePoints(50);
+  if (splinePoints.empty()) {
+    m_currentSurface = Surface::Grass;
+    return;
+  }
+
+  // Find closest spline point
+  float minDist = std::numeric_limits<float>::max();
+  size_t closestIndex = 0;
+
+  for (size_t i = 0; i < splinePoints.size(); ++i) {
+    float dist = glm::distance2(wheelPos, splinePoints[i].position);
+    if (dist < minDist) {
+      minDist = dist;
+      closestIndex = i;
+    }
+  }
+
+  // Get previous and next points
+  size_t prevIndex = (closestIndex > 0) ? closestIndex - 1 : splinePoints.size() - 1;
+  size_t nextIndex = (closestIndex + 1) % splinePoints.size();
+
+  // Calculate track direction
+  glm::vec2 dir1 = glm::normalize(splinePoints[closestIndex].position - splinePoints[prevIndex].position);
+  glm::vec2 dir2 = glm::normalize(splinePoints[nextIndex].position - splinePoints[closestIndex].position);
+  glm::vec2 trackDir = glm::normalize(dir1 + dir2);
+  glm::vec2 trackNormal(-trackDir.y, trackDir.x);
+
+  // Calculate distances
+  glm::vec2 toWheel = wheelPos - splinePoints[closestIndex].position;
+  float distanceFromCenter = glm::dot(toWheel, trackNormal);
+  float absDistance = std::abs(distanceFromCenter);
+
+  // Get road properties
+  const auto& point = splinePoints[closestIndex];
+  float offroadWidth = (distanceFromCenter > 0) ? point.offroadWidth.x : point.offroadWidth.y;
+
+  // Adjust transition zones
+  const float roadTransitionZone = 1.0f;     // Zone between road and offroad
+  const float offroadTransitionZone = 1.5f;  // Zone between offroad and grass
+
+  float roadEdge = point.roadWidth;
+  float offroadEdge = roadEdge + offroadWidth;
+
+  // Refined surface detection with better transitions
+  if (absDistance <= roadEdge) {
+    // Fully on road
+    m_currentSurface = Surface::Road;
+  }
+  else if (absDistance <= roadEdge + roadTransitionZone) {
+    // In transition between road and offroad
+    m_currentSurface = Surface::RoadOffroad;
+  }
+  else if (absDistance <= offroadEdge - offroadTransitionZone) {
+    // Fully in offroad area
+    m_currentSurface = Surface::Offroad;
+  }
+  else if (absDistance <= offroadEdge + offroadTransitionZone) {
+    // In transition between offroad and grass
+    m_currentSurface = Surface::OffroadGrass;
   }
   else {
-    m_currentSurface = Surface::Grass;  // Default to grass if not touching anything
+    // Fully on grass
+    m_currentSurface = Surface::Grass;
   }
 }

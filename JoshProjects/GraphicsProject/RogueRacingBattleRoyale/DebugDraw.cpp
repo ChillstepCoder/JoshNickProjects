@@ -6,6 +6,8 @@
 #include "WheelCollider.h"
 #include <GL/glew.h>
 #include <vector>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp>
 
 DebugDraw::DebugDraw() {
 }
@@ -317,28 +319,36 @@ void DebugDraw::drawWorld(b2WorldId worldId, const glm::mat4& projectionMatrix) 
 }
 
 void DebugDraw::drawWheelColliders(const Car& car, const glm::mat4& projectionMatrix) {
-  // Use proper program validity check
-  if (!m_program.isValid()) return;  // Add this helper method to GLSLProgram if needed
+  if (!m_program.isValid()) return;
 
   m_program.use();
   GLint pUniform = m_program.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
   const auto& wheelStates = car.getWheelStates();
+  float carAngle = car.getDebugInfo().angle;
 
   for (const auto& state : wheelStates) {
     glm::vec2 pos = state.position;
-    float width = 4.0f;
-    float height = 6.0f;
 
+    // Note: width and height are swapped in the visualization to match the rotated collider
+    float height = 6.0f; // This will be the length of the wheel
+    float width = 3.0f;  // This will be the width of the wheel
+
+    // Create transform that includes car rotation plus 90 degrees for wheel orientation
+    b2Transform wheelTransform;
+    wheelTransform.p = { pos.x, pos.y };
+    wheelTransform.q = b2MakeRot(carAngle + b2_pi * 0.5f); // Add 90 degrees rotation
+
+    // Create vertices for wheel in local space
     b2Vec2 vertices[4] = {
-        {pos.x - width / 2, pos.y - height / 2},
-        {pos.x + width / 2, pos.y - height / 2},
-        {pos.x + width / 2, pos.y + height / 2},
-        {pos.x - width / 2, pos.y + height / 2}
+        {-width / 2, -height / 2},  // Bottom left
+        {width / 2, -height / 2},   // Bottom right
+        {width / 2, height / 2},    // Top right
+        {-width / 2, height / 2}    // Top left
     };
 
-    // Use updated color functions
+    // Color based on surface type
     b2HexColor color;
     switch (state.surface) {
     case WheelCollider::Surface::Road:
@@ -361,7 +371,8 @@ void DebugDraw::drawWheelColliders(const Car& car, const glm::mat4& projectionMa
       break;
     }
 
-    drawPolygon(vertices, 4, color, this);
+    // Draw filled polygon with rotation
+    drawSolidPolygon(wheelTransform, vertices, 4, 0.0f, color, this);
   }
 
   m_program.unuse();

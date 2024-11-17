@@ -162,4 +162,8 @@ private:
   std::unique_ptr<DebugDraw> m_debugDraw;
   bool m_showDebugDraw = false;
 
+  bool m_showNoStartLineMessage = false;
+  float m_messageTimer = 0.0f;
+  const float MESSAGE_DURATION = 3.0f; // Show message for 3 seconds
+
 };

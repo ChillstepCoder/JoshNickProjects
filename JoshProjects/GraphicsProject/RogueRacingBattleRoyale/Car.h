@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include "InputState.h"
 #include "WheelCollider.h"
+#include "SplineTrack.h"
 #include "JAGEngine/Vertex.h"
 #include <array>
 #include <memory>
@@ -56,10 +57,16 @@ public:
   void setProperties(const CarProperties& props) { m_properties = props; }
   DebugInfo getDebugInfo() const;
   void setColor(const JAGEngine::ColorRGBA8& color) { m_color = color; }
+  void setTrack(SplineTrack* track) {
+    m_track = track;
+    b2Body_SetUserData(m_bodyId, static_cast<void*>(track));
+  }
 
   float getEffectiveFriction() const {
     return m_properties.wheelFriction * m_properties.baseFriction;
   }
+
+  SplineTrack* getTrack() const { return m_track; }
 
   const JAGEngine::ColorRGBA8& getColor() const { return m_color; }
 
@@ -80,6 +87,7 @@ private:
   void applyFriction(const b2Vec2& currentVel);
   JAGEngine::ColorRGBA8 m_color{ 255, 0, 0, 255 };
 
+  SplineTrack* m_track = nullptr;
   std::array<std::unique_ptr<WheelCollider>, 4> m_wheelColliders;
   std::array<WheelState, 4> m_wheelStates;
   void updateWheelColliders();

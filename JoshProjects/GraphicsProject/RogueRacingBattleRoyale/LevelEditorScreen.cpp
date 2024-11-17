@@ -70,6 +70,13 @@ void LevelEditorScreen::onExit() {
 }
 
 void LevelEditorScreen::update() {
+  if (m_showNoStartLineMessage) {
+    m_messageTimer -= 1.0f / 60.0f; // Assuming 60 FPS
+    if (m_messageTimer <= 0) {
+      m_showNoStartLineMessage = false;
+    }
+  }
+
   if (m_testMode) {
     updateTestMode();
   }
@@ -467,6 +474,25 @@ void LevelEditorScreen::drawDebugWindow() {
     }
   }
 
+  if (m_showNoStartLineMessage) {
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f - 200.0f,
+      ImGui::GetIO().DisplaySize.y * 0.5f - 50.0f));
+    ImGui::SetNextWindowSize(ImVec2(400, 100));
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove |
+      ImGuiWindowFlags_NoResize |
+      ImGuiWindowFlags_NoCollapse |
+      ImGuiWindowFlags_NoSavedSettings;
+
+    if (ImGui::Begin("Start Line Required", nullptr, flags)) {
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+      ImGui::TextWrapped("You must set a start line before testing the track!");
+      ImGui::TextWrapped("Select a node and check 'Start Line' in the Node Properties panel.");
+      ImGui::PopStyleColor();
+    }
+    ImGui::End();
+  }
+
   ImGui::End();
 }
 
@@ -722,6 +748,8 @@ void LevelEditorScreen::initDefaultTrack() {
     m_track = std::make_unique<SplineTrack>();
     m_track->createDefaultTrack();
     std::cout << "Track created with " << m_track->getNodes().size() << " nodes\n";
+
+    updateRoadMesh();
   }
 }
 
@@ -884,6 +912,20 @@ void LevelEditorScreen::deleteSelectedNode() {
 }
 
 void LevelEditorScreen::initTestMode() {
+  // Check for start line first
+  if (!m_track || !m_track->getStartLineNode()) {
+    m_showNoStartLineMessage = true;
+    m_messageTimer = MESSAGE_DURATION;
+    return;
+  }
+
+  // Get start positions before creating any cars
+  auto startPositions = m_track->calculateStartPositions();
+  if (startPositions.empty()) {
+    std::cout << "Cannot start test mode: No valid start positions!\n";
+    return;
+  }
+
   // Store editor camera state before switching
   m_editorCameraPos = m_camera.getPosition();
   m_editorCameraScale = m_camera.getScale();
@@ -906,55 +948,6 @@ void LevelEditorScreen::initTestMode() {
   // Load car texture
   m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
 
-  // Get start positions
-  auto startPositions = m_track->calculateStartPositions();
-  if (startPositions.empty()) {
-    std::cout << "No valid start positions found!\n";
-    return;
-  }
-
-  // Calculate colors before creating cars
-  int numCars = startPositions.size();
-  std::vector<JAGEngine::ColorRGBA8> carColors(numCars);
-
-  for (int i = 0; i < numCars; i++) {
-    float hue = float(i) / float(numCars);
-    float saturation = 1.0f;
-    float value = 1.0f;
-
-    float c = value * saturation;
-    float x = c * (1 - std::abs(std::fmod(hue * 6, 2.0f) - 1));
-    float m = value - c;
-
-    float r = 0, g = 0, b = 0;
-
-    if (hue < 1.0f / 6.0f) {
-      r = c; g = x; b = 0;
-    }
-    else if (hue < 2.0f / 6.0f) {
-      r = x; g = c; b = 0;
-    }
-    else if (hue < 3.0f / 6.0f) {
-      r = 0; g = c; b = x;
-    }
-    else if (hue < 4.0f / 6.0f) {
-      r = 0; g = x; b = c;
-    }
-    else if (hue < 5.0f / 6.0f) {
-      r = x; g = 0; b = c;
-    }
-    else {
-      r = c; g = 0; b = x;
-    }
-
-    carColors[i] = JAGEngine::ColorRGBA8(
-      uint8_t((r + m) * 255),
-      uint8_t((g + m) * 255),
-      uint8_t((b + m) * 255),
-      255
-    );
-  }
-
   // Create cars for each position
   for (size_t i = 0; i < startPositions.size(); i++) {
     const auto& pos = startPositions[i];
@@ -962,28 +955,27 @@ void LevelEditorScreen::initTestMode() {
     m_physicsSystem->createPillShape(carBody, 15.0f, 15.0f);
 
     auto car = std::make_unique<Car>(carBody);
-
-    // Make sure to set the initial rotation properly
+    car->setTrack(m_track.get());
     car->resetPosition({ pos.position.x, pos.position.y }, pos.angle);
-
     car->setProperties(Car::CarProperties());
-    car->setColor(carColors[i]);
 
+    // Set car color (using existing color logic)
     m_testCars.push_back(std::move(car));
 
-    // Initialize tracking info for each car
+    // Initialize tracking info
     m_carTrackingInfo.push_back(CarTrackingInfo{
-        glm::vec2(0.0f),  // closestSplinePoint
-        0.0f,             // distanceAlongSpline
-        static_cast<int>(i + 1),  // racePosition
-        i == 0           // Only show debug point for player car
+        glm::vec2(0.0f),
+        0.0f,
+        static_cast<int>(i + 1),
+        i == 0
       });
   }
+
   m_camera.setScale(m_testCameraScale);
 }
 
 void LevelEditorScreen::drawTestMode() {
-  if (!m_testMode) return;
+  if (!m_testMode || m_testCars.empty()) return;
 
   // Draw normal car sprites
   m_levelRenderer->getTextureProgram().use();
@@ -1027,6 +1019,11 @@ void LevelEditorScreen::drawTestMode() {
   if (m_showDebugDraw && m_physicsSystem) {
     b2WorldId worldId = m_physicsSystem->getWorld();
     m_debugDraw->drawWorld(worldId, cameraMatrix);
+
+    // Draw wheel colliders for each car
+    for (const auto& car : m_testCars) {
+      m_debugDraw->drawWheelColliders(*car, cameraMatrix);
+    }
   }
 
   drawCarTrackingDebug();
@@ -1193,7 +1190,13 @@ void LevelEditorScreen::updateCarTrackingInfo() {
 }
 
 void LevelEditorScreen::updateTestMode() {
-  if (!m_testMode) return;
+  if (!m_testMode || m_testCars.empty()) return;
+
+  // Add safety check
+  if (!m_physicsSystem || !m_testCars[0]) {
+    cleanupTestMode();
+    return;
+  }
 
   // Existing physics update
   const float timeStep = 1.0f / 60.0f;
