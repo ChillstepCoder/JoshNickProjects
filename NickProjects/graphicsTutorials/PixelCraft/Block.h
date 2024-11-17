@@ -18,6 +18,9 @@ public:
 
     b2Vec2 getPosition();
     b2BodyId getID() const { return m_ID; }
+    void clearID() {
+        m_ID.index1 = 0;
+    }
     bool isEmpty() const { return B2_IS_NULL(m_ID); }
     const glm::vec2& getDimensions() const { return m_dimensions; }
     const glm::vec4 getDestRect() const { return m_destRect; }

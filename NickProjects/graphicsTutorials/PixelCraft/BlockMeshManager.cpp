@@ -129,7 +129,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     if (blockHandle.block != nullptr) {
         // Destroy the block (remove physics body and reset visual state)
         b2DestroyBody(blockHandle.block->getID());
-
+        blockHandle.block->clearID();
         // Now that the block is destroyed, we can remove it from the chunk
         // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
