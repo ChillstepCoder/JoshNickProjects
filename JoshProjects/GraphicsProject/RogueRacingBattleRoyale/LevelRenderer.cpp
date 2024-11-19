@@ -440,59 +440,63 @@ void LevelRenderer::renderStartPositions(const glm::mat4& cameraMatrix, SplineTr
   m_textureProgram.unuse();
 }
 
-void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId world) {
+void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId worldId) {
   if (!track) return;
-  cleanupBarrierCollisions(world);
-  auto splinePoints = track->getSplinePoints(150);  // Increased for smoother curves
-  if (splinePoints.size() < 2) return;
+  cleanupBarrierCollisions(worldId);
+
+  RoadMeshGenerator::BarrierMeshData barrierMesh = RoadMeshGenerator::generateBarrierMesh(*track, m_roadLOD);
   const float BARRIER_THICKNESS = 7.5f;
+  const float OVERLAP_FACTOR = 1.5f;  // 25% overlap
 
-  // Pre-calculate all barrier points to ensure continuity
-  std::vector<glm::vec2> leftBarrierPoints;
-  std::vector<glm::vec2> rightBarrierPoints;
-  leftBarrierPoints.reserve(splinePoints.size());
-  rightBarrierPoints.reserve(splinePoints.size());
+  auto createBarrierBoxes = [this, BARRIER_THICKNESS, OVERLAP_FACTOR, worldId](const RoadMeshGenerator::MeshData& meshData, bool isLeftBarrier) {
+    // Get the number of segments in the barrier (each quad is made of two triangles)
+    size_t numSegments = meshData.indices.size() / 6;  // 6 indices per quad
 
-  // First calculate all barrier points
-  for (size_t i = 0; i < splinePoints.size(); i++) {
-    const auto& current = splinePoints[i];
-    const auto& next = splinePoints[(i + 1) % splinePoints.size()];
+    for (size_t i = 0; i < numSegments; i++) {
+      // Get indices for the inner edge of this quad segment
+      size_t baseIndex = i * 6;  // Start of this quad's indices
+      GLuint idx1 = meshData.indices[baseIndex];
+      GLuint idx2 = meshData.indices[baseIndex + 3];  // Skip to next triangle
 
-    glm::vec2 direction = next.position - current.position;
-    glm::vec2 perpDir = glm::normalize(glm::vec2(-direction.y, direction.x));
+      // Get the actual vertex positions
+      glm::vec2 p1 = meshData.vertices[idx1].position;
+      glm::vec2 p2 = meshData.vertices[idx2].position;
 
-    // Calculate barrier points with smooth transitions
-    if (current.barrierDistance.x > 0.0f) {
-      glm::vec2 leftPoint = current.position + perpDir * (current.roadWidth + current.barrierDistance.x);
-      leftBarrierPoints.push_back(leftPoint);
-    }
+      // Calculate box properties
+      glm::vec2 edgeVec = p2 - p1;
+      float edgeLength = glm::length(edgeVec);
+      if (edgeLength < 0.1f) continue;  // Skip tiny segments
 
-    if (current.barrierDistance.y > 0.0f) {
-      glm::vec2 rightPoint = current.position - perpDir * (current.roadWidth + current.barrierDistance.y);
-      rightBarrierPoints.push_back(rightPoint);
-    }
-  }
+      glm::vec2 edgeDir = edgeVec / edgeLength;
+      glm::vec2 normal(-edgeDir.y, edgeDir.x);  // Perpendicular
 
-  // Then create segments connecting these points
-  auto createBarrierSegments = [&](const std::vector<glm::vec2>& points, bool isLeftBarrier) {
-    for (size_t i = 0; i < points.size(); i++) {
-      size_t nextIdx = (i + 1) % points.size();
+      // Extend outward by half barrier thickness
+      glm::vec2 outwardOffset = normal * (BARRIER_THICKNESS * 0.5f);
+      if (!isLeftBarrier) outwardOffset = -outwardOffset;
 
+      // Calculate box center
+      glm::vec2 boxCenter = (p1 + p2) * 0.5f + outwardOffset;
+      float angle = atan2(edgeDir.y, edgeDir.x);
+
+      // Create the body
       b2BodyDef bodyDef = b2DefaultBodyDef();
       bodyDef.type = b2_staticBody;
-      b2BodyId bodyId = b2CreateBody(world, &bodyDef);
+      bodyDef.position = { boxCenter.x, boxCenter.y };
+      bodyDef.rotation = b2MakeRot(angle);
 
+      b2BodyId bodyId = b2CreateBody(worldId, &bodyDef);
+
+      // Create the shape
       b2ShapeDef shapeDef = b2DefaultShapeDef();
       shapeDef.friction = 0.1f;
-      shapeDef.restitution = 0.75f;
+      shapeDef.restitution = 0.0f;
       shapeDef.density = 1.0f;
+      shapeDef.filter.categoryBits = 0x0002;
+      shapeDef.filter.maskBits = 0x0001;
 
-      b2Segment segmentShape;
-      segmentShape.point1 = { points[i].x, points[i].y };
-      segmentShape.point2 = { points[nextIdx].x, points[nextIdx].y };
-
-      // Create the segment shape with one-sided collision
-      b2CreateSegmentShape(bodyId, &shapeDef, &segmentShape, true);  // true for one-sided
+      // Create box using the actual edge length plus overlap
+      b2Polygon box = b2MakeBox(edgeLength * 0.5f * OVERLAP_FACTOR, BARRIER_THICKNESS * 0.5f);
+      b2CreatePolygonShape(bodyId, &shapeDef, &box);
 
       if (isLeftBarrier) {
         m_barrierCollisions.leftBarrierBodies.push_back(bodyId);
@@ -503,15 +507,10 @@ void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId world)
     }
     };
 
-  // Create left and right barrier segments
-  if (!leftBarrierPoints.empty()) {
-    createBarrierSegments(leftBarrierPoints, true);
-  }
-  if (!rightBarrierPoints.empty()) {
-    createBarrierSegments(rightBarrierPoints, false);
-  }
+  // Create barriers
+  createBarrierBoxes(barrierMesh.leftSide, true);
+  createBarrierBoxes(barrierMesh.rightSide, false);
 }
-
 
 void LevelRenderer::cleanupBarrierCollisions(b2WorldId world) {
   m_barrierCollisions.cleanup(world);

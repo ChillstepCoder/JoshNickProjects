@@ -1262,52 +1262,25 @@ void LevelEditorScreen::updateTestMode() {
 void LevelEditorScreen::updateTestCamera() {
   if (m_testCars.empty() || m_carTrackingInfo.empty()) return;
 
-  // Get player car position
+  // Get player car's actual world position
   const Car* playerCar = m_testCars[0].get();
   b2BodyId bodyId = playerCar->getDebugInfo().bodyId;
   if (!b2Body_IsValid(bodyId)) return;
 
+  // Get actual world position of car
   b2Vec2 carPos = b2Body_GetPosition(bodyId);
-  glm::vec2 carPosition(carPos.x, carPos.y);
+  glm::vec2 carWorldPos(carPos.x, carPos.y);
 
-  // Calculate look-ahead point
+  // Get look-ahead point based on track spline
   glm::vec2 lookAheadPoint = calculateLookAheadPoint(m_carTrackingInfo[0]);
 
-  // Calculate camera target position (midpoint between car and look-ahead point)
-  glm::vec2 targetPos = (carPosition + lookAheadPoint) * 0.5f;
+  // Camera should be EXACTLY between car world position and lookahead point!
+  glm::vec2 targetPos = carWorldPos + (lookAheadPoint - carWorldPos) * 0.5f;
 
-  // Get screen dimensions in world coordinates
-  JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
-  float screenWidth = static_cast<float>(game->getWindow().getScreenWidth());
-  float screenHeight = static_cast<float>(game->getWindow().getScreenHeight());
-  float worldScreenWidth = screenWidth / (m_camera.getScale() * 5.0f);  // Adjust the divisor as needed
-  float worldScreenHeight = screenHeight / (m_camera.getScale() * 5.0f);
-
-  // Calculate screen bounds
-  glm::vec2 screenMin = targetPos - glm::vec2(worldScreenWidth, worldScreenHeight) * 0.5f;
-  glm::vec2 screenMax = targetPos + glm::vec2(worldScreenWidth, worldScreenHeight) * 0.5f;
-
-  // Ensure car stays within bounds
-  float minDistanceFromEdge = m_minCarScreenDistance / m_camera.getScale();
-
-  // Adjust camera position if car is too close to screen edge
-  if (carPosition.x < screenMin.x + minDistanceFromEdge) {
-    targetPos.x += (screenMin.x + minDistanceFromEdge) - carPosition.x;
-  }
-  if (carPosition.x > screenMax.x - minDistanceFromEdge) {
-    targetPos.x -= carPosition.x - (screenMax.x - minDistanceFromEdge);
-  }
-  if (carPosition.y < screenMin.y + minDistanceFromEdge) {
-    targetPos.y += (screenMin.y + minDistanceFromEdge) - carPosition.y;
-  }
-  if (carPosition.y > screenMax.y - minDistanceFromEdge) {
-    targetPos.y -= carPosition.y - (screenMax.y - minDistanceFromEdge);
-  }
-
-  // Update camera position
+  // Update camera position directly - no screen edge adjustments needed
+  // because we're now properly centering on the car's actual position
   m_camera.setPosition(targetPos);
 }
-
 void LevelEditorScreen::drawCarTrackingDebug() {
   if (!m_testMode || m_carTrackingInfo.empty() || !m_levelRenderer) return;
 

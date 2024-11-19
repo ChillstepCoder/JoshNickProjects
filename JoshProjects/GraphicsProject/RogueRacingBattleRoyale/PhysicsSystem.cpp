@@ -66,10 +66,16 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height, 
 
   b2Polygon mainBody = b2MakeBox(bodyWidth * 0.5f, bodyHeight * 0.5f);
 
-  b2ShapeDef shapeDef = b2DefaultShapeDef();
-  shapeDef.density = density;
-  shapeDef.friction = friction;
-  shapeDef.restitution = 0.1f;
+  // Define the shape
+    b2ShapeDef shapeDef = b2DefaultShapeDef();
+    shapeDef.density = density;
+    shapeDef.friction = friction;
+    shapeDef.restitution = 0.1f;
+    shapeDef.isSensor = false;
+
+    // Set collision filtering for the car
+    shapeDef.filter.categoryBits = 0x0001; // Car category
+    shapeDef.filter.maskBits = 0x0002;     // Collide with barrier category
 
   // Corrected variable type and validity check
   b2ShapeId mainBodyShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &mainBody);
