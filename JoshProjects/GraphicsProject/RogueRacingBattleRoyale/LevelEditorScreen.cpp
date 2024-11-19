@@ -948,6 +948,39 @@ void LevelEditorScreen::initTestMode() {
   // Load car texture
   m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
 
+  // Generate rainbow colors for cars
+  int numCars = startPositions.size();
+  std::vector<JAGEngine::ColorRGBA8> carColors(numCars);
+
+  for (int i = 0; i < numCars; i++) {
+    // Convert index to hue (0 to 1)
+    float hue = float(i) / float(numCars);
+    float saturation = 0.8f;  // Slightly reduced for better visibility
+    float value = 1.0f;
+
+    // Convert HSV to RGB
+    float c = value * saturation;
+    float x = c * (1 - std::abs(std::fmod(hue * 6, 2.0f) - 1));
+    float m = value - c;
+
+    float r = 0, g = 0, b = 0;
+
+    if (hue < 1.0f / 6.0f) { r = c; g = x; b = 0; }
+    else if (hue < 2.0f / 6.0f) { r = x; g = c; b = 0; }
+    else if (hue < 3.0f / 6.0f) { r = 0; g = c; b = x; }
+    else if (hue < 4.0f / 6.0f) { r = 0; g = x; b = c; }
+    else if (hue < 5.0f / 6.0f) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+
+    // Convert to 8-bit color values
+    carColors[i] = JAGEngine::ColorRGBA8(
+      uint8_t((r + m) * 255),
+      uint8_t((g + m) * 255),
+      uint8_t((b + m) * 255),
+      255
+    );
+  }
+
   // Create cars for each position
   for (size_t i = 0; i < startPositions.size(); i++) {
     const auto& pos = startPositions[i];
@@ -958,8 +991,8 @@ void LevelEditorScreen::initTestMode() {
     car->setTrack(m_track.get());
     car->resetPosition({ pos.position.x, pos.position.y }, pos.angle);
     car->setProperties(Car::CarProperties());
+    car->setColor(carColors[i]);  // Set the rainbow color
 
-    // Set car color (using existing color logic)
     m_testCars.push_back(std::move(car));
 
     // Initialize tracking info
