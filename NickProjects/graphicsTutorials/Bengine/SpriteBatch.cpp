@@ -18,6 +18,7 @@ namespace Bengine {
 
     void SpriteBatch::init() {
         createVertexArray();
+        m_initialized = true;
     }
 
     void SpriteBatch::begin(GlyphSortType sortType /* GlyphSortType::TEXTURE*/) {

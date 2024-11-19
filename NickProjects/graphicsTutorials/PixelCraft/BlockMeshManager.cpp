@@ -4,6 +4,35 @@
 #include "PerlinNoise.hpp"
 #include <iostream>
 
+
+void Chunk::init() {
+    m_spriteBatch.init();
+    std::cout << "Chunk initialized at position: " << m_worldPosition.x
+        << ", " << m_worldPosition.y << std::endl;
+}
+void Chunk::buildMesh() {
+    m_spriteBatch.begin();
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            const Block& block = blocks[x][y];
+            if (!block.isEmpty()) {
+                glm::vec4 destRect = block.getDestRect();
+                glm::vec4 uvRect = block.getUVRect();
+                GLuint textureID = block.getTextureID();
+                Bengine::ColorRGBA8 color = block.getColor();
+
+                m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+            }
+        }
+    }
+    m_spriteBatch.end();
+}
+void Chunk::render() {
+    m_spriteBatch.renderBatch();
+}
+
+
+
 BlockMeshManager::BlockMeshManager() {
 
 }
@@ -15,36 +44,44 @@ BlockMeshManager::~BlockMeshManager() {
 void BlockMeshManager::init() {
     m_spriteBatch.init();
 }
-void BlockMeshManager::buildMesh(const std::vector<std::vector<Chunk>>& chunks) {
+void BlockMeshManager::buildMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager) {
     m_spriteBatch.begin();
-    for (const auto& chunkRow : chunks) {
-        for (const auto& chunk : chunkRow) {
-            for (int x = 0; x < CHUNK_WIDTH; ++x) {
-                for (int y = 0; y < CHUNK_WIDTH; ++y) {
-                    const Block& block = chunk.blocks[x][y];
-                    if (!block.isEmpty()) {
-                        glm::vec4 destRect = block.getDestRect();
-                        glm::vec4 uvRect = block.getUVRect();
-                        GLuint textureID = block.getTextureID();
-                        Bengine::ColorRGBA8 color = block.getColor();
-
-                        m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
-                    }
+    for (auto& chunkRow : chunks) {
+        for (auto& chunk : chunkRow) {
+            chunk.buildMesh();
+        }
+    }
+    m_spriteBatch.end();
+}
+void BlockMeshManager::renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager) {
+    // Only render chunks that are visible
+    m_spriteBatch.begin();
+    for (auto& chunkRow : chunks) {
+        for (auto& chunk : chunkRow) {
+            // Check if the chunk is visible (can be based on the camera's frustum or player position)
+            if (!blockManager.isChunkFarAway(chunk.getWorldPosition(), glm::vec2(0.0f, 0.0f))) {
+                if (!chunk.m_spriteBatch.isInitialized()) {
+                    std::cerr << "Warning: SpriteBatch not initialized for chunk at "
+                              << chunk.getWorldPosition().x << ", "
+                              << chunk.getWorldPosition().y << std::endl;
+                    chunk.init(); // Initialize the SpriteBatch if it's not already
                 }
+                chunk.render();
             }
         }
     }
     m_spriteBatch.end();
 }
-void BlockMeshManager::renderMesh() {
-    m_spriteBatch.renderBatch();
-}
+
 
 void BlockManager::initializeChunks() {
-    // Resize the m_chunks vector to the correct size
-    m_chunks.resize(WORLD_WIDTH_CHUNKS);
-    for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
-        m_chunks[x].resize(WORLD_HEIGHT_CHUNKS);
+
+    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
+            Chunk& chunk = m_chunks[chunkX][chunkY];
+            chunk.init(); // Explicitly call init for each chunk
+            chunk.m_worldPosition = glm::vec2(chunkX * CHUNK_WIDTH, chunkY * CHUNK_WIDTH);
+        }
     }
 
     // Create Perlin noise instance with random seed
@@ -126,14 +163,15 @@ BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
 
 void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     // check if the block exists
-    if (blockHandle.block != nullptr) {
+    if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
         // Destroy the block (remove physics body and reset visual state)
         b2DestroyBody(blockHandle.block->getID());
-        blockHandle.block->clearID();
         // Now that the block is destroyed, we can remove it from the chunk
         // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
+
+        rebuildMesh();
     }
 }
 

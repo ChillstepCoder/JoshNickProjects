@@ -79,6 +79,10 @@ namespace Bengine {
 
         void renderBatch();
 
+        bool isInitialized() const {
+            return m_initialized;
+        }
+
     private:
         void createRenderBatches();
         void createVertexArray();
@@ -96,6 +100,8 @@ namespace Bengine {
         std::vector<Glyph*> m_glyphPointers; //< This is for sorting
         std::vector<Glyph> m_glyphs; //< These are the actual glyphs
         std::vector<RenderBatch> m_renderBatches;
+
+        bool m_initialized = false;
     };
 
 }

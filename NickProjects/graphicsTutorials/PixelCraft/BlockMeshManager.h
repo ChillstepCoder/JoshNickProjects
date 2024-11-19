@@ -7,6 +7,7 @@
 #include "Block.h"
 
 class DebugDraw;
+class BlockManager;
 
 const int CHUNK_WIDTH = 64;
 
@@ -14,12 +15,17 @@ class Chunk {
 public:
 
     Block blocks[CHUNK_WIDTH][CHUNK_WIDTH];
+
+    glm::vec2 m_worldPosition;
+    Bengine::SpriteBatch m_spriteBatch;
+
     glm::vec2 getWorldPosition() {
         return m_worldPosition;
     }
 
-    glm::vec2 m_worldPosition;
-
+    void init();
+    void buildMesh() ;
+    void render() ;
 };
 
 struct BlockHandle {
@@ -35,8 +41,8 @@ public:
     ~BlockMeshManager();
 
     void init();
-    void buildMesh(const std::vector<std::vector<Chunk>>& chunks); // Accept blocks from BlockManager
-    void renderMesh();
+    void buildMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager); // Accept blocks from BlockManager
+    void renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager);
 
 private:
     Bengine::SpriteBatch m_spriteBatch;
@@ -48,23 +54,16 @@ const int loadRadius = 5;
 
 class BlockManager {
 public:
-    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId) : m_MeshManager(meshManager), m_world(worldId) {}
-
-    //void addBlock(const Block& block) {
-    //    m_blocks.push_back(block);
-    //}
+    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId, std::vector<std::vector<Chunk>>& chunks) 
+        : m_MeshManager(meshManager), m_world(worldId), m_chunks(chunks) {}
 
     void rebuildMesh() {
-        m_MeshManager.buildMesh(m_chunks);
+        m_MeshManager.buildMesh(m_chunks, *this);
     }
 
     void renderBlocks() {
-        m_MeshManager.renderMesh();
+        m_MeshManager.renderMesh(m_chunks, *this);
     }
-
-    //std::vector<Block>& getBlocks() {
-    //    return m_blocks;
-    //}
 
     void initializeChunks();
 
@@ -91,7 +90,7 @@ public:
     std::vector<Block> getBlocksInRange(const glm::vec2& playerPos, int range);
 
 private:
-    std::vector<std::vector<Chunk>> m_chunks;
+    std::vector<std::vector<Chunk>>& m_chunks;
 
     BlockMeshManager& m_MeshManager;
     b2WorldId m_world;

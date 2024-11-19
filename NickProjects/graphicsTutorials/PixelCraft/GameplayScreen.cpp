@@ -37,10 +37,20 @@ void GameplayScreen::onEntry() {
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
     m_world = b2CreateWorld(&worldDef);
 
+    m_chunks.resize(WORLD_WIDTH_CHUNKS);
+    for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
+        m_chunks[x].resize(WORLD_HEIGHT_CHUNKS);
+        for (int y = 0; y < WORLD_HEIGHT_CHUNKS; ++y) {
+            m_chunks[x][y].init();
+        }
+    }
+
+    m_spriteBatch.init();
+
     // Initialize BlockMeshManager
     m_blockMeshManager.init();
 
-    m_blockManager = new BlockManager(m_blockMeshManager, m_world);
+    m_blockManager = new BlockManager(m_blockMeshManager, m_world, m_chunks);
 
     m_blockManager->initializeChunks();
 
@@ -48,8 +58,6 @@ void GameplayScreen::onEntry() {
     m_blockManager->loadNearbyChunks(glm::vec2(0.0f, 60.0f));
 
     m_blockManager->rebuildMesh();
-
-    m_spriteBatch.init();
 
 
     // Init Imgui
