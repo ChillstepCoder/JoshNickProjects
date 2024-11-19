@@ -24,8 +24,8 @@ public:
     }
 
     void init();
-    void buildMesh() ;
-    void render() ;
+    void buildChunkMesh() ;
+    void render();
 };
 
 struct BlockHandle {
@@ -41,11 +41,9 @@ public:
     ~BlockMeshManager();
 
     void init();
-    void buildMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager); // Accept blocks from BlockManager
     void renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager);
 
 private:
-    Bengine::SpriteBatch m_spriteBatch;
 };
 
 const int WORLD_WIDTH_CHUNKS = 16;
@@ -54,12 +52,9 @@ const int loadRadius = 5;
 
 class BlockManager {
 public:
-    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId, std::vector<std::vector<Chunk>>& chunks) 
-        : m_MeshManager(meshManager), m_world(worldId), m_chunks(chunks) {}
-
-    void rebuildMesh() {
-        m_MeshManager.buildMesh(m_chunks, *this);
-    }
+    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId)
+        : m_MeshManager(meshManager), m_world(worldId){}
+    
 
     void renderBlocks() {
         m_MeshManager.renderMesh(m_chunks, *this);
@@ -90,7 +85,7 @@ public:
     std::vector<Block> getBlocksInRange(const glm::vec2& playerPos, int range);
 
 private:
-    std::vector<std::vector<Chunk>>& m_chunks;
+    std::vector<std::vector<Chunk>> m_chunks;
 
     BlockMeshManager& m_MeshManager;
     b2WorldId m_world;

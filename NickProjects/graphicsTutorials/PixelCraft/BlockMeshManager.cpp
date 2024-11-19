@@ -10,7 +10,7 @@ void Chunk::init() {
     std::cout << "Chunk initialized at position: " << m_worldPosition.x
         << ", " << m_worldPosition.y << std::endl;
 }
-void Chunk::buildMesh() {
+void Chunk::buildChunkMesh() {
     m_spriteBatch.begin();
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
@@ -20,13 +20,14 @@ void Chunk::buildMesh() {
                 glm::vec4 uvRect = block.getUVRect();
                 GLuint textureID = block.getTextureID();
                 Bengine::ColorRGBA8 color = block.getColor();
-
                 m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
             }
         }
     }
     m_spriteBatch.end();
 }
+
+
 void Chunk::render() {
     m_spriteBatch.renderBatch();
 }
@@ -42,20 +43,11 @@ BlockMeshManager::~BlockMeshManager() {
 }
 
 void BlockMeshManager::init() {
-    m_spriteBatch.init();
+
 }
-void BlockMeshManager::buildMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager) {
-    m_spriteBatch.begin();
-    for (auto& chunkRow : chunks) {
-        for (auto& chunk : chunkRow) {
-            chunk.buildMesh();
-        }
-    }
-    m_spriteBatch.end();
-}
+
 void BlockMeshManager::renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager) {
     // Only render chunks that are visible
-    m_spriteBatch.begin();
     for (auto& chunkRow : chunks) {
         for (auto& chunk : chunkRow) {
             // Check if the chunk is visible (can be based on the camera's frustum or player position)
@@ -70,17 +62,18 @@ void BlockMeshManager::renderMesh(std::vector<std::vector<Chunk>>& chunks, Block
             }
         }
     }
-    m_spriteBatch.end();
 }
 
 
 void BlockManager::initializeChunks() {
 
+    m_chunks.resize(WORLD_WIDTH_CHUNKS);
     for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        m_chunks[chunkX].resize(WORLD_HEIGHT_CHUNKS);
         for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
             Chunk& chunk = m_chunks[chunkX][chunkY];
-            chunk.init(); // Explicitly call init for each chunk
             chunk.m_worldPosition = glm::vec2(chunkX * CHUNK_WIDTH, chunkY * CHUNK_WIDTH);
+            chunk.init(); // Explicitly call init for each chunk
         }
     }
 
@@ -132,6 +125,12 @@ void BlockManager::initializeChunks() {
             }
         }
     }
+    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
+            Chunk& chunk = m_chunks[chunkX][chunkY];
+            chunk.buildChunkMesh(); // build mesh for each chunk
+        }
+    }
 }
 
 BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
@@ -171,13 +170,16 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
 
-        rebuildMesh();
+        chunk.buildChunkMesh();
     }
 }
 
 void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {
     // Get the block at the given position
-    BlockHandle blockHandle = getBlockAtPosition(position);
+    float realpositionX = position.x + 0.5f;
+    float realPositionY = position.y + 0.5f;
+
+    BlockHandle blockHandle = getBlockAtPosition(glm::vec2(realpositionX,realPositionY));
 
     // Check if the block exists (not nullptr)
     if (blockHandle.block != nullptr) {
@@ -195,8 +197,8 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::ve
 inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Block& block) {
     // Check if the position is within the block's bounding box
     glm::vec2 blockPos = block.getDestRect();
-    blockPos.x = blockPos.x + 0.5;
-    blockPos.y = blockPos.y + 0.5;
+    blockPos.x = blockPos.x ;
+    blockPos.y = blockPos.y ;
     glm::vec2 blockSize = block.getDimensions();
     return (position.x >= blockPos.x - blockSize.x / 2 && position.x <= blockPos.x + blockSize.x / 2 &&
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
