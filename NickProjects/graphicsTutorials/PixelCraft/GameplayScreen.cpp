@@ -33,6 +33,9 @@ void GameplayScreen::destroy() {
 }
 
 void GameplayScreen::onEntry() {
+    float playerPosX = 10.0f;
+    float playerPosY = 400.0f;
+
     b2WorldDef worldDef = b2DefaultWorldDef();
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
     m_world = b2CreateWorld(&worldDef);
@@ -47,7 +50,7 @@ void GameplayScreen::onEntry() {
     m_blockManager->initializeChunks();
 
     // Load chunks around the player (initial position)
-    m_blockManager->loadNearbyChunks(glm::vec2(0.0f, 60.0f));
+    m_blockManager->loadNearbyChunks(glm::vec2(playerPosX, playerPosY));
 
 
     // Init Imgui
@@ -73,7 +76,7 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(20.0f);
+    m_camera.setScale(1.5f); // 20.0f
     m_player = Player(&m_camera, m_blockManager);
 
     // Init player
@@ -83,7 +86,7 @@ void GameplayScreen::onEntry() {
     textureColor.b = 255;
     textureColor.a = 255;
 
-    m_player.init(&m_world, glm::vec2(500.0f, 400.0f), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
+    m_player.init(&m_world, glm::vec2(playerPosX, playerPosY), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
 
 }
 
@@ -117,8 +120,8 @@ void GameplayScreen::update() {
         const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
         m_player.update(m_game->inputManager, playerPos, m_blockManager);
 
-        m_blockManager->loadNearbyChunks(playerPos);
         m_blockManager->unloadFarChunks(playerPos);
+        m_blockManager->loadNearbyChunks(playerPos);
 
         m_camera.setPosition(playerPos); // Set camera position to player's position
     }

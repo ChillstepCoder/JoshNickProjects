@@ -56,6 +56,28 @@ namespace Bengine {
         glBindVertexArray(0);
     }
 
+    void SpriteBatch::dispose() {
+        // Delete Vertex Array Object (VAO)
+        if (m_vao != 0) {
+            glDeleteVertexArrays(1, &m_vao);
+            m_vao = 0;
+        }
+
+        // Delete Vertex Buffer Object (VBO)
+        if (m_vbo != 0) {
+            glDeleteBuffers(1, &m_vbo);
+            m_vbo = 0;
+        }
+
+        // Clear all internal vectors
+        m_glyphs.clear();
+        m_glyphPointers.clear();
+        m_renderBatches.clear();
+
+        // Reset initialization state
+        m_initialized = false;
+    }
+
     glm::vec2 rotatePoint(const glm::vec2& pos, float angle) {
         // Convert the angle from degrees to radians
         float radians = glm::radians(angle);

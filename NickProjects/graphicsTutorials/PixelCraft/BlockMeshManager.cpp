@@ -32,6 +32,24 @@ void Chunk::render() {
     m_spriteBatch.renderBatch();
 }
 
+void Chunk::destroy() {
+    // Destroy physics bodies for all blocks in the chunk
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            Block& block = blocks[x][y];
+            if (!block.isEmpty()) {
+                b2DestroyBody(block.getID());
+            }
+        }
+    }
+
+    // Clear the sprite batch
+    m_spriteBatch.dispose();
+
+    // Reset chunk to initial state
+    m_worldPosition = glm::vec2(0, 0);
+}
+
 
 
 BlockMeshManager::BlockMeshManager() {
@@ -205,17 +223,19 @@ inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Blo
 }
 
 void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
+
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
     int playerChunkY = static_cast<int>(playerPos.y) / CHUNK_WIDTH;
 
-    // Loop through the chunks within the radius and load them
-    for (int dx = -loadRadius; dx <= loadRadius; ++dx) {
-        for (int dy = -loadRadius; dy <= loadRadius; ++dy) {
-            int chunkX = playerChunkX + dx;
-            int chunkY = playerChunkY + dy;
-            if (!isChunkLoaded(chunkX, chunkY)) {
-                loadChunk(chunkX, chunkY);
+    // Loop through all chunks and load ones that are nearby
+    for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
+        for (int y = 0; y <= WORLD_WIDTH_CHUNKS; ++y) {
+            if (isChunkLoaded(x, y)) {
+                glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
+                if (!isChunkFarAway(playerPos, chunkPos)) {
+                    loadChunk(x, y);
+                }
             }
         }
     }
@@ -240,13 +260,15 @@ void BlockManager::loadChunk(int x, int y) {
     if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
         return; // Out of bounds
     }
+    Chunk& chunk = m_chunks[x][y];
+    chunk.buildChunkMesh();
 }
 
 bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
 
-    const float farthestChunkAllowed = 10.0f;
+    const float farthestChunkAllowed = 6.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
 
@@ -277,7 +299,8 @@ void BlockManager::unloadChunk(int x, int y) {
         return; // Out of bounds
     }
 
-    m_chunks[x][y] = Chunk(); // Reset chunk to default
+    m_chunks[x][y].destroy(); // Clean up resources
+    m_chunks[x][y] = Chunk(); // Reset to default
 }
 
 std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {

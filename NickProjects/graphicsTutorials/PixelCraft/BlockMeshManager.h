@@ -26,6 +26,7 @@ public:
     void init();
     void buildChunkMesh() ;
     void render();
+    void destroy();
 };
 
 struct BlockHandle {
@@ -46,8 +47,8 @@ public:
 private:
 };
 
-const int WORLD_WIDTH_CHUNKS = 16;
-const int WORLD_HEIGHT_CHUNKS = 8;
+const int WORLD_WIDTH_CHUNKS = 32;
+const int WORLD_HEIGHT_CHUNKS = 16;
 const int loadRadius = 5;
 
 class BlockManager {

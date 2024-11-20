@@ -83,6 +83,8 @@ namespace Bengine {
             return m_initialized;
         }
 
+        void dispose();
+
     private:
         void createRenderBatches();
         void createVertexArray();
