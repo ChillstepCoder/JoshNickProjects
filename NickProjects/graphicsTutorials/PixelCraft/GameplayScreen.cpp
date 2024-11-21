@@ -33,8 +33,7 @@ void GameplayScreen::destroy() {
 }
 
 void GameplayScreen::onEntry() {
-    float playerPosX = 10.0f;
-    float playerPosY = 400.0f;
+    glm::vec2 playerPos(10.0f, 400.0f);
 
     b2WorldDef worldDef = b2DefaultWorldDef();
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
@@ -47,11 +46,7 @@ void GameplayScreen::onEntry() {
 
     m_blockManager = new BlockManager(m_blockMeshManager, m_world);
 
-    m_blockManager->initializeChunks();
-
-    // Load chunks around the player (initial position)
-    m_blockManager->loadNearbyChunks(glm::vec2(playerPosX, playerPosY));
-
+    m_blockManager->initializeChunks(playerPos);
 
     // Init Imgui
     Bengine::ImGuiManager::init(m_window);
@@ -86,7 +81,7 @@ void GameplayScreen::onEntry() {
     textureColor.b = 255;
     textureColor.a = 255;
 
-    m_player.init(&m_world, glm::vec2(playerPosX, playerPosY), glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
+    m_player.init(&m_world, playerPos, glm::vec2(1.3f, 2.75f), textureColor, &m_camera);
 
 }
 
@@ -120,8 +115,14 @@ void GameplayScreen::update() {
         const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
         m_player.update(m_game->inputManager, playerPos, m_blockManager);
 
-        m_blockManager->unloadFarChunks(playerPos);
-        m_blockManager->loadNearbyChunks(playerPos);
+        {
+            PROFILE_SCOPE("Unload far chunks");
+            m_blockManager->unloadFarChunks(playerPos);
+        }
+        {
+            PROFILE_SCOPE("Load nearby chunks");
+            m_blockManager->loadNearbyChunks(playerPos);
+        }
 
         m_camera.setPosition(playerPos); // Set camera position to player's position
     }

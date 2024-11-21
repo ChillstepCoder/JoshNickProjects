@@ -13,20 +13,21 @@ const int CHUNK_WIDTH = 64;
 
 class Chunk {
 public:
+    void init();
+    void buildChunkMesh() ;
+    void render();
+    void destroy();
+
+    bool isLoaded() const { return m_isLoaded; }
+    glm::vec2 getWorldPosition() {
+        return m_worldPosition;
+    }
 
     Block blocks[CHUNK_WIDTH][CHUNK_WIDTH];
 
     glm::vec2 m_worldPosition;
     Bengine::SpriteBatch m_spriteBatch;
-
-    glm::vec2 getWorldPosition() {
-        return m_worldPosition;
-    }
-
-    void init();
-    void buildChunkMesh() ;
-    void render();
-    void destroy();
+    bool m_isLoaded = false;
 };
 
 struct BlockHandle {
@@ -61,7 +62,7 @@ public:
         m_MeshManager.renderMesh(m_chunks, *this);
     }
 
-    void initializeChunks();
+    void initializeChunks(glm::vec2 playerPosition);
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
