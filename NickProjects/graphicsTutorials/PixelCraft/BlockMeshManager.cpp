@@ -51,7 +51,6 @@ void Chunk::destroy() {
 }
 
 
-
 BlockMeshManager::BlockMeshManager() {
 
 }
@@ -300,7 +299,6 @@ void BlockManager::unloadChunk(int x, int y) {
     }
 
     m_chunks[x][y].destroy(); // Clean up resources
-    m_chunks[x][y] = Chunk(); // Reset to default
 }
 
 std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {
