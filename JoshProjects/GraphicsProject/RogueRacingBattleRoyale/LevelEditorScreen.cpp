@@ -1130,8 +1130,9 @@ void LevelEditorScreen::drawTestMode() {
 }
 
 void LevelEditorScreen::drawTestModeUI() {
-  if (!m_testMode) return;
+  if (!m_testMode || m_testCars.empty()) return;
 
+  // Test mode window
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
 
@@ -1146,14 +1147,7 @@ void LevelEditorScreen::drawTestModeUI() {
   ImGui::TextColored(ImVec4(1, 1, 0, 1), "Debug Visualization");
 
   ImGui::Checkbox("Show Collision Shapes", &m_showDebugDraw);
-  if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Toggle visualization of physics collision shapes");
-  }
-
   ImGui::Checkbox("Show Track Points", &m_showTrackingPoints);
-  if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Toggle car position and lookahead points");
-  }
 
   // Camera controls
   ImGui::Separator();
@@ -1164,105 +1158,137 @@ void LevelEditorScreen::drawTestModeUI() {
     m_camera.setScale(m_testCameraScale);
   }
 
-  // Wheel state information for player car
-  if (ImGui::CollapsingHeader("Wheel States", ImGuiTreeNodeFlags_DefaultOpen)) {
-    const auto& wheelStates = m_testCars[0]->getWheelStates();
-    const char* wheelNames[] = { "Front Left", "Front Right", "Back Left", "Back Right" };
+  ImGui::End();
 
-    for (size_t i = 0; i < wheelStates.size(); i++) {
-      const auto& state = wheelStates[i];
+  // Car controls window
+  ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 310, 10), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(300, 450), ImGuiCond_FirstUseEver);
 
-      // Create colored text based on surface type
-      ImVec4 color;
-      switch (state.surface) {
-      case WheelCollider::Surface::Road:
-        color = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Green
-        break;
-      case WheelCollider::Surface::RoadOffroad:
-        color = ImVec4(0.7f, 1.0f, 0.0f, 1.0f);  // Yellow-green
-        break;
-      case WheelCollider::Surface::Offroad:
-        color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);  // Yellow
-        break;
-      case WheelCollider::Surface::OffroadGrass:
-        color = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);  // Orange
-        break;
-      case WheelCollider::Surface::Grass:
-        color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red
-        break;
+  if (ImGui::Begin("Car Properties", nullptr, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::CollapsingHeader("Car Controls", ImGuiTreeNodeFlags_DefaultOpen)) {
+      Car::CarProperties& props = m_testCars[0]->getProperties();
+
+      ImGui::DragFloat("Max Speed", &props.maxSpeed, 1.0f, 200.0f, 4000.0f);
+      ImGui::DragFloat("Acceleration", &props.acceleration, 10.0f, 5000.0f, 40000.0f);
+      ImGui::DragFloat("Turn Speed", &props.turnSpeed, 0.1f, 5.0f, 40.0f);
+      ImGui::DragFloat("Lateral Damping", &props.lateralDamping, 0.01f, 0.5f, 1.0f);
+      ImGui::DragFloat("Drag Factor", &props.dragFactor, 0.001f, 0.9f, 1.0f);
+      ImGui::DragFloat("Turn Reset Rate", &props.turnResetRate, 0.01f, 0.5f, 2.0f);
+      ImGui::DragFloat("Max Angular Velocity", &props.maxAngularVelocity, 0.1f, 1.0f, 5.0f);
+      ImGui::DragFloat("Braking Force", &props.brakingForce, 0.1f, 0.1f, 2.0f);
+      ImGui::DragFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 0.1f, 5.0f);
+
+      ImGui::Separator();
+      ImGui::Text("Friction Settings");
+      ImGui::DragFloat("Wheel Friction", &props.wheelFriction, 0.01f, 0.1f, 2.0f);
+      ImGui::DragFloat("Surface Friction", &props.baseFriction, 0.01f, 0.1f, 2.0f);
+
+      if (ImGui::Button("Reset Car Position")) {
+        m_testCars[0]->resetPosition();
       }
+    }
 
-      ImGui::TextColored(color, "%s: %s (Friction: %.2f)",
-        wheelNames[i],
-        WheelCollider::getSurfaceName(state.surface),
-        state.frictionMultiplier);
+    // Wheel state information
+    if (ImGui::CollapsingHeader("Wheel States", ImGuiTreeNodeFlags_DefaultOpen)) {
+      const auto& wheelStates = m_testCars[0]->getWheelStates();
+      const char* wheelNames[] = { "Front Left", "Front Right", "Back Left", "Back Right" };
+
+      for (size_t i = 0; i < wheelStates.size(); i++) {
+        const auto& state = wheelStates[i];
+        ImVec4 color;
+        switch (state.surface) {
+        case WheelCollider::Surface::Road:
+          color = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+          break;
+        case WheelCollider::Surface::RoadOffroad:
+          color = ImVec4(0.7f, 1.0f, 0.0f, 1.0f);
+          break;
+        case WheelCollider::Surface::Offroad:
+          color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+          break;
+        case WheelCollider::Surface::OffroadGrass:
+          color = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);
+          break;
+        case WheelCollider::Surface::Grass:
+          color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+          break;
+        }
+
+        ImGui::TextColored(color, "%s: %s (Friction: %.2f)",
+          wheelNames[i],
+          WheelCollider::getSurfaceName(state.surface),
+          state.frictionMultiplier);
+      }
     }
   }
-
   ImGui::End();
 }
 
 void LevelEditorScreen::cleanupTestMode() {
+  struct SavedObjectState {
+    size_t templateIndex;
+    glm::vec2 originalPosition;
+  };
+
+  // Store original positions and template indices
+  std::vector<SavedObjectState> savedStates;
+  const auto& existingObjects = m_objectManager->getPlacedObjects();
+  const auto& existingTemplates = m_objectManager->getObjectTemplates();
+
+  for (const auto& obj : existingObjects) {
+    size_t templateIndex = 0;
+    for (size_t i = 0; i < existingTemplates.size(); i++) {
+      if (existingTemplates[i]->getDisplayName() == obj->getDisplayName()) {
+        templateIndex = i;
+        break;
+      }
+    }
+    savedStates.push_back({ templateIndex, obj->getPosition() });
+  }
+
+  // Clean up existing objects and physics
   m_levelRenderer->clearCars();
   m_objectManager->clearCars();
 
-  // Cleanup barrier collisions
   if (m_physicsSystem) {
     m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
   }
 
-  // Restore editor camera state
+  // Restore camera state
   m_camera.setPosition(m_editorCameraPos);
   m_camera.setScale(m_editorCameraScale);
 
-  // Clear tracking info
   m_carTrackingInfo.clear();
-
   m_testCars.clear();
+
   if (m_physicsSystem) {
     m_physicsSystem->cleanup();
     m_physicsSystem.reset();
   }
 
-  // Restore the start position visibility state
   m_levelRenderer->setShowStartPositions(m_showStartPositions);
 
-  // Clean up debug drawer
   if (m_debugDraw) {
     m_debugDraw.reset();
   }
 
-  // Restore object placement state
   m_objectPlacementMode = m_savedObjectPlacementMode;
   m_selectedTemplateIndex = m_savedTemplateIndex;
 
-  // Create a new object manager without physics
-  if (m_objectManager) {
-    const auto& existingObjects = m_objectManager->getPlacedObjects();
-    const auto& existingTemplates = m_objectManager->getObjectTemplates();
+  // Create new object manager and restore objects to original positions
+  auto newManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
 
-    auto newManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
-
-    // Copy templates
-    for (const auto& tmpl : existingTemplates) {
-      newManager->addTemplate(std::make_unique<PlaceableObject>(*tmpl));
-    }
-
-    // Copy objects with their current positions
-    for (const auto& obj : existingObjects) {
-      size_t templateIndex = 0;
-      for (size_t i = 0; i < existingTemplates.size(); i++) {
-        if (existingTemplates[i]->getDisplayName() == obj->getDisplayName()) {
-          templateIndex = i;
-          break;
-        }
-      }
-      newManager->addObject(templateIndex, obj->getPosition());
-    }
-
-    m_objectManager = std::move(newManager);
+  // Copy templates
+  for (const auto& tmpl : existingTemplates) {
+    newManager->addTemplate(std::make_unique<PlaceableObject>(*tmpl));
   }
 
+  // Restore objects to their original positions
+  for (const auto& state : savedStates) {
+    newManager->addObject(state.templateIndex, state.originalPosition);
+  }
+
+  m_objectManager = std::move(newManager);
   m_testMode = false;
 }
 

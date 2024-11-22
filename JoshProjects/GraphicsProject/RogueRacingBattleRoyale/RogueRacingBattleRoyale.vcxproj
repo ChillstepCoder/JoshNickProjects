@@ -150,6 +150,7 @@
     <ClCompile Include="LevelEditorScreen.cpp" />
     <ClCompile Include="LevelRenderer.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ObjectManager.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="RoadMeshGenerator.cpp" />
     <ClCompile Include="SplineTrack.cpp" />

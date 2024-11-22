@@ -56,7 +56,7 @@ public:
   virtual int getPreviousScreenIndex() const override;
 
 private:
-  // Rendering components - KEEP THESE FIRST
+  // Rendering components
   JAGEngine::SpriteBatch m_spriteBatch;
   glm::mat4 m_projectionMatrix;
   std::unique_ptr<LevelRenderer> m_levelRenderer;

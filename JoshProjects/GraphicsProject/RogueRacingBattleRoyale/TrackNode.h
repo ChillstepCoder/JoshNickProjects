@@ -3,7 +3,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <iostream>
-#include <algorithm>  // for std::min and std::max
+#include <algorithm>
 
 class TrackNode {
 public:
