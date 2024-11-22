@@ -71,7 +71,7 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(1.5f); // 20.0f
+    m_camera.setScale(20.0f); // 20.0f
     m_player = Player(&m_camera, m_blockManager);
 
     // Init player

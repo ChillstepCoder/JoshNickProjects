@@ -75,7 +75,7 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
             b2ShapeId shape2 = contacts[i].shapeIdB;
 
             // Check if the block's shape ID matches the player's shape ID
-            if (B2_ID_EQUALS(shape1, block.getID()) || B2_ID_EQUALS(shape2, block.getID())) {
+            if (B2_ID_EQUALS(shape1, block.getBodyID()) || B2_ID_EQUALS(shape2, block.getBodyID())) {
                 m_isGrounded = true; // Player is grounded on this block
                 break; // No need to check further
             }

@@ -39,7 +39,7 @@ void Chunk::destroy() {
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             Block& block = blocks[x][y];
             if (!block.isEmpty()) {
-                b2DestroyBody(block.getID());
+                b2DestroyBody(block.getBodyID());
             }
             block.clearID();
         }
@@ -138,7 +138,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     // check if the block exists
     if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
         // Destroy the block (remove physics body and reset visual state)
-        b2DestroyBody(blockHandle.block->getID());
+        b2DestroyBody(blockHandle.block->getBodyID());
         // Now that the block is destroyed, we can remove it from the chunk
         // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
@@ -263,7 +263,7 @@ bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& c
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
 
-    const float farthestChunkAllowed = 6.0f;
+    const float farthestChunkAllowed = 3.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
 
