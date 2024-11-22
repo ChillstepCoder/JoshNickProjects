@@ -30,7 +30,7 @@ void Car::update(const InputState& input) {
 
   // Update drift state
   if (input.braking && (input.turningLeft || input.turningRight)) {
-    float speedThreshold = m_properties.maxSpeed * 0.075f;
+    float speedThreshold = 75.0f;
     float speedRatio = currentSpeed / speedThreshold;
     m_properties.driftState = glm::clamp(speedRatio, 0.0f, 1.0f);
   }
@@ -80,7 +80,7 @@ void Car::updateMovement(const InputState& input) {
   }
 
   // Forward acceleration
-  if (input.accelerating && currentSpeed < m_properties.maxSpeed) {
+  if (input.accelerating && currentSpeed < m_properties.maxSpeed * 0.05f ) {
     b2Vec2 force = {
         forwardDir.x * m_properties.acceleration,
         forwardDir.y * m_properties.acceleration

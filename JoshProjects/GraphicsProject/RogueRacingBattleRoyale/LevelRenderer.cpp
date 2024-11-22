@@ -518,7 +518,7 @@ void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId worldI
 
   RoadMeshGenerator::BarrierMeshData barrierMesh = RoadMeshGenerator::generateBarrierMesh(*track, m_roadLOD);
   const float BARRIER_THICKNESS = 7.5f;
-  const float OVERLAP_FACTOR = 1.5f;  // 25% overlap
+  const float OVERLAP_FACTOR = 1.35f;  // 35% overlap
 
   auto createBarrierBoxes = [this, BARRIER_THICKNESS, OVERLAP_FACTOR, worldId](const RoadMeshGenerator::MeshData& meshData, bool isLeftBarrier) {
     // Get the number of segments in the barrier (each quad is made of two triangles)

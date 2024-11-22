@@ -19,7 +19,7 @@ public:
     float turnSpeed = 30.0f;
     float lateralDamping = 0.5f;     // Base lateral damping
     float dragFactor = 0.995f;
-    float brakingForce = 0.7f;
+    float brakingForce = 0.1f;
     float maxAngularVelocity = 4.0f;
     float minSpeedForTurn = 1.0f;
     float turnResetRate = 5.0f;

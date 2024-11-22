@@ -43,6 +43,7 @@ void LevelEditorScreen::onEntry() {
   // Initialize level renderer
   m_levelRenderer = std::make_unique<LevelRenderer>();
   m_levelRenderer->init();
+  m_levelRenderer->setShowStartPositions(m_showStartPositions);
 
   m_spriteBatch.init();
 
@@ -1248,6 +1249,7 @@ void LevelEditorScreen::cleanupTestMode() {
   // Clean up physics and test mode resources
   m_levelRenderer->clearCars();
   m_objectManager->clearCars();
+  bool savedShowStartPositions = m_showStartPositions;
 
   if (m_physicsSystem) {
     m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
@@ -1288,6 +1290,10 @@ void LevelEditorScreen::cleanupTestMode() {
   }
 
   m_objectManager = std::move(newManager);
+
+  m_showStartPositions = savedShowStartPositions;
+  m_levelRenderer->setShowStartPositions(m_showStartPositions);
+
   m_testMode = false;
 }
 
