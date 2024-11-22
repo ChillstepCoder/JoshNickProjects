@@ -14,19 +14,24 @@ class Car {
 public:
   struct CarProperties {
     // Movement properties
-    float maxSpeed = 2000.0f;         
-    float acceleration = 20000.0f;    
-    float turnSpeed = 20.0f;          
-    float lateralDamping = 0.8f;     // Reduced from 0.95f for smoother slides
-    float dragFactor = 0.995f;       // Increased from 0.99f for less drag
-    float brakingForce = 0.7f;       // Increased from 0.5f for better control
-    float maxAngularVelocity = 4.0f;        
+    float maxSpeed = 1000.0f;
+    float acceleration = 10000.0f;
+    float turnSpeed = 30.0f;
+    float lateralDamping = 0.5f;     // Base lateral damping
+    float dragFactor = 0.995f;
+    float brakingForce = 0.7f;
+    float maxAngularVelocity = 4.0f;
     float minSpeedForTurn = 1.0f;
     float turnResetRate = 5.0f;
 
     // Friction properties
-    float wheelFriction = 1.0f;       
-    float baseFriction = 0.5f;        
+    float wheelFriction = 1.0f;
+    float baseFriction = 0.5f;
+
+    // Drift properties
+    float wheelGrip = 0.49f;           // 0 = max grip (hard to drift), 1 = low grip
+    float driftState = 0.0f;          // Current drift amount (0-1)
+    float driftDecayRate = 0.35f;      // Base decay rate, modified by wheel grip
   };
 
   struct DebugInfo {

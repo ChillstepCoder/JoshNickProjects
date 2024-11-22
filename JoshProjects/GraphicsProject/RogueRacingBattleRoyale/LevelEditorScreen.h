@@ -70,13 +70,14 @@ private:
 
   // Camera properties
   JAGEngine::Camera2D m_camera;
-  float m_cameraSpeed = 8.0f;
+  float m_cameraSpeed = 150.0f;
   float m_zoomFactor = 1.02f;
   float m_minZoom = 0.1f;
   float m_maxZoom = 5.0f;
   glm::vec2 m_editorCameraPos = glm::vec2(0.0f);
   float m_editorCameraScale = 1.0f;
   float m_testCameraScale = 2.0f;
+  bool m_canMoveCamera = true;
 
   // Constants
   static constexpr int MIN_LOD = 4;
@@ -137,6 +138,7 @@ private:
   bool m_savedObjectPlacementMode = false;
   int m_savedTemplateIndex = -1;
   bool m_showTrackingPoints = false;
+  std::vector<std::pair<size_t, glm::vec2>> m_savedObjectStates;
 
   // Helper functions - grouped by functionality
   // UI functions

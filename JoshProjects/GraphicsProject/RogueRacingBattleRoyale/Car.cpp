@@ -21,13 +21,26 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
 void Car::update(const InputState& input) {
   if (!b2Body_IsValid(m_bodyId)) return;
 
-  updateWheelColliders();  // Add this line
+  updateWheelColliders();
 
   b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
   float currentSpeed = b2Vec2Length(currentVel);
-
   b2Vec2 forwardDir = getForwardVector();
   float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
+
+  // Update drift state
+  if (input.braking && (input.turningLeft || input.turningRight)) {
+    float speedThreshold = m_properties.maxSpeed * 0.075f;
+    float speedRatio = currentSpeed / speedThreshold;
+    m_properties.driftState = glm::clamp(speedRatio, 0.0f, 1.0f);
+  }
+  else {
+    float decayRate = m_properties.driftDecayRate * (1.0f - m_properties.wheelGrip);
+    m_properties.driftState = std::max(0.0f, m_properties.driftState - decayRate * (1.0f / 60.0f));
+  }
+
+  // Map drift state directly to lateral damping: 0->0.5, 1->1.0
+  m_properties.lateralDamping = m_properties.driftState * 0.5f + 0.5f;
 
   updateMovement(input);
   handleTurning(input, forwardSpeed);
@@ -109,7 +122,7 @@ void Car::handleTurning(const InputState& input, float forwardSpeed) {
   }
 
   // Calculate base turn rate based on speed
-  float turnFactor = m_properties.turnSpeed * (absForwardSpeed / m_properties.maxSpeed);
+  float turnFactor = (m_properties.turnSpeed / ((1.0f + pow(absForwardSpeed / (10.0f),1.35f)))*(absForwardSpeed/ (150.0f)))*(1.0f+m_properties.driftState * 1.3f);
 
   // Reverse steering direction when going backwards
   if (forwardSpeed < 0) {
@@ -161,13 +174,13 @@ void Car::handleTurning(const InputState& input, float forwardSpeed) {
 
   b2Body_SetAngularVelocity(m_bodyId, newAngularVel);
 
-  // Debug output
-  std::cout << "Steering - "
-    << "Current: " << currentAngularVel
-    << " Target: " << targetAngularVel
-    << " New: " << newAngularVel
-    << " Correction: " << correctionRate
-    << "\n";
+  //// Debug output
+  //std::cout << "Steering - "
+  //  << "Current: " << currentAngularVel
+  //  << " Target: " << targetAngularVel
+  //  << " New: " << newAngularVel
+  //  << " Correction: " << correctionRate
+  //  << "\n";
 }
 
 

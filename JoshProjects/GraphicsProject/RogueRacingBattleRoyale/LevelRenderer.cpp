@@ -252,7 +252,39 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
   glUniformMatrix4fv(m_textureProgram.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
   m_spriteBatch.begin(JAGEngine::GlyphSortType::BACK_TO_FRONT);
 
-  // Draw placed objects and cars
+  // Draw opaque cars first, independently of placed objects
+  for (const auto* car : m_cars) {
+    if (!car) continue;
+
+    b2BodyId bodyId = car->getDebugInfo().bodyId;
+    if (b2Body_IsValid(bodyId)) {
+      b2Vec2 position = b2Body_GetPosition(bodyId);
+      float angle = b2Rot_GetAngle(b2Body_GetRotation(bodyId));
+
+      float carWidth = 20.0f;
+      float carHeight = 10.0f;
+
+      glm::vec4 destRect(
+        position.x - carWidth / 2.0f,
+        position.y - carHeight / 2.0f,
+        carWidth,
+        carHeight
+      );
+
+      // Draw car at full opacity between trees and potholes
+      JAGEngine::ColorRGBA8 color = car->getColor();
+      color.a = 255;  // Full opacity
+
+      m_spriteBatch.draw(destRect,
+        glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        m_carTexture,
+        0.4f,        // Depth between trees (0.0) and potholes (0.7)
+        color,
+        angle);
+    }
+  }
+
+  // Draw placed objects
   for (const auto& obj : objectManager->getPlacedObjects()) {
     const auto& texture = obj->getTexture();
     float baseWidth = texture.width * obj->getScale().x;
@@ -269,43 +301,8 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
     else if (name.find("cone") != std::string::npos) {
       depth = 0.3f;       // Cones above potholes
     }
-    else if (name.find("car") != std::string::npos) {
-      depth = 0.5f;       // Cars below trees, above cones
-    }
     else {
       depth = 0.5f;       // Default depth
-    }
-
-    // Draw the opaque cars
-    for (const auto* car : m_cars) {
-      if (!car) continue;
-
-      b2BodyId bodyId = car->getDebugInfo().bodyId;
-      if (b2Body_IsValid(bodyId)) {
-        b2Vec2 position = b2Body_GetPosition(bodyId);
-        float angle = b2Rot_GetAngle(b2Body_GetRotation(bodyId));
-
-        float carWidth = 20.0f;
-        float carHeight = 10.0f;
-
-        glm::vec4 destRect(
-          position.x - carWidth / 2.0f,
-          position.y - carHeight / 2.0f,
-          carWidth,
-          carHeight
-        );
-
-        // Draw car at full opacity between trees and potholes
-        JAGEngine::ColorRGBA8 color = car->getColor();
-        color.a = 255;  // Full opacity
-
-        m_spriteBatch.draw(destRect,
-          glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-          m_carTexture,
-          0.4f,        // Depth between trees (0.0) and potholes (0.7)
-          color,
-          angle);
-      }
     }
 
     glm::vec4 destRect(
@@ -327,7 +324,7 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
       obj->getRotation());
   }
 
-  // Same preview logic as before, with corrected depths
+  // Handle object placement preview
   if ((m_objectPlacementMode && m_selectedTemplateIndex >= 0) || m_showObjectPreview) {
     const PlaceableObject* previewObj = m_showObjectPreview ?
       m_previewObject :
