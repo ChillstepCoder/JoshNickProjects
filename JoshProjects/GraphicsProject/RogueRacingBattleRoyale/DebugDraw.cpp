@@ -29,38 +29,6 @@ void DebugDraw::init() {
   glGenBuffers(1, &m_vboId);
 }
 
-void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
-    m_program.use();
-
-    // Upload projection matrix
-    GLint pUniform = m_program.getUniformLocation("P");
-    glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
-
-    // Setup debug draw struct
-    b2DebugDraw debugDraw = {};
-    debugDraw.drawShapes = true;
-    debugDraw.drawJoints = true;
-    debugDraw.drawAABBs = true;
-    debugDraw.drawContacts = true;
-    debugDraw.drawContactNormals = true;
-    debugDraw.context = this;
-
-    // Set the callbacks
-    debugDraw.DrawSegment = drawSegment;
-    debugDraw.DrawPolygon = drawPolygon;
-    debugDraw.DrawCircle = drawCircle;
-    debugDraw.DrawSolidCircle = drawSolidCircle;
-    debugDraw.DrawSolidPolygon = drawSolidPolygon;
-    debugDraw.DrawTransform = drawTransform;
-    debugDraw.DrawPoint = drawPoint;
-    debugDraw.DrawString = drawString;
-
-    // Draw the world
-    b2World_Draw(*world, &debugDraw);
-
-    m_program.unuse();
-}
-
 // Implement the debug draw callbacks
 void DebugDraw::drawSegment(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* context) {
     DebugDraw* debugDraw = static_cast<DebugDraw*>(context);

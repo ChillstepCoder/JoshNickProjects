@@ -166,4 +166,8 @@ private:
   float m_messageTimer = 0.0f;
   const float MESSAGE_DURATION = 3.0f; // Show message for 3 seconds
 
+  bool m_savedObjectPlacementMode = false;
+  int m_savedTemplateIndex = -1;
+  bool m_showTrackingPoints = false;
+
 };

@@ -13,7 +13,6 @@ public:
     ~DebugDraw();
 
     void init();
-    void drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix);
     void setAlpha(float alpha) { m_alpha = alpha; }
     void drawWorld(b2WorldId worldId, const glm::mat4& projectionMatrix);
     void drawWheelColliders(const Car& car, const glm::mat4& projectionMatrix);

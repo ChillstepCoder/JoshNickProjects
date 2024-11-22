@@ -54,86 +54,150 @@ b2BodyId PhysicsSystem::createDynamicBody(float x, float y) {
   b2BodyDef bodyDef = b2DefaultBodyDef();
   bodyDef.position = { x, y };
   bodyDef.type = b2_dynamicBody;
+  // Enable CCD/Bullet physics using the correct property name
+  bodyDef.isBullet = true;  // This is the correct property for continuous collision
+
   return b2CreateBody(m_worldId, &bodyDef);
 }
 
-void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height, float density, float friction) {
+void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
+  uint16_t categoryBits, uint16_t maskBits,
+  CollisionType collisionType,
+  float density, float friction) {
+
   if (!b2Body_IsValid(bodyId)) return;
 
   // Define the central rectangle (main body)
   float bodyWidth = width * 0.6f;
-  float bodyHeight = height * 0.5f; // Adjusted to match the height of the car
+  float bodyHeight = height * 0.5f;
+  float radius = bodyHeight * 0.5f;
 
-  b2Polygon mainBody = b2MakeBox(bodyWidth * 0.5f, bodyHeight * 0.5f);
+  b2ShapeDef shapeDef = b2DefaultShapeDef();
 
-  // Define the shape
-    b2ShapeDef shapeDef = b2DefaultShapeDef();
+  // Configure physics based on collision type
+  switch (collisionType) {
+  case CollisionType::HAZARD:
+    shapeDef.isSensor = true;
+    shapeDef.density = 0.0f;
+    shapeDef.friction = 0.0f;
+    break;
+
+  case CollisionType::PUSHABLE:
+    shapeDef.density = 0.2f;
+    shapeDef.friction = 0.4f;
+    shapeDef.restitution = 0.2f;
+    break;
+
+  default:  // DEFAULT type
     shapeDef.density = density;
     shapeDef.friction = friction;
     shapeDef.restitution = 0.1f;
-    shapeDef.isSensor = false;
-
-    // Set collision filtering for the car
-    shapeDef.filter.categoryBits = 0x0001; // Car category
-    shapeDef.filter.maskBits = 0x0002;     // Collide with barrier category
-
-  // Corrected variable type and validity check
-  b2ShapeId mainBodyShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &mainBody);
-  if (!b2Shape_IsValid(mainBodyShapeId)) {
-    std::cerr << "Failed to create main body shape.\n";
+    break;
   }
 
-  // Define the front and back semi-circular caps
-  const int numVertices = 8; // Adjust for smoothness
+  // Set collision filtering
+  shapeDef.filter.categoryBits = categoryBits;
+  shapeDef.filter.maskBits = maskBits;
+
+  // Create central box
+  b2Polygon mainBody = b2MakeBox(bodyWidth * 0.5f, bodyHeight * 0.5f);
+  b2ShapeId mainBodyShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &mainBody);
+
+  // Create front and back capsules with more precise geometry
+  const int numCapVertices = 8;  // Number of vertices for each semicircle
   b2Vec2 frontCapVertices[b2_maxPolygonVertices];
   b2Vec2 backCapVertices[b2_maxPolygonVertices];
-  float radius = bodyHeight * 0.5f;
 
-  // Front cap (semi-circle)
-  for (int i = 0; i < numVertices; ++i) {
-    float angle = (float)i / (numVertices - 1) * b2_pi;
+  // Create front cap - semicircle rotated 90 degrees clockwise
+  for (int i = 0; i < numCapVertices; ++i) {
+    // Start from -90 degrees (-π/2) to +90 degrees (π/2)
+    float angle = -b2_pi * 0.5f + (float)i / (numCapVertices - 1) * b2_pi;
     frontCapVertices[i].x = bodyWidth * 0.5f + cosf(angle) * radius;
     frontCapVertices[i].y = sinf(angle) * radius;
   }
 
-  // Create front cap polygon using b2Hull
-  b2Hull frontCapHull;
-  frontCapHull.count = numVertices;
-  for (int i = 0; i < numVertices; ++i) {
-    frontCapHull.points[i] = frontCapVertices[i];
-  }
-
-  b2Polygon frontCap = b2MakePolygon(&frontCapHull, 0.0f); // Added radius parameter
-
-  b2ShapeId frontCapShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &frontCap);
-  if (!b2Shape_IsValid(frontCapShapeId)) {
-    std::cerr << "Failed to create front cap shape.\n";
-  }
-
-  // Back cap (semi-circle)
-  for (int i = 0; i < numVertices; ++i) {
-    float angle = b2_pi + (float)i / (numVertices - 1) * b2_pi;
+  // Create back cap - semicircle rotated 90 degrees clockwise
+  for (int i = 0; i < numCapVertices; ++i) {
+    // Start from +90 degrees (π/2) to +270 degrees (3π/2)
+    float angle = b2_pi * 0.5f + (float)i / (numCapVertices - 1) * b2_pi;
     backCapVertices[i].x = -bodyWidth * 0.5f + cosf(angle) * radius;
     backCapVertices[i].y = sinf(angle) * radius;
   }
 
-  // Create back cap polygon using b2Hull
+  // Create hull for front cap
+  b2Hull frontCapHull;
+  frontCapHull.count = numCapVertices;
+  for (int i = 0; i < numCapVertices; ++i) {
+    frontCapHull.points[i] = frontCapVertices[i];
+  }
+
+  // Create hull for back cap
   b2Hull backCapHull;
-  backCapHull.count = numVertices;
-  for (int i = 0; i < numVertices; ++i) {
+  backCapHull.count = numCapVertices;
+  for (int i = 0; i < numCapVertices; ++i) {
     backCapHull.points[i] = backCapVertices[i];
   }
 
-  b2Polygon backCap = b2MakePolygon(&backCapHull, 0.0f); // Added radius parameter
+  // Create cap polygons with zero radius to ensure precise collision
+  b2Polygon frontCap = b2MakePolygon(&frontCapHull, 0.0f);
+  b2Polygon backCap = b2MakePolygon(&backCapHull, 0.0f);
 
+  // Create shapes for caps
+  b2ShapeId frontCapShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &frontCap);
   b2ShapeId backCapShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &backCap);
-  if (!b2Shape_IsValid(backCapShapeId)) {
-    std::cerr << "Failed to create back cap shape.\n";
+
+  // For car collision we increase the restitution and friction slightly
+  if (categoryBits == CATEGORY_CAR) {
+    shapeDef.friction = 0.4f;        // More friction for better grip
+    shapeDef.restitution = 0.2f;     // Some bounce, but not too much
+  }
+}
+
+b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
+  uint16_t categoryBits, uint16_t maskBits,
+  CollisionType collisionType,
+  float density, float friction) {
+
+  if (!b2Body_IsValid(bodyId)) return b2_nullShapeId;
+
+  b2ShapeDef shapeDef = b2DefaultShapeDef();
+
+  // Configure physics based on collision type
+  switch (collisionType) {
+  case CollisionType::HAZARD:
+    shapeDef.isSensor = true;
+    shapeDef.density = 0.0f;
+    shapeDef.friction = 0.0f;
+    break;
+
+  case CollisionType::PUSHABLE:
+    shapeDef.density = 0.2f;
+    shapeDef.friction = 0.4f;
+    shapeDef.restitution = 0.2f;
+    break;
+
+  default:  // DEFAULT type
+    shapeDef.density = density;
+    shapeDef.friction = friction;
+    shapeDef.restitution = 0.1f;
+    break;
   }
 
-  // Set damping for the car body
-  b2Body_SetLinearDamping(bodyId, 0.5f);
-  b2Body_SetAngularDamping(bodyId, 1.0f);
+  // Set collision filtering
+  shapeDef.filter.categoryBits = categoryBits;
+  shapeDef.filter.maskBits = maskBits;
+
+  // Create circle shape
+  b2Circle circle;
+  circle.radius = radius;
+  circle.center = b2Vec2_zero; // Use zero vector instead of point member
+
+  // Create and return the shape
+  b2ShapeId shapeId = b2CreateCircleShape(bodyId, &shapeDef, &circle);
+  if (!b2Shape_IsValid(shapeId)) {
+    std::cerr << "Failed to create circle shape.\n";
+  }
+  return shapeId;
 }
 
 void* PhysicsSystem::enqueueTask(b2TaskCallback* task, int32_t itemCount,

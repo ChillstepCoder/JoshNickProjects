@@ -80,6 +80,10 @@ namespace JAGEngine {
   void SpriteBatch::init() {
     createVertexArray();
     createWhiteTexture();
+
+    // Enable blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   }
 
   void SpriteBatch::begin(GlyphSortType sortType /*GlyphSortType::TEXTURE*/ ) {
@@ -121,6 +125,10 @@ namespace JAGEngine {
   }
 
   void SpriteBatch::renderBatch() {
+    // Make sure blending is enabled
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glBindVertexArray(_vao);
     for (int i = 0; i < _renderBatches.size(); i++) {
       // Use white texture for texture ID 0

@@ -248,16 +248,65 @@ void LevelRenderer::renderNodes(const glm::mat4& cameraMatrix, SplineTrack* trac
 
 void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* objectManager) {
   if (!objectManager) return;
-
   m_textureProgram.use();
   glUniformMatrix4fv(m_textureProgram.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
-  m_spriteBatch.begin();
+  m_spriteBatch.begin(JAGEngine::GlyphSortType::BACK_TO_FRONT);
 
-  // Draw placed objects
+  // Draw placed objects and cars
   for (const auto& obj : objectManager->getPlacedObjects()) {
     const auto& texture = obj->getTexture();
     float baseWidth = texture.width * obj->getScale().x;
     float baseHeight = texture.height * obj->getScale().y;
+
+    float depth;
+    std::string name = obj->getDisplayName();
+    if (name.find("tree") != std::string::npos) {
+      depth = 0.0f;       // Trees on top
+    }
+    else if (name.find("pothole") != std::string::npos) {
+      depth = 0.7f;       // Potholes on bottom
+    }
+    else if (name.find("cone") != std::string::npos) {
+      depth = 0.3f;       // Cones above potholes
+    }
+    else if (name.find("car") != std::string::npos) {
+      depth = 0.5f;       // Cars below trees, above cones
+    }
+    else {
+      depth = 0.5f;       // Default depth
+    }
+
+    // Draw the opaque cars
+    for (const auto* car : m_cars) {
+      if (!car) continue;
+
+      b2BodyId bodyId = car->getDebugInfo().bodyId;
+      if (b2Body_IsValid(bodyId)) {
+        b2Vec2 position = b2Body_GetPosition(bodyId);
+        float angle = b2Rot_GetAngle(b2Body_GetRotation(bodyId));
+
+        float carWidth = 20.0f;
+        float carHeight = 10.0f;
+
+        glm::vec4 destRect(
+          position.x - carWidth / 2.0f,
+          position.y - carHeight / 2.0f,
+          carWidth,
+          carHeight
+        );
+
+        // Draw car at full opacity between trees and potholes
+        JAGEngine::ColorRGBA8 color = car->getColor();
+        color.a = 255;  // Full opacity
+
+        m_spriteBatch.draw(destRect,
+          glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+          m_carTexture,
+          0.4f,        // Depth between trees (0.0) and potholes (0.7)
+          color,
+          angle);
+      }
+    }
 
     glm::vec4 destRect(
       obj->getPosition().x - baseWidth * 0.5f,
@@ -273,11 +322,12 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
     m_spriteBatch.draw(destRect,
       glm::vec4(0, 0, 1, 1),
       texture.id,
-      obj->getRotation(),
-      color);
+      depth,
+      color,
+      obj->getRotation());
   }
 
-  // Draw preview objects (both placement and dragging)
+  // Same preview logic as before, with corrected depths
   if ((m_objectPlacementMode && m_selectedTemplateIndex >= 0) || m_showObjectPreview) {
     const PlaceableObject* previewObj = m_showObjectPreview ?
       m_previewObject :
@@ -287,6 +337,18 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
       const auto& texture = previewObj->getTexture();
       float baseWidth = texture.width * previewObj->getScale().x;
       float baseHeight = texture.height * previewObj->getScale().y;
+
+      float previewDepth;
+      std::string name = previewObj->getDisplayName();
+      if (name.find("tree") != std::string::npos) {
+        previewDepth = 1.0f;
+      }
+      else if (name.find("car") != std::string::npos) {
+        previewDepth = 0.8f;
+      }
+      else {
+        previewDepth = 0.5f;
+      }
 
       glm::vec4 destRect(
         m_previewPosition.x - baseWidth * 0.5f,
@@ -303,8 +365,9 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
       m_spriteBatch.draw(destRect,
         glm::vec4(0, 0, 1, 1),
         texture.id,
-        previewObj->getRotation(),
-        previewColor);
+        previewDepth,
+        previewColor,
+        previewObj->getRotation());
     }
   }
 
@@ -486,13 +549,15 @@ void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId worldI
 
       b2BodyId bodyId = b2CreateBody(worldId, &bodyDef);
 
-      // Create the shape
+      // Update the barrier shape definition
       b2ShapeDef shapeDef = b2DefaultShapeDef();
       shapeDef.friction = 0.1f;
       shapeDef.restitution = 0.0f;
       shapeDef.density = 1.0f;
-      shapeDef.filter.categoryBits = 0x0002;
-      shapeDef.filter.maskBits = 0x0001;
+      shapeDef.filter.categoryBits = PhysicsSystem::CATEGORY_BARRIER;
+      // Make barriers collide with cars AND pushable objects
+      shapeDef.filter.maskBits = PhysicsSystem::CATEGORY_CAR |
+        PhysicsSystem::CATEGORY_PUSHABLE;
 
       // Create box using the actual edge length plus overlap
       b2Polygon box = b2MakeBox(edgeLength * 0.5f * OVERLAP_FACTOR, BARRIER_THICKNESS * 0.5f);

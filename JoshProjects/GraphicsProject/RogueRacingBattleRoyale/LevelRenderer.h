@@ -9,6 +9,7 @@
 #include "RoadMeshGenerator.h"
 #include <glm/glm.hpp>
 #include <Box2D/box2d.h>
+#include "Car.h"
 
 class LevelRenderer {
 public:
@@ -65,7 +66,14 @@ public:
     m_showPreviewNode = show;
   }
 
-  void setObjectPlacementMode(bool mode, int templateIndex) {
+  void setObjectPlacementMode(bool mode, int templateIndex, bool testMode) {
+    // Disable object placement preview in test mode
+    if (testMode) {
+      m_objectPlacementMode = false;
+      m_selectedTemplateIndex = -1;
+      return;
+    }
+
     m_objectPlacementMode = mode;
     m_selectedTemplateIndex = templateIndex;
   }
@@ -73,10 +81,20 @@ public:
   void setPreviewPosition(const glm::vec2& pos) {
     m_previewPosition = pos;
   }
+  void setCars(const std::vector<std::unique_ptr<Car>>& cars) {
+    m_cars.clear();
+    for (const auto& car : cars) {
+      m_cars.push_back(car.get());
+    }
+  }
+  void setCarTexture(GLuint texture) { m_carTexture = texture; }
 
   void setShowStartPositions(bool show) { m_showStartPositions = show; }
+
   bool getShowStartPositions() const { return m_showStartPositions; }
   JAGEngine::GLSLProgram& getTextureProgram() { return m_textureProgram; }
+
+  void clearCars() { m_cars.clear(); }
 
 
 private:
@@ -159,6 +177,9 @@ private:
   PlaceableObject* m_previewObject = nullptr;
 
   bool m_showStartPositions = true;
+
+  std::vector<Car*> m_cars;  // Non-owning pointers to cars
+  GLuint m_carTexture = 0;
 
 
 };

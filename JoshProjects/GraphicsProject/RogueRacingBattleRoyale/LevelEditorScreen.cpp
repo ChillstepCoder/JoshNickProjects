@@ -43,7 +43,8 @@ void LevelEditorScreen::onEntry() {
   m_spriteBatch.init();
 
   // Initialize object manager
-  m_objectManager = std::make_unique<ObjectManager>(m_track.get());
+  m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
+  m_objectManager->createDefaultTemplates();
 
   // Initialize background quad and meshes
   m_levelRenderer->updateRoadMesh(m_track.get());
@@ -136,9 +137,11 @@ void LevelEditorScreen::draw() {
     m_levelRenderer->setPreviewNode(glm::vec2(0.0f), false);
   }
 
-  // Add these lines for object placement preview
-  m_levelRenderer->setObjectPlacementMode(m_objectPlacementMode, m_selectedTemplateIndex);
-  if (m_objectPlacementMode) {
+  // Object placement preview
+  m_levelRenderer->setObjectPlacementMode(m_objectPlacementMode,
+    m_selectedTemplateIndex,
+    m_testMode);  // Pass test mode state
+  if (m_objectPlacementMode && !m_testMode) {  // Only show preview if not in test mode
     glm::vec2 mousePos = m_camera.convertScreenToWorld(
       m_game->getInputManager().getMouseCoords());
     m_levelRenderer->setPreviewPosition(mousePos);
@@ -929,7 +932,6 @@ void LevelEditorScreen::initTestMode() {
   // Store editor camera state before switching
   m_editorCameraPos = m_camera.getPosition();
   m_editorCameraScale = m_camera.getScale();
-
   m_testMode = true;
 
   // Initialize debug drawer
@@ -940,9 +942,47 @@ void LevelEditorScreen::initTestMode() {
   m_physicsSystem = std::make_unique<PhysicsSystem>();
   m_physicsSystem->init(0.0f, 0.0f);
 
+  // Save object placement state before entering test mode
+  m_savedObjectPlacementMode = m_objectPlacementMode;
+  m_savedTemplateIndex = m_selectedTemplateIndex;
+
+  // Disable object placement mode
+  m_objectPlacementMode = false;
+  m_selectedTemplateIndex = -1;
+
+  m_testMode = true;
+
   // Create barrier collisions with physics world
   if (m_physicsSystem) {
     m_levelRenderer->createBarrierCollisions(m_track.get(), m_physicsSystem->getWorld());
+  }
+
+  // Create physics bodies for all existing objects
+  if (m_objectManager) {
+    const auto& existingObjects = m_objectManager->getPlacedObjects();
+    const auto& existingTemplates = m_objectManager->getObjectTemplates();
+
+    // Create a new object manager with the physics system
+    auto newManager = std::make_unique<ObjectManager>(m_track.get(), m_physicsSystem.get());
+
+    // Copy templates first
+    for (const auto& tmpl : existingTemplates) {
+      newManager->addTemplate(std::make_unique<PlaceableObject>(*tmpl));
+    }
+
+    // Transfer existing objects
+    for (const auto& obj : existingObjects) {
+      size_t templateIndex = 0;
+      for (size_t i = 0; i < existingTemplates.size(); i++) {
+        if (existingTemplates[i]->getDisplayName() == obj->getDisplayName()) {
+          templateIndex = i;
+          break;
+        }
+      }
+      newManager->addObject(templateIndex, obj->getPosition());
+    }
+
+    m_objectManager = std::move(newManager);
   }
 
   // Load car texture
@@ -951,7 +991,6 @@ void LevelEditorScreen::initTestMode() {
   // Generate rainbow colors for cars
   int numCars = startPositions.size();
   std::vector<JAGEngine::ColorRGBA8> carColors(numCars);
-
   for (int i = 0; i < numCars; i++) {
     // Convert index to hue (0 to 1)
     float hue = float(i) / float(numCars);
@@ -964,7 +1003,6 @@ void LevelEditorScreen::initTestMode() {
     float m = value - c;
 
     float r = 0, g = 0, b = 0;
-
     if (hue < 1.0f / 6.0f) { r = c; g = x; b = 0; }
     else if (hue < 2.0f / 6.0f) { r = x; g = c; b = 0; }
     else if (hue < 3.0f / 6.0f) { r = 0; g = c; b = x; }
@@ -972,7 +1010,6 @@ void LevelEditorScreen::initTestMode() {
     else if (hue < 5.0f / 6.0f) { r = x; g = 0; b = c; }
     else { r = c; g = 0; b = x; }
 
-    // Convert to 8-bit color values
     carColors[i] = JAGEngine::ColorRGBA8(
       uint8_t((r + m) * 255),
       uint8_t((g + m) * 255),
@@ -985,13 +1022,31 @@ void LevelEditorScreen::initTestMode() {
   for (size_t i = 0; i < startPositions.size(); i++) {
     const auto& pos = startPositions[i];
     b2BodyId carBody = m_physicsSystem->createDynamicBody(pos.position.x, pos.position.y);
-    m_physicsSystem->createPillShape(carBody, 15.0f, 15.0f);
 
+    // Cars should collide with everything using the combined mask
+    uint16_t carCategory = PhysicsSystem::CATEGORY_CAR;
+    uint16_t carMask = PhysicsSystem::MASK_CAR;
+
+    m_physicsSystem->createPillShape(carBody, 15.0f, 15.0f,
+      carCategory, carMask, PhysicsSystem::CollisionType::DEFAULT);
+
+    // Adjusted physics properties for better car-to-car collisions
+    b2Body_SetLinearDamping(carBody, 0.8f);     // Increased for more stability
+    b2Body_SetAngularDamping(carBody, 3.0f);    // Increased to prevent excessive spinning
+
+    // Create mass data with adjusted properties
+    b2MassData massData;
+    massData.mass = 15.0f;
+    massData.center = b2Vec2_zero;
+    massData.rotationalInertia = 2.5f;  // Slightly increased for more stability
+    b2Body_SetMassData(carBody, massData);
+
+    // Rest of car setup remains the same
     auto car = std::make_unique<Car>(carBody);
     car->setTrack(m_track.get());
     car->resetPosition({ pos.position.x, pos.position.y }, pos.angle);
     car->setProperties(Car::CarProperties());
-    car->setColor(carColors[i]);  // Set the rainbow color
+    car->setColor(carColors[i]);
 
     m_testCars.push_back(std::move(car));
 
@@ -1003,6 +1058,9 @@ void LevelEditorScreen::initTestMode() {
         i == 0
       });
   }
+
+  m_levelRenderer->setCarTexture(m_carTexture);
+  m_levelRenderer->setCars(m_testCars);
 
   m_camera.setScale(m_testCameraScale);
 }
@@ -1018,7 +1076,7 @@ void LevelEditorScreen::drawTestMode() {
 
   m_spriteBatch.begin();
 
-  // Draw all cars
+  // Draw all cars with transparency
   for (const auto& car : m_testCars) {
     b2BodyId bodyId = car->getDebugInfo().bodyId;
 
@@ -1038,9 +1096,11 @@ void LevelEditorScreen::drawTestMode() {
 
       glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
 
-      // Make sure angle is in radians - Box2D uses radians
-      // and pass it directly to the sprite batch
-      m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, car->getColor(), angle);
+      // Get car's color and make it semi-transparent
+      JAGEngine::ColorRGBA8 color = car->getColor();
+      color.a = 105; // 105 of 255
+
+      m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, color, angle);
     }
   }
 
@@ -1059,7 +1119,10 @@ void LevelEditorScreen::drawTestMode() {
     }
   }
 
-  drawCarTrackingDebug();
+  // Only draw tracking points if enabled
+  if (m_showTrackingPoints) {
+    drawCarTrackingDebug();
+  }
 }
 
 void LevelEditorScreen::drawTestModeUI() {
@@ -1074,14 +1137,21 @@ void LevelEditorScreen::drawTestModeUI() {
     cleanupTestMode();
   }
 
-  // Add debug draw toggle
+  // Debug visualization toggles
   ImGui::Separator();
+  ImGui::TextColored(ImVec4(1, 1, 0, 1), "Debug Visualization");
+
   ImGui::Checkbox("Show Collision Shapes", &m_showDebugDraw);
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Toggle visualization of physics collision shapes");
   }
 
-  // Existing camera controls
+  ImGui::Checkbox("Show Track Points", &m_showTrackingPoints);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Toggle car position and lookahead points");
+  }
+
+  // Camera controls
   ImGui::Separator();
   ImGui::SliderFloat("Look Ahead Distance", &m_lookAheadDistance, 50.0f, 300.0f);
   ImGui::SliderFloat("Min Screen Edge Distance", &m_minCarScreenDistance, 50.0f, 200.0f);
@@ -1090,7 +1160,7 @@ void LevelEditorScreen::drawTestModeUI() {
     m_camera.setScale(m_testCameraScale);
   }
 
-  // Add wheel state information for player car
+  // Wheel state information for player car
   if (ImGui::CollapsingHeader("Wheel States", ImGuiTreeNodeFlags_DefaultOpen)) {
     const auto& wheelStates = m_testCars[0]->getWheelStates();
     const char* wheelNames[] = { "Front Left", "Front Right", "Back Left", "Back Right" };
@@ -1129,6 +1199,9 @@ void LevelEditorScreen::drawTestModeUI() {
 }
 
 void LevelEditorScreen::cleanupTestMode() {
+  m_levelRenderer->clearCars();
+  m_objectManager->clearCars();
+
   // Cleanup barrier collisions
   if (m_physicsSystem) {
     m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
@@ -1153,6 +1226,37 @@ void LevelEditorScreen::cleanupTestMode() {
   // Clean up debug drawer
   if (m_debugDraw) {
     m_debugDraw.reset();
+  }
+
+  // Restore object placement state
+  m_objectPlacementMode = m_savedObjectPlacementMode;
+  m_selectedTemplateIndex = m_savedTemplateIndex;
+
+  // Create a new object manager without physics
+  if (m_objectManager) {
+    const auto& existingObjects = m_objectManager->getPlacedObjects();
+    const auto& existingTemplates = m_objectManager->getObjectTemplates();
+
+    auto newManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
+
+    // Copy templates
+    for (const auto& tmpl : existingTemplates) {
+      newManager->addTemplate(std::make_unique<PlaceableObject>(*tmpl));
+    }
+
+    // Copy objects with their current positions
+    for (const auto& obj : existingObjects) {
+      size_t templateIndex = 0;
+      for (size_t i = 0; i < existingTemplates.size(); i++) {
+        if (existingTemplates[i]->getDisplayName() == obj->getDisplayName()) {
+          templateIndex = i;
+          break;
+        }
+      }
+      newManager->addObject(templateIndex, obj->getPosition());
+    }
+
+    m_objectManager = std::move(newManager);
   }
 
   m_testMode = false;
@@ -1231,9 +1335,14 @@ void LevelEditorScreen::updateTestMode() {
     return;
   }
 
-  // Existing physics update
+  // Update physics
   const float timeStep = 1.0f / 60.0f;
   m_physicsSystem->update(timeStep);
+
+  // Update object positions
+  if (m_objectManager) {
+    m_objectManager->update();
+  }
 
   // Update cars
   if (!m_testCars.empty()) {
@@ -1294,7 +1403,7 @@ void LevelEditorScreen::drawCarTrackingDebug() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  m_spriteBatch.begin(JAGEngine::GlyphSortType::BACK_TO_FRONT);
+  m_spriteBatch.begin(JAGEngine::GlyphSortType::FRONT_TO_BACK);
 
   // Draw points for each car
   for (size_t i = 0; i < m_carTrackingInfo.size() && i < m_testCars.size(); i++) {
