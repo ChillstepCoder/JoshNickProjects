@@ -69,5 +69,4 @@ private:
 
     BlockMeshManager m_blockMeshManager;
     BlockManager* m_blockManager;
-
 };

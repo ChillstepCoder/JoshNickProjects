@@ -4,6 +4,54 @@
 #include "PerlinNoise.hpp"
 #include <iostream>
 
+
+void Chunk::init() {
+    m_spriteBatch.init();
+    std::cout << "Chunk initialized at position: " << m_worldPosition.x
+        << ", " << m_worldPosition.y << std::endl;
+    m_isLoaded = true;
+}
+void Chunk::buildChunkMesh() {
+    m_spriteBatch.begin();
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            const Block& block = blocks[x][y];
+            if (!block.isEmpty()) {
+                glm::vec4 destRect = block.getDestRect();
+                glm::vec4 uvRect = block.getUVRect();
+                GLuint textureID = block.getTextureID();
+                Bengine::ColorRGBA8 color = block.getColor();
+                m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+            }
+        }
+    }
+    m_spriteBatch.end();
+}
+
+
+void Chunk::render() {
+    m_spriteBatch.renderBatch();
+}
+
+void Chunk::destroy() {
+    // Destroy physics bodies for all blocks in the chunk
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            Block& block = blocks[x][y];
+            if (!block.isEmpty()) {
+                b2DestroyBody(block.getID());
+            }
+            block.clearID();
+        }
+    }
+
+    // Clear the sprite batch
+    m_spriteBatch.dispose();
+
+    m_isLoaded = false;
+}
+
+
 BlockMeshManager::BlockMeshManager() {
 
 }
@@ -13,85 +61,47 @@ BlockMeshManager::~BlockMeshManager() {
 }
 
 void BlockMeshManager::init() {
-    m_spriteBatch.init();
-}
-void BlockMeshManager::buildMesh(const std::vector<std::vector<Chunk>>& chunks) {
-    m_spriteBatch.begin();
-    for (const auto& chunkRow : chunks) {
-        for (const auto& chunk : chunkRow) {
-            for (int x = 0; x < CHUNK_WIDTH; ++x) {
-                for (int y = 0; y < CHUNK_WIDTH; ++y) {
-                    const Block& block = chunk.blocks[x][y];
-                    if (!block.isEmpty()) {
-                        glm::vec4 destRect = block.getDestRect();
-                        glm::vec4 uvRect = block.getUVRect();
-                        GLuint textureID = block.getTextureID();
-                        Bengine::ColorRGBA8 color = block.getColor();
 
-                        m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
-                    }
+}
+
+void BlockMeshManager::renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager) {
+    // Only render chunks that are visible
+    for (auto& chunkRow : chunks) {
+        for (auto& chunk : chunkRow) {
+            // Check if the chunk is visible (can be based on the camera's frustum or player position)
+            // TODO: Only render chunks that are actually on screen (Check if their box intersects camera box)
+            if (chunk.isLoaded()) {
+                if (!chunk.m_spriteBatch.isInitialized()) {
+                    std::cerr << "Warning: SpriteBatch not initialized for chunk at "
+                              << chunk.getWorldPosition().x << ", "
+                              << chunk.getWorldPosition().y << std::endl;
+                    chunk.init(); // Initialize the SpriteBatch if it's not already
                 }
+                chunk.render();
             }
         }
     }
-    m_spriteBatch.end();
-}
-void BlockMeshManager::renderMesh() {
-    m_spriteBatch.renderBatch();
 }
 
-void BlockManager::initializeChunks() {
-    // Resize the m_chunks vector to the correct size
+
+void BlockManager::initializeChunks(glm::vec2 playerPosition) {
+
     m_chunks.resize(WORLD_WIDTH_CHUNKS);
-    for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
-        m_chunks[x].resize(WORLD_HEIGHT_CHUNKS);
+    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        m_chunks[chunkX].resize(WORLD_HEIGHT_CHUNKS);
+        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
+            Chunk& chunk = m_chunks[chunkX][chunkY];
+            chunk.m_worldPosition = glm::vec2(chunkX * CHUNK_WIDTH, chunkY * CHUNK_WIDTH);
+        }
     }
-
-    // Create Perlin noise instance with random seed
-    siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
-
-    // Parameters for terrain generation
-    const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
-    const float AMPLITUDE = 10.0f;    // Controls the height variation
-    const float BASE_SURFACE_Y = 384.0f;    // Base height of the surface (6 chunks of ground, 2 chunks of sky)
-
-    Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
 
     // Generate terrain for each chunk
     for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
         for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
             Chunk& chunk = m_chunks[chunkX][chunkY];
-            chunk.m_worldPosition = glm::vec2(chunkX * CHUNK_WIDTH, chunkY * CHUNK_WIDTH);
 
-            for (int x = 0; x < CHUNK_WIDTH; ++x) {
-                int worldX = chunkX * CHUNK_WIDTH + x;
-                float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
-                int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
-
-                const float DIRT_BOTTOM = height - 10;
-
-                for (int y = 0; y < CHUNK_WIDTH; ++y) {
-                    int worldY = chunkY * CHUNK_WIDTH + y;
-                    glm::vec2 position(worldX, worldY);
-
-                    if (worldY == height) { // Create surface (grass) blocks
-                        Block surfaceBlock;
-                        surfaceBlock.init(m_world, position,
-                            Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor);
-                        chunk.blocks[x][y] = surfaceBlock;
-                    }
-                    else if (worldY < height && worldY > DIRT_BOTTOM) { // Fill blocks below surface with dirt
-                        Block dirtBlock;
-                        dirtBlock.init(m_world, position,
-                            Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor);
-                        chunk.blocks[x][y] = dirtBlock;
-                    } else if (worldY <= DIRT_BOTTOM) { // Fill deeper blocks with stone
-                        Block stoneBlock;
-                        stoneBlock.init(m_world, position,
-                            Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor);
-                        chunk.blocks[x][y] = stoneBlock;
-                    }
-                }
+            if (!isChunkFarAway(playerPosition, chunk.getWorldPosition())) {
+                loadChunk(chunkX, chunkY);
             }
         }
     }
@@ -126,20 +136,24 @@ BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
 
 void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     // check if the block exists
-    if (blockHandle.block != nullptr) {
+    if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
         // Destroy the block (remove physics body and reset visual state)
         b2DestroyBody(blockHandle.block->getID());
-        blockHandle.block->clearID();
         // Now that the block is destroyed, we can remove it from the chunk
         // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
+
+        chunk.buildChunkMesh();
     }
 }
 
 void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {
     // Get the block at the given position
-    BlockHandle blockHandle = getBlockAtPosition(position);
+    float realpositionX = position.x + 0.5f;
+    float realPositionY = position.y + 0.5f;
+
+    BlockHandle blockHandle = getBlockAtPosition(glm::vec2(realpositionX,realPositionY));
 
     // Check if the block exists (not nullptr)
     if (blockHandle.block != nullptr) {
@@ -157,25 +171,27 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::ve
 inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Block& block) {
     // Check if the position is within the block's bounding box
     glm::vec2 blockPos = block.getDestRect();
-    blockPos.x = blockPos.x + 0.5;
-    blockPos.y = blockPos.y + 0.5;
+    blockPos.x = blockPos.x ;
+    blockPos.y = blockPos.y ;
     glm::vec2 blockSize = block.getDimensions();
     return (position.x >= blockPos.x - blockSize.x / 2 && position.x <= blockPos.x + blockSize.x / 2 &&
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
 }
 
 void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
+
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
     int playerChunkY = static_cast<int>(playerPos.y) / CHUNK_WIDTH;
 
-    // Loop through the chunks within the radius and load them
-    for (int dx = -loadRadius; dx <= loadRadius; ++dx) {
-        for (int dy = -loadRadius; dy <= loadRadius; ++dy) {
-            int chunkX = playerChunkX + dx;
-            int chunkY = playerChunkY + dy;
-            if (!isChunkLoaded(chunkX, chunkY)) {
-                loadChunk(chunkX, chunkY);
+    // Loop through all chunks and load ones that are nearby
+    for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
+        for (int y = 0; y < WORLD_HEIGHT_CHUNKS; ++y) {
+            if (!isChunkLoaded(x, y)) {
+                glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
+                if (!isChunkFarAway(playerPos, chunkPos)) {
+                    loadChunk(x, y);
+                }
             }
         }
     }
@@ -183,30 +199,71 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
 
 bool BlockManager::isChunkLoaded(int x, int y) {
     // Prevent out-of-bounds access
-    if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
-        return false; // Out of bounds
-    }
+    assert(x >= 0 && y >= 0 && x < WORLD_WIDTH_CHUNKS && y < WORLD_HEIGHT_CHUNKS);
 
     // If the chunk already exists and has been initialized, return true
-    if (m_chunks[x][y].blocks[0][0].getTextureID() != 0) {
-        return true;
-    }
-
-    return false;
-
+    return m_chunks[x][y].isLoaded();
 }
 
-void BlockManager::loadChunk(int x, int y) {
-    if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
-        return; // Out of bounds
+void BlockManager::loadChunk(int chunkX, int chunkY) {
+
+    assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
+    
+    // Create Perlin noise instance with random seed
+    static siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
+
+    // Parameters for terrain generation
+    const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
+    const float AMPLITUDE = 10.0f;    // Controls the height variation
+    const float BASE_SURFACE_Y = 384.0f;    // Base height of the surface (6 chunks of ground, 2 chunks of sky)
+
+    Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
+    
+    Chunk& chunk = m_chunks[chunkX][chunkY];
+
+    chunk.init(); // Explicitly call init for each chunk
+
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        int worldX = chunkX * CHUNK_WIDTH + x;
+        float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
+        int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
+
+        const float DIRT_BOTTOM = height - 10;
+
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            int worldY = chunkY * CHUNK_WIDTH + y;
+            glm::vec2 position(worldX, worldY);
+
+            if (worldY == height) { // Create surface (grass) blocks
+                Block surfaceBlock;
+                surfaceBlock.init(m_world, position,
+                    Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor);
+                chunk.blocks[x][y] = surfaceBlock;
+            }
+            else if (worldY < height && worldY > DIRT_BOTTOM) { // Fill blocks below surface with dirt
+                Block dirtBlock;
+                dirtBlock.init(m_world, position,
+                    Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor);
+                chunk.blocks[x][y] = dirtBlock;
+            }
+            else if (worldY <= DIRT_BOTTOM) { // Fill deeper blocks with stone
+                Block stoneBlock;
+                stoneBlock.init(m_world, position,
+                    Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor);
+                chunk.blocks[x][y] = stoneBlock;
+            }
+        }
     }
+
+    // Build mesh
+    chunk.buildChunkMesh();
 }
 
 bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
 
-    const float farthestChunkAllowed = 10.0f;
+    const float farthestChunkAllowed = 6.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
 
@@ -221,7 +278,7 @@ void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
 
     // Loop through all loaded chunks and unload ones that are far away
     for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
-        for (int y = 0; y <= WORLD_WIDTH_CHUNKS; ++y) {
+        for (int y = 0; y < WORLD_HEIGHT_CHUNKS; ++y) {
             if (isChunkLoaded(x, y)) {
                 glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
                 if (isChunkFarAway(playerPos, chunkPos)) {
@@ -233,11 +290,9 @@ void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
 }
 
 void BlockManager::unloadChunk(int x, int y) {
-    if (x < 0 || y < 0 || x >= WORLD_WIDTH_CHUNKS || y >= WORLD_HEIGHT_CHUNKS) {
-        return; // Out of bounds
-    }
+    assert(x >= 0 && y >= 0 && x < WORLD_WIDTH_CHUNKS && y < WORLD_HEIGHT_CHUNKS);
 
-    m_chunks[x][y] = Chunk(); // Reset chunk to default
+    m_chunks[x][y].destroy(); // Clean up resources
 }
 
 std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {

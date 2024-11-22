@@ -29,8 +29,7 @@ public:
     const Bengine::ColorRGBA8 getColor() const { return m_color; }
 
 private:
-    b2BodyId m_ID;
-
+    b2BodyId m_ID = b2_nullBodyId;
     glm::vec2 m_dimensions;
     glm::vec4 m_destRect;
     glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);

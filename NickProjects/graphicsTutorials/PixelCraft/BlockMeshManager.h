@@ -7,19 +7,27 @@
 #include "Block.h"
 
 class DebugDraw;
+class BlockManager;
 
 const int CHUNK_WIDTH = 64;
 
 class Chunk {
 public:
+    void init();
+    void buildChunkMesh() ;
+    void render();
+    void destroy();
 
-    Block blocks[CHUNK_WIDTH][CHUNK_WIDTH];
+    bool isLoaded() const { return m_isLoaded; }
     glm::vec2 getWorldPosition() {
         return m_worldPosition;
     }
 
-    glm::vec2 m_worldPosition;
+    Block blocks[CHUNK_WIDTH][CHUNK_WIDTH];
 
+    glm::vec2 m_worldPosition;
+    Bengine::SpriteBatch m_spriteBatch;
+    bool m_isLoaded = false;
 };
 
 struct BlockHandle {
@@ -35,38 +43,26 @@ public:
     ~BlockMeshManager();
 
     void init();
-    void buildMesh(const std::vector<std::vector<Chunk>>& chunks); // Accept blocks from BlockManager
-    void renderMesh();
+    void renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager);
 
 private:
-    Bengine::SpriteBatch m_spriteBatch;
 };
 
-const int WORLD_WIDTH_CHUNKS = 16;
-const int WORLD_HEIGHT_CHUNKS = 8;
+const int WORLD_WIDTH_CHUNKS = 32;
+const int WORLD_HEIGHT_CHUNKS = 16;
 const int loadRadius = 5;
 
 class BlockManager {
 public:
-    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId) : m_MeshManager(meshManager), m_world(worldId) {}
-
-    //void addBlock(const Block& block) {
-    //    m_blocks.push_back(block);
-    //}
-
-    void rebuildMesh() {
-        m_MeshManager.buildMesh(m_chunks);
-    }
+    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId)
+        : m_MeshManager(meshManager), m_world(worldId){}
+    
 
     void renderBlocks() {
-        m_MeshManager.renderMesh();
+        m_MeshManager.renderMesh(m_chunks, *this);
     }
 
-    //std::vector<Block>& getBlocks() {
-    //    return m_blocks;
-    //}
-
-    void initializeChunks();
+    void initializeChunks(glm::vec2 playerPosition);
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
