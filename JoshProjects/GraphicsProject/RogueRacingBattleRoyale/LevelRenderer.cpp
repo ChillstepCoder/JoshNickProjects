@@ -431,22 +431,34 @@ void LevelRenderer::drawRoadEdges(SplineTrack* track) {
 }
 
 void LevelRenderer::initBackgroundQuad() {
-  RoadVertex v1, v2, v3, v4;
-  // Use even larger size to ensure coverage
-  float size = 20000.0f;  // Increased size
+  // Create vertices first
+  RoadMeshGenerator::RoadVertex v1, v2, v3, v4;
+  float size = 20000.0f;
+
   v1.position = glm::vec2(-size, -size);
   v2.position = glm::vec2(size, -size);
   v3.position = glm::vec2(size, size);
   v4.position = glm::vec2(-size, size);
 
-  // UV coordinates for tiling
   v1.uv = glm::vec2(0.0f, 0.0f);
   v2.uv = glm::vec2(1.0f, 0.0f);
   v3.uv = glm::vec2(1.0f, 1.0f);
   v4.uv = glm::vec2(0.0f, 1.0f);
 
-  m_backgroundQuad.vertices = { v1, v2, v3, v4 };
-  m_backgroundQuad.indices = { 0, 1, 2, 2, 3, 0 };
+  v1.distanceAlong = v2.distanceAlong = v3.distanceAlong = v4.distanceAlong = 0.0f;
+  v1.depth = v2.depth = v3.depth = v4.depth = 0.0f;
+
+  // Then create vectors
+  std::vector<RoadMeshGenerator::RoadVertex> vertices;
+  vertices.push_back(v1);
+  vertices.push_back(v2);
+  vertices.push_back(v3);
+  vertices.push_back(v4);
+
+  std::vector<GLuint> indices = { 0, 1, 2, 2, 3, 0 };
+
+  m_backgroundQuad.vertices = std::move(vertices);
+  m_backgroundQuad.indices = std::move(indices);
 
   RoadMeshGenerator::createBuffers(m_backgroundQuad);
 }

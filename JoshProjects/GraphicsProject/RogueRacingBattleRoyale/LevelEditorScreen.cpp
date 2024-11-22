@@ -6,6 +6,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <SDL/SDL.h>
 #include "imgui_impls.h"
+#include <numeric>   
+#include <algorithm>
+#include <limits>   
+#include <iostream>
 
 LevelEditorScreen::LevelEditorScreen() {
 }
