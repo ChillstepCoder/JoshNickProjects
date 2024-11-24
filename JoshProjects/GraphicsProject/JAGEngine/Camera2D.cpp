@@ -5,7 +5,6 @@
 #include <iostream>
 
 namespace JAGEngine {
-
   Camera2D::Camera2D() :
     _position(0.0f, 0.0f),
     _cameraMatrix(1.0f),
@@ -22,74 +21,83 @@ namespace JAGEngine {
   void Camera2D::init(int screenWidth, int screenHeight) {
     _screenWidth = screenWidth;
     _screenHeight = screenHeight;
+
+    // Create a larger orthographic projection to handle big world coordinates
+    float aspectRatio = (float)screenWidth / (float)screenHeight;
+    float orthoWidth = ORTHO_SCALE * screenWidth;
+    float orthoHeight = orthoWidth / aspectRatio;
+
     _orthoMatrix = glm::ortho(
-      -static_cast<float>(screenWidth) / 2.0f,
-      static_cast<float>(screenWidth) / 2.0f,
-      -static_cast<float>(screenHeight) / 2.0f,
-      static_cast<float>(screenHeight) / 2.0f,
+      -orthoWidth / 2.0f,
+      orthoWidth / 2.0f,
+      -orthoHeight / 2.0f,
+      orthoHeight / 2.0f,
       -1.0f,
       1.0f
     );
+
+    // Create separate projection matrix for UI elements
+    _projectionMatrix = glm::ortho(
+      0.0f,
+      (float)screenWidth,
+      (float)screenHeight,
+      0.0f,
+      -1.0f,
+      1.0f
+    );
+
     _needsMatrixUpdate = true;
   }
 
-
   void Camera2D::update() {
     if (_needsMatrixUpdate) {
-      // Start with identity matrix
-      _cameraMatrix = glm::mat4(1.0f);
+      // Normalize position to prevent floating point precision issues
+      glm::vec2 normalizedPos = _position;
+      if (glm::length(normalizedPos) > MAX_WORLD_SIZE) {
+        normalizedPos = glm::normalize(normalizedPos) * MAX_WORLD_SIZE;
+      }
 
-      // Apply scale transformation first
-      _cameraMatrix = glm::scale(_cameraMatrix, glm::vec3(_scale, _scale, 1.0f));
+      // Create translation matrix
+      glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f),
+        glm::vec3(-normalizedPos.x, -normalizedPos.y, 0.0f));
 
-      // Then apply translation
-      _cameraMatrix = glm::translate(_cameraMatrix, glm::vec3(-_position.x, -_position.y, 0.0f));
+      // Create scale matrix
+      glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f),
+        glm::vec3(_scale, _scale, 1.0f));
 
-      // Combine with orthographic projection
-      _cameraMatrix = _orthoMatrix * _cameraMatrix;
+      // Combine matrices in correct order
+      _cameraMatrix = _orthoMatrix * scaleMatrix * translationMatrix;
 
       _needsMatrixUpdate = false;
-
-      // Debug output
-      std::cout << "Camera updated - Position: (" << _position.x << ", " << _position.y
-        << ") Scale: " << _scale << "\n";
     }
   }
 
   glm::vec2 Camera2D::convertScreenToWorld(glm::vec2 screenCoords) {
-    // Step 1: Convert screen coordinates to normalized device coordinates (-1 to 1)
-    screenCoords.x = (screenCoords.x / static_cast<float>(_screenWidth)) * 2.0f - 1.0f;
-    screenCoords.y = 1.0f - (screenCoords.y / static_cast<float>(_screenHeight)) * 2.0f;
+    // Convert screen coordinates to normalized coordinates
+    glm::vec2 normalizedCoords;
+    normalizedCoords.x = (screenCoords.x / static_cast<float>(_screenWidth)) * 2.0f - 1.0f;
+    normalizedCoords.y = 1.0f - (screenCoords.y / static_cast<float>(_screenHeight)) * 2.0f;
 
-    // Step 2: Create 4D vector for transformation
-    glm::vec4 screenPos(screenCoords.x, screenCoords.y, 0.0f, 1.0f);
+    // Convert to world coordinates
+    glm::vec4 clipCoords(normalizedCoords.x, normalizedCoords.y, 0.0f, 1.0f);
+    glm::vec4 worldCoords = glm::inverse(_cameraMatrix) * clipCoords;
 
-    // Step 3: Transform by inverse camera matrix
-    glm::vec4 worldPos = glm::inverse(_cameraMatrix) * screenPos;
-
-    // Debug output
-    std::cout << "Screen to World conversion:\n"
-      << "  Screen: (" << screenCoords.x << ", " << screenCoords.y << ")\n"
-      << "  World: (" << worldPos.x << ", " << worldPos.y << ")\n";
-
-    return glm::vec2(worldPos.x, worldPos.y);
+    return glm::vec2(worldCoords.x, worldCoords.y);
   }
 
-  //AABB test to see if box is in the camera view
   bool Camera2D::isBoxInView(const glm::vec2& position, const glm::vec2& dimensions) {
-    glm::vec2 scaledScreenDimensions = glm::vec2(_screenWidth, _screenHeight) / _scale;
+    // Scale view bounds based on current zoom
+    glm::vec2 scaledDimensions = dimensions / _scale;
+    glm::vec2 viewBounds = glm::vec2(_screenWidth, _screenHeight) * (ORTHO_SCALE / _scale);
 
-    const float MIN_DISTANCE_X = dimensions.x / 2.0f + scaledScreenDimensions.x / 2.0f;
-    const float MIN_DISTANCE_Y = dimensions.y / 2.0f + scaledScreenDimensions.y / 2.0f;
+    // Calculate distances
+    glm::vec2 centerPos = position + dimensions * 0.5f;
+    glm::vec2 distVec = centerPos - _position;
 
-    glm::vec2 centerPos = position + dimensions / 2.0f;
-    glm::vec2 centerCameraPos = _position;
-    glm::vec2 distVec = centerPos - centerCameraPos;
+    // Check if box is within view bounds
+    bool xInView = std::abs(distVec.x) < (viewBounds.x * 0.5f + scaledDimensions.x * 0.5f);
+    bool yInView = std::abs(distVec.y) < (viewBounds.y * 0.5f + scaledDimensions.y * 0.5f);
 
-    float xDepth = MIN_DISTANCE_X - std::abs(distVec.x);
-    float yDepth = MIN_DISTANCE_Y - std::abs(distVec.y);
-
-    return (xDepth > 0 && yDepth > 0);
+    return xInView && yInView;
   }
-
 }

@@ -24,11 +24,27 @@ namespace JAGEngine {
   }
 
   IMainGame::~IMainGame() {
+    signalCleanup();
     // Ensure proper cleanup
     if (m_screenList) {
       m_screenList->destroy();
       m_screenList.reset();
     }
+  }
+
+  void IMainGame::cleanup() {
+    if (m_imguiInitialized) {
+      cleanupImGui();
+    }
+
+    if (m_screenList) {
+      m_currentScreen = nullptr;
+      m_screenList->destroy();
+      m_screenList.reset();
+    }
+
+    m_window.destroy();
+    SDL_Quit();
   }
 
   void IMainGame::run() {
@@ -92,7 +108,9 @@ namespace JAGEngine {
     }
 
     // Finally, stop the game loop
+    signalCleanup();
     m_isRunning = false;
+
   }
 
   void IMainGame::onSDLEvent(SDL_Event& evnt) {

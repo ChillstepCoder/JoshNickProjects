@@ -50,7 +50,14 @@ public:
 
 private:
   b2WorldId m_worldId;
+  std::vector<b2BodyId> m_dynamicBodies;
+
   static void* enqueueTask(b2TaskCallback* task, int32_t itemCount,
     int32_t minRange, void* taskContext, void* userContext);
   static void finishTask(void* taskPtr, void* userContext);
+  void synchronizeTransforms();
+
+  float m_timeStep = 1.0f / 60.0f;  // Fixed timestep
+  float m_minTimeStep = 1.0f / 600.0f;  // Minimum allowed timestep
+  float m_maxTimeStep = 1.0f / 30.0f;
 };

@@ -1425,25 +1425,70 @@ void LevelEditorScreen::updateTestMode() {
 void LevelEditorScreen::updateTestCamera() {
   if (m_testCars.empty() || m_carTrackingInfo.empty()) return;
 
-  // Get player car's actual world position
   const Car* playerCar = m_testCars[0].get();
   b2BodyId bodyId = playerCar->getDebugInfo().bodyId;
   if (!b2Body_IsValid(bodyId)) return;
 
-  // Get actual world position of car
+  // Get car position
   b2Vec2 carPos = b2Body_GetPosition(bodyId);
   glm::vec2 carWorldPos(carPos.x, carPos.y);
 
-  // Get look-ahead point based on track spline
+  // Get lookahead point
   glm::vec2 lookAheadPoint = calculateLookAheadPoint(m_carTrackingInfo[0]);
 
-  // Camera should be EXACTLY between car world position and lookahead point!
+  // Calculate ideal target position - exactly halfway between car and lookahead
   glm::vec2 targetPos = carWorldPos + (lookAheadPoint - carWorldPos) * 0.5f;
 
-  // Update camera position directly - no screen edge adjustments needed
-  // because we're now properly centering on the car's actual position
-  m_camera.setPosition(targetPos);
+  // Get current camera position
+  glm::vec2 currentPos = m_camera.getPosition();
+
+  // Calculate distance to target
+  float distToTarget = glm::distance(currentPos, targetPos);
+
+  // Simple constant interpolation - only if we're not too far from target
+  float interpolationFactor = 0.15f;  // Fixed smoothing factor
+
+  // If we're far from target, move faster
+  if (distToTarget > 300.0f) {
+    interpolationFactor = 0.3f;
+  }
+
+  // Calculate new position
+  glm::vec2 newPos = currentPos + (targetPos - currentPos) * interpolationFactor;
+
+  // Force position to stay between car and lookahead point
+  glm::vec2 directionToLookahead = glm::normalize(lookAheadPoint - carWorldPos);
+  float distCarToLookahead = glm::distance(carWorldPos, lookAheadPoint);
+
+  // Project camera position onto line between car and lookahead
+  float projectedDist = glm::dot(newPos - carWorldPos, directionToLookahead);
+
+  // Clamp position to stay between car and lookahead
+  if (projectedDist < 0.0f) {
+    newPos = carWorldPos;
+  }
+  else if (projectedDist > distCarToLookahead) {
+    newPos = lookAheadPoint;
+  }
+
+  // Update camera position
+  m_camera.setPosition(newPos);
+
+  // Handle zoom changes from input
+  JAGEngine::InputManager& inputManager = m_game->getInputManager();
+  if (inputManager.isKeyDown(SDLK_q)) {
+    m_testCameraScale /= m_zoomFactor;
+    m_testCameraScale = glm::clamp(m_testCameraScale, m_minZoom, m_maxZoom);
+  }
+  if (inputManager.isKeyDown(SDLK_e)) {
+    m_testCameraScale *= m_zoomFactor;
+    m_testCameraScale = glm::clamp(m_testCameraScale, m_minZoom, m_maxZoom);
+  }
+
+  // Apply current test camera scale
+  m_camera.setScale(m_testCameraScale);
 }
+
 void LevelEditorScreen::drawCarTrackingDebug() {
   if (!m_testMode || m_carTrackingInfo.empty() || !m_levelRenderer) return;
 

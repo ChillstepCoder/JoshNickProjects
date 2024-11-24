@@ -28,16 +28,26 @@ namespace JAGEngine {
 
     const float getFps() const { return m_fps; }
 
+    void signalCleanup() {
+      if (!m_isCleanedUp) {
+        cleanup();
+        m_isCleanedUp = true;
+      }
+    }
+
+
   protected:
     virtual void update();
     virtual void draw();
     void onSDLEvent(SDL_Event& evnt);
     bool init();
     bool initSystems();
-    bool initImGui(); // New method
-    void cleanupImGui(); // New method
-    void beginImGuiFrame(); // New method
-    void endImGuiFrame(); // New method
+    bool initImGui();
+    void cleanupImGui();
+    void beginImGuiFrame();
+    void endImGuiFrame();
+    bool m_isCleanedUp = false;
+    void cleanup();
 
     std::unique_ptr<ScreenList> m_screenList;
     IGameScreen* m_currentScreen = nullptr;

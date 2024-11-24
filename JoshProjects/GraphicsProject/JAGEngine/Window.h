@@ -33,6 +33,17 @@ namespace JAGEngine {
     int getScreenWidth() { return m_screenWidth; }
     int getScreenHeight() { return m_screenHeight; }
 
+    void destroy() {
+      if (_glContext != nullptr) {
+        SDL_GL_DeleteContext(_glContext);
+        _glContext = nullptr;
+      }
+      if (_sdlWindow != nullptr) {
+        SDL_DestroyWindow(_sdlWindow);
+        _sdlWindow = nullptr;
+      }
+    }
+
   private:
     SDL_Window* _sdlWindow = nullptr;
     SDL_GLContext _glContext = nullptr;

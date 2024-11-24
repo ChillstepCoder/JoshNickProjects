@@ -13,22 +13,30 @@ PhysicsSystem::~PhysicsSystem() {
 }
 
 void PhysicsSystem::init(float gravityX, float gravityY) {
-  // Create the world with default settings
+  // Create world with default settings
   b2WorldDef worldDef = b2DefaultWorldDef();
   worldDef.gravity = { gravityX, gravityY };
   worldDef.enqueueTask = enqueueTask;
   worldDef.finishTask = finishTask;
   worldDef.userTaskContext = this;
+  worldDef.enableContinuous = true;
+  worldDef.restitutionThreshold = 0.5f;
+  worldDef.contactPushoutVelocity = 3.0f;
+  worldDef.enableSleep = false;  // Disable sleeping for more consistent behavior
 
   m_worldId = b2CreateWorld(&worldDef);
 }
 
 void PhysicsSystem::update(float timeStep) {
-  const int32_t velocityIterations = 8;
-  const int32_t positionIterations = 3;
+  if (!b2World_IsValid(m_worldId)) return;
 
+  // Clamp timestep to prevent extreme values
+  timeStep = std::min<float>(std::max<float>(timeStep, m_minTimeStep), m_maxTimeStep);
+
+  // Box2D now requires subStepCount
+  const int subStepCount = 1;
   if (b2World_IsValid(m_worldId)) {
-    b2World_Step(m_worldId, timeStep, velocityIterations);
+    b2World_Step(m_worldId, timeStep, subStepCount);
   }
 }
 
@@ -52,12 +60,17 @@ b2BodyId PhysicsSystem::createDynamicBody(float x, float y) {
   if (!b2World_IsValid(m_worldId)) return b2_nullBodyId;
 
   b2BodyDef bodyDef = b2DefaultBodyDef();
-  bodyDef.position = { x, y };
   bodyDef.type = b2_dynamicBody;
-  // Enable CCD/Bullet physics using the correct property name
-  bodyDef.isBullet = true;  // This is the correct property for continuous collision
+  bodyDef.position = { x, y };
+  bodyDef.linearDamping = 0.0f;
+  bodyDef.angularDamping = 0.0f;
+  bodyDef.isBullet = true;
 
-  return b2CreateBody(m_worldId, &bodyDef);
+  b2BodyId bodyId = b2CreateBody(m_worldId, &bodyDef);
+  if (b2Body_IsValid(bodyId)) {
+    m_dynamicBodies.push_back(bodyId);
+  }
+  return bodyId;
 }
 
 void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
@@ -209,4 +222,39 @@ void* PhysicsSystem::enqueueTask(b2TaskCallback* task, int32_t itemCount,
 
 void PhysicsSystem::finishTask(void* taskPtr, void* userContext) {
   // Nothing to do in single-threaded mode
+}
+
+void PhysicsSystem::synchronizeTransforms() {
+  if (!b2World_IsValid(m_worldId)) return;
+
+  // Clean up any invalid bodies
+  auto newEnd = std::remove_if(m_dynamicBodies.begin(), m_dynamicBodies.end(),
+    [](b2BodyId bodyId) { return !b2Body_IsValid(bodyId); });
+  m_dynamicBodies.erase(newEnd, m_dynamicBodies.end());
+
+  // Process each dynamic body
+  for (b2BodyId bodyId : m_dynamicBodies) {
+    b2Vec2 position = b2Body_GetPosition(bodyId);
+    const float WRAP_THRESHOLD = 1000000.0f;
+
+    bool needsWrap = false;
+    if (std::abs(position.x) > WRAP_THRESHOLD) {
+      position.x = std::copysign(10000.0f, position.x);
+      needsWrap = true;
+    }
+    if (std::abs(position.y) > WRAP_THRESHOLD) {
+      position.y = std::copysign(10000.0f, position.y);
+      needsWrap = true;
+    }
+
+    if (needsWrap) {
+      b2Rot rotation = b2Body_GetRotation(bodyId);
+      b2Vec2 linearVel = b2Body_GetLinearVelocity(bodyId);
+      float angularVel = b2Body_GetAngularVelocity(bodyId);
+
+      b2Body_SetTransform(bodyId, position, rotation);
+      b2Body_SetLinearVelocity(bodyId, linearVel);
+      b2Body_SetAngularVelocity(bodyId, angularVel);
+    }
+  }
 }

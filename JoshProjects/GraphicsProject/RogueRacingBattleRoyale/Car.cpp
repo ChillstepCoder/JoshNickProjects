@@ -23,10 +23,18 @@ void Car::update(const InputState& input) {
 
   updateWheelColliders();
 
+  // Get current state
   b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
   float currentSpeed = b2Vec2Length(currentVel);
   b2Vec2 forwardDir = getForwardVector();
   float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
+
+  // Scale forces if speed is very high to prevent instability
+  float forceScale = 1.0f;
+  const float SPEED_THRESHOLD = 1000.0f;
+  if (currentSpeed > SPEED_THRESHOLD) {
+    forceScale = SPEED_THRESHOLD / currentSpeed;
+  }
 
   // Update drift state
   if (input.braking && (input.turningLeft || input.turningRight)) {
@@ -42,6 +50,40 @@ void Car::update(const InputState& input) {
   // Map drift state directly to lateral damping: 0->0.5, 1->1.0
   m_properties.lateralDamping = m_properties.driftState * 0.5f + 0.5f;
 
+  // Handle position wrapping ourselves if needed
+  b2Vec2 position = b2Body_GetPosition(m_bodyId);
+  const float POSITION_THRESHOLD = 1000000.0f;
+  const float WRAP_DISTANCE = 10000.0f;
+
+  bool needsWrap = false;
+  if (std::abs(position.x) > POSITION_THRESHOLD) {
+    position.x = std::fmod(position.x, WRAP_DISTANCE);
+    if (position.x > WRAP_DISTANCE * 0.5f) {
+      position.x -= WRAP_DISTANCE;
+    }
+    else if (position.x < -WRAP_DISTANCE * 0.5f) {
+      position.x += WRAP_DISTANCE;
+    }
+    needsWrap = true;
+  }
+
+  if (std::abs(position.y) > POSITION_THRESHOLD) {
+    position.y = std::fmod(position.y, WRAP_DISTANCE);
+    if (position.y > WRAP_DISTANCE * 0.5f) {
+      position.y -= WRAP_DISTANCE;
+    }
+    else if (position.y < -WRAP_DISTANCE * 0.5f) {
+      position.y += WRAP_DISTANCE;
+    }
+    needsWrap = true;
+  }
+
+  if (needsWrap) {
+    b2Rot rotation = b2Body_GetRotation(m_bodyId);
+    b2Body_SetTransform(m_bodyId, position, rotation);
+  }
+
+  // Apply scaled forces
   updateMovement(input);
   handleTurning(input, forwardSpeed);
   applyDrag(currentVel, forwardSpeed);
@@ -75,12 +117,11 @@ void Car::updateMovement(const InputState& input) {
 
   // Reset forces if no input
   if (!input.accelerating && !input.braking) {
-    // Let natural drag and friction slow the car down
     return;
   }
 
   // Forward acceleration
-  if (input.accelerating && currentSpeed < m_properties.maxSpeed * 0.05f ) {
+  if (input.accelerating && currentSpeed < m_properties.maxSpeed) {
     b2Vec2 force = {
         forwardDir.x * m_properties.acceleration,
         forwardDir.y * m_properties.acceleration
@@ -100,13 +141,16 @@ void Car::updateMovement(const InputState& input) {
       };
       b2Body_ApplyForceToCenter(m_bodyId, force, true);
     }
-    else if (forwardSpeed > -m_properties.maxSpeed * 0.5f) {
-      // Moving slow enough or backwards - apply reverse thrust (half of forward max speed)
-      b2Vec2 force = {
-          -forwardDir.x * brakeForce * 0.5f,
-          -forwardDir.y * brakeForce * 0.5f
-      };
-      b2Body_ApplyForceToCenter(m_bodyId, force, true);
+    else {
+      // Reverse thrust at full force but limited by half max speed
+      float reverseSpeed = -forwardSpeed;
+      if (reverseSpeed < m_properties.maxSpeed * 0.5f) {
+        b2Vec2 force = {
+            -forwardDir.x * m_properties.acceleration * 0.7f,  // 70% of forward acceleration
+            -forwardDir.y * m_properties.acceleration * 0.7f
+        };
+        b2Body_ApplyForceToCenter(m_bodyId, force, true);
+      }
     }
   }
 }

@@ -76,7 +76,7 @@ private:
   float m_maxZoom = 5.0f;
   glm::vec2 m_editorCameraPos = glm::vec2(0.0f);
   float m_editorCameraScale = 1.0f;
-  float m_testCameraScale = 2.0f;
+  float m_testCameraScale = 0.5f;
   bool m_canMoveCamera = true;
 
   // Constants

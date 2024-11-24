@@ -25,6 +25,9 @@ namespace JAGEngine {
     glm::mat4 getOrthoMatrix() const { return _orthoMatrix; }
 
   private:
+    static constexpr float MAX_WORLD_SIZE = 1000000.0f;  // Maximum world coordinates
+    static constexpr float ORTHO_SCALE = 2.0f;  // Scale factor for orthographic projection
+
     static constexpr float WORLD_SCALE = 100.0f;
 
     int _screenWidth;
@@ -34,5 +37,6 @@ namespace JAGEngine {
     glm::vec2 _position;
     glm::mat4 _cameraMatrix;
     glm::mat4 _orthoMatrix;
+    glm::mat4 _projectionMatrix;
   };
 }

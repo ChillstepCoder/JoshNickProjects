@@ -11,6 +11,7 @@ public:
   }
   ~App() {
     std::cout << "App destructor\n";
+    signalCleanup();
   }
   virtual void onInit() override;
   virtual void addScreens() override;
