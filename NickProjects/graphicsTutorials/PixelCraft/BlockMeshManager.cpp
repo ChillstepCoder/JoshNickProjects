@@ -236,19 +236,19 @@ void BlockManager::loadChunk(int chunkX, int chunkY) {
 
             if (worldY == height) { // Create surface (grass) blocks
                 Block surfaceBlock;
-                surfaceBlock.init(m_world, position,
+                surfaceBlock.init(m_world, BlockID::GRASS, position,
                     Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor);
                 chunk.blocks[x][y] = surfaceBlock;
             }
             else if (worldY < height && worldY > DIRT_BOTTOM) { // Fill blocks below surface with dirt
                 Block dirtBlock;
-                dirtBlock.init(m_world, position,
+                dirtBlock.init(m_world, BlockID::DIRT, position,
                     Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor);
                 chunk.blocks[x][y] = dirtBlock;
             }
             else if (worldY <= DIRT_BOTTOM) { // Fill deeper blocks with stone
                 Block stoneBlock;
-                stoneBlock.init(m_world, position,
+                stoneBlock.init(m_world, BlockID::STONE, position,
                     Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor);
                 chunk.blocks[x][y] = stoneBlock;
             }
