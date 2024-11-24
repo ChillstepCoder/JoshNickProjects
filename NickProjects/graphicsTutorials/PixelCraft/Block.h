@@ -4,6 +4,13 @@
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLTexture.h>
 
+enum class BlockID {
+    GRASS = 1,
+    DIRT = 2,
+    STONE = 3,
+    WATER = 4
+};
+
 
 
 class Block
@@ -17,19 +24,22 @@ public:
     void draw(Bengine::SpriteBatch& spriteBatch);
 
     b2Vec2 getPosition();
-    b2BodyId getID() const { return m_ID; }
-    void clearID() {
-        m_ID.index1 = 0;
-    }
-    bool isEmpty() const { return B2_IS_NULL(m_ID); }
+    b2BodyId getBodyID() const { return m_BodyID; }
+    BlockID getBlockID() const { return m_BlockID; }
+    bool isEmpty() const { return B2_IS_NULL(m_BodyID); }
     const glm::vec2& getDimensions() const { return m_dimensions; }
     const glm::vec4 getDestRect() const { return m_destRect; }
     const glm::vec4 getUVRect() const { return m_uvRect; }
     const GLuint getTextureID() const { return m_textureID; }
     const Bengine::ColorRGBA8 getColor() const { return m_color; }
 
+    void clearID() {
+        m_BodyID.index1 = 0;
+    }
+
 private:
-    b2BodyId m_ID = b2_nullBodyId;
+    b2BodyId m_BodyID = b2_nullBodyId;
+    BlockID m_BlockID;
     glm::vec2 m_dimensions;
     glm::vec4 m_destRect;
     glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
