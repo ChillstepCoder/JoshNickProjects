@@ -17,16 +17,18 @@ void Chunk::buildChunkMesh() {
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             const Block& block = blocks[x][y];
             if (!block.isEmpty()) {
-                glm::vec4 destRect = block.getDestRect();
-                glm::vec4 uvRect = block.getUVRect();
-                GLuint textureID = block.getTextureID();
-                Bengine::ColorRGBA8 color = block.getColor();
+                glm::vec4 destRect = glm::vec4((x - 0.5f) , (y - 0.5f), 1.0f, 1.0f);
+                glm::vec4 uvRect = BlockDefRepository::getUVRect(block.getBlockID());
+                GLuint textureID = BlockDefRepository::getTextureID(block.getBlockID());
+                Bengine::ColorRGBA8 color = BlockDefRepository::getColor(block.getBlockID());
                 m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
             }
         }
     }
     m_spriteBatch.end();
 }
+
+
 
 
 void Chunk::render() {
@@ -170,10 +172,10 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::ve
 
 inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Block& block) {
     // Check if the position is within the block's bounding box
-    glm::vec2 blockPos = block.getDestRect();
+    glm::vec2 blockPos = glm::vec4((position.x - 0.5f), (position.y - 0.5f), 1.0f, 1.0f);
     blockPos.x = blockPos.x ;
     blockPos.y = blockPos.y ;
-    glm::vec2 blockSize = block.getDimensions();
+    glm::vec2 blockSize = glm::vec2(1.0f, 1.0f);
     return (position.x >= blockPos.x - blockSize.x / 2 && position.x <= blockPos.x + blockSize.x / 2 &&
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
 }
@@ -236,21 +238,22 @@ void BlockManager::loadChunk(int chunkX, int chunkY) {
 
             if (worldY == height) { // Create surface (grass) blocks
                 Block surfaceBlock;
-                surfaceBlock.init(m_world, BlockID::GRASS, position,
-                    Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), textureColor);
+                surfaceBlock.init(m_world, BlockID::GRASS, position);
                 chunk.blocks[x][y] = surfaceBlock;
             }
             else if (worldY < height && worldY > DIRT_BOTTOM) { // Fill blocks below surface with dirt
                 Block dirtBlock;
-                dirtBlock.init(m_world, BlockID::DIRT, position,
-                    Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), textureColor);
+                dirtBlock.init(m_world, BlockID::DIRT, position);
                 chunk.blocks[x][y] = dirtBlock;
             }
             else if (worldY <= DIRT_BOTTOM) { // Fill deeper blocks with stone
                 Block stoneBlock;
-                stoneBlock.init(m_world, BlockID::STONE, position,
-                    Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), textureColor);
+                stoneBlock.init(m_world, BlockID::STONE, position);
                 chunk.blocks[x][y] = stoneBlock;
+            } else {
+                Block airBlock;
+                airBlock.init(m_world, BlockID::AIR, position);
+                chunk.blocks[x][y] = airBlock;
             }
         }
     }

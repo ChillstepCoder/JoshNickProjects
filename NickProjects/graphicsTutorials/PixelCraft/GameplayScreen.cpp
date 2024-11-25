@@ -39,6 +39,8 @@ void GameplayScreen::onEntry() {
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
     m_world = b2CreateWorld(&worldDef);
 
+    BlockDefRepository::initBlockDefs();
+
     m_spriteBatch.init();
 
     // Initialize BlockMeshManager

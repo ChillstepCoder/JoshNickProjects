@@ -5,11 +5,12 @@
 #include <Bengine/GLTexture.h>
 
 enum class BlockID {
-    GRASS = 0,
-    DIRT = 1,
-    STONE = 2,
-    WATER = 3,
-    COUNT = 4
+    AIR = 0,
+    GRASS = 1,
+    DIRT = 2,
+    STONE = 3,
+    WATER = 4,
+    COUNT = 5
 };
 
 class BlockDef {
@@ -17,7 +18,7 @@ public:
     BlockDef();
     ~BlockDef();
 
-    void init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLTexture texture);
+    void init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLTexture texture, GLuint m_textureID);
 
 
     glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
