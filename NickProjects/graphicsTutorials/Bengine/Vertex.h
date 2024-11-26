@@ -13,6 +13,7 @@ namespace Bengine {
         ColorRGBA8() : r(0), g(0), b(0), a(0) { }
         ColorRGBA8(GLubyte R, GLubyte G, GLubyte B, GLubyte A) : 
             r(R), g(G), b(B), a(A) { }
+        auto operator<=>(const ColorRGBA8&) const = default;
         GLubyte r;
         GLubyte g;
         GLubyte b;
