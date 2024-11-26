@@ -20,6 +20,7 @@
 #include <numeric>
 #include <algorithm>
 #include <ImGui/imgui.h>
+#include "LevelSaveLoad.h"
 
 // Forward declarations
 class SplineTrack;
@@ -140,7 +141,22 @@ private:
   bool m_showTrackingPoints = false;
   std::vector<std::pair<size_t, glm::vec2>> m_savedObjectStates;
 
+  // Level settings
+  int m_levelDifficulty = 1;
+  bool m_showSavePrompt = false;
+  bool m_showLoadPrompt = false;
+  char m_levelNameBuffer[256] = "";
+  std::vector<LevelSaveLoad::LevelMetadata> m_availableLevels;
+  int m_selectedLevelIndex = -1;
+  std::string m_loadedFilename;
+
   // Helper functions - grouped by functionality
+  // Level Save/Load
+  void drawSaveModal();
+  void drawLoadModal();
+  void saveLevelToFile();
+  void loadLevelFromFile(const std::string& filename);
+
   // UI functions
   void drawImGui();
   void checkImGuiState();

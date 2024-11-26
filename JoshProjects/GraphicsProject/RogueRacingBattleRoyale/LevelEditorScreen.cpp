@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <limits>   
 #include <iostream>
+#include <regex>
+#include <cstring>
 
 LevelEditorScreen::LevelEditorScreen() {
 }
@@ -200,12 +202,26 @@ void LevelEditorScreen::checkImGuiState() {
 void LevelEditorScreen::drawDebugWindow() {
   if (m_testMode) return;
 
-  bool modeChanged = false;
   ImGui::SetNextWindowPos(ImVec2(10, 220), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(200, 400), ImGuiCond_FirstUseEver);
 
-
   ImGui::Begin("Track Editor", nullptr, ImGuiWindowFlags_NoCollapse);
+
+  // Add difficulty selector near the top
+  ImGui::Text("Level Difficulty");
+  ImGui::SliderInt("##Difficulty", &m_levelDifficulty, 1, 10);
+
+  // Add save/load buttons
+  if (ImGui::Button("Save Level", ImVec2(180, 30))) {
+    m_showSavePrompt = true;
+    memset(m_levelNameBuffer, 0, sizeof(m_levelNameBuffer));
+  }
+
+  if (ImGui::Button("Load Level", ImVec2(180, 30))) {
+    m_showLoadPrompt = true;
+    m_availableLevels = LevelSaveLoad::getLevelList();
+    m_selectedLevelIndex = -1;
+  }
 
   if (ImGui::CollapsingHeader("Test Mode", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (ImGui::Button("Test Level", ImVec2(180, 30))) {
@@ -502,6 +518,183 @@ void LevelEditorScreen::drawDebugWindow() {
   }
 
   ImGui::End();
+
+  // Draw save prompt modal
+  if (m_showSavePrompt) {
+    drawSaveModal();
+  }
+
+  // Draw load prompt modal
+  if (m_showLoadPrompt) {
+    drawLoadModal();
+  }
+}
+
+void LevelEditorScreen::drawSaveModal() {
+  // Check if this is first time showing the modal
+  static bool initNameBuffer = false;
+  if (!initNameBuffer && m_showSavePrompt) {
+    // Initialize buffer with current level name if loading from an existing file
+    if (!m_loadedFilename.empty()) {
+      // Extract name from filename (e.g. "1_mytrack.txt" -> "mytrack")
+      std::regex levelPattern(R"(\d+_([^\.]+)\.txt)");
+      std::smatch matches;
+      if (std::regex_match(m_loadedFilename, matches, levelPattern)) {
+        // Fixed the strncpy call to include size as third parameter
+        strncpy_s(m_levelNameBuffer, matches[1].str().c_str(), sizeof(m_levelNameBuffer) - 1);
+        m_levelNameBuffer[sizeof(m_levelNameBuffer) - 1] = '\0';
+      }
+    }
+    initNameBuffer = true;
+  }
+
+  ImGui::OpenPopup("Save Level##modal");
+  ImGui::SetNextWindowSize(ImVec2(300, 120));
+  if (ImGui::BeginPopupModal("Save Level##modal", nullptr, ImGuiWindowFlags_NoResize)) {
+    ImGui::Text("Enter level name:");
+    ImGui::InputText("##levelname", m_levelNameBuffer, sizeof(m_levelNameBuffer));
+
+    if (ImGui::Button("Save", ImVec2(120, 0))) {
+      if (strlen(m_levelNameBuffer) > 0) {
+        saveLevelToFile();
+        m_loadedFilename = LevelSaveLoad::constructFilename(m_levelDifficulty, m_levelNameBuffer);
+        m_showSavePrompt = false;
+        initNameBuffer = false;
+        ImGui::CloseCurrentPopup();
+      }
+    }
+    ImGui::SameLine();
+
+    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+      m_showSavePrompt = false;
+      initNameBuffer = false;
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+}
+
+void LevelEditorScreen::drawLoadModal() {
+  ImGui::OpenPopup("Load Level##modal");
+  ImGui::SetNextWindowSize(ImVec2(300, 400));
+  if (ImGui::BeginPopupModal("Load Level##modal", nullptr, ImGuiWindowFlags_NoResize)) {
+    ImGui::Text("Select a level to load:");
+    ImGui::Separator();
+
+    ImGui::BeginChild("LevelList", ImVec2(0, 300), true);
+    for (size_t i = 0; i < m_availableLevels.size(); i++) {
+      const auto& level = m_availableLevels[i];
+      std::string label = "Difficulty " + std::to_string(level.difficulty) +
+        ": " + level.levelName;
+
+      if (ImGui::Selectable(label.c_str(), m_selectedLevelIndex == static_cast<int>(i))) {
+        m_selectedLevelIndex = static_cast<int>(i);
+      }
+    }
+    ImGui::EndChild();
+
+    if (ImGui::Button("Load", ImVec2(120, 0))) {
+      if (m_selectedLevelIndex >= 0 &&
+        m_selectedLevelIndex < static_cast<int>(m_availableLevels.size())) {
+        loadLevelFromFile(m_availableLevels[m_selectedLevelIndex].filename);
+        m_showLoadPrompt = false;
+        ImGui::CloseCurrentPopup();
+      }
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+      m_showLoadPrompt = false;
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+}
+
+void LevelEditorScreen::saveLevelToFile() {
+  LevelSaveLoad::SavedLevel level;
+  level.difficulty = m_levelDifficulty;
+  level.name = m_levelNameBuffer;
+
+  // Save track nodes
+  level.nodes = m_track->getNodes();
+
+  // Save placed objects
+  const auto& placedObjects = m_objectManager->getPlacedObjects();
+  const auto& templates = m_objectManager->getObjectTemplates();
+
+  for (const auto& obj : placedObjects) {
+    size_t templateIndex = 0;
+    for (size_t i = 0; i < templates.size(); i++) {
+      if (templates[i]->getDisplayName() == obj->getDisplayName()) {
+        templateIndex = i;
+        break;
+      }
+    }
+    level.objects.push_back({ templateIndex, obj->getPosition() });
+  }
+
+  // Save track settings
+  level.startConfig = m_track->getStartPositionConfig();
+  level.grassColor = m_grassColor;
+  level.offroadColor = m_offroadColor;
+  level.grassNoiseScale = m_grassNoiseScale;
+  level.grassNoiseIntensity = m_grassNoiseIntensity;
+  level.barrierPrimaryColor = m_barrierPrimaryColor;
+  level.barrierSecondaryColor = m_barrierSecondaryColor;
+  level.barrierPatternScale = m_barrierPatternScale;
+
+  if (LevelSaveLoad::saveLevel(level)) {
+    m_loadedFilename = LevelSaveLoad::constructFilename(m_levelDifficulty, m_levelNameBuffer);
+    std::cout << "Level saved successfully\n";
+  }
+  else {
+    std::cout << "Failed to save level\n";
+  }
+}
+
+void LevelEditorScreen::loadLevelFromFile(const std::string& filename) {
+  LevelSaveLoad::SavedLevel loadedLevel;
+  if (LevelSaveLoad::loadLevel(filename, loadedLevel)) {
+    // Store the filename
+    m_loadedFilename = filename;
+    // Apply loaded level data
+    m_track = std::make_unique<SplineTrack>();
+    m_track->getNodes() = loadedLevel.nodes;
+
+    // Clear existing objects
+    m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
+    m_objectManager->createDefaultTemplates();
+
+    // Restore objects
+    for (const auto& obj : loadedLevel.objects) {
+      m_objectManager->addObject(obj.templateIndex, obj.position);
+    }
+
+    // Restore track settings
+    m_track->setStartPositionConfig(loadedLevel.startConfig);
+    m_grassColor = loadedLevel.grassColor;
+    m_offroadColor = loadedLevel.offroadColor;
+    m_grassNoiseScale = loadedLevel.grassNoiseScale;
+    m_grassNoiseIntensity = loadedLevel.grassNoiseIntensity;
+    m_barrierPrimaryColor = loadedLevel.barrierPrimaryColor;
+    m_barrierSecondaryColor = loadedLevel.barrierSecondaryColor;
+    m_barrierPatternScale = loadedLevel.barrierPatternScale;
+
+    // Update difficulty
+    m_levelDifficulty = loadedLevel.difficulty;
+
+    // Update meshes
+    updateRoadMesh();
+
+    std::cout << "Level loaded successfully\n";
+  }
+  else {
+    std::cout << "Failed to load level\n";
+  }
 }
 
 glm::vec2 LevelEditorScreen::screenToWorld(const glm::vec2& screenCoords) {
@@ -1312,25 +1505,52 @@ LevelEditorScreen::CarTrackingInfo LevelEditorScreen::calculateCarTrackingInfo(c
   auto splinePoints = m_track->getSplinePoints(200);
   if (splinePoints.empty()) return info;
 
-  // Find closest point
-  float minDist = std::numeric_limits<float>::max();
+  // Find closest segment and interpolated point
+  float minDistSq = std::numeric_limits<float>::max();
   size_t closestIdx = 0;
+  glm::vec2 closestPoint = splinePoints[0].position;
 
+  // Check each segment
   for (size_t i = 0; i < splinePoints.size(); i++) {
-    float dist = glm::distance2(carPosition, splinePoints[i].position);
-    if (dist < minDist) {
-      minDist = dist;
-      closestIdx = i;
-      info.closestSplinePoint = splinePoints[i].position;
+    size_t nextIdx = (i + 1) % splinePoints.size();
+    glm::vec2 segStart = splinePoints[i].position;
+    glm::vec2 segEnd = splinePoints[nextIdx].position;
+    glm::vec2 segDir = segEnd - segStart;
+    float segLengthSq = glm::dot(segDir, segDir);
+
+    if (segLengthSq > 0.0001f) {  // Avoid zero-length segments
+      // Calculate projection of car onto segment
+      float t = glm::dot(carPosition - segStart, segDir) / segLengthSq;
+      t = glm::clamp(t, 0.0f, 1.0f);
+
+      // Get interpolated point on segment
+      glm::vec2 projectedPoint = segStart + t * segDir;
+
+      // Check if this is the closest point so far
+      float distSq = glm::distance2(carPosition, projectedPoint);
+      if (distSq < minDistSq) {
+        minDistSq = distSq;
+        closestIdx = i;
+        closestPoint = projectedPoint;
+      }
     }
   }
 
-  // Calculate distance along spline
+  info.closestSplinePoint = closestPoint;
+
+  // Calculate accurate distance along spline
   float totalDist = 0.0f;
   for (size_t i = 0; i < closestIdx; i++) {
     totalDist += glm::distance(splinePoints[i].position,
       splinePoints[i + 1].position);
   }
+
+  // Add partial distance to closest point
+  if (closestIdx < splinePoints.size() - 1) {
+    totalDist += glm::distance(splinePoints[closestIdx].position,
+      info.closestSplinePoint);
+  }
+
   info.distanceAlongSpline = totalDist;
 
   return info;
@@ -1567,57 +1787,69 @@ void LevelEditorScreen::drawCarTrackingDebug() {
 glm::vec2 LevelEditorScreen::calculateLookAheadPoint(const CarTrackingInfo& carInfo) const {
   if (!m_track) return carInfo.closestSplinePoint;
 
-  auto splinePoints = m_track->getSplinePoints(400); // Increased resolution
+  auto splinePoints = m_track->getSplinePoints(400);  // Higher resolution for smoother interpolation
   if (splinePoints.empty()) return carInfo.closestSplinePoint;
 
-  // Find the current point index
+  // Find the current spline segment
   size_t currentIndex = 0;
   float minDist = std::numeric_limits<float>::max();
-  for (size_t i = 0; i < splinePoints.size(); i++) {
-    float dist = glm::distance2(carInfo.closestSplinePoint, splinePoints[i].position);
-    if (dist < minDist) {
-      minDist = dist;
-      currentIndex = i;
-    }
-  }
+  float exactT = 0.0f;  // Interpolation parameter along current segment
 
-  // Build cumulative distances array
-  std::vector<float> cumulativeDistances;
-  cumulativeDistances.reserve(splinePoints.size() + 1);
-  cumulativeDistances.push_back(0.0f);
-
-  float totalLength = 0.0f;
+  // Find which segment we're on and where exactly on that segment
   for (size_t i = 0; i < splinePoints.size(); i++) {
     size_t nextIdx = (i + 1) % splinePoints.size();
-    totalLength += glm::distance(splinePoints[i].position, splinePoints[nextIdx].position);
-    cumulativeDistances.push_back(totalLength);
-  }
+    glm::vec2 segStart = splinePoints[i].position;
+    glm::vec2 segEnd = splinePoints[nextIdx].position;
+    glm::vec2 segDir = segEnd - segStart;
+    float segLengthSq = glm::dot(segDir, segDir);
 
-  // Calculate target distance along track
-  float currentDistance = cumulativeDistances[currentIndex];
-  float targetDistance = currentDistance + m_lookAheadDistance;
-
-  // Handle wrapping
-  if (targetDistance >= totalLength) {
-    targetDistance = std::fmod(targetDistance, totalLength);
-  }
-
-  // Find the segment containing our target distance
-  size_t segmentStart = 0;
-  for (size_t i = 0; i < cumulativeDistances.size() - 1; i++) {
-    if (cumulativeDistances[i] <= targetDistance && cumulativeDistances[i + 1] > targetDistance) {
-      segmentStart = i;
-      break;
+    if (segLengthSq > 0.0001f) {
+      // Project closest point onto this segment
+      float t = glm::dot(carInfo.closestSplinePoint - segStart, segDir) / segLengthSq;
+      if (t >= 0.0f && t <= 1.0f) {
+        glm::vec2 projectedPoint = segStart + segDir * t;
+        float dist = glm::distance2(carInfo.closestSplinePoint, projectedPoint);
+        if (dist < minDist) {
+          minDist = dist;
+          currentIndex = i;
+          exactT = t;
+        }
+      }
     }
   }
 
-  // Calculate interpolation factor
-  size_t segmentEnd = (segmentStart + 1) % splinePoints.size();
-  float segmentLength = cumulativeDistances[segmentStart + 1] - cumulativeDistances[segmentStart];
-  float t = (targetDistance - cumulativeDistances[segmentStart]) / segmentLength;
+  // Calculate the target distance we want to look ahead
+  float remainingDist = m_lookAheadDistance;
 
-  // Interpolate position
-  return glm::mix(splinePoints[segmentStart].position, splinePoints[segmentEnd].position, t);
+  // First, get to the end of current segment
+  size_t idx = currentIndex;
+  float t = exactT;
+  glm::vec2 currentPos = carInfo.closestSplinePoint;
+  glm::vec2 lookAheadPoint = currentPos;
+
+  while (remainingDist > 0.0f && idx < splinePoints.size()) {
+    size_t nextIdx = (idx + 1) % splinePoints.size();
+    glm::vec2 segStart = splinePoints[idx].position;
+    glm::vec2 segEnd = splinePoints[nextIdx].position;
+    float segLength = glm::distance(segStart, segEnd);
+
+    // Calculate how far along this segment we need to go
+    float distanceAlongSegment = segLength * (1.0f - t);
+
+    if (remainingDist <= distanceAlongSegment) {
+      // Our target point is on this segment
+      float finalT = t + (remainingDist / segLength);
+      lookAheadPoint = glm::mix(segStart, segEnd, finalT);
+      break;
+    }
+
+    // Move to next segment
+    remainingDist -= distanceAlongSegment;
+    idx = (idx + 1) % splinePoints.size();
+    t = 0.0f;  // Start from beginning of next segment
+  }
+
+  return lookAheadPoint;
 }
 
 
