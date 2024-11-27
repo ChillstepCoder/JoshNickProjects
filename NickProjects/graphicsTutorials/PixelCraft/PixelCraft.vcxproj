@@ -149,6 +149,7 @@
     <ClCompile Include="BlockMeshManager.cpp">
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
+    <ClCompile Include="CellularAutomataManager.cpp" />
     <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="main.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="Block.h" />
     <ClInclude Include="BlockMeshManager.h" />
+    <ClInclude Include="CellularAutomataManager.h" />
     <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="Player.h" />

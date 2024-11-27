@@ -125,4 +125,15 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         // Check if the mouse position is over a block and break it
         m_blockManager->breakBlockAtPosition(mouseWorldPos, playerPos);
     }
+
+    if (inputManager.isKeyDown(SDL_BUTTON_RIGHT)) {
+        // Get the player's mouse position
+        glm::vec2 mouseCoords = inputManager.getMouseCoords();
+
+        // Convert mouse position to world coordinates
+        glm::vec2 mouseWorldPos = m_camera->convertScreenToWorld(mouseCoords);
+
+        // Check if the mouse position is over a block and break it
+        m_blockManager->placeBlockAtPosition(mouseWorldPos, playerPos);
+    }
 }
