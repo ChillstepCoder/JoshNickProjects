@@ -115,23 +115,33 @@ void Car::updateMovement(const InputState& input) {
   b2Vec2 forwardDir = getForwardVector();
   float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
 
+  // Calculate average friction of all wheels
+  float averageFriction = calculateAverageWheelFriction();
+
+  // Scale friction effect by surfaceDragSensitivity
+  float effectiveFriction = 1.0f - ((1.0f - averageFriction) * m_properties.surfaceDragSensitivity);
+
+  // Scale acceleration and max speed based on effective friction
+  float effectiveMaxSpeed = m_properties.maxSpeed * effectiveFriction;
+  float effectiveAcceleration = m_properties.acceleration * effectiveFriction;
+
   // Reset forces if no input
   if (!input.accelerating && !input.braking) {
     return;
   }
 
   // Forward acceleration
-  if (input.accelerating && currentSpeed < m_properties.maxSpeed) {
+  if (input.accelerating && currentSpeed < effectiveMaxSpeed) {
     b2Vec2 force = {
-        forwardDir.x * m_properties.acceleration,
-        forwardDir.y * m_properties.acceleration
+        forwardDir.x * effectiveAcceleration,
+        forwardDir.y * effectiveAcceleration
     };
     b2Body_ApplyForceToCenter(m_bodyId, force, true);
   }
 
   // Braking/Reverse
   if (input.braking) {
-    float brakeForce = m_properties.acceleration * m_properties.brakingForce;
+    float brakeForce = effectiveAcceleration * m_properties.brakingForce;
 
     if (forwardSpeed > 0.1f) {
       // Moving forward - apply brakes
@@ -144,10 +154,10 @@ void Car::updateMovement(const InputState& input) {
     else {
       // Reverse thrust at full force but limited by half max speed
       float reverseSpeed = -forwardSpeed;
-      if (reverseSpeed < m_properties.maxSpeed * 0.5f) {
+      if (reverseSpeed < effectiveMaxSpeed * 0.5f) {
         b2Vec2 force = {
-            -forwardDir.x * m_properties.acceleration * 0.7f,  // 70% of forward acceleration
-            -forwardDir.y * m_properties.acceleration * 0.7f
+            -forwardDir.x * effectiveAcceleration * 0.7f,
+            -forwardDir.y * effectiveAcceleration * 0.7f
         };
         b2Body_ApplyForceToCenter(m_bodyId, force, true);
       }
@@ -159,6 +169,16 @@ void Car::handleTurning(const InputState& input, float forwardSpeed) {
   float currentAngularVel = b2Body_GetAngularVelocity(m_bodyId);
   float absForwardSpeed = std::abs(forwardSpeed);
 
+  // Calculate average friction for left and right sides
+  float leftSideFriction = (m_wheelStates[0].frictionMultiplier + m_wheelStates[2].frictionMultiplier) * 0.5f;
+  float rightSideFriction = (m_wheelStates[1].frictionMultiplier + m_wheelStates[3].frictionMultiplier) * 0.5f;
+
+  // Calculate friction imbalance (-1 to 1, negative means left side has less friction)
+  float frictionImbalance = (rightSideFriction - leftSideFriction) * 2.0f;
+
+  // Apply sensitivity to imbalance effect
+  frictionImbalance *= m_properties.frictionImbalanceSensitivity;
+
   // Strong reset when nearly stopped
   if (absForwardSpeed < m_properties.minSpeedForTurn) {
     b2Body_SetAngularVelocity(m_bodyId, 0.0f);
@@ -166,35 +186,35 @@ void Car::handleTurning(const InputState& input, float forwardSpeed) {
   }
 
   // Calculate base turn rate based on speed
-  float turnFactor = (m_properties.turnSpeed / ((1.0f + pow(absForwardSpeed / (10.0f),1.35f)))*(absForwardSpeed/ (150.0f)))*(1.0f+m_properties.driftState * 1.3f);
+  float turnFactor = (m_properties.turnSpeed / ((1.0f + pow(absForwardSpeed / (10.0f), 1.35f))) * (absForwardSpeed / (150.0f))) * (1.0f + m_properties.driftState * 1.3f);
+
+  // Apply friction imbalance effect
+  float imbalanceEffect = frictionImbalance * absForwardSpeed * 0.001f;
 
   // Reverse steering direction when going backwards
   if (forwardSpeed < 0) {
     turnFactor = -turnFactor;
+    imbalanceEffect = -imbalanceEffect;
   }
 
-  float targetAngularVel = 0.0f;
-  float correctionRate = 0.2f; // Base correction rate
+  float targetAngularVel = imbalanceEffect; // Base pull from friction imbalance
+  float correctionRate = 0.2f;
 
-  // Determine steering direction and correction rate
+  // Add steering input on top of imbalance effect
   if (input.turningLeft) {
-    targetAngularVel = turnFactor;
-    // If we're turning hard right, apply stronger correction to break out
+    targetAngularVel += turnFactor;
     if (currentAngularVel < -m_properties.maxAngularVelocity * 0.5f) {
-      correctionRate = 0.4f; // Stronger correction when counter-steering
+      correctionRate = 0.4f;
     }
   }
   else if (input.turningRight) {
-    targetAngularVel = -turnFactor;
-    // If we're turning hard left, apply stronger correction to break out
+    targetAngularVel -= turnFactor;
     if (currentAngularVel > m_properties.maxAngularVelocity * 0.5f) {
-      correctionRate = 0.4f; // Stronger correction when counter-steering
+      correctionRate = 0.4f;
     }
   }
   else {
-    // No input - return to center with moderate force
-    targetAngularVel = 0.0f;
-    correctionRate = 0.3f; // Moderate correction when returning to center
+    correctionRate = 0.3f;
   }
 
   // Apply steering with variable correction rate
@@ -203,7 +223,6 @@ void Car::handleTurning(const InputState& input, float forwardSpeed) {
   // Add extra correction force when trying to break out of a turn
   if ((input.turningRight && currentAngularVel > 0.0f) ||
     (input.turningLeft && currentAngularVel < 0.0f)) {
-    // Apply additional counter-force
     newAngularVel += (targetAngularVel - currentAngularVel) * 0.3f;
   }
 
@@ -213,18 +232,10 @@ void Car::handleTurning(const InputState& input, float forwardSpeed) {
   // Apply additional damping when changing directions
   if ((newAngularVel > 0 && currentAngularVel < 0) ||
     (newAngularVel < 0 && currentAngularVel > 0)) {
-    newAngularVel *= 1.2f; // Boost direction changes
+    newAngularVel *= 1.2f;
   }
 
   b2Body_SetAngularVelocity(m_bodyId, newAngularVel);
-
-  //// Debug output
-  //std::cout << "Steering - "
-  //  << "Current: " << currentAngularVel
-  //  << " Target: " << targetAngularVel
-  //  << " New: " << newAngularVel
-  //  << " Correction: " << correctionRate
-  //  << "\n";
 }
 
 

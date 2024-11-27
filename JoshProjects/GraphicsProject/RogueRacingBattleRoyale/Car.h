@@ -27,6 +27,8 @@ public:
     // Friction properties
     float wheelFriction = 1.0f;
     float baseFriction = 0.5f;
+    float frictionImbalanceSensitivity = 1.0f;  // 0 = no effect, 1 = normal, 2 = double effect
+    float surfaceDragSensitivity = 1.0f;
 
     // Drift properties
     float wheelGrip = 0.49f;           // 0 = max grip (hard to drift), 1 = low grip

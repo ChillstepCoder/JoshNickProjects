@@ -1365,10 +1365,7 @@ void LevelEditorScreen::drawTestModeUI() {
   ImGui::Separator();
   ImGui::SliderFloat("Look Ahead Distance", &m_lookAheadDistance, 50.0f, 300.0f);
   ImGui::SliderFloat("Min Screen Edge Distance", &m_minCarScreenDistance, 50.0f, 200.0f);
-  ImGui::Text("Use Q/E to zoom");  // Info text instead of slider
-  if (ImGui::IsItemEdited()) {
-    m_camera.setScale(m_testCameraScale);
-  }
+  ImGui::Text("Use Q/E to zoom");
 
   ImGui::End();
 
@@ -1388,6 +1385,25 @@ void LevelEditorScreen::drawTestModeUI() {
       ImGui::DragFloat("Max Angular Velocity", &props.maxAngularVelocity, 0.1f, 1.0f, 5.0f);
       ImGui::DragFloat("Braking Force", &props.brakingForce, 0.1f, 0.1f, 2.0f);
       ImGui::DragFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 0.1f, 5.0f);
+
+      // Add new friction imbalance sensitivity control
+      ImGui::Separator();
+      ImGui::Text("Surface Effects");
+
+      // Update range for friction imbalance
+      ImGui::SliderFloat("Friction Imbalance Sensitivity", &props.frictionImbalanceSensitivity,
+        0.0f, 10.0f, "%.2f");
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("0 = No steering effect from surface, 10 = Maximum effect");
+      }
+
+      // Add new surface drag control
+      ImGui::SliderFloat("Surface Drag Sensitivity", &props.surfaceDragSensitivity,
+        0.0f, 3.0f, "%.2f");
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("0 = No speed loss on surfaces\n1 = High Effect \n2 = Stopping effect");
+      }
+
       ImGui::Text("Drift State: %.2f", props.driftState);
       ImGui::SliderFloat("Wheel Grip", &props.wheelGrip, 0.0f, 1.0f, "%.2f");
       ImGui::SliderFloat("Drift Decay Rate", &props.driftDecayRate, 0.1f, 2.0f, "%.2f");
@@ -1402,7 +1418,7 @@ void LevelEditorScreen::drawTestModeUI() {
       }
     }
 
-    // Wheel state information
+    // Wheel state information (rest of the code remains the same)
     if (ImGui::CollapsingHeader("Wheel States", ImGuiTreeNodeFlags_DefaultOpen)) {
       const auto& wheelStates = m_testCars[0]->getWheelStates();
       const char* wheelNames[] = { "Front Left", "Front Right", "Back Left", "Back Right" };
