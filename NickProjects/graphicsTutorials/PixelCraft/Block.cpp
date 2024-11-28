@@ -77,19 +77,6 @@ void Block::init(b2WorldId world, BlockID blockID, const glm::vec2& position) {
     if (blockID == BlockID::AIR) {
         return;
     }
-    else if (blockID == BlockID::WATER) {
-        b2BodyDef bodyDef = b2DefaultBodyDef();
-        bodyDef.position = b2Vec2(position.x, position.y);
-        bodyDef.fixedRotation = true;
-
-        m_BodyID = b2CreateBody(world, &bodyDef);
-
-        b2Polygon dynamicBox = b2MakeBox(1.0f / 2.0f, 1.0f / 2.0f);
-
-        b2ShapeDef shapeDef = b2DefaultShapeDef();
-
-        return;
-    }
 
     b2BodyDef bodyDef = b2DefaultBodyDef();
     bodyDef.position = b2Vec2(position.x, position.y);
@@ -99,6 +86,11 @@ void Block::init(b2WorldId world, BlockID blockID, const glm::vec2& position) {
     b2Polygon dynamicBox = b2MakeBox(1.0f / 2.0f, 1.0f / 2.0f);
 
     b2ShapeDef shapeDef = b2DefaultShapeDef();
+
+    if (blockID == BlockID::WATER) {
+        return;
+    }
+
     shapeDef.density = 1.0f;
     shapeDef.friction = 0.0f;
     shapeDef.restitution = 0.0f;

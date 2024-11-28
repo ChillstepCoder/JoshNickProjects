@@ -158,6 +158,7 @@
     <ClCompile Include="Bengine.cpp" />
     <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="BengineErrors.cpp" />
+    <ClCompile Include="DebugOpenGL.cpp" />
     <ClCompile Include="GLSLProgram.cpp" />
     <ClCompile Include="ImageLoader.cpp" />
     <ClCompile Include="IMainGame.cpp" />
@@ -183,6 +184,7 @@
     <ClInclude Include="Bengine.h" />
     <ClInclude Include="Camera2D.h" />
     <ClInclude Include="BengineErrors.h" />
+    <ClInclude Include="DebugOpenGL.h" />
     <ClInclude Include="GLSLProgram.h" />
     <ClInclude Include="GLTexture.h" />
     <ClInclude Include="IGameScreen.h" />
