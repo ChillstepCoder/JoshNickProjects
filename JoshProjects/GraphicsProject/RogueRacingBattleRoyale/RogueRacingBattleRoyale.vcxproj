@@ -110,9 +110,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;GLM_FORCE_CXX17;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\deps\include\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AIDriver.cpp" />
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Car.cpp" />
     <ClCompile Include="DebugDraw.cpp" />
@@ -157,6 +159,7 @@
     <ClCompile Include="WheelCollider.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AIDriver.h" />
     <ClInclude Include="App.h" />
     <ClInclude Include="Box2DColors.h" />
     <ClInclude Include="Car.h" />

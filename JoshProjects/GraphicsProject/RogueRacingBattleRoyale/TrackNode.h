@@ -47,7 +47,7 @@ public:
 
   void setRoadWidth(float width) {
     // Use min/max instead of clamp
-    m_roadWidth = std::max(10.0f, std::min(width, 100.0f));
+    m_roadWidth = std::max<float>(10.0f, std::min<float>(width, 100.0f));
     std::cout << "Node road width set to: " << m_roadWidth << std::endl;
   }
 

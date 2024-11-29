@@ -1,17 +1,47 @@
 // LevelEditorScreen.cpp
 
-#include "LevelEditorScreen.h"
-#include "SplineTrack.h"
-#include <JAGEngine/IMainGame.h>
-#include <glm/gtc/matrix_transform.hpp>
-#include <SDL/SDL.h>
-#include "imgui_impls.h"
-#include <numeric>   
+// GLM configuration
+#define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_PURE
+#define GLM_FORCE_CTOR_INIT
+#define GLM_FORCE_CXX17
+
+// Standard library includes
+#include <limits>
 #include <algorithm>
-#include <limits>   
 #include <iostream>
 #include <regex>
 #include <cstring>
+#include <numeric>
+#include <cfloat>
+
+// GLM includes
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/norm.hpp>
+
+// SDL includes
+#include <SDL/SDL.h>
+
+// ImGui includes
+#include "imgui_impls.h"
+
+// Engine includes
+#include <JAGEngine/IMainGame.h>
+
+// Local includes
+#include "LevelEditorScreen.h"
+#include "SplineTrack.h"
+
+template<typename T>
+T getMin(T a, T b) {
+  return (a < b) ? a : b;
+}
+
+template<typename T>
+T getMax(T a, T b) {
+  return (a > b) ? a : b;
+}
 
 LevelEditorScreen::LevelEditorScreen() {
 }
@@ -78,6 +108,7 @@ void LevelEditorScreen::onExit() {
 }
 
 void LevelEditorScreen::update() {
+
   if (m_showNoStartLineMessage) {
     m_messageTimer -= 1.0f / 60.0f; // Assuming 60 FPS
     if (m_messageTimer <= 0) {
@@ -112,11 +143,36 @@ void LevelEditorScreen::drawImGui() {
   if (ImGui::Button("Exit Game", ImVec2(180, 40))) {
     exitGame();
   }
+  ImGui::End();
+
+  // Separate debug window
+  ImGui::SetNextWindowPos(ImVec2(220, 10), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
+  ImGui::Begin("OpenGL Debug", nullptr, ImGuiWindowFlags_NoCollapse);
+
+  ImGui::Text("OpenGL Errors: %d", JAGEngine::OpenGLDebug::GetErrorCount());
+
+  if (ImGui::Button("Test Invalid Texture")) {
+    glBindTexture(GL_TEXTURE_2D, 99999);
+  }
+
+  if (ImGui::Button("Test Invalid Enum")) {
+    glEnable(GL_INVALID_ENUM);
+}
+
+  if (ImGui::Button("Test Invalid Draw")) {
+    glDrawArrays(GL_TRIANGLES, 0, -1);
+  }
+
+  if (ImGui::Button("Reset Error Count")) {
+    JAGEngine::OpenGLDebug::ResetErrorCount();
+  }
 
   ImGui::End();
 }
 
 void LevelEditorScreen::draw() {
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Update camera
@@ -986,9 +1042,10 @@ int LevelEditorScreen::getPreviousScreenIndex() const {
   return 0;  // Index of GameplayScreen
 }
 
+
 glm::vec2 LevelEditorScreen::findClosestSplinePoint(const glm::vec2& mousePos) {
   auto splinePoints = m_track->getSplinePoints(200);
-  float minDist = std::numeric_limits<float>::max();
+  float minDist = FLT_MAX;
   glm::vec2 closestPoint;
 
   for (const auto& pointInfo : splinePoints) {
@@ -1014,7 +1071,7 @@ void LevelEditorScreen::addNodeAtPosition(const glm::vec2& position) {
   }
 
   // Find the nearest segment
-  float minDist = std::numeric_limits<float>::max();
+  float minDist = FLT_MAX;
   size_t insertIndex = 0;
 
   for (size_t i = 0; i < nodes.size(); i++) {
@@ -1065,8 +1122,8 @@ void LevelEditorScreen::addNodeAtPosition(const glm::vec2& position) {
   glm::vec2 interpolatedBarrierDist = (prevBarrierDist + nextBarrierDist) * 0.5f;
 
   // Ensure minimum barrier distance
-  interpolatedBarrierDist.x = std::max(interpolatedBarrierDist.x, 10.0f);
-  interpolatedBarrierDist.y = std::max(interpolatedBarrierDist.y, 10.0f);
+  interpolatedBarrierDist.x = std::max<float>(interpolatedBarrierDist.x, 10.0f);
+  interpolatedBarrierDist.y = std::max<float>(interpolatedBarrierDist.y, 10.0f);
   newNode.setBarrierDistance(interpolatedBarrierDist);
 
   // Insert the new node
@@ -1264,6 +1321,12 @@ void LevelEditorScreen::initTestMode() {
     car->setProperties(Car::CarProperties());
     car->setColor(carColors[i]);
 
+    // Create AI driver for all cars except the first one (player)
+    if (i > 0) {
+      auto aiDriver = std::make_unique<AIDriver>(car.get());
+      m_aiDrivers.push_back(std::move(aiDriver));
+    }
+
     m_testCars.push_back(std::move(car));
 
     // Initialize tracking info
@@ -1272,12 +1335,22 @@ void LevelEditorScreen::initTestMode() {
         0.0f,
         static_cast<int>(i + 1),
         i == 0
-      });
+    });
   }
+
+  // Initialize AI config with default values
+  m_aiConfig.lookAheadDistance = 100.0f;
+  m_aiConfig.centeringForce = 1.0f;
+  m_aiConfig.turnAnticipation = 1.0f;
+  m_aiConfig.reactionTime = 0.1f;
+  m_aiConfig.maxSpeed = 1.0f;
+  m_aiConfig.brakingSkill = 1.0f;
+  m_aiConfig.racingLine = 1.0f;
+
+  initializeAIDrivers();
 
   m_levelRenderer->setCarTexture(m_carTexture);
   m_levelRenderer->setCars(m_testCars);
-
   m_camera.setScale(m_testCameraScale);
 }
 
@@ -1341,6 +1414,87 @@ void LevelEditorScreen::drawTestMode() {
   }
 }
 
+void LevelEditorScreen::updateAIDrivers() {
+  if (!m_testMode || !m_enableAI) return;
+
+  const float timeStep = 1.0f / 60.0f;
+
+  // Update each AI driver with the track direction consideration
+  bool isClockwise = m_track ? !m_track->isDefaultDirection() : false;
+
+  // Make AI follow the racing line
+  for (size_t i = 0; i < m_aiDrivers.size(); i++) {
+    // Make sure we have corresponding car index
+    size_t carIndex = i + 1;  // +1 because first car is player
+    if (carIndex < m_testCars.size() && m_aiDrivers[i]) {
+      auto car = m_testCars[carIndex].get();
+      if (car) {
+        // Update look ahead distance based on speed
+        float speed = car->getDebugInfo().currentSpeed;
+        float baseLookAhead = m_aiConfig.lookAheadDistance;
+        float speedAdjustedLookAhead = baseLookAhead * (1.0f + speed / 1000.0f);
+
+        // Update the AI config with direction-specific adjustments
+        AIDriver::Config adjustedConfig = m_aiConfig;
+        adjustedConfig.lookAheadDistance = speedAdjustedLookAhead;
+
+        // Update this specific AI driver
+        m_aiDrivers[i]->setConfig(adjustedConfig);
+        m_aiDrivers[i]->update(timeStep);
+      }
+    }
+  }
+}
+
+void LevelEditorScreen::initializeAIDrivers() {
+  // Clear existing AI drivers
+  m_aiDrivers.clear();
+
+  // Create AI drivers for all cars except the first (player's car)
+  for (size_t i = 1; i < m_testCars.size(); i++) {
+    auto aiDriver = std::make_unique<AIDriver>(m_testCars[i].get());
+
+    // Set initial AI configuration
+    aiDriver->setConfig(m_aiConfig);
+
+    m_aiDrivers.push_back(std::move(aiDriver));
+  }
+
+  // Initialize default AI config if not already set
+  if (m_aiConfig.lookAheadDistance == 0.0f) {
+    m_aiConfig.lookAheadDistance = 100.0f;
+    m_aiConfig.centeringForce = 1.0f;
+    m_aiConfig.turnAnticipation = 1.0f;
+    m_aiConfig.reactionTime = 0.1f;
+    m_aiConfig.maxSpeed = 1.0f;
+    m_aiConfig.brakingSkill = 1.0f;
+    m_aiConfig.racingLine = 1.0f;
+  }
+}
+
+void LevelEditorScreen::drawAIDebugUI() {
+  // Add AI configuration section
+  if (ImGui::Begin("AI Settings", nullptr, ImGuiWindowFlags_NoCollapse)) {
+    ImGui::Checkbox("Enable AI", &m_enableAI);
+
+    if (m_enableAI) {
+      ImGui::SliderFloat("Look Ahead Distance", &m_aiConfig.lookAheadDistance, 50.0f, 200.0f);
+      ImGui::SliderFloat("Centering Force", &m_aiConfig.centeringForce, 0.0f, 2.0f);
+      ImGui::SliderFloat("Turn Anticipation", &m_aiConfig.turnAnticipation, 0.0f, 2.0f);
+      ImGui::SliderFloat("Reaction Time", &m_aiConfig.reactionTime, 0.05f, 0.5f);
+      ImGui::SliderFloat("Max Speed", &m_aiConfig.maxSpeed, 0.5f, 1.2f);
+      ImGui::SliderFloat("Braking Skill", &m_aiConfig.brakingSkill, 0.0f, 1.0f);
+      ImGui::SliderFloat("Racing Line", &m_aiConfig.racingLine, 0.0f, 1.0f);
+
+      // Apply config to all AI drivers
+      for (auto& aiDriver : m_aiDrivers) {
+        aiDriver->setConfig(m_aiConfig);
+      }
+    }
+  }
+  ImGui::End();
+}
+
 void LevelEditorScreen::drawTestModeUI() {
   if (!m_testMode || m_testCars.empty()) return;
 
@@ -1399,7 +1553,7 @@ void LevelEditorScreen::drawTestModeUI() {
 
       // Add new surface drag control
       ImGui::SliderFloat("Surface Drag Sensitivity", &props.surfaceDragSensitivity,
-        0.0f, 3.0f, "%.2f");
+        0.0f, 2.0f, "%.2f");
       if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("0 = No speed loss on surfaces\n1 = High Effect \n2 = Stopping effect");
       }
@@ -1451,6 +1605,7 @@ void LevelEditorScreen::drawTestModeUI() {
       }
     }
   }
+  drawAIDebugUI();
   ImGui::End();
 }
 
@@ -1470,6 +1625,7 @@ void LevelEditorScreen::cleanupTestMode() {
 
   m_carTrackingInfo.clear();
   m_testCars.clear();
+  m_aiDrivers.clear();
 
   if (m_physicsSystem) {
     m_physicsSystem->cleanup();
@@ -1516,13 +1672,14 @@ LevelEditorScreen::CarTrackingInfo LevelEditorScreen::calculateCarTrackingInfo(c
 
   b2Vec2 carPos = b2Body_GetPosition(bodyId);
   glm::vec2 carPosition(carPos.x, carPos.y);
+  float minDistSq = FLT_MAX;
 
   // Get spline points
   auto splinePoints = m_track->getSplinePoints(200);
   if (splinePoints.empty()) return info;
 
   // Find closest segment and interpolated point
-  float minDistSq = std::numeric_limits<float>::max();
+  float minDist = FLT_MAX;
   size_t closestIdx = 0;
   glm::vec2 closestPoint = splinePoints[0].position;
 
@@ -1621,7 +1778,11 @@ void LevelEditorScreen::updateTestMode() {
 
   // Update physics
   const float timeStep = 1.0f / 60.0f;
-  m_physicsSystem->update(timeStep);
+
+  // Update Physics
+  if (m_physicsSystem) {
+    m_physicsSystem->update(timeStep);
+  }
 
   // Update object positions
   if (m_objectManager) {
@@ -1641,9 +1802,13 @@ void LevelEditorScreen::updateTestMode() {
     input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) ||
       inputManager.isKeyDown(SDLK_d);
     m_testCars[0]->update(input);
+  }
 
-    // Update camera immediately with car position
-    updateTestCamera();
+  // Update AI drivers
+  if (m_enableAI) {
+    for (auto& aiDriver : m_aiDrivers) {
+      aiDriver->update(timeStep);
+    }
   }
 
   // Other updates that don't affect camera position
@@ -1655,7 +1820,12 @@ void LevelEditorScreen::updateTestMode() {
     m_objectManager->update();
   }
 
+  // Update AI drivers
+  updateAIDrivers();
+
+  // Update tracking info and camera
   updateCarTrackingInfo();
+  updateTestCamera();
 }
 
 void LevelEditorScreen::updateTestCamera() {
@@ -1774,9 +1944,9 @@ void LevelEditorScreen::drawCarTrackingDebug() {
 
       // Make look-ahead point a lighter version of car color
       JAGEngine::ColorRGBA8 lookAheadColor(
-        std::min(255, static_cast<int>(pointColor.r * 1.5f)),
-        std::min(255, static_cast<int>(pointColor.g * 1.5f)),
-        std::min(255, static_cast<int>(pointColor.b * 1.5f)),
+        std::min<float>(255, static_cast<int>(pointColor.r * 1.5f)),
+        std::min<float>(255, static_cast<int>(pointColor.g * 1.5f)),
+        std::min<float>(255, static_cast<int>(pointColor.b * 1.5f)),
         255
       );
 
@@ -1808,7 +1978,7 @@ glm::vec2 LevelEditorScreen::calculateLookAheadPoint(const CarTrackingInfo& carI
 
   // Find the current spline segment
   size_t currentIndex = 0;
-  float minDist = std::numeric_limits<float>::max();
+  float minDist = FLT_MAX;
   float exactT = 0.0f;  // Interpolation parameter along current segment
 
   // Find which segment we're on and where exactly on that segment

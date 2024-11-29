@@ -1,12 +1,23 @@
 // LevelEditorScreen.h
 
 #pragma once
+
+// Core
+#include <JAGEngine/Core.h>
+
+// ImGui includes
+#include <ImGui/imgui.h>
+
+// Engine includes
 #include <JAGEngine/IGameScreen.h>
 #include <JAGEngine/SpriteBatch.h>
 #include <JAGEngine/GLSLProgram.h>
 #include <JAGEngine/Camera2D.h>
 #include <JAGEngine/ResourceManager.h>
 #include <JAGEngine/GLTexture.h>
+#include <JAGEngine/OpenGLDebug.h>
+
+// Project includes
 #include "ObjectManager.h"
 #include "RoadMeshGenerator.h"
 #include "LevelRenderer.h"
@@ -14,13 +25,8 @@
 #include "PhysicsSystem.h"
 #include "InputState.h"
 #include "DebugDraw.h"
-#include <glm/glm.hpp>
-#include <vector>
-#include <memory>
-#include <numeric>
-#include <algorithm>
-#include <ImGui/imgui.h>
 #include "LevelSaveLoad.h"
+#include "AIDriver.h"
 
 // Forward declarations
 class SplineTrack;
@@ -150,7 +156,35 @@ private:
   int m_selectedLevelIndex = -1;
   std::string m_loadedFilename;
 
+  // AI Drivers
+  std::vector<std::unique_ptr<AIDriver>> m_aiDrivers;
+  bool m_enableAI = true;
+  AIDriver::Config m_aiConfig;
+
   // Helper functions - grouped by functionality
+
+  // OpenGL Debugging Context
+#ifdef _DEBUG
+  void testOpenGLDebug() {
+    glEnable(GL_INVALID_ENUM);  // Changed from GL_INVALID_ENUM_VALUE
+    GLuint invalidTexture = 99999;
+    glBindTexture(GL_TEXTURE_2D, invalidTexture);
+  }
+
+  void testOpenGLFeatures() {
+    GLuint textureId;
+    glGenTextures(1, &textureId);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glDeleteTextures(1, &textureId);
+    glUseProgram(999);
+  }
+#endif
+
+  // AI Drivers
+  void updateAIDrivers();
+  void initializeAIDrivers();
+  void drawAIDebugUI();
+
   // Level Save/Load
   void drawSaveModal();
   void drawLoadModal();

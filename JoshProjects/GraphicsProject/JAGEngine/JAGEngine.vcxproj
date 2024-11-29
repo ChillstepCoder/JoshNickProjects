@@ -110,9 +110,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;FT2_BUILD_LIBRARY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;FT2_BUILD_LIBRARY;GLM_FORCE_CXX17;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\deps\lib\;C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\deps\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="AudioEngine.h" />
     <ClInclude Include="Camera2D.h" />
+    <ClInclude Include="Core.h" />
     <ClInclude Include="IGameScreen.h" />
     <ClInclude Include="ImGuiManager.h" />
     <ClInclude Include="JAGErrors.h" />
@@ -150,6 +152,7 @@
     <ClInclude Include="IOManager.h" />
     <ClInclude Include="JAGEngine.h" />
     <ClInclude Include="IMainGame.h" />
+    <ClInclude Include="OpenGLDebug.h" />
     <ClInclude Include="ParticleBatch2D.h" />
     <ClInclude Include="ParticleEngine2D.h" />
     <ClInclude Include="picoPNG.h" />
@@ -174,6 +177,7 @@
     <ClCompile Include="IOManager.cpp" />
     <ClCompile Include="JAGEngine.cpp" />
     <ClCompile Include="IMainGame.cpp" />
+    <ClCompile Include="OpenGLDebug.cpp" />
     <ClCompile Include="ParticleBatch2D.cpp" />
     <ClCompile Include="ParticleEngine2D.cpp" />
     <ClCompile Include="picoPNG.cpp" />

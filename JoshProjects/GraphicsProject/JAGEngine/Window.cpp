@@ -4,7 +4,7 @@
 #include "JAGErrors.h"
 #include <iostream>
 #include <sstream> // For std::stringstream
-
+#include "OpenGLDebug.h"
 #include <GL/glew.h>
 #include <GL/gl.h>
 
@@ -32,17 +32,25 @@ namespace JAGEngine {
     // https://discourse.libsdl.org/t/true-borderless-fullscreen-behaviour/24622/9 for more information
     // TODO: Figure out a better way, because this ignores the task bar
     if (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) {
-        SDL_DisplayMode DM;
-        SDL_GetCurrentDisplayMode(0, &DM);
-        auto Width = DM.w;
-        auto Height = DM.h;
-        m_screenWidth = Width;
-        m_screenHeight = Height - 128;
-        // Strip out fullscreen flag
-        flags &= ~(SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+      SDL_DisplayMode DM;
+      SDL_GetCurrentDisplayMode(0, &DM);
+      auto Width = DM.w;
+      auto Height = DM.h;
+      m_screenWidth = Width;
+      m_screenHeight = Height - 128;
+      // Strip out fullscreen flag
+      flags &= ~(SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
     }
 
-    _sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_screenWidth, m_screenHeight, flags);
+    // Set OpenGL context attributes
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    _sdlWindow = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+      m_screenWidth, m_screenHeight, flags);
 
     SDL_GetWindowSize(_sdlWindow, &m_screenWidth, &m_screenHeight);
 
@@ -51,6 +59,7 @@ namespace JAGEngine {
     }
 
     _glContext = SDL_GL_CreateContext(_sdlWindow);
+
     if (_glContext == nullptr) {
       fatalError("SDL_GL context could not be created.");
     }
@@ -65,7 +74,11 @@ namespace JAGEngine {
     // Enable OpenGL debug output
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageCallback(Window::glDebugOutput, nullptr);
+    glDebugMessageCallback(OpenGLDebug::glDebugOutput, nullptr);
+
+    // Filter out notification messages
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
+      0, nullptr, GL_FALSE);
 
     // Check OpenGL version
     std::printf("***   OpenGL Version: %s   ***\n", glGetString(GL_VERSION));
@@ -76,7 +89,6 @@ namespace JAGEngine {
     // Enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //glClearColor(0.0f, 0.0f, 0.85f, 1.0f);
 
     // Make sure window is shown and raised
     SDL_ShowWindow(_sdlWindow);
@@ -84,7 +96,6 @@ namespace JAGEngine {
 
     // Set window to not minimized
     SDL_SetWindowMinimumSize(_sdlWindow, 640, 480);  // Set minimum size
-    //SDL_RestoreWindow(_sdlWindow);  // Restore from minimized state if needed
 
     return 0;
   }

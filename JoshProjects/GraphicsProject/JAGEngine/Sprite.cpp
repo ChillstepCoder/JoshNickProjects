@@ -1,3 +1,5 @@
+// Sprite.cpp
+
 #include "Sprite.h"
 #include "Vertex.h"
 #include "ResourceManager.h"
