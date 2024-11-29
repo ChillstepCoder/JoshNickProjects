@@ -242,6 +242,31 @@ void GameplayScreen::drawImgui() {
     m_profileResults.clear();
 
     ImGui::End();
+
+    // Separate debug window
+    ImGui::SetNextWindowPos(ImVec2(220, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
+    ImGui::Begin("OpenGL Debug", nullptr, ImGuiWindowFlags_NoCollapse);
+
+    ImGui::Text("OpenGL Errors: %d", Bengine::DebugOpenGL::GetErrorCount());
+
+    if (ImGui::Button("Test Invalid Texture")) {
+        glBindTexture(GL_TEXTURE_2D, 99999);
+    }
+
+    if (ImGui::Button("Test Invalid Enum")) {
+        glEnable(GL_INVALID_ENUM);
+    }
+
+    if (ImGui::Button("Test Invalid Draw")) {
+        glDrawArrays(GL_TRIANGLES, 0, -1);
+    }
+
+    if (ImGui::Button("Reset Error Count")) {
+        Bengine::DebugOpenGL::ResetErrorCount();
+    }
+
+    ImGui::End();
 }
 
 void GameplayScreen::updateGravity() {

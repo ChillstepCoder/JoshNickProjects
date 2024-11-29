@@ -13,6 +13,7 @@
 #include <Bengine/Window.h>
 #include <Bengine/Timing.h>
 #include <Bengine/SpriteFont.h>
+#include <Bengine/DebugOpenGL.h>
 #include "BlockMeshManager.h"
 #include "DebugDraw.h"
 #include "Imgui.h"
