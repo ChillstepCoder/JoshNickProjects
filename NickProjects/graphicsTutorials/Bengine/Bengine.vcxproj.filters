@@ -99,6 +99,9 @@
     <ClCompile Include="ScreenList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DebugOpenGL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BengineErrors.h">
@@ -177,6 +180,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ScreenList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugOpenGL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -67,8 +67,10 @@ public:
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
     void destroyBlock(const BlockHandle& blockHandle);
-
     void breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
+
+    void placeBlock(const BlockHandle& blockHandle, const glm::vec2& position);
+    void placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 

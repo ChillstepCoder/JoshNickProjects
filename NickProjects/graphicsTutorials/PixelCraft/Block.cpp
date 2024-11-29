@@ -72,7 +72,6 @@ Block::~Block() {
 }
 
 void Block::init(b2WorldId world, BlockID blockID, const glm::vec2& position) {
-
     m_BlockID = blockID;
 
     if (blockID == BlockID::AIR) {
@@ -87,6 +86,11 @@ void Block::init(b2WorldId world, BlockID blockID, const glm::vec2& position) {
     b2Polygon dynamicBox = b2MakeBox(1.0f / 2.0f, 1.0f / 2.0f);
 
     b2ShapeDef shapeDef = b2DefaultShapeDef();
+
+    if (blockID == BlockID::WATER) {
+        return;
+    }
+
     shapeDef.density = 1.0f;
     shapeDef.friction = 0.0f;
     shapeDef.restitution = 0.0f;

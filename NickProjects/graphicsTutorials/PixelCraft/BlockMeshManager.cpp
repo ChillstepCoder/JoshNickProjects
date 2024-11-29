@@ -14,14 +14,22 @@ void Chunk::init() {
 void Chunk::buildChunkMesh() {
     m_spriteBatch.begin();
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        float worldX = CHUNK_WIDTH + x;
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            float worldY = CHUNK_WIDTH + y;
+
             const Block& block = blocks[x][y];
             if (!block.isEmpty()) {
-                glm::vec4 destRect = glm::vec4((x - 0.5f) , (y - 0.5f), 1.0f, 1.0f);
-                glm::vec4 uvRect = BlockDefRepository::getUVRect(block.getBlockID());
-                GLuint textureID = BlockDefRepository::getTextureID(block.getBlockID());
-                Bengine::ColorRGBA8 color = BlockDefRepository::getColor(block.getBlockID());
+                BlockDefRepository repository;
+                BlockID id = block.getBlockID();
+                
+
+                glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
+                glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
+                GLuint textureID = BlockDefRepository::getTextureID(id);
+                Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                 m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                //BlockRenderer::renderBlock(m_spriteBatch, repository.getDef(id),glm::vec2(x,y));
             }
         }
     }
@@ -32,6 +40,7 @@ void Chunk::buildChunkMesh() {
 
 
 void Chunk::render() {
+
     m_spriteBatch.renderBatch();
 }
 
@@ -168,6 +177,43 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::ve
         }
     }
 }
+
+void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& position) {
+    float realpositionX = position.x - 0.5f;
+    float realPositionY = position.y - 0.5f;
+
+
+    Block waterBlock;
+    waterBlock.init(m_world, BlockID::WATER, glm::vec2(realpositionX, realPositionY));
+
+    Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
+    chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = waterBlock; 
+
+    chunk.buildChunkMesh();
+
+}
+
+void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {
+    // Get the block at the given position
+    float realpositionX = position.x + 0.5f;
+    float realPositionY = position.y + 0.5f;
+
+    BlockHandle blockHandle = getBlockAtPosition(glm::vec2(realpositionX, realPositionY));
+
+
+    // Check if the space is empty
+    if (blockHandle.block->isEmpty()) {
+        float distance = glm::distance(position, playerPos);
+
+        // If the block is within the specified range (e.g., 8 blocks radius)
+        if (distance <= 8.0f) {
+            // "Break" the block - this can involve various actions, like setting it to empty, destroying it, etc.
+            placeBlock(blockHandle, glm::vec2(realpositionX, realPositionY));
+        }
+    }
+}
+
+
 
 
 inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Block& block) {
