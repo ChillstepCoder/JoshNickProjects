@@ -161,6 +161,11 @@ private:
   bool m_enableAI = true;
   AIDriver::Config m_aiConfig;
 
+  // Car Properties Selection
+  size_t m_selectedCarIndex = 0;  // 0 is player car
+  bool m_syncAllAICars = false;   // When true, all AI cars share properties
+  Car* m_hoveredCar = nullptr;    // Currently hovered car for selection
+
   // Helper functions - grouped by functionality
 
   // OpenGL Debugging Context
@@ -179,6 +184,11 @@ private:
     glUseProgram(999);
   }
 #endif
+
+  // Car Properties Selection
+  void handleCarSelection();
+  void drawCarPropertiesUI();
+  void applySyncedProperties(const Car::CarProperties& props);
 
   // AI Drivers
   void updateAIDrivers();

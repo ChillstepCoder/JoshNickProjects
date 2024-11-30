@@ -17,22 +17,22 @@ AIDriver::AIDriver(Car* car)
 void AIDriver::update(float deltaTime) {
   if (!m_car || !m_car->getTrack()) return;
 
-  // Only update inputs after reaction time has passed
+  // Update target points considering track direction
+  m_targetPoint = findClosestSplinePoint();
+  m_lookAheadPoint = calculateLookAheadPoint();
+
+  // Only update steering based on reaction time
   m_lastInputTime += deltaTime;
   if (m_lastInputTime >= m_config.reactionTime) {
     m_lastInputTime = 0.0f;
-
-    // Update target points considering track direction
-    m_targetPoint = findClosestSplinePoint();
-    m_lookAheadPoint = calculateLookAheadPoint();
-
-    // Update steering and throttle
     updateSteering();
-    updateThrottle();
-
-    // Apply inputs to car
-    m_car->update(m_currentInput);
   }
+
+  // Always update throttle every frame
+  updateThrottle();
+
+  // Apply inputs to car
+  m_car->update(m_currentInput);
 }
 
 void AIDriver::updateSteering() {
@@ -71,20 +71,49 @@ void AIDriver::updateThrottle() {
   auto debugInfo = m_car->getDebugInfo();
   float currentSpeed = debugInfo.currentSpeed;
 
-  // Calculate target speed based on corner
-  float cornerSpeed = calculateCornerSpeed(m_lookAheadPoint);
-  float maxTargetSpeed = m_car->getProperties().maxSpeed * m_config.maxSpeed;
-  float targetSpeed = std::min(maxTargetSpeed, cornerSpeed);
+  glm::vec2 carPos(debugInfo.position);
+  glm::vec2 toAhead = glm::normalize(m_lookAheadPoint - carPos);
+  glm::vec2 carDir = glm::vec2(cos(debugInfo.angle), sin(debugInfo.angle));
+  float turnAngle = acos(glm::dot(toAhead, carDir));
 
-  // Brake if we're going too fast for the upcoming corner
-  if (shouldBrakeForCorner(cornerSpeed, currentSpeed)) {
+  // Drift initiation threshold
+  const float DRIFT_SPEED_THRESHOLD = 200.0f;
+  const float DRIFT_ANGLE_THRESHOLD = 0.4f; // About 23 degrees
+
+  // Check if we should initiate a drift
+  bool shouldDrift = currentSpeed > DRIFT_SPEED_THRESHOLD && turnAngle > DRIFT_ANGLE_THRESHOLD;
+
+  if (shouldDrift) {
+    // Initiate drift by braking briefly and turning
     m_currentInput.braking = true;
     m_currentInput.accelerating = false;
+
+    // Turn harder during drift
+    if (turnAngle > 0) {
+      m_currentInput.turningLeft = true;
+      m_currentInput.turningRight = false;
+    }
+    else {
+      m_currentInput.turningLeft = false;
+      m_currentInput.turningRight = true;
+    }
+  }
+  else if (turnAngle < 0.2f) {  // Straight section
+    m_currentInput.accelerating = true;
+    m_currentInput.braking = false;
   }
   else {
-    // Accelerate if we're under target speed
-    m_currentInput.accelerating = currentSpeed < targetSpeed;
-    m_currentInput.braking = false;
+    // Normal corner handling
+    float cornerSpeed = calculateCornerSpeed(m_lookAheadPoint);
+
+    if (currentSpeed > cornerSpeed + 25.0f) {
+      m_currentInput.braking = true;
+      m_currentInput.accelerating = false;
+    }
+    else {
+      m_currentInput.accelerating = true;
+      m_currentInput.braking = false;
+    }
   }
 }
 
@@ -116,8 +145,12 @@ glm::vec2 AIDriver::calculateLookAheadPoint() const {
   glm::vec2 carPos(debugInfo.position);
   float speed = debugInfo.currentSpeed;
 
-  // Adjust lookahead distance based on speed
-  float adjustedLookAhead = m_config.lookAheadDistance * (1.0f + speed / 1000.0f);
+  // More dramatic speed-based lookahead scaling
+  // Base lookahead of 50 units at low speeds, scaling up to 300+ at high speeds
+  float adjustedLookAhead = 50.0f + (speed * 0.5f);
+
+  // Cap maximum lookahead to prevent looking too far ahead
+  adjustedLookAhead = glm::clamp(adjustedLookAhead, 50.0f, 350.0f);
 
   auto splinePoints = m_car->getTrack()->getSplinePoints(200);
   bool isClockwise = !m_car->getTrack()->isDefaultDirection();
@@ -182,12 +215,19 @@ float AIDriver::calculateCornerSpeed(const glm::vec2& lookAheadPoint) const {
   glm::vec2 carDir = glm::vec2(cos(debugInfo.angle), sin(debugInfo.angle));
   float turnAngle = acos(glm::dot(toAhead, carDir));
 
-  // Reduce target speed based on turn sharpness
-  float angleThreshold = 0.1f; // Minimum angle before speed reduction
+  float angleThreshold = 0.2f;
   float speedMultiplier = 1.0f;
 
   if (turnAngle > angleThreshold) {
-    speedMultiplier = 1.0f - (turnAngle - angleThreshold) * m_config.brakingSkill;
+    // More aggressive speed reduction for sharp turns
+    float sharpness = (turnAngle - angleThreshold) / (glm::pi<float>() - angleThreshold);
+    speedMultiplier = 1.0f - (sharpness * 0.7f);  // Allow down to 30% speed in very sharp turns
+
+    // If we're already drifting, allow slightly higher speeds
+    if (m_car->getProperties().driftState > 0.5f) {
+      speedMultiplier += 0.2f;
+    }
+
     speedMultiplier = glm::clamp(speedMultiplier, 0.3f, 1.0f);
   }
 
@@ -195,7 +235,7 @@ float AIDriver::calculateCornerSpeed(const glm::vec2& lookAheadPoint) const {
 }
 
 bool AIDriver::shouldBrakeForCorner(float cornerSpeed, float currentSpeed) const {
-  // Factor in the AI's braking skill
-  float brakingBuffer = 50.0f * (1.0f - m_config.brakingSkill);
-  return currentSpeed > cornerSpeed + brakingBuffer;
+  // Use a fixed braking buffer instead of a configurable one
+  const float BRAKING_BUFFER = 25.0f;
+  return currentSpeed > cornerSpeed + BRAKING_BUFFER;
 }

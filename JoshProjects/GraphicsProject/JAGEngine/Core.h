@@ -1,7 +1,7 @@
 // Core.h
 #pragma once
 
-// GLM configuration - these need to be consistent across all files
+// GLM configuration
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_CTOR_INIT
 #define GLM_FORCE_CXX17

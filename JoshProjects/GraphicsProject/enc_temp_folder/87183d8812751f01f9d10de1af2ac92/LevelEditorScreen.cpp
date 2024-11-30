@@ -1528,15 +1528,15 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       Car::CarProperties& props = m_testCars[m_selectedCarIndex]->getProperties();
       Car::CarProperties prevProps = props;
 
-      // Movement Properties - Converted to SliderFloat
-      ImGui::SliderFloat("Max Speed", &props.maxSpeed, 200.0f, 4000.0f, "%.1f");
-      ImGui::SliderFloat("Acceleration", &props.acceleration, 5000.0f, 40000.0f, "%.0f");
-      ImGui::SliderFloat("Turn Speed", &props.turnSpeed, 5.0f, 40.0f, "%.1f");
-      ImGui::SliderFloat("Drag Factor", &props.dragFactor, 0.9f, 1.0f, "%.3f");
-      ImGui::SliderFloat("Turn Reset Rate", &props.turnResetRate, 0.5f, 2.0f, "%.2f");
-      ImGui::SliderFloat("Max Angular Velocity", &props.maxAngularVelocity, 1.0f, 5.0f, "%.1f");
-      ImGui::SliderFloat("Braking Force", &props.brakingForce, 0.1f, 2.0f, "%.2f");
-      ImGui::SliderFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 5.0f, "%.1f");
+      // Movement Properties
+      ImGui::DragFloat("Max Speed", &props.maxSpeed, 1.0f, 200.0f, 4000.0f);
+      ImGui::DragFloat("Acceleration", &props.acceleration, 10.0f, 5000.0f, 40000.0f);
+      ImGui::DragFloat("Turn Speed", &props.turnSpeed, 0.1f, 5.0f, 40.0f);
+      ImGui::DragFloat("Drag Factor", &props.dragFactor, 0.001f, 0.9f, 1.0f);
+      ImGui::DragFloat("Turn Reset Rate", &props.turnResetRate, 0.01f, 0.5f, 2.0f);
+      ImGui::DragFloat("Max Angular Velocity", &props.maxAngularVelocity, 0.1f, 1.0f, 5.0f);
+      ImGui::DragFloat("Braking Force", &props.brakingForce, 0.1f, 0.1f, 2.0f);
+      ImGui::DragFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 0.1f, 5.0f);
 
       // Surface Effects section
       ImGui::Separator();
@@ -1562,8 +1562,8 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       // Friction Settings
       ImGui::Separator();
       ImGui::Text("Friction Settings");
-      ImGui::SliderFloat("Wheel Friction", &props.wheelFriction, 0.1f, 2.0f, "%.2f");
-      ImGui::SliderFloat("Surface Friction", &props.baseFriction, 0.1f, 2.0f, "%.2f");
+      ImGui::DragFloat("Wheel Friction", &props.wheelFriction, 0.01f, 0.1f, 2.0f);
+      ImGui::DragFloat("Surface Friction", &props.baseFriction, 0.01f, 0.1f, 2.0f);
 
       // When properties change and sync is enabled
       if (memcmp(&prevProps, &props, sizeof(Car::CarProperties)) != 0 && m_syncAllAICars) {
