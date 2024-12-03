@@ -27,6 +27,7 @@
 #include "DebugDraw.h"
 #include "LevelSaveLoad.h"
 #include "AIDriver.h"
+#include "RaceCountdown.h"
 
 // Forward declarations
 class SplineTrack;
@@ -165,13 +166,26 @@ private:
   size_t m_selectedCarIndex = 0;  // 0 is player car
   bool m_syncAllAICars = false;   // When true, all AI cars share properties
   Car* m_hoveredCar = nullptr;    // Currently hovered car for selection
+  bool m_inputEnabled = false;
+
+  // Race countdown
+  std::unique_ptr<RaceCountdown> m_raceCountdown;
+  bool m_readyToStart = false;
+
+  // Text Rendering
+  std::unique_ptr<JAGEngine::SpriteFont> m_countdownFont;
+  JAGEngine::GLSLProgram m_textRenderingProgram;
+
+  //HUD
+  JAGEngine::Camera2D m_hudCamera;
+  JAGEngine::SpriteBatch m_hudSpriteBatch;
 
   // Helper functions - grouped by functionality
 
   // OpenGL Debugging Context
 #ifdef _DEBUG
   void testOpenGLDebug() {
-    glEnable(GL_INVALID_ENUM);  // Changed from GL_INVALID_ENUM_VALUE
+    glEnable(GL_INVALID_ENUM);
     GLuint invalidTexture = 99999;
     glBindTexture(GL_TEXTURE_2D, invalidTexture);
   }
@@ -224,6 +238,7 @@ private:
   void initTestMode();
   void updateTestMode();
   void cleanupTestMode();
+  void drawHUD();
   void drawTestMode();
   void drawTestModeUI();
   void updateCarTrackingInfo();

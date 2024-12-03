@@ -1,3 +1,5 @@
+// Timing.cpp
+
 #include "Timing.h"
 #include <SDL/SDL.h>
 namespace JAGEngine {

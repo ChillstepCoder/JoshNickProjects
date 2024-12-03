@@ -59,32 +59,83 @@ void LevelEditorScreen::destroy() {
 
 void LevelEditorScreen::onEntry() {
   std::cout << "LevelEditorScreen::onEntry() start\n";
-
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
   int screenWidth = game->getWindow().getScreenWidth();
   int screenHeight = game->getWindow().getScreenHeight();
 
+  // Initialize cameras
   m_camera.init(screenWidth, screenHeight);
   m_camera.setScale(1.0f);
   m_camera.setPosition(glm::vec2(0.0f));
 
-  // Initialize track
-  m_track = std::make_unique<SplineTrack>();
-  initDefaultTrack();
+  m_hudCamera.init(screenWidth, screenHeight);
+  m_hudCamera.setPosition(glm::vec2(screenWidth / 2.0f, screenHeight / 2.0f));
+  m_hudCamera.setScale(1.0f);
 
-  // Initialize level renderer
+  // Initialize sprite batches
+  m_spriteBatch.init();
+  m_hudSpriteBatch.init();
+
+  // Initialize track and renderer components
+  m_track = std::make_unique<SplineTrack>();
+  m_track->createDefaultTrack();
+
   m_levelRenderer = std::make_unique<LevelRenderer>();
   m_levelRenderer->init();
   m_levelRenderer->setShowStartPositions(m_showStartPositions);
 
-  m_spriteBatch.init();
-
-  // Initialize object manager
   m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
   m_objectManager->createDefaultTemplates();
 
-  // Initialize background quad and meshes
   m_levelRenderer->updateRoadMesh(m_track.get());
+
+  // Initialize text rendering
+  try {
+    // Initialize shaders first
+    m_textRenderingProgram.compileShaders("Shaders/textRendering.vert", "Shaders/textRendering.frag");
+    m_textRenderingProgram.addAttribute("vertexPosition");
+    m_textRenderingProgram.addAttribute("vertexColor");
+    m_textRenderingProgram.addAttribute("vertexUV");
+    m_textRenderingProgram.linkShaders();
+
+    // Check uniforms
+    GLint pUniform = m_textRenderingProgram.getUniformLocation("P");
+    GLint samplerUniform = m_textRenderingProgram.getUniformLocation("mySampler");
+
+    if (pUniform == -1 || samplerUniform == -1) {
+      throw std::runtime_error("Failed to get shader uniforms");
+    }
+
+    // Initialize font
+    m_countdownFont = std::make_unique<JAGEngine::SpriteFont>();
+    m_countdownFont->init("Fonts/data-unifon.ttf", 72);
+
+    // Initialize countdown ONCE
+    m_raceCountdown = std::make_unique<RaceCountdown>();
+    m_raceCountdown->setFont(m_countdownFont.get());  // Share the font
+
+    // Set countdown callbacks
+    m_raceCountdown->setOnCountdownStart([this]() {
+      m_enableAI = false;
+      m_inputEnabled = false;
+      });
+
+    m_raceCountdown->setOnCountdownComplete([this]() {
+      m_enableAI = true;
+      m_inputEnabled = true;
+      });
+
+    // Debug output
+    std::cout << "Text Rendering Setup Complete:\n"
+      << "- Shader Program ID: " << m_textRenderingProgram.getProgramID() << "\n"
+      << "- Countdown Font Texture ID: " << m_countdownFont->getTextureID() << "\n"
+      << "- P uniform location: " << pUniform << "\n"
+      << "- Sampler uniform location: " << samplerUniform << "\n";
+
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Text rendering initialization error: " << e.what() << std::endl;
+  }
 
   std::cout << "LevelEditorScreen::onEntry() complete\n";
 }
@@ -103,6 +154,10 @@ void LevelEditorScreen::onExit() {
 
   // Clean up test mode resources
   cleanupTestMode();
+
+  // Clean up text rendering resources
+  m_countdownFont.reset();
+  m_raceCountdown.reset();
 
   std::cout << "LevelEditorScreen::onExit() complete\n";
 }
@@ -172,57 +227,66 @@ void LevelEditorScreen::drawImGui() {
 }
 
 void LevelEditorScreen::draw() {
-
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Update camera
   m_camera.update();
 
-  // Update level renderer settings from GUI state
-  m_levelRenderer->setGrassColor(m_grassColor);
-  m_levelRenderer->setOffroadColor(m_offroadColor);
-  m_levelRenderer->setGrassNoiseParams(m_grassNoiseScale, m_grassNoiseIntensity);
-  m_levelRenderer->setBarrierColors(m_barrierPrimaryColor, m_barrierSecondaryColor);
-  m_levelRenderer->setBarrierPatternScale(m_barrierPatternScale);
-  m_levelRenderer->setRoadLOD(m_roadLOD);
+  // Check if level renderer exists before using it
+  if (m_levelRenderer) {
+    // Update level renderer settings from GUI state
+    try {
+      m_levelRenderer->setGrassColor(m_grassColor);
+      m_levelRenderer->setOffroadColor(m_offroadColor);
+      m_levelRenderer->setGrassNoiseParams(m_grassNoiseScale, m_grassNoiseIntensity);
+      m_levelRenderer->setBarrierColors(m_barrierPrimaryColor, m_barrierSecondaryColor);
+      m_levelRenderer->setBarrierPatternScale(m_barrierPatternScale);
+      m_levelRenderer->setRoadLOD(m_roadLOD);
 
-  // Automatically hide start positions in test mode
-  if (m_testMode) {
-    m_levelRenderer->setShowStartPositions(false);
-  }
+      // Automatically hide start positions in test mode
+      if (m_testMode) {
+        m_levelRenderer->setShowStartPositions(false);
+      }
 
-  // Add back this critical preview setup code
-  // Set preview node if in add node mode
-  if (m_addNodeMode) {
-    m_levelRenderer->setPreviewNode(m_previewNodePosition, m_showPreviewNode);
-  }
-  else {
-    m_levelRenderer->setPreviewNode(glm::vec2(0.0f), false);
-  }
+      // Add back this critical preview setup code
+      // Set preview node if in add node mode
+      if (m_addNodeMode) {
+        m_levelRenderer->setPreviewNode(m_previewNodePosition, m_showPreviewNode);
+      }
+      else {
+        m_levelRenderer->setPreviewNode(glm::vec2(0.0f), false);
+      }
 
-  // Object placement preview
-  m_levelRenderer->setObjectPlacementMode(m_objectPlacementMode,
-    m_selectedTemplateIndex,
-    m_testMode);  // Pass test mode state
-  if (m_objectPlacementMode && !m_testMode) {  // Only show preview if not in test mode
-    glm::vec2 mousePos = m_camera.convertScreenToWorld(
-      m_game->getInputManager().getMouseCoords());
-    m_levelRenderer->setPreviewPosition(mousePos);
-  }
+      // Object placement preview
+      m_levelRenderer->setObjectPlacementMode(m_objectPlacementMode,
+        m_selectedTemplateIndex,
+        m_testMode);  // Pass test mode state
+      if (m_objectPlacementMode && !m_testMode) {  // Only show preview if not in test mode
+        glm::vec2 mousePos = m_camera.convertScreenToWorld(
+          m_game->getInputManager().getMouseCoords());
+        m_levelRenderer->setPreviewPosition(mousePos);
+      }
 
-  bool showSplinePoints = m_showSplinePoints;
-  if (m_testMode) showSplinePoints = false;
+      bool showSplinePoints = m_showSplinePoints;
+      if (m_testMode) showSplinePoints = false;
 
-  // Main render call
-  m_levelRenderer->render(m_camera,
-    m_track.get(),
-    m_objectManager.get(),
-    showSplinePoints,
-    static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
+      // Main render call
+      if (m_track) {
+        m_levelRenderer->render(m_camera,
+          m_track.get(),
+          m_objectManager.get(),
+          showSplinePoints,
+          static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
 
-  // Draw start positions after main render, but only if not in test mode
-  if (m_levelRenderer->getShowStartPositions() && !m_testMode) {
-    m_levelRenderer->renderStartPositions(m_camera.getCameraMatrix(), m_track.get());
+        // Draw start positions after main render, but only if not in test mode
+        if (m_levelRenderer->getShowStartPositions() && !m_testMode) {
+          m_levelRenderer->renderStartPositions(m_camera.getCameraMatrix(), m_track.get());
+        }
+      }
+    }
+    catch (const std::exception& e) {
+      std::cerr << "Error in renderer: " << e.what() << std::endl;
+    }
   }
 
   // Draw test mode cars if in test mode
@@ -289,6 +353,14 @@ void LevelEditorScreen::drawDebugWindow() {
     m_selectedNode = nullptr;
     m_isDragging = false;
     initDefaultTrack();
+  }
+
+  // Add null check before accessing track
+  if (m_track) {
+    ImGui::Text("Nodes: %zu", m_track->getNodes().size());
+  }
+  else {
+    ImGui::Text("Track not initialized");
   }
 
   ImGui::Text("Nodes: %zu", m_track->getNodes().size());
@@ -1171,6 +1243,10 @@ void LevelEditorScreen::deleteSelectedNode() {
 }
 
 void LevelEditorScreen::initTestMode() {
+  std::cout << "Initializing test mode..." << std::endl;
+  if (m_countdownFont) {
+    std::cout << "Font texture ID: " << m_countdownFont->getTextureID() << std::endl;
+  }
   // Save object states before entering test mode
   m_savedObjectStates.clear();
   const auto& existingObjects = m_objectManager->getPlacedObjects();
@@ -1223,8 +1299,6 @@ void LevelEditorScreen::initTestMode() {
   m_objectPlacementMode = false;
   m_selectedTemplateIndex = -1;
 
-  m_testMode = true;
-
   // Create barrier collisions with physics world
   if (m_physicsSystem) {
     m_levelRenderer->createBarrierCollisions(m_track.get(), m_physicsSystem->getWorld());
@@ -1256,6 +1330,21 @@ void LevelEditorScreen::initTestMode() {
     }
 
     m_objectManager = std::move(newManager);
+
+    // Initialize countdown only once we're ready
+    if (!m_countdownFont || !m_countdownFont->getTextureID()) {
+      m_countdownFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/data-unifon.ttf", 72);
+    }
+
+    if (!m_raceCountdown) {
+      m_raceCountdown = std::make_unique<RaceCountdown>();
+      m_raceCountdown->init("Fonts/data-unifon.ttf", 72);
+    }
+
+    m_readyToStart = true;
+    m_enableAI = false;
+    m_inputEnabled = false;
+
   }
 
   // Load car texture
@@ -1351,64 +1440,140 @@ void LevelEditorScreen::initTestMode() {
   m_camera.setScale(m_testCameraScale);
 }
 
+void LevelEditorScreen::drawHUD() {
+  if (!m_raceCountdown || !m_countdownFont) {
+    std::cout << "Missing font or countdown" << std::endl;
+    return;
+  }
+
+  JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
+  int screenWidth = game->getWindow().getScreenWidth();
+  int screenHeight = game->getWindow().getScreenHeight();
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  m_textRenderingProgram.use();
+
+  glActiveTexture(GL_TEXTURE0);
+  GLuint fontTextureID = m_countdownFont->getTextureID();
+  std::cout << "Drawing HUD - Font texture ID: " << fontTextureID << std::endl;
+  glBindTexture(GL_TEXTURE_2D, fontTextureID);
+
+  GLint textureUniform = m_textRenderingProgram.getUniformLocation("mySampler");
+  glUniform1i(textureUniform, 0);
+
+  // Update HUD camera to match screen coordinates
+  m_hudCamera.setPosition(glm::vec2(screenWidth / 2.0f, screenHeight / 2.0f));
+  m_hudCamera.update();
+
+  // Force orthographic projection matrix
+  glm::mat4 projectionMatrix = glm::ortho(
+    0.0f, static_cast<float>(screenWidth),
+    static_cast<float>(screenHeight), 0.0f,  // Note: flipped Y coordinates
+    -1.0f, 1.0f
+  );
+  GLint pUniform = m_textRenderingProgram.getUniformLocation("P");
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(projectionMatrix[0][0]));
+
+  // Debug projection matrix
+  std::cout << "Projection Matrix:\n";
+  for (int i = 0; i < 4; i++) {
+    std::cout << projectionMatrix[i].x << ", "
+      << projectionMatrix[i].y << ", "
+      << projectionMatrix[i].z << ", "
+      << projectionMatrix[i].w << std::endl;
+  }
+
+  // Debug the shader state
+  GLint currentProgram;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);
+  std::cout << "Current shader program: " << currentProgram
+    << " (expected: " << m_textRenderingProgram.getProgramID() << ")" << std::endl;
+
+  m_hudSpriteBatch.begin();
+
+  std::string countdownText = m_raceCountdown->getText();
+  if (!countdownText.empty()) {
+    // Use screen coordinates directly
+    glm::vec2 screenCenter(screenWidth / 2.0f, screenHeight / 2.0f);
+
+    std::cout << "Screen dimensions: " << screenWidth << "x" << screenHeight << std::endl;
+    std::cout << "Drawing at screen center: " << screenCenter.x << ", " << screenCenter.y << std::endl;
+
+    m_countdownFont->draw(m_hudSpriteBatch,
+      countdownText.c_str(),
+      screenCenter,  // Use screen coordinates directly
+      glm::vec2(3.0f),  // Increased scale for visibility
+      0.0f,
+      JAGEngine::ColorRGBA8(255, 0, 0, 255),
+      JAGEngine::Justification::MIDDLE);
+
+    std::cout << "Drawing countdown text '" << countdownText
+      << "' at screen pos: " << screenCenter.x << ", " << screenCenter.y << std::endl;
+  }
+
+  m_hudSpriteBatch.end();
+  m_hudSpriteBatch.renderBatch();
+
+  m_textRenderingProgram.unuse();
+
+  // Check for GL errors
+  GLenum err;
+  while ((err = glGetError()) != GL_NO_ERROR) {
+    std::cout << "GL Error in drawHUD: 0x" << std::hex << err << std::dec << std::endl;
+  }
+}
+
 void LevelEditorScreen::drawTestMode() {
   if (!m_testMode || m_testCars.empty()) return;
 
-  // Draw normal car sprites
+  // Draw cars and other game objects
   m_levelRenderer->getTextureProgram().use();
   glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
   GLint pUniform = m_levelRenderer->getTextureProgram().getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &cameraMatrix[0][0]);
 
   m_spriteBatch.begin();
-
   // Draw all cars with transparency
   for (const auto& car : m_testCars) {
     b2BodyId bodyId = car->getDebugInfo().bodyId;
-
     if (b2Body_IsValid(bodyId)) {
       b2Vec2 position = b2Body_GetPosition(bodyId);
       float angle = b2Rot_GetAngle(b2Body_GetRotation(bodyId));
-
       float carWidth = 20.0f;
       float carHeight = 10.0f;
-
       glm::vec4 destRect(
         position.x - carWidth / 2.0f,
         position.y - carHeight / 2.0f,
         carWidth,
         carHeight
       );
-
       glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-
-      // Get car's color and make it semi-transparent
       JAGEngine::ColorRGBA8 color = car->getColor();
-      color.a = 105; // 105 of 255
-
+      color.a = 105;
       m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, color, angle);
     }
   }
-
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
   m_levelRenderer->getTextureProgram().unuse();
 
-  // Draw debug visualization if enabled
+  // Draw debug stuff if enabled
   if (m_showDebugDraw && m_physicsSystem) {
     b2WorldId worldId = m_physicsSystem->getWorld();
     m_debugDraw->drawWorld(worldId, cameraMatrix);
-
-    // Draw wheel colliders for each car
     for (const auto& car : m_testCars) {
       m_debugDraw->drawWheelColliders(*car, cameraMatrix);
     }
   }
 
-  // Only draw tracking points if enabled
   if (m_showTrackingPoints) {
     drawCarTrackingDebug();
   }
+
+  // Draw the HUD (including countdown text)
+  drawHUD();
 }
 
 void LevelEditorScreen::handleCarSelection() {
@@ -1701,6 +1866,13 @@ void LevelEditorScreen::drawTestModeUI() {
   ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
 
   ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
+
+  if (m_readyToStart && !m_raceCountdown->isCountingDown() && !m_raceCountdown->hasFinished()) {
+    if (ImGui::Button("Begin Race", ImVec2(180, 30))) {
+      m_raceCountdown->startCountdown();
+    }
+  }
+
   if (ImGui::Button("Return to Editor", ImVec2(180, 30))) {
     cleanupTestMode();
   }
@@ -1772,6 +1944,14 @@ void LevelEditorScreen::cleanupTestMode() {
 
   m_showStartPositions = savedShowStartPositions;
   m_levelRenderer->setShowStartPositions(m_showStartPositions);
+
+  // Reset countdown and ready state
+  if (m_raceCountdown) {
+    m_raceCountdown->reset();
+  }
+  m_readyToStart = false;
+  m_enableAI = false;
+  m_inputEnabled = false;
 
   m_testMode = false;
 }
@@ -1871,6 +2051,10 @@ void LevelEditorScreen::updateCarTrackingInfo() {
 void LevelEditorScreen::updateTestMode() {
   if (!m_testMode || m_testCars.empty()) return;
 
+  if (m_raceCountdown) {
+    m_raceCountdown->update(1.0f / 60.0f);
+  }
+
   // Add safety check
   if (!m_physicsSystem || !m_testCars[0]) {
     cleanupTestMode();
@@ -1897,7 +2081,7 @@ void LevelEditorScreen::updateTestMode() {
   const float timeStep = 1.0f / 60.0f;
 
   // Update player car with input
-  if (!m_testCars.empty()) {
+  if (!m_testCars.empty() && m_inputEnabled) {
     InputState input;
     input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) ||
       inputManager.isKeyDown(SDLK_w);

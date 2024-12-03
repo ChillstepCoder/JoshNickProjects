@@ -9,7 +9,7 @@
 class AIDriver {
 public:
   struct Config {
-    float lookAheadDistance = 200.0f;      // How far ahead to look for turns
+    float lookAheadDistance = 100.0f;      // How far ahead to look for turns
     float centeringForce = 1.0f;           // How strongly to center on spline (0-1)
     float turnAnticipation = 1.0f;         // How much to consider lookahead angle (0-1)
     float reactionTime = 0.1f;             // Delay in steering response

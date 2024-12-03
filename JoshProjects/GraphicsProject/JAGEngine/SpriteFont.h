@@ -18,6 +18,7 @@
     Original Author: Cristian Zaloj
     Modified By: Benjamin Arnold
 */
+// SpriteFont.h
 
 #pragma once
 #ifndef SpriteFont_h__
@@ -52,7 +53,7 @@ namespace JAGEngine {
     void init(const char* font, int size);
     void dispose();
 
-    int getFontHeight() const;
+    bool isValid() const { return m_textureID != 0 && m_font != nullptr && m_atlas != nullptr; }
 
     /// Measures the dimensions of the text
     glm::vec2 measure(const char* s);
@@ -63,6 +64,8 @@ namespace JAGEngine {
 
     //getters
     GLuint getTextureID() const { return m_textureID; }
+    int getFontHeight() const;
+
 
   private:
     ftgl::texture_atlas_t* m_atlas;
