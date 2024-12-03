@@ -12,7 +12,7 @@ public:
 
     void init(std::vector <Block&> waterblocks);
 
-    void simulateWater(Chunk& chunk, BlockManager& blockManager);
+    void simulateWater(Chunk chunk, BlockManager& blockManager);
     float getStableState(float mass); //Returns the amount of water that should be in the bottom cell.
     float constrain(float val, float min, float max);
     float minVal(float a, float b);
