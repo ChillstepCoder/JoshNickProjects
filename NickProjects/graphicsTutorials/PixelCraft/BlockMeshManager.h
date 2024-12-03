@@ -88,6 +88,8 @@ public:
 
     std::vector<Block> getBlocksInRange(const glm::vec2& playerPos, int range);
 
+    std::vector<Chunk*> m_activeChunks;
+
 private:
     std::vector<std::vector<Chunk>> m_chunks;
 

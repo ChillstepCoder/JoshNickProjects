@@ -236,6 +236,7 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
     for (int x = 0; x < WORLD_WIDTH_CHUNKS; ++x) {
         for (int y = 0; y < WORLD_HEIGHT_CHUNKS; ++y) {
             if (!isChunkLoaded(x, y)) {
+
                 glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
                 if (!isChunkFarAway(playerPos, chunkPos)) {
                     loadChunk(x, y);
@@ -306,6 +307,9 @@ void BlockManager::loadChunk(int chunkX, int chunkY) {
 
     // Build mesh
     chunk.buildChunkMesh();
+
+    m_activeChunks.push_back(&m_chunks[chunkX][chunkY]);
+
 }
 
 bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {
@@ -340,6 +344,15 @@ void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
 
 void BlockManager::unloadChunk(int x, int y) {
     assert(x >= 0 && y >= 0 && x < WORLD_WIDTH_CHUNKS && y < WORLD_HEIGHT_CHUNKS);
+
+    for (int i = 0; i < m_activeChunks.size(); i++) { // Fixes the list of active chunks
+        if (m_activeChunks[i] == &m_chunks[x][y]) {
+            m_activeChunks[i] = m_activeChunks.back();
+            m_activeChunks.pop_back();
+            break;
+        }
+    }
+
 
     m_chunks[x][y].destroy(); // Clean up resources
 }
