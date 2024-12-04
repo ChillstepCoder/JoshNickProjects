@@ -1,6 +1,7 @@
 #include <Bengine/ResourceManager.h>
 #include "BlockMeshManager.h"
 #include "DebugDraw.h"
+#include "CellularAutomataManager.h"
 #include "PerlinNoise.hpp"
 #include <iostream>
 
@@ -29,6 +30,7 @@ void Chunk::buildChunkMesh() {
                 GLuint textureID = BlockDefRepository::getTextureID(id);
                 Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                 m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+
                 //BlockRenderer::renderBlock(m_spriteBatch, repository.getDef(id),glm::vec2(x,y));
             }
         }
@@ -118,6 +120,14 @@ void BlockManager::initializeChunks(glm::vec2 playerPosition) {
     }
 }
 
+void BlockManager::update() {
+
+    for (int i = 0; i < m_activeChunks.size(); i++) { // Simulate water for all active chunks
+        m_cellularAutomataManager.simulateWater(*m_activeChunks[i]);
+    }
+
+}
+
 BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
     int worldX = std::floor(position.x);
     int worldY = std::floor(position.y);
@@ -155,6 +165,19 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
 
+        /*
+        if (blockHandle.block->getBlockID() == BlockID::WATER) {
+            for (int i = 0; i < chunk.waterBlocks.size(); i++) {
+                if (chunk.waterBlocks[i] == m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y]) {
+
+                    chunk.waterBlocks[i] = chunk.waterBlocks.back();
+
+                    chunk.waterBlocks.pop_back(); // Add to the list of water blocks.
+                }
+            }
+        }
+        */
+
         chunk.buildChunkMesh();
     }
 }
@@ -188,6 +211,10 @@ void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& p
 
     Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
     chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = waterBlock; 
+
+    if (waterBlock.getBlockID() == BlockID::WATER) {
+        chunk.waterBlocks.push_back(glm::vec2(realpositionX, realPositionY)); // Add to the list of water blocks.
+    }
 
     chunk.buildChunkMesh();
 

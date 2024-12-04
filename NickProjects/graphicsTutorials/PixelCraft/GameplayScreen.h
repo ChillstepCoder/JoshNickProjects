@@ -15,6 +15,7 @@
 #include <Bengine/SpriteFont.h>
 #include <Bengine/DebugOpenGL.h>
 #include "BlockMeshManager.h"
+#include "CellularAutomataManager.h"
 #include "DebugDraw.h"
 #include "Imgui.h"
 #include "ImGui/backends/imgui_impl_sdl2.h"
@@ -68,6 +69,7 @@ private:
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
     float m_gravity = -80.0f;
 
+    CellularAutomataManager m_cellularAutomataManager;
     BlockMeshManager m_blockMeshManager;
     BlockManager* m_blockManager;
 };

@@ -46,7 +46,9 @@ void GameplayScreen::onEntry() {
     // Initialize BlockMeshManager
     m_blockMeshManager.init();
 
-    m_blockManager = new BlockManager(m_blockMeshManager, m_world);
+    m_cellularAutomataManager.init();
+
+    m_blockManager = new BlockManager(m_blockMeshManager, m_world, m_cellularAutomataManager);
 
     m_blockManager->initializeChunks(playerPos);
 
@@ -125,9 +127,16 @@ void GameplayScreen::update() {
             PROFILE_SCOPE("Load nearby chunks");
             m_blockManager->loadNearbyChunks(playerPos);
         }
+        {
+            PROFILE_SCOPE("BlockManager Update");
+            m_blockManager->update();
+        }
+
 
         m_camera.setPosition(playerPos); // Set camera position to player's position
     }
+
+
 }
 
 void GameplayScreen::draw() {
