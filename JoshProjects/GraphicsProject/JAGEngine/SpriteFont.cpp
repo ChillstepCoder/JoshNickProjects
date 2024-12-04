@@ -19,7 +19,13 @@ namespace JAGEngine {
 
   void SpriteFont::init(const char* font, int size) {
     m_atlas = ftgl::texture_atlas_new(512, 512, 1);
+    ftgl::texture_atlas_clear(m_atlas);  // Clear atlas first
     m_font = ftgl::texture_font_new_from_file(m_atlas, size, font);
+
+    std::cout << "Atlas created: size=" << size
+      << " width=" << m_atlas->width
+      << " height=" << m_atlas->height
+      << " depth=" << m_atlas->depth << std::endl;
 
     if (!m_font) {
       std::cerr << "Failed to load font: " << font << std::endl;
@@ -27,15 +33,24 @@ namespace JAGEngine {
     }
 
     m_fontHeight = m_font->height;
+    std::cout << "Font height: " << m_fontHeight << std::endl;
 
     // Load all ASCII printable characters
     const char* cache = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-    size_t missedGlyphs = ftgl::texture_font_load_glyphs(m_font, cache);
-    if (missedGlyphs > 0) {
-        std::cerr << "Missed " << missedGlyphs << " glyphs loading font" << std::endl;
-        __debugbreak();
+
+    // Debug each character's metrics before loading
+    for (const char* p = cache; *p; ++p) {
+      ftgl::texture_glyph_t* glyph = ftgl::texture_font_get_glyph(m_font, p);
+      if (glyph) {
+        std::cout << "Pre-load metrics for '" << *p << "': "
+          << "width=" << glyph->width
+          << " height=" << glyph->height
+          << " offset_x=" << glyph->offset_x
+          << " offset_y=" << glyph->offset_y << std::endl;
+      }
     }
 
+    size_t missedGlyphs = ftgl::texture_font_load_glyphs(m_font, cache);
     // Create OpenGL texture
     glGenTextures(1, &m_textureID);
     glBindTexture(GL_TEXTURE_2D, m_textureID);
@@ -54,6 +69,14 @@ namespace JAGEngine {
         m_glyphMap[c] = glyph;
       }
     }
+    // After loading glyphs
+    for (const auto& pair : m_glyphMap) {
+      auto glyph = pair.second;
+      std::cout << "Glyph '" << pair.first << "' UV coords: "
+        << glyph->s0 << ", " << glyph->t0 << ", "
+        << glyph->s1 << ", " << glyph->t1 << std::endl;
+    }
+
   }
 
   void SpriteFont::dispose() {

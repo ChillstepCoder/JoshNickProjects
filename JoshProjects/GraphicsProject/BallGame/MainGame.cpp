@@ -103,7 +103,7 @@ void MainGame::init() {
 
   m_spriteBatch.init();
 
-  m_spriteFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/data-unifon.ttf", 40);
+  m_spriteFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/titilium_bold.ttf", 40);
 
   m_textureProgram.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
   m_textureProgram.addAttribute("vertexPosition");

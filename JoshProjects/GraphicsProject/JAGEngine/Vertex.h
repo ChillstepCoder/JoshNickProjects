@@ -1,4 +1,4 @@
-// Window.h
+// Vertex.h
 
 #pragma once
 

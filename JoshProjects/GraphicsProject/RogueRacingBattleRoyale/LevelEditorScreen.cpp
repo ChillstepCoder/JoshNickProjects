@@ -68,6 +68,7 @@ void LevelEditorScreen::onEntry() {
   m_camera.setScale(1.0f);
   m_camera.setPosition(glm::vec2(0.0f));
 
+  // HUD
   m_hudCamera.init(screenWidth, screenHeight);
   m_hudCamera.setPosition(glm::vec2(screenWidth / 2.0f, screenHeight / 2.0f));
   m_hudCamera.setScale(1.0f);
@@ -101,20 +102,18 @@ void LevelEditorScreen::onEntry() {
     // Check uniforms
     GLint pUniform = m_textRenderingProgram.getUniformLocation("P");
     GLint samplerUniform = m_textRenderingProgram.getUniformLocation("mySampler");
-
     if (pUniform == -1 || samplerUniform == -1) {
       throw std::runtime_error("Failed to get shader uniforms");
     }
 
-    // Initialize font
+    // Initialize font after shader validation
     m_countdownFont = std::make_unique<JAGEngine::SpriteFont>();
-    m_countdownFont->init("Fonts/data-unifon.ttf", 72);
+    m_countdownFont->init("Fonts/titilium_bold.ttf", 72);
 
-    // Initialize countdown ONCE
+    // Initialize countdown with same font
     m_raceCountdown = std::make_unique<RaceCountdown>();
-    m_raceCountdown->setFont(m_countdownFont.get());  // Share the font
+    m_raceCountdown->setFont(m_countdownFont.get());
 
-    // Set countdown callbacks
     m_raceCountdown->setOnCountdownStart([this]() {
       m_enableAI = false;
       m_inputEnabled = false;
@@ -125,13 +124,11 @@ void LevelEditorScreen::onEntry() {
       m_inputEnabled = true;
       });
 
-    // Debug output
     std::cout << "Text Rendering Setup Complete:\n"
       << "- Shader Program ID: " << m_textRenderingProgram.getProgramID() << "\n"
       << "- Countdown Font Texture ID: " << m_countdownFont->getTextureID() << "\n"
       << "- P uniform location: " << pUniform << "\n"
       << "- Sampler uniform location: " << samplerUniform << "\n";
-
   }
   catch (const std::exception& e) {
     std::cerr << "Text rendering initialization error: " << e.what() << std::endl;
@@ -1333,12 +1330,13 @@ void LevelEditorScreen::initTestMode() {
 
     // Initialize countdown only once we're ready
     if (!m_countdownFont || !m_countdownFont->getTextureID()) {
-      m_countdownFont = std::make_unique<JAGEngine::SpriteFont>("Fonts/data-unifon.ttf", 72);
+      std::cerr << "Font not properly initialized!" << std::endl;
+      return;
     }
 
     if (!m_raceCountdown) {
       m_raceCountdown = std::make_unique<RaceCountdown>();
-      m_raceCountdown->init("Fonts/data-unifon.ttf", 72);
+      m_raceCountdown->init("Fonts/titilium_bold.ttf", 84);
     }
 
     m_readyToStart = true;
@@ -1456,6 +1454,7 @@ void LevelEditorScreen::drawHUD() {
   m_textRenderingProgram.use();
 
   glActiveTexture(GL_TEXTURE0);
+
   GLuint fontTextureID = m_countdownFont->getTextureID();
   std::cout << "Drawing HUD - Font texture ID: " << fontTextureID << std::endl;
   glBindTexture(GL_TEXTURE_2D, fontTextureID);
@@ -1463,16 +1462,10 @@ void LevelEditorScreen::drawHUD() {
   GLint textureUniform = m_textRenderingProgram.getUniformLocation("mySampler");
   glUniform1i(textureUniform, 0);
 
-  // Update HUD camera to match screen coordinates
-  m_hudCamera.setPosition(glm::vec2(screenWidth / 2.0f, screenHeight / 2.0f));
   m_hudCamera.update();
 
-  // Force orthographic projection matrix
-  glm::mat4 projectionMatrix = glm::ortho(
-    0.0f, static_cast<float>(screenWidth),
-    static_cast<float>(screenHeight), 0.0f,  // Note: flipped Y coordinates
-    -1.0f, 1.0f
-  );
+  glm::mat4 projectionMatrix = m_hudCamera.getCameraMatrix();
+
   GLint pUniform = m_textRenderingProgram.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(projectionMatrix[0][0]));
 
@@ -1495,22 +1488,20 @@ void LevelEditorScreen::drawHUD() {
 
   std::string countdownText = m_raceCountdown->getText();
   if (!countdownText.empty()) {
-    // Use screen coordinates directly
-    glm::vec2 screenCenter(screenWidth / 2.0f, screenHeight / 2.0f);
+    // Keep screen center position
+    glm::vec2 textPos(screenWidth / 2.0f, screenHeight / 2.0f);
 
-    std::cout << "Screen dimensions: " << screenWidth << "x" << screenHeight << std::endl;
-    std::cout << "Drawing at screen center: " << screenCenter.x << ", " << screenCenter.y << std::endl;
-
+    // Skip world conversion since it might be causing the scaling issue
     m_countdownFont->draw(m_hudSpriteBatch,
       countdownText.c_str(),
-      screenCenter,  // Use screen coordinates directly
-      glm::vec2(3.0f),  // Increased scale for visibility
+      textPos,
+      glm::vec2(6.0f),              // Match Zombie game's scale
       0.0f,
       JAGEngine::ColorRGBA8(255, 0, 0, 255),
       JAGEngine::Justification::MIDDLE);
 
-    std::cout << "Drawing countdown text '" << countdownText
-      << "' at screen pos: " << screenCenter.x << ", " << screenCenter.y << std::endl;
+    std::cout << "Drawing at: " << textPos.x << ", " << textPos.y
+      << " with scale 6.0" << std::endl;
   }
 
   m_hudSpriteBatch.end();
