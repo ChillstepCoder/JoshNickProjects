@@ -176,6 +176,7 @@ void ObjectManager::update() {
       obj->setRotation(angle);
     }
   }
+  updateGrid();
 }
 
 void ObjectManager::createDefaultTemplates() {
@@ -212,4 +213,37 @@ const std::vector<std::unique_ptr<PlaceableObject>>& ObjectManager::getPlacedObj
 
 const std::vector<std::unique_ptr<PlaceableObject>>& ObjectManager::getObjectTemplates() const {
   return m_objectTemplates;
+}
+
+int64_t ObjectManager::getGridCell(const glm::vec2& pos) const {
+  int x = static_cast<int>(std::floor(pos.x / CELL_SIZE));
+  int y = static_cast<int>(std::floor(pos.y / CELL_SIZE));
+  return (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
+}
+
+void ObjectManager::updateGrid() {
+  m_grid.clear();
+  for (const auto& obj : m_placedObjects) {
+    int64_t cell = getGridCell(obj->getPosition());
+    m_grid[cell].push_back(obj.get());
+  }
+}
+
+std::vector<const PlaceableObject*> ObjectManager::getNearbyObjects(const glm::vec2& pos, float radius) {
+  std::vector<const PlaceableObject*> nearby;  // Change to const pointers
+  int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
+
+  int centerX = static_cast<int>(std::floor(pos.x / CELL_SIZE));
+  int centerY = static_cast<int>(std::floor(pos.y / CELL_SIZE));
+
+  for (int y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
+    for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
+      int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
+      auto it = m_grid.find(cell);
+      if (it != m_grid.end()) {
+        nearby.insert(nearby.end(), it->second.begin(), it->second.end());
+      }
+    }
+  }
+  return nearby;
 }

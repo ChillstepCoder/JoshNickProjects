@@ -68,6 +68,7 @@ private:
   JAGEngine::SpriteBatch m_spriteBatch;
   glm::mat4 m_projectionMatrix;
   std::unique_ptr<LevelRenderer> m_levelRenderer;
+  JAGEngine::GLSLProgram m_textureProgram;
 
   // Track state
   std::unique_ptr<SplineTrack> m_track;
@@ -78,7 +79,7 @@ private:
 
   // Camera properties
   JAGEngine::Camera2D m_camera;
-  float m_cameraSpeed = 150.0f;
+  float m_cameraSpeed = 500.0f;
   float m_zoomFactor = 1.02f;
   float m_minZoom = 0.1f;
   float m_maxZoom = 5.0f;
@@ -161,6 +162,8 @@ private:
   std::vector<std::unique_ptr<AIDriver>> m_aiDrivers;
   bool m_enableAI = true;
   AIDriver::Config m_aiConfig;
+  size_t m_currentAIUpdateIndex = 0;
+  static constexpr size_t AI_UPDATES_PER_FRAME = 3;
 
   // Car Properties Selection
   size_t m_selectedCarIndex = 0;  // 0 is player car

@@ -6,6 +6,7 @@
 #include <glm/gtx/norm.hpp>
 #include <glm/gtc/constants.hpp>
 
+
 AIDriver::AIDriver(Car* car)
   : m_car(car)
   , m_lastInputTime(0.0f)
@@ -16,6 +17,30 @@ AIDriver::AIDriver(Car* car)
 
 void AIDriver::update(float deltaTime) {
   if (!m_car || !m_car->getTrack()) return;
+
+  // Update sensors periodically
+  m_sensorTimer += deltaTime;
+  if (m_sensorTimer >= SENSOR_UPDATE_INTERVAL) {
+    m_sensorTimer = 0.0f;
+
+    // Find which car number we are
+    std::cout << "\n=== Starting AI update for car at position ("
+      << m_car->getDebugInfo().position.x << ", "
+      << m_car->getDebugInfo().position.y << ") ===\n";
+
+    // Clear sensor data and scan for objects
+    m_sensorData.readings.clear();
+
+    if (!m_objectManager) {
+      std::cout << "Object manager is null for this car!\n";
+      std::cout << "Car angle: " << m_car->getDebugInfo().angle << "\n";
+      std::cout << "Car speed: " << m_car->getDebugInfo().currentSpeed << "\n";
+    }
+    else {
+      std::cout << "Object manager address: " << m_objectManager << "\n";
+      scanForObjects();
+    }
+  }
 
   // Update target points considering track direction
   m_targetPoint = findClosestSplinePoint();
@@ -34,6 +59,7 @@ void AIDriver::update(float deltaTime) {
   // Apply inputs to car
   m_car->update(m_currentInput);
 }
+
 
 void AIDriver::updateSteering() {
   auto debugInfo = m_car->getDebugInfo();
@@ -238,4 +264,131 @@ bool AIDriver::shouldBrakeForCorner(float cornerSpeed, float currentSpeed) const
   // Use a fixed braking buffer instead of a configurable one
   const float BRAKING_BUFFER = 25.0f;
   return currentSpeed > cornerSpeed + BRAKING_BUFFER;
+}
+
+
+void AIDriver::updateSensors() {
+  if (!m_car) return;
+
+  m_sensorData.readings.clear();
+
+  // Get car's current state
+  auto debugInfo = m_car->getDebugInfo();
+  glm::vec2 carPos(debugInfo.position);
+  glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
+
+  // Scan for objects
+  if (m_objectManager) {
+    scanForObjects();
+  }
+}
+
+void AIDriver::scanForObjects() {
+  if (!m_objectManager || !m_car) return;
+
+  auto debugInfo = m_car->getDebugInfo();
+  glm::vec2 carPos(debugInfo.position);
+  glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
+
+  // Only get nearby objects
+  auto nearbyObjects = m_objectManager->getNearbyObjects(carPos, SensorData::SENSOR_RANGE);
+  std::cout << "\nScanning for objects from car at (" << carPos.x << ", " << carPos.y
+    << ") facing " << debugInfo.angle << " radians\n";
+  std::cout << "Found " << nearbyObjects.size() << " nearby objects\n";
+
+  for (const auto* obj : nearbyObjects) {
+    glm::vec2 objPos = obj->getPosition();
+    float straightDistance = glm::distance(carPos, objPos);
+    float dx = objPos.x - carPos.x;
+    float dy = objPos.y - carPos.y;
+    float angleToObject = std::atan2(dy, dx);
+
+    std::cout << "  Checking " << obj->getDisplayName()
+      << " at (" << objPos.x << ", " << objPos.y
+      << ") distance: " << straightDistance
+      << " angle: " << angleToObject << "\n";
+
+    float pathDistance, pathAngle;
+    bool inPath = isObjectInPath(objPos, 10.0f, carPos, carForward, &pathDistance, &pathAngle);
+
+    if (inPath) {
+      std::cout << "    Object in path! Distance: " << pathDistance
+        << ", Angle: " << pathAngle << "\n";
+      if (pathDistance < SensorData::SENSOR_RANGE) {
+        SensorReading reading;
+        reading.object = obj;
+        reading.distance = pathDistance;
+        reading.angleToObject = pathAngle;
+        reading.isLeftSide = pathAngle > 0;
+        m_sensorData.readings.push_back(reading);
+        std::cout << "    Added to sensor readings\n";
+      }
+      else {
+        std::cout << "    Too far away (beyond sensor range)\n";
+      }
+    }
+  }
+}
+
+void AIDriver::scanForCars(const std::vector<Car*>& cars) {
+  if (!m_car) return;
+
+  auto debugInfo = m_car->getDebugInfo();
+  glm::vec2 carPos(debugInfo.position);
+  glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
+
+  for (Car* otherCar : cars) {
+    if (otherCar == m_car) continue;  // Skip self
+
+    auto otherDebugInfo = otherCar->getDebugInfo();
+    float distance, angle;
+
+    if (isObjectInPath(glm::vec2(otherDebugInfo.position), 15.0f,
+      carPos, carForward, &distance, &angle)) {
+      if (distance < SensorData::SENSOR_RANGE) {
+        SensorReading reading;
+        reading.car = otherCar;
+        reading.distance = distance;
+        reading.angleToObject = angle;
+        reading.isLeftSide = angle > 0;
+        m_sensorData.readings.push_back(reading);
+      }
+    }
+  }
+}
+
+bool AIDriver::isObjectInPath(const glm::vec2& objectPos, float objectRadius,
+  const glm::vec2& carPos, const glm::vec2& carForward,
+  float* outDistance, float* outAngle) {
+  glm::vec2 toObject = objectPos - carPos;
+  float distance = glm::length(toObject);
+
+  // If object is behind us, ignore it
+  float forwardDot = glm::dot(toObject, carForward);
+  if (forwardDot < 0) {
+    std::cout << "Object is behind car\n";
+    return false;
+  }
+
+  // Calculate lateral distance from car's forward path
+  glm::vec2 normalizedToObject = toObject / distance;
+  float angle = std::atan2(normalizedToObject.y, normalizedToObject.x) -
+    std::atan2(carForward.y, carForward.x);
+
+  // Normalize angle to [-π, π]
+  while (angle > glm::pi<float>()) angle -= 2.0f * glm::pi<float>();
+  while (angle < -glm::pi<float>()) angle += 2.0f * glm::pi<float>();
+
+  float lateralDist = std::abs(distance * std::sin(angle));
+
+  if (outDistance) *outDistance = distance;
+  if (outAngle) *outAngle = angle;
+
+  // Add debug output
+  std::cout << "Object check - Lateral distance: " << lateralDist
+    << ", Sensor width: " << SensorData::SENSOR_WIDTH
+    << ", Object radius: " << objectRadius << "\n";
+
+  // Check if object is within our sensor width
+  return lateralDist < (SensorData::SENSOR_WIDTH + objectRadius);
 }

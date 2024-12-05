@@ -63,6 +63,13 @@ void LevelEditorScreen::onEntry() {
   int screenWidth = game->getWindow().getScreenWidth();
   int screenHeight = game->getWindow().getScreenHeight();
 
+  // Initialize Shaders
+  m_textureProgram.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
+  m_textureProgram.addAttribute("vertexPosition");
+  m_textureProgram.addAttribute("vertexColor");
+  m_textureProgram.addAttribute("vertexUV");
+  m_textureProgram.linkShaders();
+
   // Initialize cameras
   m_camera.init(screenWidth, screenHeight);
   m_camera.setScale(1.0f);
@@ -1328,15 +1335,10 @@ void LevelEditorScreen::initTestMode() {
 
     m_objectManager = std::move(newManager);
 
-    // Initialize countdown only once we're ready
+    // Initialize countdown
     if (!m_countdownFont || !m_countdownFont->getTextureID()) {
       std::cerr << "Font not properly initialized!" << std::endl;
       return;
-    }
-
-    if (!m_raceCountdown) {
-      m_raceCountdown = std::make_unique<RaceCountdown>();
-      m_raceCountdown->init("Fonts/titilium_bold.ttf", 84);
     }
 
     m_readyToStart = true;
@@ -1411,6 +1413,12 @@ void LevelEditorScreen::initTestMode() {
     // Create AI driver for all cars except the first one (player)
     if (i > 0) {
       auto aiDriver = std::make_unique<AIDriver>(car.get());
+      // Set initial AI configuration
+      aiDriver->setConfig(m_aiConfig);
+      // Set ObjectManager for this specific AI driver
+      aiDriver->setObjectManager(m_objectManager.get());
+      std::cout << "Set object manager for AI car " << i << " (manager addr: "
+        << m_objectManager.get() << ")\n";
       m_aiDrivers.push_back(std::move(aiDriver));
     }
 
@@ -1764,6 +1772,62 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       }
     }
   }
+
+  if (ImGui::CollapsingHeader("Sensor Data", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (m_selectedCarIndex > 0 && m_selectedCarIndex - 1 < m_aiDrivers.size()) {
+      // Get sensor data from the AI driver
+      const auto& sensorData = m_aiDrivers[m_selectedCarIndex - 1]->getSensorData();
+
+      if (sensorData.readings.empty()) {
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "No objects detected");
+      }
+      else {
+        ImGui::Text("Detected Objects: %zu", sensorData.readings.size());
+
+        if (ImGui::BeginTable("SensorReadings", 3, ImGuiTableFlags_Borders)) {
+          ImGui::TableSetupColumn("Object Type");
+          ImGui::TableSetupColumn("Distance");
+          ImGui::TableSetupColumn("Side");
+          ImGui::TableHeadersRow();
+
+          for (const auto& reading : sensorData.readings) {
+            ImGui::TableNextRow();
+
+            // Object Type
+            ImGui::TableNextColumn();
+            if (reading.object) {
+              ImGui::Text("%s", reading.object->getDisplayName().c_str());
+            }
+            else if (reading.car) {
+              ImGui::Text("Car");
+            }
+
+            // Distance
+            ImGui::TableNextColumn();
+            ImGui::Text("%.1f", reading.distance);
+
+            // Side
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", reading.isLeftSide ? "Left" : "Right");
+
+            // Color the row based on distance
+            float distanceRatio = reading.distance / AIDriver::SensorData::SENSOR_RANGE;
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0,
+              ImGui::GetColorU32(ImVec4(
+                distanceRatio,
+                1.0f - distanceRatio,
+                0.0f,
+                0.3f)));
+          }
+          ImGui::EndTable();
+        }
+      }
+    }
+    else if (m_selectedCarIndex == 0) {
+      ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Sensor data only available for AI cars");
+    }
+  }
+
   ImGui::End();
 }
 
@@ -1780,53 +1844,26 @@ void LevelEditorScreen::updateAIDrivers() {
 
   const float timeStep = 1.0f / 60.0f;
 
-  // Update each AI driver with the track direction consideration
-  bool isClockwise = m_track ? !m_track->isDefaultDirection() : false;
-
-  // Make AI follow the racing line
-  for (size_t i = 0; i < m_aiDrivers.size(); i++) {
-    // Make sure we have corresponding car index
-    size_t carIndex = i + 1;  // +1 because first car is player
-    if (carIndex < m_testCars.size() && m_aiDrivers[i]) {
-      auto car = m_testCars[carIndex].get();
-      if (car) {
-        // Update look ahead distance based on speed
-        float speed = car->getDebugInfo().currentSpeed;
-        float baseLookAhead = m_aiConfig.lookAheadDistance;
-        float speedAdjustedLookAhead = baseLookAhead * (1.0f + speed / 1000.0f);
-
-        // Update the AI config with direction-specific adjustments
-        AIDriver::Config adjustedConfig = m_aiConfig;
-        adjustedConfig.lookAheadDistance = speedAdjustedLookAhead;
-
-        // Update this specific AI driver
-        m_aiDrivers[i]->setConfig(adjustedConfig);
-        m_aiDrivers[i]->update(timeStep);
-      }
-    }
+  // Update only a subset of AI drivers each frame
+  for (size_t i = 0; i < AI_UPDATES_PER_FRAME && i < m_aiDrivers.size(); i++) {
+    size_t index = (m_currentAIUpdateIndex + i) % m_aiDrivers.size();
+    m_aiDrivers[index]->update(timeStep);
   }
+  m_currentAIUpdateIndex = (m_currentAIUpdateIndex + AI_UPDATES_PER_FRAME) % m_aiDrivers.size();
 }
 
 void LevelEditorScreen::initializeAIDrivers() {
-  // Clear existing AI drivers
-  m_aiDrivers.clear();
-
-  // Create AI drivers for all cars except the first (player's car)
-  for (size_t i = 1; i < m_testCars.size(); i++) {
-    auto aiDriver = std::make_unique<AIDriver>(m_testCars[i].get());
-
-    // Set initial AI configuration
-    aiDriver->setConfig(m_aiConfig);
-
-    m_aiDrivers.push_back(std::move(aiDriver));
-  }
-
-  // Initialize default AI config if not already set
+  // update their configurations
   if (m_aiConfig.lookAheadDistance == 0.0f) {
     m_aiConfig.lookAheadDistance = 100.0f;
     m_aiConfig.centeringForce = 1.0f;
     m_aiConfig.turnAnticipation = 1.0f;
     m_aiConfig.reactionTime = 0.1f;
+  }
+
+  // Apply config to existing AI drivers
+  for (auto& aiDriver : m_aiDrivers) {
+    aiDriver->setConfig(m_aiConfig);
   }
 }
 
@@ -2041,6 +2078,8 @@ void LevelEditorScreen::updateCarTrackingInfo() {
 
 void LevelEditorScreen::updateTestMode() {
   if (!m_testMode || m_testCars.empty()) return;
+
+  std::cout << "Test mode update - ObjectManager address: " << m_objectManager.get() << "\n";
 
   if (m_raceCountdown) {
     m_raceCountdown->update(1.0f / 60.0f);

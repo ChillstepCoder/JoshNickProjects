@@ -7,6 +7,7 @@
 #include "SplineTrack.h"
 #include "PhysicsSystem.h"
 #include "Car.h"
+#include <unordered_map>
 
 class ObjectManager {
 public:
@@ -29,12 +30,15 @@ public:
   // Physics and Updates
   void createPhysicsForObject(PlaceableObject* obj);
   void update();
+  void updateGrid();
 
   // Car Management
   void setCars(const std::vector<std::unique_ptr<Car>>& cars);
   void clearCars();
 
   // Getters
+  std::vector<const PlaceableObject*> getNearbyObjects(const glm::vec2& pos, float radius);
+  int64_t getGridCell(const glm::vec2& pos) const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getPlacedObjects() const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getObjectTemplates() const;
 
@@ -45,4 +49,7 @@ private:
   std::vector<std::unique_ptr<PlaceableObject>> m_placedObjects;
   PlaceableObject* m_selectedObject;
   std::vector<Car*> m_cars;
+
+  static constexpr float CELL_SIZE = 100.0f;
+  std::unordered_map<int64_t, std::vector<PlaceableObject*>> m_grid;
 };
