@@ -8,6 +8,7 @@
 
 class DebugDraw;
 class BlockManager;
+class CellularAutomataManager;
 
 const int CHUNK_WIDTH = 64;
 
@@ -24,6 +25,7 @@ public:
     }
 
     Block blocks[CHUNK_WIDTH][CHUNK_WIDTH];
+    std::vector<glm::ivec2> waterBlocks;
 
     glm::vec2 m_worldPosition;
     Bengine::SpriteBatch m_spriteBatch;
@@ -46,6 +48,7 @@ public:
     void renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager);
 
 private:
+
 };
 
 const int WORLD_WIDTH_CHUNKS = 32;
@@ -54,8 +57,8 @@ const int loadRadius = 5;
 
 class BlockManager {
 public:
-    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId)
-        : m_MeshManager(meshManager), m_world(worldId){}
+    BlockManager(BlockMeshManager& meshManager, b2WorldId worldId, CellularAutomataManager& cellularAutomataManager)
+        : m_MeshManager(meshManager), m_world(worldId), m_cellularAutomataManager(cellularAutomataManager) {}
     
 
     void renderBlocks() {
@@ -63,6 +66,8 @@ public:
     }
 
     void initializeChunks(glm::vec2 playerPosition);
+
+    void update();
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
@@ -93,6 +98,7 @@ public:
 private:
     std::vector<std::vector<Chunk>> m_chunks;
 
+    CellularAutomataManager& m_cellularAutomataManager;
     BlockMeshManager& m_MeshManager;
     b2WorldId m_world;
 };
