@@ -52,8 +52,10 @@ public:
   float getDesiredAngle() const { return m_desiredAngle; }
 
 private:
+  static constexpr bool DEBUG_OUTPUT = false;
   static constexpr float SENSOR_UPDATE_INTERVAL = 0.1f;
   float m_sensorTimer = 0.0f;
+
 
   Car* m_car;
   Config m_config;
