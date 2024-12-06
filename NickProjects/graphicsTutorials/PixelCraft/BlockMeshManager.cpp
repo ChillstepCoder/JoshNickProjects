@@ -64,7 +64,6 @@ void Chunk::destroy() {
     m_isLoaded = false;
 }
 
-
 BlockMeshManager::BlockMeshManager() {
 
 }
@@ -120,10 +119,10 @@ void BlockManager::initializeChunks(glm::vec2 playerPosition) {
     }
 }
 
-void BlockManager::update() {
+void BlockManager::update(BlockManager& blockManager) {
 
     for (int i = 0; i < m_activeChunks.size(); i++) { // Simulate water for all active chunks
-        m_cellularAutomataManager.simulateWater(*m_activeChunks[i]);
+        m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager);
     }
 
 }
