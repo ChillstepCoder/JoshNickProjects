@@ -23,12 +23,12 @@ void AIDriver::update(float deltaTime) {
   if (m_sensorTimer >= SENSOR_UPDATE_INTERVAL) {
     m_sensorTimer = 0.0f;
 
-    // Find which car number we are
     if (DEBUG_OUTPUT) {
       std::cout << "\n=== Starting AI update for car at position ("
         << m_car->getDebugInfo().position.x << ", "
         << m_car->getDebugInfo().position.y << ") ===\n";
     }
+
     // Clear sensor data and scan for objects
     m_sensorData.readings.clear();
 
@@ -47,16 +47,12 @@ void AIDriver::update(float deltaTime) {
     }
   }
 
-  // Update target points considering track direction
+  // Always update target points considering track direction
   m_targetPoint = findClosestSplinePoint();
   m_lookAheadPoint = calculateLookAheadPoint();
 
-  // Only update steering based on reaction time
-  m_lastInputTime += deltaTime;
-  if (m_lastInputTime >= m_config.reactionTime) {
-    m_lastInputTime = 0.0f;
-    updateSteering();
-  }
+  // Update steering every frame - removed reaction time delay
+  updateSteering();
 
   // Always update throttle every frame
   updateThrottle();
@@ -70,81 +66,203 @@ void AIDriver::updateSteering() {
   auto debugInfo = m_car->getDebugInfo();
   glm::vec2 carPos(debugInfo.position);
   float carAngle = debugInfo.angle;
+  float currentSpeed = debugInfo.currentSpeed;
+  glm::vec2 carForward(std::cos(carAngle), std::sin(carAngle));
 
-  // Calculate angle to target point
+  // Calculate base path following behavior
   glm::vec2 toTarget = m_targetPoint - carPos;
-  float targetAngle = atan2(toTarget.y, toTarget.x);
-
-  // Calculate angle to lookahead point
   glm::vec2 toLookAhead = m_lookAheadPoint - carPos;
+  float targetAngle = atan2(toTarget.y, toTarget.x);
   float lookAheadAngle = atan2(toLookAhead.y, toLookAhead.x);
 
-  // Blend between current track angle and lookahead angle based on configuration
-  m_desiredAngle = targetAngle * (1.0f - m_config.turnAnticipation) +
+  // Calculate base desired angle
+  float baseDesiredAngle = targetAngle * (1.0f - m_config.turnAnticipation) +
     lookAheadAngle * m_config.turnAnticipation;
 
-  // Calculate angle difference (-π to π)
+  // Handle obstacle avoidance
+  float avoidanceAngle = 0.0f;
+  float closestDist = SensorData::SENSOR_RANGE;
+  bool needsAvoidance = false;
+
+  // Find most threatening obstacle
+  const SensorReading* mostThreatening = nullptr;
+  float highestThreat = 0.0f;
+
+  for (const auto& reading : m_sensorData.readings) {
+    if (reading.distance > SensorData::SENSOR_RANGE) continue;
+
+    // Calculate base threat based on distance
+    float distanceFactor = 1.0f - (reading.distance / SensorData::SENSOR_RANGE);
+
+    // Weight by angle - objects directly ahead are more threatening
+    float angleWeight = std::cos(reading.angleToObject);
+    if (angleWeight < 0) continue; // Ignore objects behind our forward arc
+
+    // Calculate threat level based on object type
+    float objectWeight = 1.0f;
+    if (reading.object) {
+      const std::string& objName = reading.object->getDisplayName();
+      if (objName.find("tree") != std::string::npos) {
+        objectWeight = 5.0f;  // Trees are highest priority
+      }
+      else if (objName.find("cone") != std::string::npos) {
+        objectWeight = 0.9f;  // Cones are lower priority
+      }
+      else if (objName.find("pothole") != std::string::npos) {
+        objectWeight = 0.5f;  // Potholes are lowest priority
+      }
+    }
+    else if (reading.car) {
+      objectWeight = 3.0f;  // Other cars are high priority
+    }
+
+    // Calculate total threat
+    float threat = distanceFactor * angleWeight * objectWeight;
+
+    // Update most threatening obstacle
+    if (threat > highestThreat) {
+      highestThreat = threat;
+      mostThreatening = &reading;
+      needsAvoidance = true;
+      closestDist = reading.distance;
+    }
+  }
+
+  // Calculate avoidance steering if needed
+  if (needsAvoidance && mostThreatening) {
+    // Base avoidance angle on the object's angle
+    float avoidStrength = highestThreat * glm::pi<float>() * 0.5f; // Up to 90 degrees
+
+    // Determine which direction to turn
+    glm::vec2 toTrackCenter = glm::normalize(m_targetPoint - carPos);
+    bool turnLeft = glm::cross(glm::vec3(carForward, 0),
+      glm::vec3(toTrackCenter, 0)).z > 0;
+
+    // If object is significantly to one side, avoid toward the other side
+    if (std::abs(mostThreatening->angleToObject) > 0.2f) {
+      turnLeft = mostThreatening->angleToObject < 0;
+    }
+
+    avoidanceAngle = turnLeft ? avoidStrength : -avoidStrength;
+  }
+
+  // Combine path following with avoidance
+  m_desiredAngle = baseDesiredAngle;
+  if (needsAvoidance) {
+    // Scale avoidance by speed - less aggressive at high speeds
+    float speedFactor = glm::clamp(currentSpeed / 500.0f, 0.0f, 1.0f);
+    float avoidanceWeight = 1.0f - (speedFactor * 0.5f);
+    m_desiredAngle += avoidanceAngle * avoidanceWeight;
+  }
+
+  // Calculate final steering angle
   float angleDiff = m_desiredAngle - carAngle;
   while (angleDiff > glm::pi<float>()) angleDiff -= 2.0f * glm::pi<float>();
   while (angleDiff < -glm::pi<float>()) angleDiff += 2.0f * glm::pi<float>();
 
-  // Calculate centering force
-  glm::vec2 toSpline = m_targetPoint - carPos;
-  float distanceToSpline = glm::length(toSpline);
-  float centeringMultiplier = std::min(1.0f, distanceToSpline / 30.0f) * m_config.centeringForce;
-
-  // Apply steering based on angle difference and centering force
-  m_currentInput.turningLeft = angleDiff > 0.05f * centeringMultiplier;
-  m_currentInput.turningRight = angleDiff < -0.05f * centeringMultiplier;
+  // Apply steering with minimal dead zone
+  float steeringThreshold = 0.02f;
+  m_currentInput.turningLeft = angleDiff > steeringThreshold;
+  m_currentInput.turningRight = angleDiff < -steeringThreshold;
 }
 
 void AIDriver::updateThrottle() {
   auto debugInfo = m_car->getDebugInfo();
   float currentSpeed = debugInfo.currentSpeed;
-
   glm::vec2 carPos(debugInfo.position);
-  glm::vec2 toAhead = glm::normalize(m_lookAheadPoint - carPos);
   glm::vec2 carDir = glm::vec2(cos(debugInfo.angle), sin(debugInfo.angle));
-  float turnAngle = acos(glm::dot(toAhead, carDir));
 
-  // Drift initiation threshold
+  // Calculate alignment with track
+  glm::vec2 toAhead = glm::normalize(m_lookAheadPoint - carPos);
+  float alignmentAngle = acos(glm::dot(toAhead, carDir));
+
+  // Calculate track direction at current position
+  auto splinePoints = m_car->getTrack()->getSplinePoints(200);
+  glm::vec2 trackDirection = glm::vec2(0.0f);
+  float minDist = FLT_MAX;
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    float dist = glm::length2(carPos - splinePoints[i].position);
+    if (dist < minDist) {
+      minDist = dist;
+      size_t nextIdx = (i + 1) % splinePoints.size();
+      trackDirection = glm::normalize(
+        splinePoints[nextIdx].position - splinePoints[i].position
+      );
+    }
+  }
+
+  // Calculate how well we're aligned with the track's direction
+  float trackAlignmentAngle = acos(glm::dot(carDir, trackDirection));
+
+  // Calculate distance from track
+  float distanceFromTrack = glm::length(carPos - m_targetPoint);
+
+  // Drift handling
   const float DRIFT_SPEED_THRESHOLD = 200.0f;
   const float DRIFT_ANGLE_THRESHOLD = 0.4f; // About 23 degrees
+  bool shouldDrift = currentSpeed > DRIFT_SPEED_THRESHOLD && alignmentAngle > DRIFT_ANGLE_THRESHOLD;
 
-  // Check if we should initiate a drift
-  bool shouldDrift = currentSpeed > DRIFT_SPEED_THRESHOLD && turnAngle > DRIFT_ANGLE_THRESHOLD;
+  // Base maximum speed on alignment and track distance
+  float speedLimit = m_car->getProperties().maxSpeed;
+
+  if (!shouldDrift) {
+    // Reduce speed when not aligned with track (unless drifting)
+    float alignmentFactor = (glm::pi<float>() - trackAlignmentAngle) / glm::pi<float>();
+    alignmentFactor = glm::clamp(alignmentFactor * alignmentFactor, 0.2f, 1.0f);
+
+    // Further reduce speed when far from track
+    float distanceFactor = 1.0f - glm::clamp(distanceFromTrack / 200.0f, 0.0f, 0.7f);
+
+    // Combined speed factor
+    float speedFactor = alignmentFactor * distanceFactor;
+    speedLimit *= speedFactor;
+
+    // Additional speed reduction for sharp turns
+    float cornerSpeed = calculateCornerSpeed(m_lookAheadPoint);
+    speedLimit = std::min(speedLimit, cornerSpeed);
+  }
 
   if (shouldDrift) {
     // Initiate drift by braking briefly and turning
     m_currentInput.braking = true;
     m_currentInput.accelerating = false;
+  }
+  else if (currentSpeed > speedLimit + 25.0f) {
+    // Need to slow down
+    m_currentInput.braking = true;
+    m_currentInput.accelerating = false;
+  }
+  // Recovery behavior when speed is very low
+  else if (currentSpeed < 50.0f) {
+    // Always maintain some forward momentum when stuck
+    float recoveryAngle = std::abs(trackAlignmentAngle);
 
-    // Turn harder during drift
-    if (turnAngle > 0) {
-      m_currentInput.turningLeft = true;
-      m_currentInput.turningRight = false;
+    // If we're somewhat aligned with the track, accelerate more
+    if (recoveryAngle < glm::pi<float>() * 0.6f) {
+      m_currentInput.accelerating = true;
+      m_currentInput.braking = false;
     }
     else {
-      m_currentInput.turningLeft = false;
-      m_currentInput.turningRight = true;
+      // Even if poorly aligned, maintain minimum speed
+      m_currentInput.accelerating = currentSpeed < 20.0f;
+      m_currentInput.braking = false;
     }
   }
-  else if (turnAngle < 0.2f) {  // Straight section
+  else if (currentSpeed < speedLimit - 25.0f && alignmentAngle < glm::pi<float>() * 0.4f) {
+    // Normal acceleration when well-aligned
     m_currentInput.accelerating = true;
     m_currentInput.braking = false;
   }
   else {
-    // Normal corner handling
-    float cornerSpeed = calculateCornerSpeed(m_lookAheadPoint);
+    // Coast if at appropriate speed
+    m_currentInput.accelerating = false;
+    m_currentInput.braking = false;
+  }
 
-    if (currentSpeed > cornerSpeed + 25.0f) {
-      m_currentInput.braking = true;
-      m_currentInput.accelerating = false;
-    }
-    else {
-      m_currentInput.accelerating = true;
-      m_currentInput.braking = false;
-    }
+  // Emergency brake if severely misaligned at high speed
+  if (trackAlignmentAngle > glm::pi<float>() * 0.7f && currentSpeed > DRIFT_SPEED_THRESHOLD) {
+    m_currentInput.braking = true;
+    m_currentInput.accelerating = false;
   }
 }
 
