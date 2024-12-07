@@ -12,7 +12,7 @@ void CellularAutomataManager::init() {
 }
 
 void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockManager) {
-
+    /*
     glm::vec2 mass = glm::vec2(CHUNK_WIDTH, CHUNK_WIDTH);
     glm::vec2 newMass = glm::vec2(CHUNK_WIDTH, CHUNK_WIDTH);
 
@@ -20,13 +20,17 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
     float MinFlow = 0.01f;
     float MaxSpeed = 1.0f;   //max units of water moved out of one block to another, per timestep
     float remaining_mass = 0.0f;
+    */
+
+
+
 
 
     //Calculate and apply flow for each block
-    for (int i = 0; i < m_waterBlocks.size(); i++) {
+    for (int i = 0; i < chunk.waterBlocks.size(); i++) {
 
-        int waterPosX = chunk.waterBlocks[i].x;
-        int waterPosY = chunk.waterBlocks[i].y;
+        int waterPosX = chunk.waterBlocks[i].x + 1.0f;
+        int waterPosY = chunk.waterBlocks[i].y + 1.0f;
 
         int downPosX = waterPosX;
         int downPosY = (waterPosY - 1);
@@ -51,6 +55,44 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
         BlockHandle upBlock = blockManager.getBlockAtPosition(glm::vec2(upPosX, upPosY));
 
         float waterBlockMass = waterBlock.block->getWaterAmount();
+
+
+
+
+        if (downBlock.block->getBlockID() == BlockID::AIR) {
+            //waterBlock.block->setWaterAmount(0.0f);
+            //waterBlock.block->setBlockID(BlockID::AIR);
+            blockManager.destroyBlock(waterBlock);
+
+            //downBlock.block->setWaterAmount(1.0f);
+            //downBlock.block->setBlockID(BlockID::WATER);
+            blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
+
+        }
+        else {
+            continue;
+        }
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /*
 
         //Custom push-only flow
         Flow = 0;
@@ -141,3 +183,5 @@ float CellularAutomataManager::minVal(float a, float b)
 {
     return a > b ? b : a;
 }
+
+*/

@@ -68,6 +68,7 @@ private:
     bool m_debugRenderEnabled = false;
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
     float m_gravity = -80.0f;
+    int m_updateFrame = 0;
 
     CellularAutomataManager m_cellularAutomataManager;
     BlockMeshManager m_blockMeshManager;
