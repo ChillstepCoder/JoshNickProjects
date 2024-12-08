@@ -23,6 +23,7 @@ public:
     glm::vec2 getWorldPosition() {
         return m_worldPosition;
     }
+    
 
     Block blocks[CHUNK_WIDTH][CHUNK_WIDTH];
     std::vector<glm::ivec2> waterBlocks;
@@ -67,7 +68,7 @@ public:
 
     void initializeChunks(glm::vec2 playerPosition);
 
-    void update();
+    void update(BlockManager& blockManager);
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 

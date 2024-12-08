@@ -129,14 +129,15 @@ void GameplayScreen::update() {
         }
         {
             PROFILE_SCOPE("BlockManager Update");
-            m_blockManager->update();
+            if (m_updateFrame % 30 == 0)
+            m_blockManager->update(*m_blockManager);
         }
 
 
         m_camera.setPosition(playerPos); // Set camera position to player's position
     }
 
-
+    m_updateFrame++;
 }
 
 void GameplayScreen::draw() {

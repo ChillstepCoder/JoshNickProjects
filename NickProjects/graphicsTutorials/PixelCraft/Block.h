@@ -85,7 +85,11 @@ public:
     BlockID getBlockID() const { return m_BlockID; }
     void setBlockID(BlockID id) { m_BlockID = id; }
     float getWaterAmount() { return m_waterAmount; }
-    void setWaterAmount(float amount) { m_waterAmount = amount; }
+
+    void setWaterAmount(float amount) {
+        m_waterAmount = amount;
+    }
+
     bool isEmpty() const { return B2_IS_NULL(m_BodyID); }
 
     void clearID() {

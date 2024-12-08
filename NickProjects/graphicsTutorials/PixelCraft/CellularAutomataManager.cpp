@@ -11,8 +11,8 @@ void CellularAutomataManager::init() {
 
 }
 
-void CellularAutomataManager::simulateWater(Chunk& chunk) {
-
+void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockManager) {
+    /*
     glm::vec2 mass = glm::vec2(CHUNK_WIDTH, CHUNK_WIDTH);
     glm::vec2 newMass = glm::vec2(CHUNK_WIDTH, CHUNK_WIDTH);
 
@@ -20,14 +20,79 @@ void CellularAutomataManager::simulateWater(Chunk& chunk) {
     float MinFlow = 0.01f;
     float MaxSpeed = 1.0f;   //max units of water moved out of one block to another, per timestep
     float remaining_mass = 0.0f;
+    */
+
+
+
 
 
     //Calculate and apply flow for each block
-    for (int i = 0; i < m_waterBlocks.size(); i++) {
-        
+    for (int i = 0; i < chunk.waterBlocks.size(); i++) {
 
-        float waterBlockMass = chunk.blocks[x][y].getWaterAmount();
+        int waterPosX = chunk.waterBlocks[i].x + 1.0f;
+        int waterPosY = chunk.waterBlocks[i].y + 1.0f;
 
+        int downPosX = waterPosX;
+        int downPosY = (waterPosY - 1);
+
+        int leftPosX = (waterPosX - 1);
+        int leftPosY = waterPosY;
+
+        int rightPosX = (waterPosX + 1);
+        int rightPosY = waterPosY;
+
+        int upPosX = waterPosX;
+        int upPosY = (waterPosY + 1);
+
+        BlockHandle waterBlock = blockManager.getBlockAtPosition(glm::vec2(waterPosX, waterPosY));
+
+        BlockHandle downBlock = blockManager.getBlockAtPosition(glm::vec2(downPosX, downPosY));
+
+        BlockHandle leftBlock = blockManager.getBlockAtPosition(glm::vec2(leftPosX, leftPosY));
+
+        BlockHandle rightBlock = blockManager.getBlockAtPosition(glm::vec2(rightPosX, rightPosY));
+
+        BlockHandle upBlock = blockManager.getBlockAtPosition(glm::vec2(upPosX, upPosY));
+
+        float waterBlockMass = waterBlock.block->getWaterAmount();
+
+
+
+
+        if (downBlock.block->getBlockID() == BlockID::AIR) {
+            //waterBlock.block->setWaterAmount(0.0f);
+            //waterBlock.block->setBlockID(BlockID::AIR);
+            blockManager.destroyBlock(waterBlock);
+
+            //downBlock.block->setWaterAmount(1.0f);
+            //downBlock.block->setBlockID(BlockID::WATER);
+            blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
+
+        }
+        else {
+            continue;
+        }
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /*
 
         //Custom push-only flow
         Flow = 0;
@@ -35,82 +100,61 @@ void CellularAutomataManager::simulateWater(Chunk& chunk) {
         if (remaining_mass <= 0) continue;
 
         //If the block below this one is air or water,
-        if (chunk.blocks[x][y - 1].getBlockID() == BlockID::AIR || chunk.blocks[x][y - 1].getBlockID() == BlockID::WATER) {
-            Flow = getStableState(remaining_mass + chunk.blocks[x][y - 1].getWaterAmount()) - chunk.blocks[x][y - 1].getWaterAmount();
+        if (downBlock.block->getBlockID() == BlockID::AIR || downBlock.block->getBlockID() == BlockID::WATER) {
+            Flow = getStableState(remaining_mass + downBlock.block->getWaterAmount()) - downBlock.block->getWaterAmount();
             if (Flow > MinFlow) {
                 Flow *= 0.5; //leads to smoother flow
             }
             Flow = constrain(Flow, 0, std::min(MaxSpeed, remaining_mass));
 
-            chunk.blocks[x][y].setWaterAmount(chunk.blocks[x][y].getWaterAmount() - Flow);
-            chunk.blocks[x][y - 1].setWaterAmount(Flow);
+            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
+            downBlock.block->setWaterAmount(Flow);
             remaining_mass -= Flow;
         }
 
         if (remaining_mass <= 0) continue;
 
         //Left
-        if (chunk.blocks[x - 1][y].getBlockID() == BlockID::AIR || chunk.blocks[x - 1][y].getBlockID() == BlockID::WATER) {
+        if (leftBlock.block->getBlockID() == BlockID::AIR || leftBlock.block->getBlockID() == BlockID::WATER) {
             //Equalize the amount of water in this block and it's neighbour
-            Flow = (chunk.blocks[x][y].getWaterAmount() - chunk.blocks[x - 1][y].getWaterAmount()) / 4;
+            Flow = (waterBlock.block->getWaterAmount() - leftBlock.block->getWaterAmount()) / 4;
             if (Flow > MinFlow) { Flow *= 0.5; }
             Flow = constrain(Flow, 0, remaining_mass);
 
-            chunk.blocks[x][y].setWaterAmount(chunk.blocks[x][y].getWaterAmount() - Flow);
-            chunk.blocks[x - 1][y].setWaterAmount(Flow);
+            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
+            leftBlock.block->setWaterAmount(Flow);
             remaining_mass -= Flow;
         }
 
         if (remaining_mass <= 0) continue;
 
         //Right
-        if (chunk.blocks[x + 1][y].getBlockID() == BlockID::AIR || chunk.blocks[x + 1][y].getBlockID() == BlockID::WATER) {
+        if (rightBlock.block->getBlockID() == BlockID::AIR || rightBlock.block->getBlockID() == BlockID::WATER) {
             //Equalize the amount of water in this block and it's neighbour
-            Flow = (chunk.blocks[x][y].getWaterAmount() - chunk.blocks[x + 1][y].getWaterAmount()) / 4;
+            Flow = (waterBlock.block->getWaterAmount() - rightBlock.block->getWaterAmount()) / 4;
             if (Flow > MinFlow) { Flow *= 0.5; }
             Flow = constrain(Flow, 0, remaining_mass);
 
-            chunk.blocks[x][y].setWaterAmount(chunk.blocks[x][y].getWaterAmount() - Flow);
-            chunk.blocks[x + 1][y].setWaterAmount(Flow);
+            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
+            rightBlock.block->setWaterAmount(Flow);
             remaining_mass -= Flow;
         }
 
         if (remaining_mass <= 0) continue;
 
         //Up. Only compressed water flows upwards.
-        if (chunk.blocks[x][y + 1].getBlockID() == BlockID::AIR || chunk.blocks[x][y + 1].getBlockID() == BlockID::WATER) {
-            Flow = remaining_mass - getStableState(remaining_mass + chunk.blocks[x][y + 1].getWaterAmount());
+        if (upBlock.block->getBlockID() == BlockID::AIR || upBlock.block->getBlockID() == BlockID::WATER) {
+            Flow = remaining_mass - getStableState(remaining_mass + upBlock.block->getWaterAmount());
             if (Flow > MinFlow) { Flow *= 0.5; }
             Flow = constrain(Flow, 0, std::min(MaxSpeed, remaining_mass));
 
-            chunk.blocks[x][y].setWaterAmount(chunk.blocks[x][y].getWaterAmount() - Flow);
-            chunk.blocks[x][y + 1].setWaterAmount(Flow);
+            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
+            upBlock.block->setWaterAmount(Flow);
             remaining_mass -= Flow;
         }
         
     }
 
-
-    //Copy the new mass values to the mass array
-    for (int x = 0; x < CHUNK_WIDTH + 2; x++) {
-        for (int y = 0; y < CHUNK_WIDTH + 2; y++) {
-            chunk.blocks[x][y] = chunk.blocks[x][y];
-        }
-    }
-
-    for (int x = 1; x <= CHUNK_WIDTH; x++) {
-        for (int y = 1; y <= CHUNK_WIDTH; y++) {
-            //Skip ground blocks
-            if (chunk.blocks[x][y].getBlockID() != BlockID::WATER) continue;
-            //Flag/unflag water blocks
-            if (chunk.blocks[x][y].getWaterAmount() > m_minMass) {
-                chunk.blocks[x][y].setBlockID(BlockID::WATER);
-            }
-            else {
-                chunk.blocks[x][y].setBlockID(BlockID::AIR);
-            }
-        }
-    }
 }
 
 
@@ -139,3 +183,5 @@ float CellularAutomataManager::minVal(float a, float b)
 {
     return a > b ? b : a;
 }
+
+*/
