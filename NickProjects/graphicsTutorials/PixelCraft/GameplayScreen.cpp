@@ -129,7 +129,7 @@ void GameplayScreen::update() {
         }
         {
             PROFILE_SCOPE("BlockManager Update");
-            if (m_updateFrame % 30 == 0)
+            if (m_updateFrame % 5 == 0)
             m_blockManager->update(*m_blockManager);
         }
 

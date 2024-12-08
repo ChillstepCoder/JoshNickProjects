@@ -128,31 +128,30 @@ void BlockManager::update(BlockManager& blockManager) {
 }
 
 BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
-    int worldX = std::floor(position.x);
-    int worldY = std::floor(position.y);
-    int chunkX = worldX / CHUNK_WIDTH;
-    int chunkY = worldY / CHUNK_WIDTH;
-    int offsetX = worldX % CHUNK_WIDTH;
-    int offsetY = worldY % CHUNK_WIDTH;
-    if (offsetX < 0) offsetX += CHUNK_WIDTH; // in case of negative coords
-    if (offsetY < 0) offsetY += CHUNK_WIDTH; // in case of negative coords
+    int blockPosX = std::floor(position.x);
+    int blockPosY = std::floor(position.y);
+    int chunkPosX = blockPosX / CHUNK_WIDTH;
+    int chunkPosY = blockPosY / CHUNK_WIDTH;
+    int blockOffsetX = blockPosX % CHUNK_WIDTH;
+    int blockOffsetY = blockPosX % CHUNK_WIDTH;
 
-    for (size_t i = 0; i < m_chunks.size(); ++i) {
-        for (size_t j = 0; j < m_chunks[i].size(); ++j) {
-            Chunk& chunk = m_chunks[i][j];
-            glm::vec2 chunkWorldPos = chunk.getWorldPosition();
+    Chunk& chunk = m_chunks[chunkPosX][chunkPosY];
 
-            // Check if the chunk's world position matches (consider the chunk size)
-            if (chunkWorldPos.x == chunkX * CHUNK_WIDTH && chunkWorldPos.y == chunkY * CHUNK_WIDTH) {
-                // Found the chunk, now get the block inside it
-                Block* block = &chunk.blocks[offsetX][offsetY];
-                return BlockHandle{ block, glm::ivec2(chunkX, chunkY), glm::ivec2(offsetX, offsetY) };
-            }
-        }
-    }
-    // If no chunk is found return a null BlockHandle
-    return BlockHandle{ nullptr, glm::ivec2(chunkX, chunkY), glm::ivec2(offsetX, offsetY) };
+    //make code to check for chunk out of bounds here 
+
+    Block* block = &chunk.blocks[blockOffsetX][blockOffsetY];
+
+    return BlockHandle{ block, glm::ivec2(chunkPosX, chunkPosY), glm::ivec2(blockOffsetX, blockOffsetY) };
+
 }
+
+glm::ivec2 getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset) {
+    int chunkBlockTotalX = chunkCoords.x * CHUNK_WIDTH;
+    int chunkBlockTotalY = chunkCoords.y * CHUNK_WIDTH;
+
+    return glm::ivec2((chunkBlockTotalX + offset.x), (chunkBlockTotalY + offset.y));
+}
+
 
 void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     // check if the block exists
@@ -164,10 +163,10 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
 
-        /*
+        
         if (blockHandle.block->getBlockID() == BlockID::WATER) {
             for (int i = 0; i < chunk.waterBlocks.size(); i++) {
-                if (chunk.waterBlocks[i] == m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y]) {
+                if (getBlockAtPosition(chunk.waterBlocks[i]) == blockHandle) {
 
                     chunk.waterBlocks[i] = chunk.waterBlocks.back();
 
@@ -175,7 +174,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
                 }
             }
         }
-        */
+        
 
         chunk.buildChunkMesh();
     }
@@ -212,7 +211,7 @@ void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& p
     chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = waterBlock; 
 
     if (waterBlock.getBlockID() == BlockID::WATER) {
-        chunk.waterBlocks.push_back(glm::vec2(realpositionX, realPositionY)); // Add to the list of water blocks.
+        chunk.waterBlocks.push_back(glm::vec2(position.x, position.y)); // Add to the list of water blocks.
     }
 
     chunk.buildChunkMesh();
