@@ -27,10 +27,10 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
 
     //Calculate and apply flow for each block
-    for (int i = 0; i < chunk.waterBlocks.size(); i++) {
+    for (int i = chunk.waterBlocks.size() - 1; i >= 0; --i) {
 
-        int waterPosX = chunk.waterBlocks[i].x + 1.0f;
-        int waterPosY = chunk.waterBlocks[i].y + 1.0f;
+        int waterPosX = chunk.waterBlocks[i].x + 0.5f;
+        int waterPosY = chunk.waterBlocks[i].y + 0.5f;
 
         int downPosX = waterPosX;
         int downPosY = (waterPosY - 1);
@@ -65,7 +65,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
             blockManager.destroyBlock(waterBlock);
 
             //downBlock.block->setWaterAmount(1.0f);
-            //downBlock.block->setBlockID(BlockID::WATER);
+            downBlock.block->setBlockID(BlockID::WATER);
             blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
 
         }

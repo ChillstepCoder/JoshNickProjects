@@ -35,6 +35,7 @@ public:
 
 struct BlockHandle {
     Block* block;
+    auto operator<=>(const BlockHandle&) const = default;
     glm::ivec2 chunkCoords;
     glm::ivec2 blockOffset;
 };
@@ -71,6 +72,8 @@ public:
     void update(BlockManager& blockManager);
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
+
+    glm::ivec2 getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset);
 
     void destroyBlock(const BlockHandle& blockHandle);
     void breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
