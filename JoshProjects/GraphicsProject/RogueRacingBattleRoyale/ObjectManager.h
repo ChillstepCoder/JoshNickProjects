@@ -33,16 +33,22 @@ public:
   void updateGrid();
 
   // Car Management
+  void addCar(Car* car) { m_cars.push_back(car); }
   void setCars(const std::vector<std::unique_ptr<Car>>& cars);
   void clearCars();
 
   // Getters
   std::vector<const PlaceableObject*> getNearbyObjects(const glm::vec2& pos, float radius);
+  const std::vector<Car*>& getCars() const { return m_cars; }
   int64_t getGridCell(const glm::vec2& pos) const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getPlacedObjects() const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getObjectTemplates() const;
 
+  friend class AIDriver;
+
 private:
+  static constexpr bool DEBUG_OUTPUT = false;
+
   SplineTrack* m_track;
   PhysicsSystem* m_physicsSystem;
   std::vector<std::unique_ptr<PlaceableObject>> m_objectTemplates;

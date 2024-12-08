@@ -2,6 +2,7 @@
 
 #include "AIDriver.h"
 #include <algorithm>
+#include <set>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -18,49 +19,101 @@ AIDriver::AIDriver(Car* car)
 void AIDriver::update(float deltaTime) {
   if (!m_car || !m_car->getTrack()) return;
 
+  if (DEBUG_OUTPUT) {
+    std::cout << "\n=== AI Update Start ===" << std::endl;
+  }
+
   // Update sensors periodically
   m_sensorTimer += deltaTime;
   if (m_sensorTimer >= SENSOR_UPDATE_INTERVAL) {
     m_sensorTimer = 0.0f;
 
     if (DEBUG_OUTPUT) {
-      std::cout << "\n=== Starting AI update for car at position ("
-        << m_car->getDebugInfo().position.x << ", "
-        << m_car->getDebugInfo().position.y << ") ===\n";
-    }
-
-    // Clear sensor data and scan for objects
-    m_sensorData.readings.clear();
-
-    if (!m_objectManager) {
-      if (DEBUG_OUTPUT) {
-        std::cout << "Object manager is null for this car!\n";
-        std::cout << "Car angle: " << m_car->getDebugInfo().angle << "\n";
-        std::cout << "Car speed: " << m_car->getDebugInfo().currentSpeed << "\n";
+      if (!m_objectManager) {
+        std::cout << "Warning: Object manager is null!" << std::endl;
+      }
+      else {
+        std::cout << "Using object manager at: " << m_objectManager << std::endl;
       }
     }
-    else {
-      if (DEBUG_OUTPUT) {
-        std::cout << "Object manager address: " << m_objectManager << "\n";
-      }
-      scanForObjects();
-    }
+
+    updateSensors();
   }
 
-  // Always update target points considering track direction
   m_targetPoint = findClosestSplinePoint();
   m_lookAheadPoint = calculateLookAheadPoint();
-
-  // Update steering every frame - removed reaction time delay
   updateSteering();
-
-  // Always update throttle every frame
   updateThrottle();
-
-  // Apply inputs to car
   m_car->update(m_currentInput);
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "=== AI Update Complete ===" << std::endl;
+  }
 }
 
+float AIDriver::calculateObjectThreat(const SensorReading& reading) {
+    if (!m_car) return 0.0f;
+
+    // Base distance and angle calculations
+    float distanceThreat = 1.0f - (reading.distance / SensorData::SENSOR_RANGE);
+    float angleToObject = std::abs(reading.angleToObject);
+    
+    // Cars - Strong avoidance at all times
+    if (reading.car) {
+        const float CAR_ANGLE_THRESHOLD = glm::pi<float>() / 3.0f; // 60 degrees
+        if (angleToObject < CAR_ANGLE_THRESHOLD) {
+            float angleFactor = 1.0f - (angleToObject / CAR_ANGLE_THRESHOLD);
+            // Exponential distance threat for cars when close
+            float carThreat = (reading.distance < 30.0f) 
+                ? std::pow(distanceThreat, 0.5f) 
+                : distanceThreat;
+            return carThreat * angleFactor * 4.0f; // High base priority for cars
+        }
+        return 0.0f;
+    }
+
+    // Static objects
+    if (reading.object) {
+        const std::string& objName = reading.object->getDisplayName();
+        
+        // Solid objects (trees) - Strong avoidance when directly ahead
+        if (objName.find("tree") != std::string::npos) {
+            const float TREE_ANGLE_THRESHOLD = glm::pi<float>() / 6.0f; // 30 degrees
+            if (angleToObject < TREE_ANGLE_THRESHOLD) {
+                float angleFactor = 1.0f - (angleToObject / TREE_ANGLE_THRESHOLD);
+                return distanceThreat * angleFactor * 5.0f; // Highest priority when in path
+            }
+            return 0.0f;
+        }
+        
+        // Non-solid objects (cones, potholes) - Path-based avoidance
+        glm::vec2 objectPos = reading.object->getPosition();
+        glm::vec2 targetToLookahead = m_lookAheadPoint - m_targetPoint;
+        glm::vec2 targetToObject = objectPos - m_targetPoint;
+        float projection = glm::dot(targetToObject, glm::normalize(targetToLookahead));
+        float pathLength = glm::length(targetToLookahead);
+        
+        // Calculate distance from racing line
+        float t = glm::clamp(projection / pathLength, 0.0f, 1.0f);
+        glm::vec2 nearestPathPoint = m_targetPoint + t * glm::normalize(targetToLookahead) * pathLength;
+        float distanceFromPath = glm::distance(objectPos, nearestPathPoint);
+
+        // Rapidly reduce priority for objects far from racing line
+        const float PATH_THRESHOLD = 20.0f;
+        float pathThreat = (distanceFromPath > PATH_THRESHOLD) 
+            ? std::exp(-(distanceFromPath - PATH_THRESHOLD) / 15.0f) 
+            : 1.0f;
+
+        if (objName.find("cone") != std::string::npos) {
+            return distanceThreat * pathThreat * 0.7f;
+        }
+        if (objName.find("pothole") != std::string::npos) {
+            return distanceThreat * pathThreat * 0.4f;
+        }
+    }
+
+    return 0.0f;
+}
 
 void AIDriver::updateSteering() {
   auto debugInfo = m_car->getDebugInfo();
@@ -113,11 +166,11 @@ void AIDriver::updateSteering() {
       }
     }
     else if (reading.car) {
-      objectWeight = 3.0f;  // Other cars are high priority
+      objectWeight = 0.8f;  // Cars are similar priority to cones
     }
 
     // Calculate total threat
-    float threat = distanceFactor * angleWeight * objectWeight;
+    float threat = calculateObjectThreat(reading);
 
     // Update most threatening obstacle
     if (threat > highestThreat) {
@@ -130,20 +183,72 @@ void AIDriver::updateSteering() {
 
   // Calculate avoidance steering if needed
   if (needsAvoidance && mostThreatening) {
-    // Base avoidance angle on the object's angle
-    float avoidStrength = highestThreat * glm::pi<float>() * 0.5f; // Up to 90 degrees
+    float avoidStrength;
 
-    // Determine which direction to turn
-    glm::vec2 toTrackCenter = glm::normalize(m_targetPoint - carPos);
-    bool turnLeft = glm::cross(glm::vec3(carForward, 0),
-      glm::vec3(toTrackCenter, 0)).z > 0;
+    if (mostThreatening->car) {
+      // Wider detection angle (60 degrees each side)
+      float maxAngle = glm::pi<float>() / 3.0f; // 60 degrees
+      float angleToObject = std::abs(mostThreatening->angleToObject);
 
-    // If object is significantly to one side, avoid toward the other side
-    if (std::abs(mostThreatening->angleToObject) > 0.2f) {
-      turnLeft = mostThreatening->angleToObject < 0;
+      // Base detection range that scales with speed
+      float speedBasedRange = 50.0f + (currentSpeed * 0.3f);
+
+      if (angleToObject < maxAngle && mostThreatening->distance < speedBasedRange) {
+        // Calculate base avoidance strength
+        float distanceThreat = (speedBasedRange - mostThreatening->distance) / speedBasedRange;
+
+        // Strong response to very close cars
+        if (mostThreatening->distance < 30.0f) {
+          distanceThreat = std::pow(distanceThreat, 0.5f); // Square root to increase close-range response
+        }
+
+        // Angle weight with more forgiving falloff for close objects
+        float angleWeight;
+        if (mostThreatening->distance < 20.0f) {
+          // Very close cars get high weight even at wider angles
+          angleWeight = 0.8f;
+        }
+        else {
+          // Linear falloff but maintain higher minimum for closer cars
+          angleWeight = 1.0f - (angleToObject / maxAngle);
+          angleWeight = glm::max(angleWeight, 0.4f);
+        }
+
+        // Calculate final avoidance strength
+        avoidStrength = distanceThreat * angleWeight * glm::pi<float>() * 0.35f; // Max ~63 degrees
+
+        // Boost avoidance for very close cars
+        if (mostThreatening->distance < 15.0f) {
+          avoidStrength *= 2.0f;
+        }
+      }
+      else {
+        avoidStrength = 0.0f;
+      }
+    }
+    else {
+      // Normal strong avoidance for other obstacles
+      avoidStrength = highestThreat * glm::pi<float>() * 0.5f; // Up to 90 degrees
     }
 
-    avoidanceAngle = turnLeft ? avoidStrength : -avoidStrength;
+    if (avoidStrength > 0.0f) {
+      // Determine which direction to turn
+      glm::vec2 toTrackCenter = glm::normalize(m_targetPoint - carPos);
+      bool turnLeft = glm::cross(glm::vec3(carForward, 0),
+        glm::vec3(toTrackCenter, 0)).z > 0;
+
+      // For car avoidance, prefer turning toward track center
+      if (mostThreatening->car) {
+        turnLeft = glm::cross(glm::vec3(carForward, 0),
+          glm::vec3(toTrackCenter, 0)).z > 0;
+      }
+      // For obstacles, avoid toward the opposite side
+      else if (std::abs(mostThreatening->angleToObject) > 0.2f) {
+        turnLeft = mostThreatening->angleToObject < 0;
+      }
+
+      avoidanceAngle = turnLeft ? avoidStrength : -avoidStrength;
+    }
   }
 
   // Combine path following with avoidance
@@ -172,10 +277,6 @@ void AIDriver::updateThrottle() {
   glm::vec2 carPos(debugInfo.position);
   glm::vec2 carDir = glm::vec2(cos(debugInfo.angle), sin(debugInfo.angle));
 
-  // Calculate alignment with track
-  glm::vec2 toAhead = glm::normalize(m_lookAheadPoint - carPos);
-  float alignmentAngle = acos(glm::dot(toAhead, carDir));
-
   // Calculate track direction at current position
   auto splinePoints = m_car->getTrack()->getSplinePoints(200);
   glm::vec2 trackDirection = glm::vec2(0.0f);
@@ -191,78 +292,46 @@ void AIDriver::updateThrottle() {
     }
   }
 
-  // Calculate how well we're aligned with the track's direction
+  // Calculate how well we're aligned with the track
   float trackAlignmentAngle = acos(glm::dot(carDir, trackDirection));
 
   // Calculate distance from track
   float distanceFromTrack = glm::length(carPos - m_targetPoint);
 
-  // Drift handling
-  const float DRIFT_SPEED_THRESHOLD = 200.0f;
-  const float DRIFT_ANGLE_THRESHOLD = 0.4f; // About 23 degrees
-  bool shouldDrift = currentSpeed > DRIFT_SPEED_THRESHOLD && alignmentAngle > DRIFT_ANGLE_THRESHOLD;
-
   // Base maximum speed on alignment and track distance
   float speedLimit = m_car->getProperties().maxSpeed;
+  float alignmentFactor = (glm::pi<float>() - trackAlignmentAngle) / glm::pi<float>();
+  alignmentFactor = glm::clamp(alignmentFactor * alignmentFactor, 0.3f, 1.0f);
 
-  if (!shouldDrift) {
-    // Reduce speed when not aligned with track (unless drifting)
-    float alignmentFactor = (glm::pi<float>() - trackAlignmentAngle) / glm::pi<float>();
-    alignmentFactor = glm::clamp(alignmentFactor * alignmentFactor, 0.2f, 1.0f);
+  // Reduce speed when far from track
+  float distanceFactor = 1.0f - glm::clamp(distanceFromTrack / 100.0f, 0.0f, 0.5f);
 
-    // Further reduce speed when far from track
-    float distanceFactor = 1.0f - glm::clamp(distanceFromTrack / 200.0f, 0.0f, 0.7f);
+  // Combined speed factor
+  float speedFactor = alignmentFactor * distanceFactor;
+  speedLimit *= speedFactor;
 
-    // Combined speed factor
-    float speedFactor = alignmentFactor * distanceFactor;
-    speedLimit *= speedFactor;
+  // Additional speed reduction for sharp turns
+  float cornerSpeed = calculateCornerSpeed(m_lookAheadPoint);
+  speedLimit = std::min(speedLimit, cornerSpeed);
 
-    // Additional speed reduction for sharp turns
-    float cornerSpeed = calculateCornerSpeed(m_lookAheadPoint);
-    speedLimit = std::min(speedLimit, cornerSpeed);
-  }
+  // Don't slow down just because other cars are nearby
+  bool needsBraking = currentSpeed > speedLimit + 25.0f;
+  bool needsRecovery = currentSpeed < 50.0f;
 
-  if (shouldDrift) {
-    // Initiate drift by braking briefly and turning
+  if (needsBraking) {
     m_currentInput.braking = true;
     m_currentInput.accelerating = false;
   }
-  else if (currentSpeed > speedLimit + 25.0f) {
-    // Need to slow down
-    m_currentInput.braking = true;
-    m_currentInput.accelerating = false;
-  }
-  // Recovery behavior when speed is very low
-  else if (currentSpeed < 50.0f) {
-    // Always maintain some forward momentum when stuck
+  else if (needsRecovery) {
+    // Always maintain some forward momentum when slow
     float recoveryAngle = std::abs(trackAlignmentAngle);
-
-    // If we're somewhat aligned with the track, accelerate more
-    if (recoveryAngle < glm::pi<float>() * 0.6f) {
-      m_currentInput.accelerating = true;
-      m_currentInput.braking = false;
-    }
-    else {
-      // Even if poorly aligned, maintain minimum speed
-      m_currentInput.accelerating = currentSpeed < 20.0f;
-      m_currentInput.braking = false;
-    }
-  }
-  else if (currentSpeed < speedLimit - 25.0f && alignmentAngle < glm::pi<float>() * 0.4f) {
-    // Normal acceleration when well-aligned
-    m_currentInput.accelerating = true;
+    m_currentInput.accelerating = recoveryAngle < glm::pi<float>() * 0.7f || currentSpeed < 20.0f;
     m_currentInput.braking = false;
   }
   else {
-    // Coast if at appropriate speed
-    m_currentInput.accelerating = false;
+    // Normal driving - accelerate when below speed limit
+    m_currentInput.accelerating = currentSpeed < speedLimit - 25.0f;
     m_currentInput.braking = false;
-  }
-
-  // Emergency brake if severely misaligned at high speed
-  if (trackAlignmentAngle > glm::pi<float>() * 0.7f && currentSpeed > DRIFT_SPEED_THRESHOLD) {
-    m_currentInput.braking = true;
-    m_currentInput.accelerating = false;
   }
 }
 
@@ -391,58 +460,34 @@ bool AIDriver::shouldBrakeForCorner(float cornerSpeed, float currentSpeed) const
 
 
 void AIDriver::updateSensors() {
-  if (!m_car) return;
+  if (!m_car || !m_objectManager) return;
 
   m_sensorData.readings.clear();
 
-  // Get car's current state
   auto debugInfo = m_car->getDebugInfo();
   glm::vec2 carPos(debugInfo.position);
   glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
 
-  // Scan for objects
-  if (m_objectManager) {
-    scanForObjects();
-  }
-}
+  // Use a hash map to track detected positions with 1-unit grid snapping
+  std::unordered_map<int64_t, bool> detectedPositions;
+  auto hashPosition = [](const glm::vec2& pos) -> int64_t {
+    // Round position to nearest unit to prevent floating point precision issues
+    int32_t x = static_cast<int32_t>(std::round(pos.x));
+    int32_t y = static_cast<int32_t>(std::round(pos.y));
+    return (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
+    };
 
-void AIDriver::scanForObjects() {
-  if (!m_objectManager || !m_car) return;
-
-  auto debugInfo = m_car->getDebugInfo();
-  glm::vec2 carPos(debugInfo.position);
-  glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
-
-  // Only get nearby objects
+  // First scan for static objects
   auto nearbyObjects = m_objectManager->getNearbyObjects(carPos, SensorData::SENSOR_RANGE);
-  if (DEBUG_OUTPUT) {
-    std::cout << "\nScanning for objects from car at (" << carPos.x << ", " << carPos.y
-      << ") facing " << debugInfo.angle << " radians\n";
-    std::cout << "Found " << nearbyObjects.size() << " nearby objects\n";
-  }
-
   for (const auto* obj : nearbyObjects) {
     glm::vec2 objPos = obj->getPosition();
-    float straightDistance = glm::distance(carPos, objPos);
-    float dx = objPos.x - carPos.x;
-    float dy = objPos.y - carPos.y;
-    float angleToObject = std::atan2(dy, dx);
+    int64_t posHash = hashPosition(objPos);
 
-    if (DEBUG_OUTPUT) {
-      std::cout << "  Checking " << obj->getDisplayName()
-        << " at (" << objPos.x << ", " << objPos.y
-        << ") distance: " << straightDistance
-        << " angle: " << angleToObject << "\n";
-    }
+    // Skip if we've already detected something at this position
+    if (detectedPositions[posHash]) continue;
 
     float pathDistance, pathAngle;
-    bool inPath = isObjectInPath(objPos, 10.0f, carPos, carForward, &pathDistance, &pathAngle);
-
-    if (inPath) {
-      if (DEBUG_OUTPUT) {
-        std::cout << "    Object in path! Distance: " << pathDistance
-          << ", Angle: " << pathAngle << "\n";
-      }
+    if (isObjectInPath(objPos, 10.0f, carPos, carForward, &pathDistance, &pathAngle)) {
       if (pathDistance < SensorData::SENSOR_RANGE) {
         SensorReading reading;
         reading.object = obj;
@@ -450,16 +495,101 @@ void AIDriver::scanForObjects() {
         reading.angleToObject = pathAngle;
         reading.isLeftSide = pathAngle > 0;
         m_sensorData.readings.push_back(reading);
+        detectedPositions[posHash] = true;
+
         if (DEBUG_OUTPUT) {
-          std::cout << "    Added to sensor readings\n";
-        }
-      }
-      else {
-        if (DEBUG_OUTPUT) {
-          std::cout << "    Too far away (beyond sensor range)\n";
+          std::cout << "Detected " << obj->getDisplayName()
+            << " at distance " << pathDistance
+            << " angle " << pathAngle << "\n";
         }
       }
     }
+  }
+
+  // Then scan for other cars if we have access to them
+  const auto& cars = m_objectManager->getCars();
+  for (Car* otherCar : cars) {
+    if (otherCar == m_car) continue;  // Skip self
+
+    auto otherDebugInfo = otherCar->getDebugInfo();
+    glm::vec2 otherPos(otherDebugInfo.position);
+    int64_t posHash = hashPosition(otherPos);
+
+    // Skip if we've already detected something at this position
+    if (detectedPositions[posHash]) continue;
+
+    float pathDistance, pathAngle;
+    if (isObjectInPath(otherPos, 15.0f, carPos, carForward, &pathDistance, &pathAngle)) {
+      if (pathDistance < SensorData::SENSOR_RANGE) {
+        SensorReading reading;
+        reading.car = otherCar;
+        reading.distance = pathDistance;
+        reading.angleToObject = pathAngle;
+        reading.isLeftSide = pathAngle > 0;
+        m_sensorData.readings.push_back(reading);
+        detectedPositions[posHash] = true;
+
+        if (DEBUG_OUTPUT) {
+          std::cout << "Detected car at distance " << pathDistance
+            << " angle " << pathAngle << "\n";
+        }
+      }
+    }
+  }
+}
+
+void AIDriver::scanForObjects() {
+  if (!m_objectManager || !m_car) return;
+
+  m_sensorData.readings.clear();
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "\n=== Starting new scan ===" << std::endl;
+  }
+
+  auto debugInfo = m_car->getDebugInfo();
+  glm::vec2 carPos(debugInfo.position);
+  glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
+
+  // Keep track of already detected object pointers
+  std::set<const PlaceableObject*> detectedObjects;
+
+  auto nearbyObjects = m_objectManager->getNearbyObjects(carPos, SensorData::SENSOR_RANGE);
+  if (DEBUG_OUTPUT) {
+    std::cout << "Found " << nearbyObjects.size() << " nearby objects" << std::endl;
+  }
+
+  for (const auto* obj : nearbyObjects) {
+    if (detectedObjects.find(obj) != detectedObjects.end()) {
+      if (DEBUG_OUTPUT) {
+        std::cout << "Skipping already detected object" << std::endl;
+      }
+      continue;
+    }
+
+    float pathDistance, pathAngle;
+    if (isObjectInPath(obj->getPosition(), 10.0f, carPos, carForward, &pathDistance, &pathAngle)) {
+      if (pathDistance < SensorData::SENSOR_RANGE) {
+        if (DEBUG_OUTPUT) {
+          std::cout << "Adding new detection: " << obj->getDisplayName()
+            << " at distance " << pathDistance
+            << " angle " << pathAngle << std::endl;
+        }
+
+        SensorReading reading;
+        reading.object = obj;
+        reading.distance = pathDistance;
+        reading.angleToObject = pathAngle;
+        reading.isLeftSide = pathAngle > 0;
+        m_sensorData.readings.push_back(reading);
+
+        detectedObjects.insert(obj);
+      }
+    }
+  }
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Total readings after scan: " << m_sensorData.readings.size() << std::endl;
   }
 }
 

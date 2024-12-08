@@ -149,10 +149,12 @@ namespace JAGEngine {
         glm::vec4 destRect(x, y, w, h);
         glm::vec4 uvRect(glyph->s0, glyph->t0, glyph->s1 - glyph->s0, glyph->t1 - glyph->t0);
 
-        std::cout << "  Glyph '" << *p << "' at: " << destRect.x << ", " << destRect.y
-          << " size: " << destRect.z << "x" << destRect.w
-          << " UV: " << uvRect.x << ", " << uvRect.y << ", " << uvRect.z << ", " << uvRect.w
-          << " Texture ID: " << m_textureID << std::endl;
+        if (DEBUG_OUTPUT) {
+          std::cout << "  Glyph '" << *p << "' at: " << destRect.x << ", " << destRect.y
+            << " size: " << destRect.z << "x" << destRect.w
+            << " UV: " << uvRect.x << ", " << uvRect.y << ", " << uvRect.z << ", " << uvRect.w
+            << " Texture ID: " << m_textureID << std::endl;
+        }
 
         // TODO: REMOVE
         batch.draw(destRect, uvRect, m_textureID, depth, tint);

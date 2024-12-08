@@ -105,6 +105,8 @@ namespace JAGEngine {
     void renderBatch();
 
   private:
+    static constexpr bool DEBUG_OUTPUT = false;
+
     void createRenderBatches();
     void createVertexArray();
     void sortGlyphs();

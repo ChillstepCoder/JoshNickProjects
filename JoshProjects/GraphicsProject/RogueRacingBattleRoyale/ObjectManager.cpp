@@ -1,6 +1,7 @@
 // ObjectManager.cpp
 
 #include "ObjectManager.h"
+#include <set>
 #include <iostream>
 #include <algorithm>
 
@@ -168,6 +169,7 @@ void ObjectManager::removeInvalidObjects(const std::vector<PlaceableObject*>& ob
 }
 
 void ObjectManager::update() {
+  // Update existing object positions
   for (auto& obj : m_placedObjects) {
     if (m_physicsSystem && b2Body_IsValid(obj->getPhysicsBody())) {
       b2Vec2 pos = b2Body_GetPosition(obj->getPhysicsBody());
@@ -194,8 +196,23 @@ void ObjectManager::addTemplate(std::unique_ptr<PlaceableObject> templ) {
 
 void ObjectManager::setCars(const std::vector<std::unique_ptr<Car>>& cars) {
   m_cars.clear();
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Setting cars in ObjectManager (" << this << ")" << std::endl;
+    std::cout << "Number of cars being added: " << cars.size() << std::endl;
+  }
+
   for (const auto& car : cars) {
     m_cars.push_back(car.get());
+    if (DEBUG_OUTPUT) {
+      std::cout << "Added car at position ("
+        << car->getDebugInfo().position.x << ", "
+        << car->getDebugInfo().position.y << ")" << std::endl;
+    }
+  }
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Final car count in ObjectManager: " << m_cars.size() << std::endl;
   }
 }
 
@@ -230,20 +247,36 @@ void ObjectManager::updateGrid() {
 }
 
 std::vector<const PlaceableObject*> ObjectManager::getNearbyObjects(const glm::vec2& pos, float radius) {
-  std::vector<const PlaceableObject*> nearby;  // Change to const pointers
-  int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
+  std::vector<const PlaceableObject*> nearby;
 
+  if (DEBUG_OUTPUT) {
+    std::cout << "\nGetting nearby objects from position (" << pos.x << ", " << pos.y
+      << ") with radius " << radius << std::endl;
+  }
+
+  int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
   int centerX = static_cast<int>(std::floor(pos.x / CELL_SIZE));
   int centerY = static_cast<int>(std::floor(pos.y / CELL_SIZE));
+
+  std::set<const PlaceableObject*> uniqueObjects;
 
   for (int y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
     for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
       int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
       auto it = m_grid.find(cell);
       if (it != m_grid.end()) {
-        nearby.insert(nearby.end(), it->second.begin(), it->second.end());
+        for (auto* obj : it->second) {
+          if (uniqueObjects.insert(obj).second) {
+            nearby.push_back(obj);
+          }
+        }
       }
     }
   }
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Found " << nearby.size() << " unique objects in grid" << std::endl;
+  }
+
   return nearby;
 }

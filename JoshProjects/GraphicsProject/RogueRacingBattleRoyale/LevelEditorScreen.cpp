@@ -1433,6 +1433,13 @@ void LevelEditorScreen::initTestMode() {
     });
   }
 
+  if (m_objectManager) {
+    m_objectManager->setCars(m_testCars);
+    for (auto& aiDriver : m_aiDrivers) {
+      aiDriver->setObjectManager(m_objectManager.get());
+    }
+  }
+
   // Initialize AI config with default values
   m_aiConfig.lookAheadDistance = 100.0f;
   m_aiConfig.centeringForce = 1.0f;

@@ -135,9 +135,11 @@ namespace JAGEngine {
       GLuint textureID = _renderBatches[i].texture == 0 ? m_whiteTexture : _renderBatches[i].texture;
       glBindTexture(GL_TEXTURE_2D, textureID);
 
-      std::cout << "Rendering batch " << i << " with texture ID: " << textureID
-        << ", offset: " << _renderBatches[i].offset
-        << ", num vertices: " << _renderBatches[i].numVertices << std::endl;
+      if (DEBUG_OUTPUT) {
+        std::cout << "Rendering batch " << i << " with texture ID: " << textureID
+          << ", offset: " << _renderBatches[i].offset
+          << ", num vertices: " << _renderBatches[i].numVertices << std::endl;
+      }
 
       glDrawArrays(GL_TRIANGLES, _renderBatches[i].offset, _renderBatches[i].numVertices);
     }

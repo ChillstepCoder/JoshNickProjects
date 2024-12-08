@@ -68,6 +68,8 @@ namespace JAGEngine {
 
 
   private:
+    static constexpr bool DEBUG_OUTPUT = false;
+
     ftgl::texture_atlas_t* m_atlas;
     ftgl::texture_font_t* m_font;
     std::map<char, ftgl::texture_glyph_t*> m_glyphMap;
