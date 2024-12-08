@@ -15,7 +15,12 @@ public:
     float lookAheadDistance = 200.0f;      // How far ahead to look for turns
     float centeringForce = 1.0f;           // How strongly to center on spline (0-1)
     float turnAnticipation = 1.0f;         // How much to consider lookahead angle (0-1)
-    float reactionTime = 0.1f;             // Delay in steering response
+    float reactionTime = 0.05f;            // Delay in steering response
+    float stuckSpeedThreshold = 20.0f;     // Speed below which to check if stuck
+    float stuckTimeThreshold = 0.5f;       // Time below speed threshold before considering stuck
+    float recoveryDistance = 150.0f;       // How far to reverse before giving up recovery
+    float recoveryMaxTime = 1.5f;          // Maximum time to spend in recovery mode
+    float recoverySplineThreshold = 100.0f; // Distance to spline at which to end recovery
   };
 
   struct SensorReading {
@@ -52,6 +57,17 @@ public:
   float getDesiredAngle() const { return m_desiredAngle; }
 
 private:
+  struct StuckState {
+    bool isStuck = false;
+    float stuckTimer = 0.0f;
+    float recoveryTimer = 0.0f;        
+    glm::vec2 stuckPosition = glm::vec2(0.0f); 
+    glm::vec2 lastPosition = glm::vec2(0.0f);
+    float lastPositionTimer = 0.0f;
+    float reverseStuckTimer = 0.0f;   
+    static constexpr float POSITION_CHECK_INTERVAL = 0.1f;
+  };
+
   static constexpr bool DEBUG_OUTPUT = false;
   static constexpr float SENSOR_UPDATE_INTERVAL = 0.1f;
   float m_sensorTimer = 0.0f;
@@ -68,8 +84,14 @@ private:
   float m_lastInputTime;
   InputState m_currentInput;
   SensorData m_sensorData;
+  StuckState m_stuckState;
 
   // Helper methods
+  
+  void updateStuckState(float deltaTime);
+  void applyStuckRecovery();
+  glm::vec2 getTrackDirectionAtPosition(const glm::vec2& position) const;
+
   float calculateObjectThreat(const SensorReading& reading);
   void updateSensors();
   void updateSteering();

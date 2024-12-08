@@ -19,36 +19,37 @@ AIDriver::AIDriver(Car* car)
 void AIDriver::update(float deltaTime) {
   if (!m_car || !m_car->getTrack()) return;
 
-  if (DEBUG_OUTPUT) {
-    std::cout << "\n=== AI Update Start ===" << std::endl;
+  if (DEBUG_OUTPUT && m_stuckState.isStuck) {
+    auto debugInfo = m_car->getDebugInfo();
+    std::cout << "Stuck Recovery Active - Speed: " << debugInfo.currentSpeed
+      << " Distance: " << glm::distance(glm::vec2(debugInfo.position),
+        m_stuckState.stuckPosition) << std::endl;
   }
+
+  // Update stuck detection
+  updateStuckState(deltaTime);
 
   // Update sensors periodically
   m_sensorTimer += deltaTime;
   if (m_sensorTimer >= SENSOR_UPDATE_INTERVAL) {
     m_sensorTimer = 0.0f;
-
-    if (DEBUG_OUTPUT) {
-      if (!m_objectManager) {
-        std::cout << "Warning: Object manager is null!" << std::endl;
-      }
-      else {
-        std::cout << "Using object manager at: " << m_objectManager << std::endl;
-      }
-    }
-
     updateSensors();
   }
 
   m_targetPoint = findClosestSplinePoint();
   m_lookAheadPoint = calculateLookAheadPoint();
-  updateSteering();
-  updateThrottle();
-  m_car->update(m_currentInput);
 
-  if (DEBUG_OUTPUT) {
-    std::cout << "=== AI Update Complete ===" << std::endl;
+  // Normal driving behavior if not stuck
+  if (!m_stuckState.isStuck) {
+    updateSteering();
+    updateThrottle();
   }
+  else {
+    // Recovery behavior when stuck
+    applyStuckRecovery();
+  }
+
+  m_car->update(m_currentInput);
 }
 
 float AIDriver::calculateObjectThreat(const SensorReading& reading) {
@@ -658,4 +659,172 @@ bool AIDriver::isObjectInPath(const glm::vec2& objectPos, float objectRadius,
 
   // Check if object is within our sensor width
   return lateralDist < (SensorData::SENSOR_WIDTH + objectRadius);
+}
+
+void AIDriver::updateStuckState(float deltaTime) {
+  if (!m_car) return;
+
+  auto debugInfo = m_car->getDebugInfo();
+  float currentSpeed = debugInfo.currentSpeed;
+  glm::vec2 currentPos(debugInfo.position);
+
+  // Update position check timer
+  m_stuckState.lastPositionTimer += deltaTime;
+  if (m_stuckState.lastPositionTimer >= StuckState::POSITION_CHECK_INTERVAL) {
+    float distanceMoved = glm::distance(currentPos, m_stuckState.lastPosition);
+    float effectiveSpeed = distanceMoved / StuckState::POSITION_CHECK_INTERVAL;
+
+    // Reset timer and update last position
+    m_stuckState.lastPositionTimer = 0.0f;
+    m_stuckState.lastPosition = currentPos;
+
+    // If speed is below threshold, increment appropriate stuck timer
+    if (effectiveSpeed < m_config.stuckSpeedThreshold) {
+      if (m_stuckState.isStuck) {
+        // In reverse mode, track getting stuck while reversing
+        m_stuckState.reverseStuckTimer += StuckState::POSITION_CHECK_INTERVAL;
+        if (m_stuckState.reverseStuckTimer >= m_config.stuckTimeThreshold) {
+          // Got stuck while reversing - abort recovery
+          if (DEBUG_OUTPUT) {
+            std::cout << "Got stuck while reversing - aborting recovery" << std::endl;
+          }
+          m_stuckState.isStuck = false;
+          m_stuckState.stuckTimer = 0.0f;
+          m_stuckState.reverseStuckTimer = 0.0f;
+          m_stuckState.recoveryTimer = 0.0f;
+          return;
+        }
+      }
+      else {
+        // Normal forward stuck detection
+        m_stuckState.stuckTimer += StuckState::POSITION_CHECK_INTERVAL;
+      }
+    }
+    else {
+      // Moving well - reset timers
+      m_stuckState.stuckTimer = 0.0f;
+      m_stuckState.reverseStuckTimer = 0.0f;
+    }
+  }
+
+  // Check if we should enter stuck state
+  if (!m_stuckState.isStuck && m_stuckState.stuckTimer >= m_config.stuckTimeThreshold) {
+    m_stuckState.isStuck = true;
+    m_stuckState.stuckPosition = currentPos;  // Store position where we got stuck
+    m_stuckState.reverseStuckTimer = 0.0f;   // Reset reverse stuck timer
+    m_stuckState.recoveryTimer = 0.0f;       // Reset recovery timer
+  }
+
+  // Update recovery timer and check exit conditions
+  if (m_stuckState.isStuck) {
+    m_stuckState.recoveryTimer += deltaTime;
+    float distanceFromStuckPoint = glm::distance(currentPos, m_stuckState.stuckPosition);
+
+    // Exit stuck state if either condition is met
+    if (distanceFromStuckPoint >= m_config.recoveryDistance ||
+      m_stuckState.recoveryTimer >= m_config.recoveryMaxTime) {
+
+      if (DEBUG_OUTPUT) {
+        if (distanceFromStuckPoint >= m_config.recoveryDistance) {
+          std::cout << "Recovery complete - distance threshold reached" << std::endl;
+        }
+        else {
+          std::cout << "Recovery complete - time threshold reached" << std::endl;
+        }
+      }
+
+      // Exit stuck state
+      m_stuckState.isStuck = false;
+      m_stuckState.stuckTimer = 0.0f;
+      m_stuckState.reverseStuckTimer = 0.0f;
+      m_stuckState.recoveryTimer = 0.0f;
+    }
+  }
+}
+
+glm::vec2 AIDriver::getTrackDirectionAtPosition(const glm::vec2& position) const {
+  if (!m_car || !m_car->getTrack()) return glm::vec2(1.0f, 0.0f);
+
+  auto splinePoints = m_car->getTrack()->getSplinePoints(200);
+  size_t closestIdx = 0;
+  float minDist = FLT_MAX;
+
+  // Find closest spline point
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    float dist = glm::length2(position - splinePoints[i].position);
+    if (dist < minDist) {
+      minDist = dist;
+      closestIdx = i;
+    }
+  }
+
+  // Get next point for direction (considering track direction)
+  bool isClockwise = !m_car->getTrack()->isDefaultDirection();
+  size_t nextIdx = isClockwise ?
+    (closestIdx == 0 ? splinePoints.size() - 1 : closestIdx - 1) :
+    (closestIdx + 1) % splinePoints.size();
+
+  glm::vec2 direction = glm::normalize(splinePoints[nextIdx].position - splinePoints[closestIdx].position);
+  return isClockwise ? -direction : direction;
+}
+
+void AIDriver::applyStuckRecovery() {
+  if (!m_car) return;
+
+  auto debugInfo = m_car->getDebugInfo();
+  glm::vec2 carPos(debugInfo.position);
+  glm::vec2 carDir(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
+
+  // Get closest spline point and track direction
+  glm::vec2 closestSplinePoint = findClosestSplinePoint();
+  glm::vec2 trackDir = getTrackDirectionAtPosition(carPos);
+
+  // Calculate vector from car to spline center
+  glm::vec2 toCenter = closestSplinePoint - carPos;
+  float distanceToSpline = glm::length(toCenter);
+  toCenter = glm::normalize(toCenter);
+
+  // Calculate ideal reverse direction (opposite of track direction)
+  glm::vec2 reverseDir = -trackDir;
+
+  // Mix reverse direction with centering force
+  float centeringStrength = glm::clamp(distanceToSpline / 50.0f, 0.0f, 1.0f);
+  centeringStrength *= m_config.centeringForce; // Use existing centering force config
+
+  // Blend between pure reverse direction and centering direction
+  glm::vec2 targetDir = glm::normalize(
+    reverseDir + toCenter * centeringStrength * 1.5f  // Increased centering force while reversing
+  );
+
+  // Calculate the angle we want to achieve
+  float targetAngle = std::atan2(targetDir.y, targetDir.x);
+  float currentAngle = debugInfo.angle;
+
+  // Normalize angle difference to [-π, π]
+  float angleDiff = targetAngle - currentAngle;
+  while (angleDiff > glm::pi<float>()) angleDiff -= 2.0f * glm::pi<float>();
+  while (angleDiff < -glm::pi<float>()) angleDiff += 2.0f * glm::pi<float>();
+
+  // Dynamic steering threshold based on distance to spline
+  float steeringThreshold = 0.1f;  // Base threshold (about 5.7 degrees)
+  if (distanceToSpline > 30.0f) {
+    steeringThreshold *= 0.5f;  // More precise steering when far from spline
+  }
+
+  // Apply steering based on angle difference
+  m_currentInput.turningLeft = angleDiff > steeringThreshold;
+  m_currentInput.turningRight = angleDiff < -steeringThreshold;
+
+  // Adjust reverse speed based on alignment and distance
+  m_currentInput.accelerating = false;
+  m_currentInput.braking = true;
+
+  // Debug output if needed
+  if (DEBUG_OUTPUT) {
+    std::cout << "Recovery - Angle diff: " << glm::degrees(angleDiff)
+      << " Distance to spline: " << distanceToSpline
+      << " Centering strength: " << centeringStrength
+      << " Distance from stuck point: "
+      << glm::distance(carPos, m_stuckState.stuckPosition) << std::endl;
+  }
 }
