@@ -98,7 +98,7 @@ public:
 
 private:
     b2BodyId m_BodyID = b2_nullBodyId;
-    BlockID m_BlockID;
+    BlockID m_BlockID = BlockID::AIR;
     float m_waterAmount;
 };
 

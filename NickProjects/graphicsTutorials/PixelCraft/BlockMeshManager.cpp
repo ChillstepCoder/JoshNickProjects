@@ -125,6 +125,7 @@ void BlockManager::update(BlockManager& blockManager) {
         m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager);
     }
 
+
 }
 
 BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
@@ -133,19 +134,20 @@ BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
     int chunkPosX = blockPosX / CHUNK_WIDTH;
     int chunkPosY = blockPosY / CHUNK_WIDTH;
     int blockOffsetX = blockPosX % CHUNK_WIDTH;
-    int blockOffsetY = blockPosX % CHUNK_WIDTH;
+    int blockOffsetY = blockPosY % CHUNK_WIDTH;
 
-    Chunk& chunk = m_chunks[chunkPosX][chunkPosY];
+    if (chunkPosX < WORLD_WIDTH_CHUNKS && chunkPosY < WORLD_HEIGHT_CHUNKS && chunkPosX >= 0 && chunkPosY >= 0) {
+        Chunk& chunk = m_chunks[chunkPosX][chunkPosY];
+        Block* block = &chunk.blocks[blockOffsetX][blockOffsetY];
+        return BlockHandle{ block, glm::ivec2(chunkPosX, chunkPosY), glm::ivec2(blockOffsetX, blockOffsetY) };
 
-    //make code to check for chunk out of bounds here 
-
-    Block* block = &chunk.blocks[blockOffsetX][blockOffsetY];
-
-    return BlockHandle{ block, glm::ivec2(chunkPosX, chunkPosY), glm::ivec2(blockOffsetX, blockOffsetY) };
-
+    } else {
+        std::cout << "Chunk out of bounds!!!";
+        return BlockHandle{ nullptr, glm::ivec2(chunkPosX, chunkPosY), glm::ivec2(blockOffsetX, blockOffsetY) };
+    }
 }
 
-glm::ivec2 getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset) {
+glm::ivec2 BlockManager::getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset) {
     int chunkBlockTotalX = chunkCoords.x * CHUNK_WIDTH;
     int chunkBlockTotalY = chunkCoords.y * CHUNK_WIDTH;
 
@@ -156,14 +158,13 @@ glm::ivec2 getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset) {
 void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     // check if the block exists
     if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
+
         // Destroy the block (remove physics body and reset visual state)
         b2DestroyBody(blockHandle.block->getBodyID());
         // Now that the block is destroyed, we can remove it from the chunk
         // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
-        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
 
-        
         if (blockHandle.block->getBlockID() == BlockID::WATER) {
             for (int i = 0; i < chunk.waterBlocks.size(); i++) {
                 if (getBlockAtPosition(chunk.waterBlocks[i]) == blockHandle) {
@@ -174,9 +175,13 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
                 }
             }
         }
-        
 
-        chunk.buildChunkMesh();
+
+        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
+
+        std::cout << "Block destroyed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
+
+        chunk.m_isMeshDirty = true;
     }
 }
 
@@ -214,8 +219,10 @@ void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& p
         chunk.waterBlocks.push_back(glm::vec2(position.x, position.y)); // Add to the list of water blocks.
     }
 
-    chunk.buildChunkMesh();
+    std::cout << "water placed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
 
+
+    chunk.m_isMeshDirty = true;
 }
 
 void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {

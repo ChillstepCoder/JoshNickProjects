@@ -35,6 +35,12 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
         int downPosX = waterPosX;
         int downPosY = (waterPosY - 1);
 
+        int downRightPosX = waterPosX + 1;
+        int downRightPosY = (waterPosY - 1);
+
+        int downLeftPosX = waterPosX - 1;
+        int downLeftPosY = (waterPosY - 1);
+
         int leftPosX = (waterPosX - 1);
         int leftPosY = waterPosY;
 
@@ -48,6 +54,10 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         BlockHandle downBlock = blockManager.getBlockAtPosition(glm::vec2(downPosX, downPosY));
 
+        BlockHandle downRightBlock = blockManager.getBlockAtPosition(glm::vec2(downRightPosX, downRightPosY));
+
+        BlockHandle downLeftBlock = blockManager.getBlockAtPosition(glm::vec2(downLeftPosX, downLeftPosY));
+
         BlockHandle leftBlock = blockManager.getBlockAtPosition(glm::vec2(leftPosX, leftPosY));
 
         BlockHandle rightBlock = blockManager.getBlockAtPosition(glm::vec2(rightPosX, rightPosY));
@@ -60,20 +70,61 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
 
         if (downBlock.block->getBlockID() == BlockID::AIR) {
-            //waterBlock.block->setWaterAmount(0.0f);
-            //waterBlock.block->setBlockID(BlockID::AIR);
+            waterBlock.block->setWaterAmount(0.0f);
             blockManager.destroyBlock(waterBlock);
 
-            //downBlock.block->setWaterAmount(1.0f);
-            downBlock.block->setBlockID(BlockID::WATER);
+            downBlock.block->setWaterAmount(1.0f);
             blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
 
+            continue;
+
+        } else if (downRightBlock.block->getBlockID() == BlockID::AIR) {
+
+            waterBlock.block->setWaterAmount(0.0f);
+            blockManager.destroyBlock(waterBlock);
+
+            downRightBlock.block->setWaterAmount(1.0f);
+            blockManager.placeBlock(downRightBlock, glm::vec2(downRightPosX, downRightPosY));
+
+            continue;
+        } else if (downLeftBlock.block->getBlockID() == BlockID::AIR) {
+
+            waterBlock.block->setWaterAmount(0.0f);
+            blockManager.destroyBlock(waterBlock);
+
+            downLeftBlock.block->setWaterAmount(1.0f);
+            blockManager.placeBlock(downLeftBlock, glm::vec2(downLeftPosX, downLeftPosY));
+
+            continue;
+        } else if (rightBlock.block->getBlockID() == BlockID::AIR) {
+
+            waterBlock.block->setWaterAmount(0.0f);
+            blockManager.destroyBlock(waterBlock);
+
+            rightBlock.block->setWaterAmount(1.0f);
+            blockManager.placeBlock(rightBlock, glm::vec2(rightPosX, rightPosY));
+
+            continue;
+        } else if (leftBlock.block->getBlockID() == BlockID::AIR) {
+
+            waterBlock.block->setWaterAmount(0.0f);
+            blockManager.destroyBlock(waterBlock);
+
+            leftBlock.block->setWaterAmount(1.0f);
+            blockManager.placeBlock(leftBlock, glm::vec2(leftPosX, leftPosY));
+
+            continue;
         }
         else {
             continue;
         }
-
     }
+
+    if (chunk.m_isMeshDirty == true) {
+        chunk.m_isMeshDirty = false;
+        chunk.buildChunkMesh();
+    }
+
 }
 
 
