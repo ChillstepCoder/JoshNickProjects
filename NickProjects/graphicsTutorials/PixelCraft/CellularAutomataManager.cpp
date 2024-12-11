@@ -1,4 +1,5 @@
 #include "CellularAutomataManager.h"
+#include <iostream>
 
 CellularAutomataManager::CellularAutomataManager() {
 
@@ -70,10 +71,11 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
 
         if (downBlock.block->getBlockID() == BlockID::AIR) {
+
             waterBlock.block->setWaterAmount(0.0f);
             blockManager.destroyBlock(waterBlock);
 
-            downBlock.block->setWaterAmount(1.0f);
+            downBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
             blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
 
             continue;
@@ -83,7 +85,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
             waterBlock.block->setWaterAmount(0.0f);
             blockManager.destroyBlock(waterBlock);
 
-            downRightBlock.block->setWaterAmount(1.0f);
+            downRightBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
             blockManager.placeBlock(downRightBlock, glm::vec2(downRightPosX, downRightPosY));
 
             continue;
@@ -92,28 +94,51 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
             waterBlock.block->setWaterAmount(0.0f);
             blockManager.destroyBlock(waterBlock);
 
-            downLeftBlock.block->setWaterAmount(1.0f);
+            downLeftBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
             blockManager.placeBlock(downLeftBlock, glm::vec2(downLeftPosX, downLeftPosY));
 
             continue;
-        } else if (rightBlock.block->getBlockID() == BlockID::AIR) {
+        } else if (rightBlock.block->getBlockID() == BlockID::AIR || rightBlock.block->getBlockID() == BlockID::WATER) {
+            if (((float)((int)((rightBlock.block->getWaterAmount() * 10))) / 10) < ((float)((int)((waterBlock.block->getWaterAmount() * 10))) / 10)) {
+                float waterAmt = ((float)((int)((waterBlock.block->getWaterAmount() * 10))) / 10);
+                float rightWaterAmt = ((float)((int)((rightBlock.block->getWaterAmount() * 10))) / 10);
 
-            waterBlock.block->setWaterAmount(0.0f);
-            blockManager.destroyBlock(waterBlock);
+                std::cout << "waterAmt: " << waterAmt << "  rightWaterAmt: " << rightWaterAmt << std::endl;
 
-            rightBlock.block->setWaterAmount(1.0f);
-            blockManager.placeBlock(rightBlock, glm::vec2(rightPosX, rightPosY));
 
-            continue;
-        } else if (leftBlock.block->getBlockID() == BlockID::AIR) {
+                float avgAmt = (waterAmt + rightWaterAmt) / 2.0f;
 
-            waterBlock.block->setWaterAmount(0.0f);
-            blockManager.destroyBlock(waterBlock);
 
-            leftBlock.block->setWaterAmount(1.0f);
-            blockManager.placeBlock(leftBlock, glm::vec2(leftPosX, leftPosY));
+                waterBlock.block->setWaterAmount(avgAmt);
+ 
+                blockManager.placeBlock(rightBlock, glm::vec2(rightPosX, rightPosY));
+                rightBlock.block->setWaterAmount(avgAmt);
 
-            continue;
+                continue;
+            } else {
+                continue;
+            }
+
+        } else if (leftBlock.block->getBlockID() == BlockID::AIR || leftBlock.block->getBlockID() == BlockID::WATER) {
+            if (((float)((int)((leftBlock.block->getWaterAmount() * 10))) / 10) < ((float)((int)((waterBlock.block->getWaterAmount() * 10))) / 10)) {
+                float waterAmt = ((float)((int)((waterBlock.block->getWaterAmount() * 10))) / 10);
+                float leftWaterAmt = ((float)((int)((leftBlock.block->getWaterAmount() * 10))) / 10);
+
+                std::cout << "waterAmt: " << waterAmt << "  leftWaterAmt: " << leftWaterAmt << std::endl;
+
+                float avgAmt = (waterAmt + leftWaterAmt) / 2.0f;
+
+                waterBlock.block->setWaterAmount(avgAmt);
+                blockManager.destroyBlock(waterBlock);
+
+                blockManager.placeBlock(leftBlock, glm::vec2(leftPosX, leftPosY));
+                leftBlock.block->setWaterAmount(avgAmt);
+
+                continue;
+            } else {
+                continue;
+            }
+
         }
         else {
             continue;

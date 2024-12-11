@@ -23,13 +23,26 @@ void Chunk::buildChunkMesh() {
             if (!block.isEmpty()) {
                 BlockDefRepository repository;
                 BlockID id = block.getBlockID();
-                
 
-                glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
-                glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
-                GLuint textureID = BlockDefRepository::getTextureID(id);
-                Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
-                m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                if (id == BlockID::WATER) {
+
+                    float waterAmt = ((float)((int)((block.getWaterAmount() * 10))) / 10);
+
+                    glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, waterAmt);
+
+                    glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
+                    GLuint textureID = BlockDefRepository::getTextureID(id);
+                    Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
+                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                } else {
+
+                    glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
+
+                    glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
+                    GLuint textureID = BlockDefRepository::getTextureID(id);
+                    Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
+                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                }
 
                 //BlockRenderer::renderBlock(m_spriteBatch, repository.getDef(id),glm::vec2(x,y));
             }
@@ -207,7 +220,6 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::ve
 void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& position) {
     float realpositionX = position.x - 0.5f;
     float realPositionY = position.y - 0.5f;
-
 
     Block waterBlock;
     waterBlock.init(m_world, BlockID::WATER, glm::vec2(realpositionX, realPositionY));
