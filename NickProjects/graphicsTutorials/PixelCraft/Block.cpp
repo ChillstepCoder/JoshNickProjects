@@ -88,7 +88,7 @@ void Block::init(b2WorldId world, BlockID blockID, const glm::vec2& position) {
     b2ShapeDef shapeDef = b2DefaultShapeDef();
 
     if (blockID == BlockID::WATER) {
-        m_waterAmount = 1.0f;
+        m_waterAmount = 10;
         return;
     }
 

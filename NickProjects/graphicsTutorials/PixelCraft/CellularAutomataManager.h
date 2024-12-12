@@ -19,8 +19,5 @@ public:
 
 private:
     std::vector <Block*> m_waterBlocks; // store a glm::ivec2 position
-    float m_maxLiquid = 1.0; //The normal, un-pressurized mass of a full water cell
-    float m_maxCompress = 0.02; //How much excess water a cell can store, compared to the cell above it
-    float m_minMass = 0.0001;  //Ignore cells that are almost dry
 };
 

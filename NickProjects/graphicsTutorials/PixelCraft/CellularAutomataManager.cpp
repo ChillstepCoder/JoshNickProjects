@@ -1,4 +1,5 @@
 #include "CellularAutomataManager.h"
+#include <iostream>
 
 CellularAutomataManager::CellularAutomataManager() {
 
@@ -35,6 +36,12 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
         int downPosX = waterPosX;
         int downPosY = (waterPosY - 1);
 
+        int downRightPosX = waterPosX + 1;
+        int downRightPosY = (waterPosY - 1);
+
+        int downLeftPosX = waterPosX - 1;
+        int downLeftPosY = (waterPosY - 1);
+
         int leftPosX = (waterPosX - 1);
         int leftPosY = waterPosY;
 
@@ -48,6 +55,10 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         BlockHandle downBlock = blockManager.getBlockAtPosition(glm::vec2(downPosX, downPosY));
 
+        BlockHandle downRightBlock = blockManager.getBlockAtPosition(glm::vec2(downRightPosX, downRightPosY));
+
+        BlockHandle downLeftBlock = blockManager.getBlockAtPosition(glm::vec2(downLeftPosX, downLeftPosY));
+
         BlockHandle leftBlock = blockManager.getBlockAtPosition(glm::vec2(leftPosX, leftPosY));
 
         BlockHandle rightBlock = blockManager.getBlockAtPosition(glm::vec2(rightPosX, rightPosY));
@@ -59,21 +70,149 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
 
 
-        if (downBlock.block->getBlockID() == BlockID::AIR) {
-            //waterBlock.block->setWaterAmount(0.0f);
-            //waterBlock.block->setBlockID(BlockID::AIR);
+        if (downBlock.block->getBlockID() == BlockID::AIR) { // If downBlock is air, transfers all water to downBlock
+
+            waterBlock.block->setWaterAmount(0);
             blockManager.destroyBlock(waterBlock);
 
-            //downBlock.block->setWaterAmount(1.0f);
-            downBlock.block->setBlockID(BlockID::WATER);
+            downBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
             blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
 
+            continue;
+        } else if (downBlock.block->getBlockID() == BlockID::WATER) { // If downBlock is water, check if it is full
+            if (downBlock.block->getWaterAmount() < WATER_LEVELS) { // If downBlock isnt full
+
+                int waterDifference = WATER_LEVELS - downBlock.block->getWaterAmount();// How much water is missing from downBlock
+
+                if (waterDifference < waterBlock.block->getWaterAmount()) { // The missing water is less than the amount in waterBlock
+                    downBlock.block->setWaterAmount(downBlock.block->getWaterAmount() + waterDifference);
+                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
+                    continue;
+                } else { // The waterBlock doesnt have enough to fill up downBlock
+                    downBlock.block->setWaterAmount(downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
+                    waterBlock.block->setWaterAmount(0);
+                    blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
+                    continue;
+                }
+            }
         }
-        else {
+        
+        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
             continue;
         }
 
+        if (downRightBlock.block->getBlockID() == BlockID::AIR) {
+
+            waterBlock.block->setWaterAmount(0);
+            blockManager.destroyBlock(waterBlock);
+
+            downRightBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
+            blockManager.placeBlock(downRightBlock, glm::vec2(downRightPosX, downRightPosY));
+            continue;
+
+        } else if (downRightBlock.block->getBlockID() == BlockID::WATER) {
+            if (downRightBlock.block->getWaterAmount() < WATER_LEVELS) { // If downRightBlock isnt full
+
+                int waterDifference = WATER_LEVELS - downRightBlock.block->getWaterAmount();// How much water is missing from downRightBlock
+
+                if (waterDifference < waterBlock.block->getWaterAmount()) { // The missing water is less than the amount in waterBlock
+                    downRightBlock.block->setWaterAmount(downRightBlock.block->getWaterAmount() + waterDifference);
+                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
+                    continue;
+                }
+                else { // The waterBlock doesnt have enough to fill up downRightBlock
+                    downRightBlock.block->setWaterAmount(downRightBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
+                    waterBlock.block->setWaterAmount(0);
+                    blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
+                    continue;
+                }
+            }
+        }
+
+        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
+            continue;
+        }
+
+        
+        if (downLeftBlock.block->getBlockID() == BlockID::AIR) {
+
+            waterBlock.block->setWaterAmount(0);
+            blockManager.destroyBlock(waterBlock);
+
+            downLeftBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
+            blockManager.placeBlock(downLeftBlock, glm::vec2(downLeftPosX, downLeftPosY));
+            continue;
+
+        } else if (downLeftBlock.block->getBlockID() == BlockID::WATER) {
+            if (downLeftBlock.block->getWaterAmount() < WATER_LEVELS) { // If downLeftBlock isnt full
+
+                int waterDifference = WATER_LEVELS - downLeftBlock.block->getWaterAmount();// How much water is missing from downLeftBlock
+
+                if (waterDifference < waterBlock.block->getWaterAmount()) { // The missing water is less than the amount in waterBlock
+                    downLeftBlock.block->setWaterAmount(downLeftBlock.block->getWaterAmount() + waterDifference);
+                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
+                    continue;
+                }
+                else { // The waterBlock doesnt have enough to fill up downLeftBlock
+                    downLeftBlock.block->setWaterAmount(downLeftBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
+                    waterBlock.block->setWaterAmount(0);
+                    blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
+                    continue;
+                }
+            }
+        }
+        
+        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
+            continue;
+        }
+     
+        if (rightBlock.block->getBlockID() == BlockID::AIR || rightBlock.block->getBlockID() == BlockID::WATER) {
+            if (rightBlock.block->getWaterAmount() < waterBlock.block->getWaterAmount()) {
+                int waterAmt = waterBlock.block->getWaterAmount();
+                int rightWaterAmt = rightBlock.block->getWaterAmount();
+
+                std::cout << "waterAmt: " << waterAmt << "  rightWaterAmt: " << rightWaterAmt << std::endl;
+
+
+                int avgAmt = (waterAmt + rightWaterAmt) / 2;
+
+
+                waterBlock.block->setWaterAmount(avgAmt);
+ 
+                blockManager.placeBlock(rightBlock, glm::vec2(rightPosX, rightPosY));
+                rightBlock.block->setWaterAmount(avgAmt);
+                continue;
+            } 
+        } 
+
+        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
+            continue;
+        }
+
+        if (leftBlock.block->getBlockID() == BlockID::AIR || leftBlock.block->getBlockID() == BlockID::WATER) {
+            if (leftBlock.block->getWaterAmount() < waterBlock.block->getWaterAmount()) {
+                int waterAmt = waterBlock.block->getWaterAmount();
+                int leftWaterAmt = leftBlock.block->getWaterAmount();
+
+                std::cout << "waterAmt: " << waterAmt << "  leftWaterAmt: " << leftWaterAmt << std::endl;
+
+                int avgAmt = (waterAmt + leftWaterAmt) / 2;
+
+                waterBlock.block->setWaterAmount(avgAmt);
+                blockManager.destroyBlock(waterBlock);
+
+                blockManager.placeBlock(leftBlock, glm::vec2(leftPosX, leftPosY));
+                leftBlock.block->setWaterAmount(avgAmt);
+                continue;
+            } 
+        }
     }
+
+    if (chunk.m_isMeshDirty == true) {
+        chunk.m_isMeshDirty = false;
+        chunk.buildChunkMesh();
+    }
+
 }
 
 

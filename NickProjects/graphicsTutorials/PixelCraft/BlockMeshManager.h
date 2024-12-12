@@ -11,6 +11,7 @@ class BlockManager;
 class CellularAutomataManager;
 
 const int CHUNK_WIDTH = 64;
+const int WATER_LEVELS = 10;
 
 class Chunk {
 public:
@@ -31,11 +32,12 @@ public:
     glm::vec2 m_worldPosition;
     Bengine::SpriteBatch m_spriteBatch;
     bool m_isLoaded = false;
+    bool m_isMeshDirty = false;
 };
 
 struct BlockHandle {
-    Block* block;
     auto operator<=>(const BlockHandle&) const = default;
+    Block* block;
     glm::ivec2 chunkCoords;
     glm::ivec2 blockOffset;
 };
