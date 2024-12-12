@@ -26,9 +26,11 @@ void Chunk::buildChunkMesh() {
 
                 if (id == BlockID::WATER) {
 
-                    float waterAmt = ((float)((int)((block.getWaterAmount() * 10))) / 10);
+                    int waterAmt = block.getWaterAmount();
 
-                    glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, waterAmt);
+                    float waterHeight = ((float)waterAmt / (float)WATER_LEVELS);
+
+                    glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, waterHeight);
 
                     glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
                     GLuint textureID = BlockDefRepository::getTextureID(id);

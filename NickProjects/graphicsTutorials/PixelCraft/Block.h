@@ -84,7 +84,7 @@ public:
     b2BodyId getBodyID() const { return m_BodyID; }
     BlockID getBlockID() const { return m_BlockID; }
     void setBlockID(BlockID id) { m_BlockID = id; }
-    float getWaterAmount() const { return m_waterAmount; }
+    int getWaterAmount() const { return m_waterAmount; }
 
     void setWaterAmount(float amount) {
         m_waterAmount = amount;
@@ -99,6 +99,6 @@ public:
 private:
     b2BodyId m_BodyID = b2_nullBodyId;
     BlockID m_BlockID = BlockID::AIR;
-    float m_waterAmount = 0.0f;
+    int m_waterAmount = 0;
 };
 
