@@ -262,7 +262,7 @@ void MainGame::update(float deltaTime) {
 }
 
 void MainGame::drawHud() {
-    const JAGEngine::ColorRGBA8 fontColor(255, 0, 0, 255);
+    const JAGEngine::ColorRGBA8 fontColor(255, 255, 255, 255);
     // Convert float to char *
     char buffer[64];
     sprintf(buffer, "%.1f", m_fps);

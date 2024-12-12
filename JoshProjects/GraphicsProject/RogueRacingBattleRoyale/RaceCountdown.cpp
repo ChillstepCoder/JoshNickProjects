@@ -67,9 +67,9 @@ void RaceCountdown::draw(JAGEngine::SpriteBatch& batch, const JAGEngine::Camera2
   m_font->draw(batch,
     text.c_str(),
     screenCenter,
-    glm::vec2(2.0f), // Scale text up
+    glm::vec2(2.0f),
     0.0f,
-    JAGEngine::ColorRGBA8(255, 0, 0, 255), // Bright red
+    JAGEngine::ColorRGBA8(0, 0, 0, 0), // black
     JAGEngine::Justification::MIDDLE); // Center align
 
   std::cout << "Drawing text '" << text << "' at position: "
@@ -78,7 +78,7 @@ void RaceCountdown::draw(JAGEngine::SpriteBatch& batch, const JAGEngine::Camera2
 
 std::string RaceCountdown::getText() const {
   if (!m_hasFinished && !m_isCountingDown) {
-    return "Press Start Race!";
+    return "Press 'Begin Race!'";
   }
   else if (m_isCountingDown) {
     int count = static_cast<int>(std::ceil(m_timer));

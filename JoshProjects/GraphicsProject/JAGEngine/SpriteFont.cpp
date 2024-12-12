@@ -116,8 +116,10 @@ namespace JAGEngine {
   void SpriteFont::draw(SpriteBatch& batch, const char* s, glm::vec2 position, glm::vec2 scaling,
     float depth, ColorRGBA8 tint, Justification just) {
 
-    std::cout << "Draw called with text: '" << s << "' at pos: "
-      << position.x << "," << position.y << std::endl;
+    if (DEBUG_OUTPUT) {
+      std::cout << "Draw called with text: '" << s << "' at pos: "
+        << position.x << "," << position.y << std::endl;
+    }
 
     if (!m_font || !m_textureID) {
       std::cout << "Invalid font state: font=" << (m_font != nullptr)

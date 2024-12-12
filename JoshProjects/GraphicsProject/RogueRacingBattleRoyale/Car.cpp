@@ -16,6 +16,9 @@ namespace {
 
 Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
   initializeWheelColliders();
+  m_properties.currentLap = 0;
+  m_properties.lastStartLineSide = false;
+  m_properties.lastPosition = glm::vec2(0.0f);
 }
 
 void Car::update(const InputState& input) {
@@ -88,6 +91,65 @@ void Car::update(const InputState& input) {
   handleTurning(input, forwardSpeed);
   applyDrag(currentVel, forwardSpeed);
   applyFriction(currentVel);
+
+  // Update lap progress
+  if (m_track) {
+    m_properties.lapProgress = calculateLapProgress(m_track);
+  }
+}
+
+void Car::updateStartLineCrossing(const SplineTrack* track) {
+  if (!track) return;
+  const TrackNode* startNode = track->getStartLineNode();
+  if (!startNode) return;
+  auto splinePoints = track->getSplinePoints(200);
+  if (splinePoints.empty()) return;
+
+  auto debugInfo = getDebugInfo();
+  glm::vec2 currentPos(debugInfo.position);
+  glm::vec2 lastPos = m_properties.lastPosition;
+  glm::vec2 velocity(debugInfo.velocity);
+  glm::vec2 startPos = startNode->getPosition();
+
+  // First check if we're close enough to the start line to even consider crossing
+  float distToStart = glm::distance(currentPos, startPos);
+  float lastDistToStart = glm::distance(lastPos, startPos);
+  const float LINE_DETECTION_RADIUS = startNode->getRoadWidth() * 1.5f;  // Only detect within this radius
+
+  if (distToStart > LINE_DETECTION_RADIUS && lastDistToStart > LINE_DETECTION_RADIUS) {
+    m_properties.lastPosition = currentPos;
+    return;
+  }
+
+  // Get track direction at start line
+  glm::vec2 startNormal = track->getTrackDirectionAtNode(startNode);
+
+  // Calculate exact position relative to line
+  float currentDot = glm::dot(currentPos - startPos, startNormal);
+  float lastDot = glm::dot(lastPos - startPos, startNormal);
+
+  // Only count crossing if we moved from one side to the other and we're close enough
+  if ((lastDot <= 0 && currentDot > 0) || (lastDot >= 0 && currentDot < 0)) {
+    float movementDirection = glm::dot(velocity, startNormal);
+    bool correctDirection = track->isDefaultDirection() ?
+      (movementDirection > 0) : (movementDirection < 0);
+
+    float speed = glm::length(velocity);
+    const float MIN_CROSSING_SPEED = 0.1f;
+
+    if (speed > MIN_CROSSING_SPEED) {
+      if (correctDirection) {
+        m_properties.currentLap++;
+        m_properties.lapProgress = 0.0f;  // Reset progress immediately after increasing lap
+      }
+      else if (m_properties.currentLap > 0) {
+        m_properties.currentLap--;
+        m_properties.lapProgress = 1.0f;  // Set to end of previous lap
+      }
+    }
+  }
+
+  m_properties.lastPosition = currentPos;
 }
 
 void Car::applyFriction(const b2Vec2& currentVel) {
@@ -107,6 +169,68 @@ void Car::applyFriction(const b2Vec2& currentVel) {
 b2Vec2 Car::getForwardVector() const {
   float angle = b2Rot_GetAngle(b2Body_GetRotation(m_bodyId));
   return { std::cos(angle), std::sin(angle) };
+}
+
+float Car::getTotalRaceProgress() const {
+  // Get the raw lap count and progress
+  int currentLap = m_properties.currentLap;
+  float lapProgress = m_properties.lapProgress;
+
+  // If we're behind the start line at race start (progress > 0.9),
+  // we want to represent this as a negative progress
+  if (currentLap == 0 && lapProgress > 0.9f) {
+    return -0.1f;  // Start slightly behind the line
+  }
+
+  // For the first lap (currentLap = 1), just return lap progress
+  // For subsequent laps, add completed laps to progress
+  return (currentLap <= 1) ? lapProgress : static_cast<float>(currentLap - 1) + lapProgress;
+}
+
+float Car::calculateLapProgress(const SplineTrack* track) {
+  if (!track) return 0.0f;
+  auto splinePoints = track->getSplinePoints(200);
+  if (splinePoints.empty()) return 0.0f;
+
+  // Find start line index first
+  const TrackNode* startNode = track->getStartLineNode();
+  if (!startNode) return 0.0f;
+
+  // Find start line position in spline points
+  size_t startIndex = 0;
+  float minStartDist = std::numeric_limits<float>::max();
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    float dist = glm::distance(startNode->getPosition(), splinePoints[i].position);
+    if (dist < minStartDist) {
+      minStartDist = dist;
+      startIndex = i;
+    }
+  }
+
+  // Find car's closest point
+  auto debugInfo = getDebugInfo();
+  glm::vec2 carPos(debugInfo.position);
+  size_t closestIndex = 0;
+  float minDist = std::numeric_limits<float>::max();
+
+  for (size_t i = 0; i < splinePoints.size(); i++) {
+    float dist = glm::distance(carPos, splinePoints[i].position);
+    if (dist < minDist) {
+      minDist = dist;
+      closestIndex = i;
+    }
+  }
+
+  // Calculate progress relative to start line
+  float progress;
+  if (closestIndex >= startIndex) {
+    progress = static_cast<float>(closestIndex - startIndex) / static_cast<float>(splinePoints.size());
+  }
+  else {
+    progress = static_cast<float>(splinePoints.size() - startIndex + closestIndex) / static_cast<float>(splinePoints.size());
+  }
+
+  return progress;
 }
 
 void Car::updateMovement(const InputState& input) {

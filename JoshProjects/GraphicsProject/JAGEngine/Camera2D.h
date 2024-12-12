@@ -23,6 +23,7 @@ namespace JAGEngine {
     float getScale() const { return _scale; }
     glm::mat4 getCameraMatrix() const { return _cameraMatrix; }
     glm::mat4 getOrthoMatrix() const { return _orthoMatrix; }
+    glm::vec2 getScreenDimensions() const { return glm::vec2(_screenWidth, _screenHeight); }
 
   private:
     static constexpr float MAX_WORLD_SIZE = 1000000.0f;  // Maximum world coordinates

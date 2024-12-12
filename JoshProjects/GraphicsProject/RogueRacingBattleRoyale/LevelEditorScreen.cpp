@@ -121,6 +121,9 @@ void LevelEditorScreen::onEntry() {
     m_raceCountdown = std::make_unique<RaceCountdown>();
     m_raceCountdown->setFont(m_countdownFont.get());
 
+    m_raceTimer = std::make_unique<RaceTimer>();
+    m_raceTimer->setFont(m_countdownFont.get());
+
     m_raceCountdown->setOnCountdownStart([this]() {
       m_enableAI = false;
       m_inputEnabled = false;
@@ -129,6 +132,7 @@ void LevelEditorScreen::onEntry() {
     m_raceCountdown->setOnCountdownComplete([this]() {
       m_enableAI = true;
       m_inputEnabled = true;
+      m_raceTimer->start();
       });
 
     std::cout << "Text Rendering Setup Complete:\n"
@@ -180,6 +184,10 @@ void LevelEditorScreen::update() {
   }
   else {
     handleInput();
+  }
+
+  if (m_raceTimer) {
+    m_raceTimer->update(1.0f / 60.0f);
   }
 }
 
@@ -1471,7 +1479,7 @@ void LevelEditorScreen::drawHUD() {
   glActiveTexture(GL_TEXTURE0);
 
   GLuint fontTextureID = m_countdownFont->getTextureID();
-  std::cout << "Drawing HUD - Font texture ID: " << fontTextureID << std::endl;
+  //std::cout << "Drawing HUD - Font texture ID: " << fontTextureID << std::endl;
   glBindTexture(GL_TEXTURE_2D, fontTextureID);
 
   GLint textureUniform = m_textRenderingProgram.getUniformLocation("mySampler");
@@ -1485,19 +1493,19 @@ void LevelEditorScreen::drawHUD() {
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(projectionMatrix[0][0]));
 
   // Debug projection matrix
-  std::cout << "Projection Matrix:\n";
-  for (int i = 0; i < 4; i++) {
-    std::cout << projectionMatrix[i].x << ", "
-      << projectionMatrix[i].y << ", "
-      << projectionMatrix[i].z << ", "
-      << projectionMatrix[i].w << std::endl;
-  }
+  //std::cout << "Projection Matrix:\n";
+  //for (int i = 0; i < 4; i++) {
+  //  std::cout << projectionMatrix[i].x << ", "
+  //    << projectionMatrix[i].y << ", "
+  //    << projectionMatrix[i].z << ", "
+  //    << projectionMatrix[i].w << std::endl;
+  //}
 
   // Debug the shader state
   GLint currentProgram;
   glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);
-  std::cout << "Current shader program: " << currentProgram
-    << " (expected: " << m_textRenderingProgram.getProgramID() << ")" << std::endl;
+  //std::cout << "Current shader program: " << currentProgram
+  //  << " (expected: " << m_textRenderingProgram.getProgramID() << ")" << std::endl;
 
   m_hudSpriteBatch.begin();
 
@@ -1506,17 +1514,21 @@ void LevelEditorScreen::drawHUD() {
     // Keep screen center position
     glm::vec2 textPos(screenWidth / 2.0f, screenHeight / 2.0f);
 
-    // Skip world conversion since it might be causing the scaling issue
     m_countdownFont->draw(m_hudSpriteBatch,
       countdownText.c_str(),
       textPos,
-      glm::vec2(6.0f),              // Match Zombie game's scale
+      glm::vec2(4.0f),     
       0.0f,
-      JAGEngine::ColorRGBA8(255, 0, 0, 255),
+      JAGEngine::ColorRGBA8(0, 0, 0, 0),
       JAGEngine::Justification::MIDDLE);
 
-    std::cout << "Drawing at: " << textPos.x << ", " << textPos.y
-      << " with scale 6.0" << std::endl;
+    //std::cout << "Drawing at: " << textPos.x << ", " << textPos.y
+    //  << " with scale 6.0" << std::endl;
+  }
+
+  if (m_raceTimer && m_raceTimer->isRunning()) {
+    int currentLap = m_testCars[0]->getProperties().currentLap;  // Player car
+    m_raceTimer->draw(m_hudSpriteBatch, m_hudCamera, currentLap, m_totalLaps);
   }
 
   m_hudSpriteBatch.end();
@@ -1532,11 +1544,14 @@ void LevelEditorScreen::drawHUD() {
 }
 
 void LevelEditorScreen::drawTestMode() {
+  TIME_SCOPE("Render");
+
   if (!m_testMode || m_testCars.empty()) return;
 
-  // Draw cars and other game objects
-  m_levelRenderer->getTextureProgram().use();
   glm::mat4 cameraMatrix = m_camera.getCameraMatrix();
+
+  // First draw all cars with texture shader
+  m_levelRenderer->getTextureProgram().use();
   GLint pUniform = m_levelRenderer->getTextureProgram().getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &cameraMatrix[0][0]);
 
@@ -1565,6 +1580,38 @@ void LevelEditorScreen::drawTestMode() {
   m_spriteBatch.renderBatch();
   m_levelRenderer->getTextureProgram().unuse();
 
+  // Draw position numbers with text shader
+  m_textRenderingProgram.use();
+  pUniform = m_textRenderingProgram.getUniformLocation("P");
+  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &cameraMatrix[0][0]);
+
+  // Set up texture sampler uniform
+  GLint samplerUniform = m_textRenderingProgram.getUniformLocation("mySampler");
+  glUniform1i(samplerUniform, 0);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  m_spriteBatch.begin();
+  for (const auto& car : m_testCars) {
+    if (b2Body_IsValid(car->getDebugInfo().bodyId)) {
+      b2Vec2 position = b2Body_GetPosition(car->getDebugInfo().bodyId);
+      glm::vec2 textPos(position.x, position.y + 15.0f);
+      std::string posText = std::to_string(car->getProperties().racePosition);
+
+      m_countdownFont->draw(m_spriteBatch,
+        posText.c_str(),
+        textPos,
+        glm::vec2(0.5f),
+        0.0f,
+        JAGEngine::ColorRGBA8(255, 255, 255, 255),
+        JAGEngine::Justification::MIDDLE);
+    }
+  }
+  m_spriteBatch.end();
+  m_spriteBatch.renderBatch();
+  m_textRenderingProgram.unuse();
+
   // Draw debug stuff if enabled
   if (m_showDebugDraw && m_physicsSystem) {
     b2WorldId worldId = m_physicsSystem->getWorld();
@@ -1578,8 +1625,8 @@ void LevelEditorScreen::drawTestMode() {
     drawCarTrackingDebug();
   }
 
-  // Draw the HUD (including countdown text)
   drawHUD();
+  drawPerformanceWindow();
 }
 
 void LevelEditorScreen::handleCarSelection() {
@@ -1589,8 +1636,8 @@ void LevelEditorScreen::handleCarSelection() {
   glm::vec2 mousePos = m_camera.convertScreenToWorld(inputManager.getMouseCoords());
 
   // Handle mouse click for selection
-  if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {  // Changed from SDLK_SPACE to SDL_BUTTON_LEFT
-    float closestDistSq = 1000.0f;  // Squared distance threshold
+  if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+    float closestDistSq = 1000.0f;
     size_t newSelectedIndex = m_selectedCarIndex;
     bool foundNewSelection = false;
 
@@ -1744,6 +1791,17 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       if (ImGui::Button("Reset Car Position")) {
         m_testCars[m_selectedCarIndex]->resetPosition();
       }
+    }
+
+    if (ImGui::CollapsingHeader("Race Progress", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Text("Current Lap: %d/%d",
+        m_testCars[m_selectedCarIndex]->getProperties().currentLap,
+        m_totalLaps);
+      ImGui::Text("Lap Progress: %.3f",
+        m_testCars[m_selectedCarIndex]->getProperties().lapProgress);
+      ImGui::Text("Total Race Progress: %.3f",
+        m_testCars[m_selectedCarIndex]->getTotalRaceProgress());
+      ImGui::Separator();
     }
 
     // Wheel state information
@@ -1902,7 +1960,13 @@ void LevelEditorScreen::drawTestModeUI() {
 
   ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
 
+  // Add performance window toggle
+  ImGui::Checkbox("Show Performance Debug", &m_showPerformanceWindow);
+
   if (m_readyToStart && !m_raceCountdown->isCountingDown() && !m_raceCountdown->hasFinished()) {
+    ImGui::SliderInt("Number of Laps", &m_totalLaps, 1, 10);
+    ImGui::Separator();
+
     if (ImGui::Button("Begin Race", ImVec2(180, 30))) {
       m_raceCountdown->startCountdown();
     }
@@ -1957,24 +2021,24 @@ void LevelEditorScreen::cleanupTestMode() {
     m_debugDraw.reset();
   }
 
+  // Reset race timer
+  if (m_raceTimer) {
+    m_raceTimer->reset();
+  }
+
   // Restore object placement mode
   m_objectPlacementMode = m_savedObjectPlacementMode;
   m_selectedTemplateIndex = m_savedTemplateIndex;
 
-  // Create new object manager and restore objects to their saved positions
+  // Create new object manager and restore objects
   auto newManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
-
-  // Copy templates
   const auto& existingTemplates = m_objectManager->getObjectTemplates();
   for (const auto& tmpl : existingTemplates) {
     newManager->addTemplate(std::make_unique<PlaceableObject>(*tmpl));
   }
-
-  // Restore objects using saved states
   for (const auto& state : m_savedObjectStates) {
     newManager->addObject(state.first, state.second);
   }
-
   m_objectManager = std::move(newManager);
 
   m_showStartPositions = savedShowStartPositions;
@@ -2086,10 +2150,16 @@ void LevelEditorScreen::updateCarTrackingInfo() {
 void LevelEditorScreen::updateTestMode() {
   if (!m_testMode || m_testCars.empty()) return;
 
-  std::cout << "Test mode update - ObjectManager address: " << m_objectManager.get() << "\n";
+  TIME_SCOPE("Total Frame");
 
   if (m_raceCountdown) {
     m_raceCountdown->update(1.0f / 60.0f);
+  }
+
+  if (m_testMode && m_raceTimer && m_raceTimer->isRunning()) {
+    for (auto& car : m_testCars) {
+      car->updateStartLineCrossing(m_track.get());
+    }
   }
 
   // Add safety check
@@ -2101,52 +2171,54 @@ void LevelEditorScreen::updateTestMode() {
   // Handle car selection before any other input
   handleCarSelection();
 
-  // Handle test mode zoom controls
-  JAGEngine::InputManager& inputManager = m_game->getInputManager();
-  if (inputManager.isKeyDown(SDLK_q)) {
-    m_testCameraScale /= m_zoomFactor;
-    m_testCameraScale = glm::clamp(m_testCameraScale, m_minZoom, m_maxZoom);
-    m_camera.setScale(m_testCameraScale);
-  }
-  if (inputManager.isKeyDown(SDLK_e)) {
-    m_testCameraScale *= m_zoomFactor;
-    m_testCameraScale = glm::clamp(m_testCameraScale, m_minZoom, m_maxZoom);
-    m_camera.setScale(m_testCameraScale);
-  }
-
   // Update physics
-  const float timeStep = 1.0f / 60.0f;
+  {
+    TIME_SCOPE("Physics Update");
+    const float timeStep = 1.0f / 60.0f;
 
-  // Update player car with input
-  if (!m_testCars.empty() && m_inputEnabled) {
-    InputState input;
-    input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) ||
-      inputManager.isKeyDown(SDLK_w);
-    input.braking = inputManager.isKeyDown(SDL_BUTTON_RIGHT) ||
-      inputManager.isKeyDown(SDLK_s);
-    input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) ||
-      inputManager.isKeyDown(SDLK_a);
-    input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) ||
-      inputManager.isKeyDown(SDLK_d);
-    m_testCars[0]->update(input);
+    // Update player car with input
+    if (!m_testCars.empty() && m_inputEnabled) {
+      InputState input;
+      JAGEngine::InputManager& inputManager = m_game->getInputManager();
+      input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) ||
+        inputManager.isKeyDown(SDLK_w);
+      input.braking = inputManager.isKeyDown(SDL_BUTTON_RIGHT) ||
+        inputManager.isKeyDown(SDLK_s);
+      input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) ||
+        inputManager.isKeyDown(SDLK_a);
+      input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) ||
+        inputManager.isKeyDown(SDLK_d);
+      m_testCars[0]->update(input);
+    }
+
+    // Update physics and object positions
+    if (m_physicsSystem) {
+      m_physicsSystem->update(timeStep);
+    }
   }
 
   // Update AI drivers
-  if (m_enableAI) {
-    updateAIDrivers();
+  {
+    TIME_SCOPE("AI Update");
+    if (m_enableAI) {
+      updateAIDrivers();
+    }
   }
 
-  // Update physics and object positions
-  if (m_physicsSystem) {
-    m_physicsSystem->update(timeStep);
+  if (m_testCars.size() > 1) {
+    m_raceManager.updateRacePositions(m_testCars);
   }
 
   if (m_objectManager) {
     m_objectManager->update();
   }
 
-  updateCarTrackingInfo();
-  updateTestCamera();
+  // Update camera
+  {
+    TIME_SCOPE("Camera Update");
+    updateCarTrackingInfo();
+    updateTestCamera();
+  }
 }
 
 void LevelEditorScreen::updateTestCamera() {
@@ -2173,7 +2245,7 @@ void LevelEditorScreen::updateTestCamera() {
   float distToTarget = glm::distance(currentPos, targetPos);
 
   // Simple constant interpolation - only if we're not too far from target
-  float interpolationFactor = 0.15f;  // Fixed smoothing factor
+  float interpolationFactor = 0.15f; 
 
   // If we're far from target, move faster
   if (distToTarget > 300.0f) {
@@ -2294,7 +2366,7 @@ void LevelEditorScreen::drawCarTrackingDebug() {
 glm::vec2 LevelEditorScreen::calculateLookAheadPoint(const CarTrackingInfo& carInfo) const {
   if (!m_track) return carInfo.closestSplinePoint;
 
-  auto splinePoints = m_track->getSplinePoints(400);  // Higher resolution for smoother interpolation
+  auto splinePoints = m_track->getSplinePoints(400);
   if (splinePoints.empty()) return carInfo.closestSplinePoint;
 
   // Find the current spline segment
@@ -2359,4 +2431,59 @@ glm::vec2 LevelEditorScreen::calculateLookAheadPoint(const CarTrackingInfo& carI
   return lookAheadPoint;
 }
 
+void LevelEditorScreen::drawPerformanceWindow() {
+  if (!m_showPerformanceWindow) return;
 
+  ImGui::SetNextWindowPos(ImVec2(10, 500), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
+
+  if (ImGui::Begin("Performance Debug", &m_showPerformanceWindow)) {
+    if (ImGui::CollapsingHeader("Timing Information", ImGuiTreeNodeFlags_DefaultOpen)) {
+      auto& timer = PerformanceTimer::getInstance();
+
+      // Helper lambda for consistent formatting
+      auto displayTiming = [&](const std::string& name) {
+        const auto& data = timer.getTimingData(name);
+        ImGui::Text("%s:", name.c_str());
+        ImGui::Indent();
+        ImGui::Text("Current: %.3f ms", data.lastTime);
+        ImGui::Text("Average: %.3f ms", data.averageTime);
+        ImGui::Text("Min: %.3f ms", data.minTime);
+        ImGui::Text("Max: %.3f ms", data.maxTime);
+
+        // Draw simple graph of recent history
+        if (data.frameCount > 0) {
+          char label[32];
+          snprintf(label, sizeof(label), "##%s", name.c_str());
+
+          // Find min/max for scaling
+          float plotMin = data.minTime;
+          float plotMax = data.maxTime;
+          if (plotMin == plotMax) {
+            plotMin -= 0.1f;
+            plotMax += 0.1f;
+          }
+
+          ImGui::PlotLines(label,
+            data.history.data(),
+            PerformanceTimer::TimingData::HISTORY_SIZE,  
+            data.frameCount % PerformanceTimer::TimingData::HISTORY_SIZE,
+            nullptr,
+            plotMin,
+            plotMax,
+            ImVec2(280, 40));
+        }
+        ImGui::Unindent();
+        ImGui::Spacing();
+        };
+
+      // Display timing for each measured system
+      displayTiming("Physics Update");
+      displayTiming("AI Update");
+      displayTiming("Camera Update");
+      displayTiming("Render");
+      displayTiming("Total Frame");
+    }
+  }
+  ImGui::End();
+}

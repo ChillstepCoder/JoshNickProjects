@@ -153,8 +153,11 @@
     <ClCompile Include="LevelSaveLoad.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ObjectManager.cpp" />
+    <ClCompile Include="PerformanceTimer.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="RaceCountdown.cpp" />
+    <ClCompile Include="RaceManager.cpp" />
+    <ClCompile Include="RaceTimer.cpp" />
     <ClCompile Include="RoadMeshGenerator.cpp" />
     <ClCompile Include="SplineTrack.cpp" />
     <ClCompile Include="WheelCollider.cpp" />
@@ -173,9 +176,12 @@
     <ClInclude Include="LevelRenderer.h" />
     <ClInclude Include="LevelSaveLoad.h" />
     <ClInclude Include="ObjectManager.h" />
+    <ClInclude Include="PerformanceTimer.h" />
     <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="PlaceableObject.h" />
     <ClInclude Include="RaceCountdown.h" />
+    <ClInclude Include="RaceManager.h" />
+    <ClInclude Include="RaceTimer.h" />
     <ClInclude Include="RoadMeshGenerator.h" />
     <ClInclude Include="ScreenState.h" />
     <ClInclude Include="SplineTrack.h" />

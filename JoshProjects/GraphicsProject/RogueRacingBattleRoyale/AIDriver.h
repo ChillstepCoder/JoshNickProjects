@@ -17,9 +17,9 @@ public:
     float turnAnticipation = 1.0f;         // How much to consider lookahead angle (0-1)
     float reactionTime = 0.05f;            // Delay in steering response
     float stuckSpeedThreshold = 20.0f;     // Speed below which to check if stuck
-    float stuckTimeThreshold = 0.5f;       // Time below speed threshold before considering stuck
-    float recoveryDistance = 150.0f;       // How far to reverse before giving up recovery
-    float recoveryMaxTime = 1.5f;          // Maximum time to spend in recovery mode
+    float stuckTimeThreshold = 0.25f;       // Time below speed threshold before considering stuck
+    float recoveryDistance = 250.0f;       // How far to reverse before giving up recovery
+    float recoveryMaxTime = 2.0f;          // Maximum time to spend in recovery mode
     float recoverySplineThreshold = 100.0f; // Distance to spline at which to end recovery
   };
 
@@ -34,7 +34,7 @@ public:
   struct SensorData {
     std::vector<SensorReading> readings;
     static constexpr float SENSOR_RANGE = 100.0f;        // How far to look ahead
-    static constexpr float SENSOR_WIDTH = 50.0f;         // How wide to scan
+    static constexpr float SENSOR_WIDTH = 30.0f;         // How wide to scan
     static constexpr float MIN_DISTANCE = 20.0f;         // Minimum distance to maintain
     static constexpr float SIDE_SENSOR_ANGLE = 0.5f;     // ~30 degrees for side sensors
   };

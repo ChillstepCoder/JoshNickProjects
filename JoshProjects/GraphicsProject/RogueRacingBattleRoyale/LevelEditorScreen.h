@@ -28,6 +28,9 @@
 #include "LevelSaveLoad.h"
 #include "AIDriver.h"
 #include "RaceCountdown.h"
+#include "RaceTimer.h"
+#include "RaceManager.h"
+#include "PerformanceTimer.h"
 
 // Forward declarations
 class SplineTrack;
@@ -157,6 +160,7 @@ private:
   std::vector<LevelSaveLoad::LevelMetadata> m_availableLevels;
   int m_selectedLevelIndex = -1;
   std::string m_loadedFilename;
+  int m_totalLaps = 3;
 
   // AI Drivers
   std::vector<std::unique_ptr<AIDriver>> m_aiDrivers;
@@ -172,8 +176,10 @@ private:
   bool m_inputEnabled = false;
 
   // Race countdown
+  RaceManager m_raceManager;
   std::unique_ptr<RaceCountdown> m_raceCountdown;
   bool m_readyToStart = false;
+  std::unique_ptr<RaceTimer> m_raceTimer;
 
   // Text Rendering
   std::unique_ptr<JAGEngine::SpriteFont> m_countdownFont;
@@ -249,6 +255,10 @@ private:
   void drawCarTrackingDebug();
   CarTrackingInfo calculateCarTrackingInfo(const Car* car) const;
   glm::vec2 calculateLookAheadPoint(const CarTrackingInfo& carInfo) const;
+
+  // Performance debug
+  bool m_showPerformanceWindow = false;
+  void drawPerformanceWindow();
 
   using IGameScreen::m_game;
 };

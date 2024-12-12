@@ -211,10 +211,10 @@ namespace JAGEngine {
   }
 
   void IMainGame::update() {
-    std::cout << "IMainGame::update() called\n";
+    //std::cout << "IMainGame::update() called\n";
     if (m_currentScreen) {
       m_inputManager.update();  // Make sure this is being called!
-      std::cout << "Input manager updated\n";
+      //std::cout << "Input manager updated\n";
 
       switch (m_currentScreen->getState()) {
       case ScreenState::RUNNING:

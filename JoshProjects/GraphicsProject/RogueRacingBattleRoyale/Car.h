@@ -17,23 +17,30 @@ public:
     float maxSpeed = 1000.0f;
     float acceleration = 10000.0f;
     float turnSpeed = 30.0f;
-    float lateralDamping = 0.5f;     // Base lateral damping
+    float lateralDamping = 0.5f;
     float dragFactor = 0.995f;
     float brakingForce = 0.1f;
     float maxAngularVelocity = 4.0f;
     float minSpeedForTurn = 1.0f;
     float turnResetRate = 5.0f;
-
     // Friction properties
     float wheelFriction = 1.0f;
     float baseFriction = 0.5f;
-    float frictionImbalanceSensitivity = 7.5f;  // 0 = no effect, 1 = normal, 2 = double effect
+    float frictionImbalanceSensitivity = 7.5f;
     float surfaceDragSensitivity = 0.8f;
-
     // Drift properties
-    float wheelGrip = 0.49f;           // 0 = max grip (hard to drift), 1 = low grip
-    float driftState = 0.0f;          // Current drift amount (0-1)
-    float driftDecayRate = 0.35f;      // Base decay rate, modified by wheel grip
+    float wheelGrip = 0.49f;
+    float driftState = 0.0f;
+    float driftDecayRate = 0.35f;
+    float lastBackwardDistance = 0.0f;
+    bool lastCrossedBackwards = false;
+    bool raceStarted = false;
+    // Race properties
+    int currentLap = 0;
+    float lapProgress = 0.0f;
+    int racePosition = 0;
+    bool lastStartLineSide = false;
+    glm::vec2 lastPosition = glm::vec2(0.0f);
   };
 
   struct DebugInfo {
@@ -57,6 +64,7 @@ public:
   ~Car() = default;
 
   void update(const InputState& input);
+  void updateStartLineCrossing(const SplineTrack* track);
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
 
   CarProperties& getProperties() { return m_properties; }
@@ -72,8 +80,11 @@ public:
   float getEffectiveFriction() const {
     return m_properties.wheelFriction * m_properties.baseFriction;
   }
+  int getCurrentLap() const { return m_properties.currentLap; }
 
   SplineTrack* getTrack() const { return m_track; }
+
+  float getTotalRaceProgress() const;
 
   const JAGEngine::ColorRGBA8& getColor() const { return m_color; }
 
@@ -88,6 +99,7 @@ private:
   CarProperties m_properties;
 
   b2Vec2 getForwardVector() const;
+  float calculateLapProgress(const SplineTrack* track);
   void updateMovement(const InputState& input);
   void handleTurning(const InputState& input, float forwardSpeed);
   void applyDrag(const b2Vec2& currentVel, float forwardSpeed);
