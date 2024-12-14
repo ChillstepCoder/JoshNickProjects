@@ -27,6 +27,9 @@ void Chunk::buildChunkMesh() {
                 if (id == BlockID::WATER) {
 
                     int waterAmt = block.getWaterAmount();
+                    if (waterAmt > 10) {
+                        waterAmt = 10;
+                    }
 
                     float waterHeight = ((float)waterAmt / (float)WATER_LEVELS);
 
