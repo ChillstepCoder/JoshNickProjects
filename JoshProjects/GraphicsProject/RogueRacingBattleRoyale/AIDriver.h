@@ -17,7 +17,7 @@ public:
     float turnAnticipation = 1.0f;         // How much to consider lookahead angle (0-1)
     float reactionTime = 0.05f;            // Delay in steering response
     float stuckSpeedThreshold = 20.0f;     // Speed below which to check if stuck
-    float stuckTimeThreshold = 0.25f;       // Time below speed threshold before considering stuck
+    float stuckTimeThreshold = 0.5f;       // Time below speed threshold before considering stuck
     float recoveryDistance = 250.0f;       // How far to reverse before giving up recovery
     float recoveryMaxTime = 2.0f;          // Maximum time to spend in recovery mode
     float recoverySplineThreshold = 100.0f; // Distance to spline at which to end recovery

@@ -30,13 +30,12 @@ void PhysicsSystem::init(float gravityX, float gravityY) {
 void PhysicsSystem::update(float timeStep) {
   if (!b2World_IsValid(m_worldId)) return;
 
-  // Clamp timestep to prevent extreme values
-  timeStep = std::min<float>(std::max<float>(timeStep, m_minTimeStep), m_maxTimeStep);
+  // Ensure fixed timestep for physics
+  const float fixedTimeStep = 1.0f / 60.0f;
+  const int subStepCount = static_cast<int>(std::ceil(timeStep / fixedTimeStep));
 
-  // Box2D now requires subStepCount
-  const int subStepCount = 1;
-  if (b2World_IsValid(m_worldId)) {
-    b2World_Step(m_worldId, timeStep, subStepCount);
+  for (int i = 0; i < subStepCount; i++) {
+    b2World_Step(m_worldId, fixedTimeStep, 1);
   }
 }
 

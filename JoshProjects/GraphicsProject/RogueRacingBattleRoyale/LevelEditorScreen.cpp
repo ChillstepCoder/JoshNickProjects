@@ -1907,14 +1907,17 @@ void LevelEditorScreen::applySyncedProperties(const Car::CarProperties& props) {
 void LevelEditorScreen::updateAIDrivers() {
   if (!m_testMode || !m_enableAI) return;
 
-  const float timeStep = 1.0f / 60.0f;
+  // Add frame delta time to accumulator
+  float frameTime = 1.0f / 60.0f;
+  m_aiUpdateAccumulator += frameTime;
 
-  // Update only a subset of AI drivers each frame
-  for (size_t i = 0; i < AI_UPDATES_PER_FRAME && i < m_aiDrivers.size(); i++) {
-    size_t index = (m_currentAIUpdateIndex + i) % m_aiDrivers.size();
-    m_aiDrivers[index]->update(timeStep);
+  // Update all AI drivers if enough time has accumulated
+  while (m_aiUpdateAccumulator >= AI_UPDATE_TIMESTEP) {
+    for (auto& aiDriver : m_aiDrivers) {
+      aiDriver->update(AI_UPDATE_TIMESTEP);
+    }
+    m_aiUpdateAccumulator -= AI_UPDATE_TIMESTEP;
   }
-  m_currentAIUpdateIndex = (m_currentAIUpdateIndex + AI_UPDATES_PER_FRAME) % m_aiDrivers.size();
 }
 
 void LevelEditorScreen::initializeAIDrivers() {
@@ -2152,8 +2155,10 @@ void LevelEditorScreen::updateTestMode() {
 
   TIME_SCOPE("Total Frame");
 
+  const float fixedTimeStep = 1.0f / 60.0f;
+
   if (m_raceCountdown) {
-    m_raceCountdown->update(1.0f / 60.0f);
+    m_raceCountdown->update(fixedTimeStep);
   }
 
   if (m_testMode && m_raceTimer && m_raceTimer->isRunning()) {
@@ -2174,7 +2179,6 @@ void LevelEditorScreen::updateTestMode() {
   // Update physics
   {
     TIME_SCOPE("Physics Update");
-    const float timeStep = 1.0f / 60.0f;
 
     // Update player car with input
     if (!m_testCars.empty() && m_inputEnabled) {
@@ -2193,7 +2197,7 @@ void LevelEditorScreen::updateTestMode() {
 
     // Update physics and object positions
     if (m_physicsSystem) {
-      m_physicsSystem->update(timeStep);
+      m_physicsSystem->update(fixedTimeStep);
     }
   }
 

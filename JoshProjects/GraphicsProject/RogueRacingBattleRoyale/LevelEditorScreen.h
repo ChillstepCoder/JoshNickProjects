@@ -168,6 +168,8 @@ private:
   AIDriver::Config m_aiConfig;
   size_t m_currentAIUpdateIndex = 0;
   static constexpr size_t AI_UPDATES_PER_FRAME = 3;
+  float m_aiUpdateAccumulator = 0.0f;
+  static constexpr float AI_UPDATE_TIMESTEP = 1.0f / 60.0f;
 
   // Car Properties Selection
   size_t m_selectedCarIndex = 0;  // 0 is player car
