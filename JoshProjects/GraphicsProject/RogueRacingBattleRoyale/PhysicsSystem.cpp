@@ -79,7 +79,7 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
 
   if (!b2Body_IsValid(bodyId)) return;
 
-  // Define the central rectangle (main body)
+  // Central rectangle (main body)
   float bodyWidth = width * 0.6f;
   float bodyHeight = height * 0.5f;
   float radius = bodyHeight * 0.5f;
@@ -89,6 +89,7 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
   // Configure physics based on collision type
   switch (collisionType) {
   case CollisionType::HAZARD:
+  case CollisionType::POWERUP:  // Handle powerups like hazards for collision
     shapeDef.isSensor = true;
     shapeDef.density = 0.0f;
     shapeDef.friction = 0.0f;
@@ -113,16 +114,15 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
 
   // Create central box
   b2Polygon mainBody = b2MakeBox(bodyWidth * 0.5f, bodyHeight * 0.5f);
-  b2ShapeId mainBodyShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &mainBody);
+  b2CreatePolygonShape(bodyId, &shapeDef, &mainBody);
 
-  // Create front and back capsules with more precise geometry
-  const int numCapVertices = 8;  // Number of vertices for each semicircle
+  // Create front and back capsules
+  const int numCapVertices = 8;
   b2Vec2 frontCapVertices[b2_maxPolygonVertices];
   b2Vec2 backCapVertices[b2_maxPolygonVertices];
 
   // Create front cap - semicircle rotated 90 degrees clockwise
   for (int i = 0; i < numCapVertices; ++i) {
-    // Start from -90 degrees (-π/2) to +90 degrees (π/2)
     float angle = -b2_pi * 0.5f + (float)i / (numCapVertices - 1) * b2_pi;
     frontCapVertices[i].x = bodyWidth * 0.5f + cosf(angle) * radius;
     frontCapVertices[i].y = sinf(angle) * radius;
@@ -130,7 +130,6 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
 
   // Create back cap - semicircle rotated 90 degrees clockwise
   for (int i = 0; i < numCapVertices; ++i) {
-    // Start from +90 degrees (π/2) to +270 degrees (3π/2)
     float angle = b2_pi * 0.5f + (float)i / (numCapVertices - 1) * b2_pi;
     backCapVertices[i].x = -bodyWidth * 0.5f + cosf(angle) * radius;
     backCapVertices[i].y = sinf(angle) * radius;
@@ -150,19 +149,13 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
     backCapHull.points[i] = backCapVertices[i];
   }
 
-  // Create cap polygons with zero radius to ensure precise collision
+  // Create cap polygons
   b2Polygon frontCap = b2MakePolygon(&frontCapHull, 0.0f);
   b2Polygon backCap = b2MakePolygon(&backCapHull, 0.0f);
 
-  // Create shapes for caps
-  b2ShapeId frontCapShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &frontCap);
-  b2ShapeId backCapShapeId = b2CreatePolygonShape(bodyId, &shapeDef, &backCap);
-
-  // For car collision we increase the restitution and friction slightly
-  if (categoryBits == CATEGORY_CAR) {
-    shapeDef.friction = 0.4f;        // More friction for better grip
-    shapeDef.restitution = 0.2f;     // Some bounce, but not too much
-  }
+  // Create shapes for caps using same shape definition
+  b2CreatePolygonShape(bodyId, &shapeDef, &frontCap);
+  b2CreatePolygonShape(bodyId, &shapeDef, &backCap);
 }
 
 b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
@@ -177,7 +170,8 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
   // Configure physics based on collision type
   switch (collisionType) {
   case CollisionType::HAZARD:
-    shapeDef.isSensor = true;
+  case CollisionType::POWERUP:  // Handle powerups like hazards for collision
+    shapeDef.isSensor = true;  // Make it a trigger
     shapeDef.density = 0.0f;
     shapeDef.friction = 0.0f;
     break;
@@ -202,7 +196,7 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
   // Create circle shape
   b2Circle circle;
   circle.radius = radius;
-  circle.center = b2Vec2_zero; // Use zero vector instead of point member
+  circle.center = b2Vec2_zero;
 
   // Create and return the shape
   b2ShapeId shapeId = b2CreateCircleShape(bodyId, &shapeDef, &circle);

@@ -1449,10 +1449,10 @@ void LevelEditorScreen::initTestMode() {
   }
 
   // Initialize AI config with default values
-  m_aiConfig.lookAheadDistance = 100.0f;
-  m_aiConfig.centeringForce = 1.0f;
-  m_aiConfig.turnAnticipation = 1.0f;
-  m_aiConfig.reactionTime = 0.1f;
+  m_aiConfig.lookAheadDistance = 200.0f;
+  m_aiConfig.centeringForce = 0.8f;
+  m_aiConfig.turnAnticipation = 1.2f;
+  m_aiConfig.reactionTime = 0.05f;
 
   initializeAIDrivers();
 
@@ -1834,6 +1834,38 @@ void LevelEditorScreen::drawCarPropertiesUI() {
           wheelNames[i],
           WheelCollider::getSurfaceName(state.surface),
           state.frictionMultiplier);
+      }
+    }
+  }
+
+  if (ImGui::CollapsingHeader("Boost Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
+    Car::CarProperties& props = m_testCars[m_selectedCarIndex]->getProperties();
+
+    ImGui::Text("Boost Status:");
+    ImGui::Text("Current Boost Speed: %.1f", props.currentBoostSpeed);
+    ImGui::Text("Boost Accumulator: %.1f", props.boostAccumulator);
+    ImGui::Text("On Booster: %s", props.isOnBooster ? "Yes" : "No");
+
+    if (props.currentBooster) {
+      ImGui::Text("\nActive Booster Info:");
+      const auto& boosterProps = props.currentBooster->getBoosterProperties();
+      ImGui::Text("Max Speed: %.1f", boosterProps.maxBoostSpeed);
+      ImGui::Text("Accel Rate: %.1f", boosterProps.boostAccelRate);
+      ImGui::Text("Decay Rate: %.3f", boosterProps.boostDecayRate);
+      ImGui::Text("Direction Factor: %.2f", boosterProps.directionFactor);
+
+      // Allow tweaking booster properties in debug mode
+      if (ImGui::Button("Edit Booster Properties")) {
+        ImGui::OpenPopup("BoosterPropsEdit");
+      }
+
+      if (ImGui::BeginPopup("BoosterPropsEdit")) {
+        auto& bp = const_cast<PlaceableObject::BoosterProperties&>(boosterProps);
+        ImGui::SliderFloat("Max Speed", &bp.maxBoostSpeed, 500.0f, 3000.0f);
+        ImGui::SliderFloat("Acceleration Rate", &bp.boostAccelRate, 50.0f, 500.0f);
+        ImGui::SliderFloat("Decay Rate", &bp.boostDecayRate, 0.8f, 0.99f);
+        ImGui::SliderFloat("Direction Factor", &bp.directionFactor, 0.1f, 2.0f);
+        ImGui::EndPopup();
       }
     }
   }

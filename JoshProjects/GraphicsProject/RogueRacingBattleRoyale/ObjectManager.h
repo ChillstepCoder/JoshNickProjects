@@ -6,8 +6,9 @@
 #include "PlaceableObject.h"
 #include "SplineTrack.h"
 #include "PhysicsSystem.h"
-#include "Car.h"
 #include <unordered_map>
+
+class Car;
 
 class ObjectManager {
 public:
@@ -43,6 +44,7 @@ public:
   int64_t getGridCell(const glm::vec2& pos) const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getPlacedObjects() const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getObjectTemplates() const;
+  SplineTrack* getTrack() const { return m_track; }
 
   friend class AIDriver;
 

@@ -9,6 +9,9 @@
 #include "JAGEngine/Vertex.h"
 #include <array>
 #include <memory>
+#include "PlaceableObject.h"
+
+class ObjectManager;
 
 class Car {
 public:
@@ -41,6 +44,11 @@ public:
     int racePosition = 0;
     bool lastStartLineSide = false;
     glm::vec2 lastPosition = glm::vec2(0.0f);
+    // Booster properties
+    float currentBoostSpeed = 0.0f;
+    float boostAccumulator = 0.0f;
+    bool isOnBooster = false;
+    const PlaceableObject* currentBooster = nullptr;
   };
 
   struct DebugInfo {
@@ -66,6 +74,8 @@ public:
   void update(const InputState& input);
   void updateStartLineCrossing(const SplineTrack* track);
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
+  void onSensorEnter(b2BodyId sensorBody);
+  void onSensorExit(b2BodyId sensorBody);
 
   CarProperties& getProperties() { return m_properties; }
   const CarProperties& getProperties() const { return m_properties; }
@@ -76,6 +86,7 @@ public:
     m_track = track;
     b2Body_SetUserData(m_bodyId, static_cast<void*>(track));
   }
+  void setObjectManager(ObjectManager* manager) { m_objectManager = manager; }
 
   float getEffectiveFriction() const {
     return m_properties.wheelFriction * m_properties.baseFriction;
@@ -90,17 +101,26 @@ public:
 
   const std::array<WheelState, 4>& getWheelStates() const { return m_wheelStates; }
 
+  friend class PhysicsSystem;
+
 private:
+  static constexpr bool DEBUG_OUTPUT = false;
+
   static b2Rot angleToRotation(float angle) {
     return b2MakeRot(angle);
   }
 
   b2BodyId m_bodyId;
   CarProperties m_properties;
+  ObjectManager* m_objectManager = nullptr;
 
   b2Vec2 getForwardVector() const;
+  void checkCollisions();
   float calculateLapProgress(const SplineTrack* track);
   void updateMovement(const InputState& input);
+  void updateBoostEffects();
+  void checkBoosterCollisions(ObjectManager* objectManager);
+  void handleBoosterCollision(const PlaceableObject* booster);
   void handleTurning(const InputState& input, float forwardSpeed);
   void applyDrag(const b2Vec2& currentVel, float forwardSpeed);
   void applyFriction(const b2Vec2& currentVel);
@@ -112,4 +132,6 @@ private:
   void updateWheelColliders();
   void initializeWheelColliders();
   float calculateAverageWheelFriction() const;
+
+
 };

@@ -123,15 +123,67 @@ void AIDriver::updateSteering() {
   float currentSpeed = debugInfo.currentSpeed;
   glm::vec2 carForward(std::cos(carAngle), std::sin(carAngle));
 
-  // Calculate base path following behavior
-  glm::vec2 toTarget = m_targetPoint - carPos;
-  glm::vec2 toLookAhead = m_lookAheadPoint - carPos;
-  float targetAngle = atan2(toTarget.y, toTarget.x);
-  float lookAheadAngle = atan2(toLookAhead.y, toLookAhead.x);
+  // Calculate track direction at current position
+  glm::vec2 trackDir = getTrackDirectionAtPosition(carPos);
+  float trackAlignment = glm::dot(carForward, trackDir);
 
-  // Calculate base desired angle
-  float baseDesiredAngle = targetAngle * (1.0f - m_config.turnAnticipation) +
-    lookAheadAngle * m_config.turnAnticipation;
+  // Calculate vector to target spline point and its perpendicular
+  glm::vec2 toTarget = m_targetPoint - carPos;
+  float distanceToSpline = glm::length(toTarget);
+  toTarget = glm::normalize(toTarget);
+
+  // Calculate perpendicular vector to track direction (for offset calculation)
+  glm::vec2 trackNormal = glm::vec2(-trackDir.y, trackDir.x);
+
+  // Calculate which side of the track we're on and current offset
+  float currentOffset = glm::dot(toTarget, trackNormal);
+  float desiredOffset = 0.0f; // Could be adjusted for racing line optimization
+
+  // Calculate future track direction for drift detection
+  glm::vec2 futureTrackDir = getTrackDirectionAtPosition(m_lookAheadPoint);
+  float turnAngle = std::acos(glm::clamp(glm::dot(trackDir, futureTrackDir), -1.0f, 1.0f));
+
+  // Get car properties for drift handling
+  auto& props = m_car->getProperties();
+  float driftState = props.driftState;
+
+  // Calculate desired direction
+  glm::vec2 desiredDir;
+
+  if (driftState > 0.5f) {
+    // During drift, use more aggressive steering based on turn direction
+    float turnDir = glm::cross(glm::vec3(trackDir, 0), glm::vec3(futureTrackDir, 0)).z;
+    float driftAngle = std::abs(turnAngle);
+
+    if (driftAngle > 0.1f) {
+      // Calculate a more aggressive desired direction during drift
+      glm::vec2 turnBias = glm::vec2(-trackDir.y, trackDir.x) * glm::sign(turnDir);
+      float aggressiveness = glm::min(1.0f, driftAngle / (glm::pi<float>() * 0.5f)) * 1.5f;
+      desiredDir = glm::normalize(trackDir + turnBias * aggressiveness);
+    }
+    else {
+      desiredDir = trackDir; // Straighten out if turn isn't sharp
+    }
+  }
+  else {
+    // Normal steering behavior when not drifting
+    if (trackAlignment > 0.9f) {
+      if (std::abs(distanceToSpline - desiredOffset) < 5.0f) {
+        desiredDir = trackDir;
+      }
+      else {
+        float correctionStrength = glm::min(1.0f, std::abs(distanceToSpline - desiredOffset) / 20.0f);
+        desiredDir = glm::normalize(trackDir + toTarget * correctionStrength * 0.5f);
+      }
+    }
+    else {
+      float alignmentNeeded = 1.0f - trackAlignment;
+      desiredDir = glm::normalize(trackDir + toTarget * alignmentNeeded);
+    }
+  }
+
+  // Calculate final desired angle
+  m_desiredAngle = atan2(desiredDir.y, desiredDir.x);
 
   // Handle obstacle avoidance
   float avoidanceAngle = 0.0f;
@@ -253,11 +305,11 @@ void AIDriver::updateSteering() {
   }
 
   // Combine path following with avoidance
-  m_desiredAngle = baseDesiredAngle;
   if (needsAvoidance) {
     // Scale avoidance by speed - less aggressive at high speeds
     float speedFactor = glm::clamp(currentSpeed / 500.0f, 0.0f, 1.0f);
     float avoidanceWeight = 1.0f - (speedFactor * 0.5f);
+    // Add avoidance to our already calculated desired angle
     m_desiredAngle += avoidanceAngle * avoidanceWeight;
   }
 
@@ -266,10 +318,23 @@ void AIDriver::updateSteering() {
   while (angleDiff > glm::pi<float>()) angleDiff -= 2.0f * glm::pi<float>();
   while (angleDiff < -glm::pi<float>()) angleDiff += 2.0f * glm::pi<float>();
 
-  // Apply steering with minimal dead zone
-  float steeringThreshold = 0.02f;
-  m_currentInput.turningLeft = angleDiff > steeringThreshold;
-  m_currentInput.turningRight = angleDiff < -steeringThreshold;
+  // Apply steering with consideration for drift state
+  float steeringThreshold;
+  if (driftState > 0.5f) {
+    steeringThreshold = 0.01f; // Smaller threshold during drift for more responsive steering
+  }
+  else {
+    steeringThreshold = trackAlignment > 0.95f ? 0.03f : 0.02f;
+  }
+
+  if (std::abs(angleDiff) > steeringThreshold) {
+    m_currentInput.turningLeft = angleDiff > 0;
+    m_currentInput.turningRight = angleDiff < 0;
+  }
+  else {
+    m_currentInput.turningLeft = false;
+    m_currentInput.turningRight = false;
+  }
 }
 
 void AIDriver::updateThrottle() {
@@ -278,60 +343,50 @@ void AIDriver::updateThrottle() {
   glm::vec2 carPos(debugInfo.position);
   glm::vec2 carDir = glm::vec2(cos(debugInfo.angle), sin(debugInfo.angle));
 
-  // Calculate track direction at current position
-  auto splinePoints = m_car->getTrack()->getSplinePoints(200);
-  glm::vec2 trackDirection = glm::vec2(0.0f);
-  float minDist = FLT_MAX;
-  for (size_t i = 0; i < splinePoints.size(); i++) {
-    float dist = glm::length2(carPos - splinePoints[i].position);
-    if (dist < minDist) {
-      minDist = dist;
-      size_t nextIdx = (i + 1) % splinePoints.size();
-      trackDirection = glm::normalize(
-        splinePoints[nextIdx].position - splinePoints[i].position
-      );
-    }
-  }
+  // Calculate track direction and upcoming turn severity
+  glm::vec2 currentTrackDir = getTrackDirectionAtPosition(carPos);
+  glm::vec2 futureTrackDir = getTrackDirectionAtPosition(m_lookAheadPoint);
+  float turnAngle = std::acos(glm::clamp(glm::dot(currentTrackDir, futureTrackDir), -1.0f, 1.0f));
 
   // Calculate how well we're aligned with the track
-  float trackAlignmentAngle = acos(glm::dot(carDir, trackDirection));
+  float trackAlignmentAngle = acos(glm::dot(carDir, currentTrackDir));
 
-  // Calculate distance from track
-  float distanceFromTrack = glm::length(carPos - m_targetPoint);
-
-  // Base maximum speed on alignment and track distance
+  // Base maximum speed on alignment and turn severity
   float speedLimit = m_car->getProperties().maxSpeed;
-  float alignmentFactor = (glm::pi<float>() - trackAlignmentAngle) / glm::pi<float>();
-  alignmentFactor = glm::clamp(alignmentFactor * alignmentFactor, 0.3f, 1.0f);
+  float turnSeverity = turnAngle / (glm::pi<float>() * 0.5f); // 0 to 1 for up to 90-degree turns
 
-  // Reduce speed when far from track
-  float distanceFactor = 1.0f - glm::clamp(distanceFromTrack / 100.0f, 0.0f, 0.5f);
+  // More aggressive speed reduction in sharp turns
+  if (turnSeverity > 0.2f) {
+    float cornerSpeedFactor = 1.0f - (turnSeverity * 0.8f);
+    speedLimit *= cornerSpeedFactor;
+  }
 
-  // Combined speed factor
-  float speedFactor = alignmentFactor * distanceFactor;
-  speedLimit *= speedFactor;
+  // Determine if we should initiate drift
+  bool shouldDrift = turnSeverity > 0.3f && currentSpeed > 200.0f;
+  bool currentlyDrifting = m_car->getProperties().driftState > 0.5f;
 
-  // Additional speed reduction for sharp turns
-  float cornerSpeed = calculateCornerSpeed(m_lookAheadPoint);
-  speedLimit = std::min(speedLimit, cornerSpeed);
-
-  // Don't slow down just because other cars are nearby
-  bool needsBraking = currentSpeed > speedLimit + 25.0f;
-  bool needsRecovery = currentSpeed < 50.0f;
-
-  if (needsBraking) {
+  // Initiate drift with brake tap if needed
+  if (shouldDrift && !currentlyDrifting) {
     m_currentInput.braking = true;
     m_currentInput.accelerating = false;
   }
-  else if (needsRecovery) {
-    // Always maintain some forward momentum when slow
-    float recoveryAngle = std::abs(trackAlignmentAngle);
-    m_currentInput.accelerating = recoveryAngle < glm::pi<float>() * 0.7f || currentSpeed < 20.0f;
-    m_currentInput.braking = false;
-  }
   else {
-    // Normal driving - accelerate when below speed limit
-    m_currentInput.accelerating = currentSpeed < speedLimit - 25.0f;
+    // Normal speed control
+    bool needsBraking = currentSpeed > speedLimit + 50.0f;
+
+    if (needsBraking) {
+      m_currentInput.braking = true;
+      m_currentInput.accelerating = false;
+    }
+    else {
+      m_currentInput.braking = false;
+      m_currentInput.accelerating = currentSpeed < speedLimit - 25.0f;
+    }
+  }
+
+  // Keep some acceleration during drift to maintain speed
+  if (currentlyDrifting && currentSpeed < speedLimit * 0.7f) {
+    m_currentInput.accelerating = true;
     m_currentInput.braking = false;
   }
 }
@@ -429,25 +484,35 @@ float AIDriver::calculateCornerSpeed(const glm::vec2& lookAheadPoint) const {
   auto debugInfo = m_car->getDebugInfo();
   glm::vec2 carPos(debugInfo.position);
 
-  // Calculate angle change to lookahead point
+  // Calculate immediate turn angle
   glm::vec2 toAhead = glm::normalize(lookAheadPoint - carPos);
   glm::vec2 carDir = glm::vec2(cos(debugInfo.angle), sin(debugInfo.angle));
   float turnAngle = acos(glm::dot(toAhead, carDir));
 
+  // Get track direction at current and future positions
+  glm::vec2 currentTrackDir = getTrackDirectionAtPosition(carPos);
+  glm::vec2 futureTrackDir = getTrackDirectionAtPosition(lookAheadPoint);
+
+  // Calculate track curvature
+  float trackAngleChange = acos(glm::dot(currentTrackDir, futureTrackDir));
+
   float angleThreshold = 0.2f;
   float speedMultiplier = 1.0f;
 
-  if (turnAngle > angleThreshold) {
-    // More aggressive speed reduction for sharp turns
-    float sharpness = (turnAngle - angleThreshold) / (glm::pi<float>() - angleThreshold);
-    speedMultiplier = 1.0f - (sharpness * 0.7f);  // Allow down to 30% speed in very sharp turns
+  if (turnAngle > angleThreshold || trackAngleChange > angleThreshold) {
+    // Use the larger of the two angles for speed reduction
+    float effectiveAngle = glm::max(turnAngle, trackAngleChange);
+    float sharpness = (effectiveAngle - angleThreshold) / (glm::pi<float>() - angleThreshold);
 
-    // If we're already drifting, allow slightly higher speeds
+    // More gradual speed reduction curve
+    speedMultiplier = 1.0f - (sharpness * 0.6f);  // Changed from 0.7f
+
+    // Less speed reduction when drifting
     if (m_car->getProperties().driftState > 0.5f) {
-      speedMultiplier += 0.2f;
+      speedMultiplier = glm::min(speedMultiplier + 0.3f, 1.0f);
     }
 
-    speedMultiplier = glm::clamp(speedMultiplier, 0.3f, 1.0f);
+    speedMultiplier = glm::clamp(speedMultiplier, 0.4f, 1.0f);
   }
 
   return m_car->getProperties().maxSpeed * speedMultiplier;

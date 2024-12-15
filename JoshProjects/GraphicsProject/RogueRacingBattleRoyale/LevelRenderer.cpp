@@ -248,6 +248,8 @@ void LevelRenderer::renderNodes(const glm::mat4& cameraMatrix, SplineTrack* trac
 
 void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* objectManager) {
   if (!objectManager) return;
+  SplineTrack* track = objectManager->getTrack();
+
   m_textureProgram.use();
   glUniformMatrix4fv(m_textureProgram.getUniformLocation("P"), 1, GL_FALSE, &cameraMatrix[0][0]);
   m_spriteBatch.begin(JAGEngine::GlyphSortType::BACK_TO_FRONT);
@@ -359,12 +361,38 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
         JAGEngine::ColorRGBA8(0, 255, 0, 128) :
         JAGEngine::ColorRGBA8(255, 0, 0, 128);
 
+      // Calculate preview rotation for objects that should auto-align
+      float previewRotation = previewObj->getRotation();
+      if (previewObj->shouldAutoAlignToTrack() && track) {
+        std::vector<SplineTrack::SplinePointInfo> splinePoints = track->getSplinePoints(200);
+        float minDist = std::numeric_limits<float>::max();
+        size_t closestIdx = 0;
+
+        // Find closest spline point
+        for (size_t i = 0; i < splinePoints.size(); i++) {
+          glm::vec2 diff = m_previewPosition - splinePoints[i].position;
+          float dist = glm::length(diff);
+          if (dist < minDist) {
+            minDist = dist;
+            closestIdx = i;
+          }
+        }
+
+        // Calculate track direction at closest point
+        size_t nextIdx = (closestIdx + 1) % splinePoints.size();
+        glm::vec2 direction = splinePoints[nextIdx].position - splinePoints[closestIdx].position;
+        if (glm::length(direction) > 0.0001f) {  // Avoid normalizing zero vector
+          direction = glm::normalize(direction);
+          previewRotation = atan2(direction.y, direction.x);
+        }
+      }
+
       m_spriteBatch.draw(destRect,
         glm::vec4(0, 0, 1, 1),
         texture.id,
         previewDepth,
         previewColor,
-        previewObj->getRotation());
+        previewRotation);
     }
   }
 

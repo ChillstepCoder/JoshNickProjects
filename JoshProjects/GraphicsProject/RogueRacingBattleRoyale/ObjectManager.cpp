@@ -1,6 +1,7 @@
 // ObjectManager.cpp
 
 #include "ObjectManager.h"
+#include "Car.h"
 #include <set>
 #include <iostream>
 #include <algorithm>
@@ -19,6 +20,32 @@ void ObjectManager::addObject(size_t templateIndex, const glm::vec2& position) {
 
   auto newObject = std::make_unique<PlaceableObject>(*m_objectTemplates[templateIndex]);
   newObject->setPosition(position);
+
+  // Handle track alignment for objects that need it
+  if (newObject->shouldAutoAlignToTrack() && m_track) {
+    auto splinePoints = m_track->getSplinePoints(200);
+    float minDist = std::numeric_limits<float>::max();
+    size_t closestIdx = 0;
+
+    // Find closest spline point
+    for (size_t i = 0; i < splinePoints.size(); i++) {
+      float dist = glm::distance(position, splinePoints[i].position);
+      if (dist < minDist) {
+        minDist = dist;
+        closestIdx = i;
+      }
+    }
+
+    // Calculate track direction at closest point
+    size_t nextIdx = (closestIdx + 1) % splinePoints.size();
+    glm::vec2 direction = glm::normalize(
+      splinePoints[nextIdx].position - splinePoints[closestIdx].position);
+
+    // Calculate angle from direction vector
+    float angle = atan2(direction.y, direction.x);
+    newObject->setRotation(angle);
+  }
+
   createPhysicsForObject(newObject.get());
   m_placedObjects.push_back(std::move(newObject));
 }
@@ -83,6 +110,7 @@ bool ObjectManager::isValidPlacement(const PlaceableObject* obj, const glm::vec2
 void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
   if (!m_physicsSystem || !obj) return;
 
+  // Create the body only once
   b2BodyId bodyId;
   if (obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
     bodyId = m_physicsSystem->createDynamicBody(obj->getPosition().x, obj->getPosition().y);
@@ -91,6 +119,14 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
     bodyId = m_physicsSystem->createStaticBody(obj->getPosition().x, obj->getPosition().y);
   }
 
+  // Set initial rotation and position
+  b2Rot rotation = b2MakeRot(obj->getRotation());
+  b2Body_SetTransform(bodyId, b2Vec2{ obj->getPosition().x, obj->getPosition().y }, rotation);
+
+  // Store the PlaceableObject pointer in the body's user data
+  b2Body_SetUserData(bodyId, static_cast<void*>(obj));
+
+  // Set collision filters
   uint16_t categoryBits;
   uint16_t maskBits;
 
@@ -99,7 +135,10 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
     categoryBits = PhysicsSystem::CATEGORY_HAZARD;
     maskBits = PhysicsSystem::CATEGORY_CAR;
     break;
-
+  case PhysicsSystem::CollisionType::POWERUP:
+    categoryBits = PhysicsSystem::CATEGORY_POWERUP;
+    maskBits = PhysicsSystem::CATEGORY_CAR;
+    break;
   case PhysicsSystem::CollisionType::PUSHABLE:
     categoryBits = PhysicsSystem::CATEGORY_PUSHABLE;
     maskBits = PhysicsSystem::CATEGORY_CAR |
@@ -107,7 +146,6 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
       PhysicsSystem::CATEGORY_PUSHABLE |
       PhysicsSystem::CATEGORY_BARRIER;
     break;
-
   default:
     categoryBits = PhysicsSystem::CATEGORY_SOLID;
     maskBits = PhysicsSystem::CATEGORY_CAR |
@@ -115,11 +153,25 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
     break;
   }
 
-  float radius = obj->getDisplayName().find("tree") != std::string::npos ? 10.0f :
-    obj->getDisplayName().find("cone") != std::string::npos ? 5.0f : 7.5f;
+  // Create collision shape
+  if (obj->getDisplayName().find("booster") != std::string::npos) {
+    float width = 400.0f * obj->getScale().x;   // Full width
+    float height = 200.0f * obj->getScale().y;  // Full height
 
-  b2ShapeId shapeId = m_physicsSystem->createCircleShape(bodyId, radius,
-    categoryBits, maskBits, obj->getCollisionType());
+    // Add debug output
+    std::cout << "Creating booster physics with dimensions: " << width << "x" << height
+      << " at rotation: " << obj->getRotation() << std::endl;
+
+    m_physicsSystem->createPillShape(bodyId, width, height,
+      categoryBits, maskBits, obj->getCollisionType());
+  }
+  else {
+    float radius = obj->getDisplayName().find("tree") != std::string::npos ? 10.0f :
+      obj->getDisplayName().find("cone") != std::string::npos ? 5.0f : 7.5f;
+
+    m_physicsSystem->createCircleShape(bodyId, radius,
+      categoryBits, maskBits, obj->getCollisionType());
+  }
 
   if (obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
     b2MassData massData;
@@ -131,8 +183,16 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
     b2Body_SetAngularDamping(bodyId, 4.0f);
   }
 
+  // Store the body ID in the object
   obj->setPhysicsBody(bodyId);
-  obj->setCollisionShape(shapeId);
+
+  // Debug output to verify user data was set
+  if (obj->isBooster()) {
+    void* userData = b2Body_GetUserData(bodyId);
+    PlaceableObject* storedObj = static_cast<PlaceableObject*>(userData);
+    std::cout << "Booster physics body created. User data verification: "
+      << (storedObj == obj ? "SUCCESS" : "FAILED") << std::endl;
+  }
 }
 
 void ObjectManager::removeInvalidObjects(const std::vector<PlaceableObject*>& objectsToRemove) {
@@ -188,6 +248,13 @@ void ObjectManager::createDefaultTemplates() {
     std::make_unique<PlaceableObject>("Textures/tree.png", PlacementZone::Grass));
   m_objectTemplates.emplace_back(
     std::make_unique<PlaceableObject>("Textures/traffic_cone.png", PlacementZone::Anywhere));
+  m_objectTemplates.emplace_back(
+    std::make_unique<PlaceableObject>("Textures/booster.png", PlacementZone::Road));
+
+  // The booster's collision type and auto-align are already set in its constructor
+  if (m_objectTemplates.back()->getDisplayName().find("booster") != std::string::npos) {
+    m_objectTemplates.back()->setScale(glm::vec2(0.15f)); // Adjust scale as needed
+  }
 }
 
 void ObjectManager::addTemplate(std::unique_ptr<PlaceableObject> templ) {

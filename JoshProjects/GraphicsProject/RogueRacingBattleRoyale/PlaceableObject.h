@@ -15,21 +15,30 @@ enum class PlacementZone {
   Anywhere
 };
 
+
 class PlaceableObject {
 public:
+  struct BoosterProperties {
+    float maxBoostSpeed = 1500.0f;     // Maximum speed boost
+    float boostAccelRate = 100.0f;     // How quickly boost builds up per frame
+    float boostDecayRate = 0.95f;      // How quickly boost decays when off the pad
+    float directionFactor = 1.0f;      // How much the approach angle affects boost
+  };
+
   PlaceableObject(const std::string& texturePath, PlacementZone zone)
     : m_texturePath(texturePath)
     , m_zone(zone)
     , m_physicsBody(b2_nullBodyId)
-    , m_collisionShape(b2_nullShapeId) {
+    , m_collisionShape(b2_nullShapeId)
+    , m_autoAlignToTrack(false) {
+
     m_texture = JAGEngine::ResourceManager::getTexture(texturePath);
 
-    // Extract just the filename for display
     size_t lastSlash = texturePath.find_last_of("/\\");
     m_displayName = (lastSlash != std::string::npos) ?
       texturePath.substr(lastSlash + 1) : texturePath;
 
-    // Set default scale and collision type based on object type
+    // Set default properties based on object type
     if (m_displayName.find("pothole") != std::string::npos) {
       m_scale = glm::vec2(0.1f);
       m_collisionType = PhysicsSystem::CollisionType::HAZARD;
@@ -41,6 +50,14 @@ public:
     else if (m_displayName.find("cone") != std::string::npos) {
       m_scale = glm::vec2(0.05f);
       m_collisionType = PhysicsSystem::CollisionType::PUSHABLE;
+    }
+    else if (m_displayName.find("booster") != std::string::npos) {
+      m_scale = glm::vec2(0.15f);
+      m_collisionType = PhysicsSystem::CollisionType::POWERUP;
+      m_autoAlignToTrack = true;
+
+      // Initialize booster properties
+      m_boosterProps = std::make_unique<BoosterProperties>();
     }
     else {
       m_scale = glm::vec2(1.0f);
@@ -60,7 +77,8 @@ public:
     , m_isSelected(other.m_isSelected)
     , m_physicsBody(b2_nullBodyId)
     , m_collisionShape(b2_nullShapeId)
-    , m_collisionType(other.m_collisionType) {
+    , m_collisionType(other.m_collisionType)
+    , m_autoAlignToTrack(other.m_autoAlignToTrack) {
   }
 
   ~PlaceableObject() {
@@ -71,6 +89,14 @@ public:
   }
 
   // Getters
+  bool isBooster() const {
+    return m_collisionType == PhysicsSystem::CollisionType::POWERUP &&
+      m_displayName.find("booster") != std::string::npos;
+  }
+  const BoosterProperties& getBoosterProperties() const {
+    static const BoosterProperties defaultProps;
+    return m_boosterProps ? *m_boosterProps : defaultProps;
+  }
   const glm::vec2& getPosition() const { return m_position; }
   float getRotation() const { return m_rotation; }
   const glm::vec2& getScale() const { return m_scale; }
@@ -79,6 +105,7 @@ public:
   const std::string& getDisplayName() const { return m_displayName; }
   b2BodyId getPhysicsBody() const { return m_physicsBody; }
   PhysicsSystem::CollisionType getCollisionType() const { return m_collisionType; }
+  bool shouldAutoAlignToTrack() const { return m_autoAlignToTrack; }
 
   // Setters
   void setPosition(const glm::vec2& pos) { m_position = pos; }
@@ -86,7 +113,7 @@ public:
   void setScale(const glm::vec2& scale) { m_scale = scale; }
   void setSelected(bool selected) { m_isSelected = selected; }
   bool isSelected() const { return m_isSelected; }
-
+  void setAutoAlignToTrack(bool align) { m_autoAlignToTrack = align; }
   void setPhysicsBody(b2BodyId bodyId) { m_physicsBody = bodyId; }
   void setCollisionShape(b2ShapeId shapeId) { m_collisionShape = shapeId; }
 
@@ -117,4 +144,7 @@ private:
   PhysicsSystem::CollisionType m_collisionType;
 
   float m_drawOrder;
+  bool m_autoAlignToTrack;
+
+  std::unique_ptr<BoosterProperties> m_boosterProps;
 };
