@@ -11,7 +11,7 @@ class BlockManager;
 class CellularAutomataManager;
 
 const int CHUNK_WIDTH = 64;
-const int WATER_LEVELS = 10;
+const int WATER_LEVELS = 100;
 
 class Chunk {
 public:

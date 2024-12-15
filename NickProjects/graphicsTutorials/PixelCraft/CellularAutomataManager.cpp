@@ -63,6 +63,8 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         BlockHandle rightBlock = blockManager.getBlockAtPosition(glm::vec2(rightPosX, rightPosY));
 
+        BlockHandle upBlock = blockManager.getBlockAtPosition(glm::vec2(upPosX, upPosY));
+
         float waterBlockMass = waterBlock.block->getWaterAmount();
 
 
@@ -184,7 +186,6 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
                 waterBlock.block->setWaterAmount(avgAmt);
 
-                blockManager.placeBlock(rightBlock, glm::vec2(rightPosX, rightPosY));
                 rightBlock.block->setWaterAmount(avgAmt);
 
             }
@@ -213,11 +214,30 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
                 waterBlock.block->setWaterAmount(avgAmt);
 
-                blockManager.placeBlock(leftBlock, glm::vec2(leftPosX, leftPosY));
                 leftBlock.block->setWaterAmount(avgAmt);
 
             }
         }
+        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
+            continue;
+        }
+        /*
+        if (waterBlockMass < WATER_LEVELS) { // If the water block isnt full, check above
+            int neededWater = WATER_LEVELS - waterBlockMass;
+
+            if (upBlock.block->getBlockID() == BlockID::WATER) {
+                
+                if (upBlock.block->getWaterAmount() > neededWater) { // The above block has enough water to fill in th 
+                    waterBlock.block->setWaterAmount(WATER_LEVELS);
+                    upBlock.block->setWaterAmount(upBlock.block->getWaterAmount() - neededWater);
+                } else { // the above block doesnt have enough water, destroy it and move the water down
+                    waterBlock.block->setWaterAmount(waterBlockMass + upBlock.block->getWaterAmount());
+                    upBlock.block->setWaterAmount(upBlock.block->getWaterAmount() - neededWater);
+                    blockManager.destroyBlock(upBlock);
+                }
+            }
+        }
+        */
     }
 
     if (chunk.m_isMeshDirty == true) {

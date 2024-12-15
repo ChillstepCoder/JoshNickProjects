@@ -27,8 +27,8 @@ void Chunk::buildChunkMesh() {
                 if (id == BlockID::WATER) {
 
                     int waterAmt = block.getWaterAmount();
-                    if (waterAmt > 10) {
-                        waterAmt = 10;
+                    if (waterAmt > WATER_LEVELS) {
+                        waterAmt = WATER_LEVELS;
                     }
 
                     float waterHeight = ((float)waterAmt / (float)WATER_LEVELS);
@@ -190,6 +190,8 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
                     chunk.waterBlocks[i] = chunk.waterBlocks.back();
 
                     chunk.waterBlocks.pop_back(); // Add to the list of water blocks.
+
+                    break;
                 }
             }
         }
@@ -233,6 +235,8 @@ void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& p
     chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = waterBlock; 
 
     if (waterBlock.getBlockID() == BlockID::WATER) {
+        // Ensure it doesn't already exist
+        assert(std::find(chunk.waterBlocks.begin(), chunk.waterBlocks.end(), glm::ivec2(position.x, position.y)) == chunk.waterBlocks.end());
         chunk.waterBlocks.push_back(glm::vec2(position.x, position.y)); // Add to the list of water blocks.
     }
 
