@@ -158,10 +158,6 @@ void GameplayScreen::draw() {
     GLint pUniform = m_textureProgram.getUniformLocation("P");
     glUniformMatrix4fv(pUniform, 1, GL_FALSE, &projectionMatrix[0][0]);
 
-    {
-        PROFILE_SCOPE("Draw blocks");
-        m_blockManager->renderBlocks();
-    }
     m_spriteBatch.begin();
     {
         PROFILE_SCOPE("Draw player");
@@ -169,6 +165,10 @@ void GameplayScreen::draw() {
     }
     m_spriteBatch.end();
     m_spriteBatch.renderBatch();
+    {
+        PROFILE_SCOPE("Draw blocks");
+        m_blockManager->renderBlocks();
+    }
 
     {
         PROFILE_SCOPE("drawImgui");

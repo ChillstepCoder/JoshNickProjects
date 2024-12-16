@@ -43,6 +43,7 @@ private:
     Bengine::GLTexture m_texture;
 
     bool m_isGrounded = false;
+    bool m_touchingWater = false;
     b2ShapeId m_groundShapeId; // Store reference to ground shape
     float m_jumpForce = 110.0f;
 

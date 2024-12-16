@@ -13,19 +13,6 @@ void CellularAutomataManager::init() {
 }
 
 void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockManager) {
-    /*
-    glm::vec2 mass = glm::vec2(CHUNK_WIDTH, CHUNK_WIDTH);
-    glm::vec2 newMass = glm::vec2(CHUNK_WIDTH, CHUNK_WIDTH);
-
-    float Flow = 0.0f;
-    float MinFlow = 0.01f;
-    float MaxSpeed = 1.0f;   //max units of water moved out of one block to another, per timestep
-    float remaining_mass = 0.0f;
-    */
-
-
-
-
 
     //Calculate and apply flow for each block
     for (int i = chunk.waterBlocks.size() - 1; i >= 0; --i) {
@@ -65,17 +52,12 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         BlockHandle upBlock = blockManager.getBlockAtPosition(glm::vec2(upPosX, upPosY));
 
-        float waterBlockMass = waterBlock.block->getWaterAmount();
-
-
-
-
         if (downBlock.block->getBlockID() == BlockID::AIR) { // If downBlock is air, transfers all water to downBlock
 
-            downBlock.block->setWaterAmount(waterBlockMass);
+            downBlock.block->setWaterAmount(downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
             blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
 
-            waterBlock.block->setWaterAmount(0);
+            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterBlock.block->getWaterAmount());
             blockManager.destroyBlock(waterBlock);
 
 
@@ -85,12 +67,12 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                 int waterDifference = WATER_LEVELS - downBlock.block->getWaterAmount();// How much water is missing from downBlock
 
                 if (waterDifference < waterBlock.block->getWaterAmount()) { // The missing water is less than the amount in waterBlock
-                    downBlock.block->setWaterAmount(WATER_LEVELS);
-                    waterBlock.block->setWaterAmount(waterBlockMass - waterDifference);
-
+                    downBlock.block->setWaterAmount(downBlock.block->getWaterAmount() + waterDifference);
+                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
+                    chunk.m_isMeshDirty = true;
                 } else { // The waterBlock doesnt have enough to fill up downBlock
-                    downBlock.block->setWaterAmount(downBlock.block->getWaterAmount() + waterBlockMass);
-                    waterBlock.block->setWaterAmount(0);
+                    downBlock.block->setWaterAmount(downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
+                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterBlock.block->getWaterAmount());
                     blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
 
                 }
@@ -103,7 +85,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         if (downRightBlock.block->getBlockID() == BlockID::AIR) {
 
-            downRightBlock.block->setWaterAmount(waterBlockMass);
+            downRightBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
             blockManager.placeBlock(downRightBlock, glm::vec2(downRightPosX, downRightPosY));
 
             waterBlock.block->setWaterAmount(0);
@@ -115,13 +97,13 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
                 int waterDifference = WATER_LEVELS - downRightBlock.block->getWaterAmount();// How much water is missing from downRightBlock
 
-                if (waterDifference < waterBlockMass) { // The missing water is less than the amount in waterBlock
+                if (waterDifference < waterBlock.block->getWaterAmount()) { // The missing water is less than the amount in waterBlock
                     downRightBlock.block->setWaterAmount(downRightBlock.block->getWaterAmount() + waterDifference);
-                    waterBlock.block->setWaterAmount(waterBlockMass - waterDifference);
-
+                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
+                    chunk.m_isMeshDirty = true;
                 }
                 else { // The waterBlock doesnt have enough to fill up downRightBlock
-                    downRightBlock.block->setWaterAmount(downRightBlock.block->getWaterAmount() + waterBlockMass);
+                    downRightBlock.block->setWaterAmount(downRightBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
                     waterBlock.block->setWaterAmount(0);
                     blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
 
@@ -136,7 +118,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
         
         if (downLeftBlock.block->getBlockID() == BlockID::AIR) {
 
-            downLeftBlock.block->setWaterAmount(waterBlockMass);
+            downLeftBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
             blockManager.placeBlock(downLeftBlock, glm::vec2(downLeftPosX, downLeftPosY));
 
             waterBlock.block->setWaterAmount(0);
@@ -149,13 +131,13 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
                 int waterDifference = WATER_LEVELS - downLeftBlock.block->getWaterAmount();// How much water is missing from downLeftBlock
 
-                if (waterDifference < waterBlockMass) { // The missing water is less than the amount in waterBlock
+                if (waterDifference < waterBlock.block->getWaterAmount()) { // The missing water is less than the amount in waterBlock
                     downLeftBlock.block->setWaterAmount(downLeftBlock.block->getWaterAmount() + waterDifference);
-                    waterBlock.block->setWaterAmount(waterBlockMass - waterDifference);
-
+                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
+                    chunk.m_isMeshDirty = true;
                 }
                 else { // The waterBlock doesnt have enough to fill up downLeftBlock
-                    downLeftBlock.block->setWaterAmount(downLeftBlock.block->getWaterAmount() + waterBlockMass);
+                    downLeftBlock.block->setWaterAmount(downLeftBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
                     waterBlock.block->setWaterAmount(0);
                     blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
 
@@ -169,7 +151,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
      
         if (rightBlock.block->getBlockID() == BlockID::AIR) {
            
-            int avgAmt = (waterBlockMass) / 2;
+            int avgAmt = (waterBlock.block->getWaterAmount()) / 2;
 
             waterBlock.block->setWaterAmount(avgAmt);
  
@@ -177,17 +159,20 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
             rightBlock.block->setWaterAmount(avgAmt);
 
         } else if (rightBlock.block->getBlockID() == BlockID::WATER) {
-            if (rightBlock.block->getWaterAmount() < waterBlockMass) {
-                int rightWaterAmt = rightBlock.block->getWaterAmount();
+            if (rightBlock.block->getWaterAmount() * 2 < waterBlock.block->getWaterAmount()) { // If right water is less than half of waterBlock
 
-                std::cout << "waterAmt: " << waterBlockMass << "  rightWaterAmt: " << rightWaterAmt << std::endl;
+                int quarterSplit = (waterBlock.block->getWaterAmount() / 4); // split 1/4 of waterBlock's water
 
-                int avgAmt = (waterBlockMass + rightWaterAmt) / 2;
+                waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - quarterSplit); // remove 1/4 of waterblock water
 
-                waterBlock.block->setWaterAmount(avgAmt);
+                rightBlock.block->setWaterAmount(rightBlock.block->getWaterAmount() + quarterSplit); // add 1/4 of waterblock water
+                chunk.m_isMeshDirty = true;
 
-                rightBlock.block->setWaterAmount(avgAmt);
+            } else if (rightBlock.block->getWaterAmount() + 2 <= waterBlock.block->getWaterAmount()) { // If water is close to even
 
+                waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - 1);
+                rightBlock.block->setWaterAmount(rightBlock.block->getWaterAmount() + 1);
+                chunk.m_isMeshDirty = true;
             }
         }
 
@@ -197,7 +182,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         if (leftBlock.block->getBlockID() == BlockID::AIR) {
             
-            int avgAmt = (waterBlockMass) / 2;
+            int avgAmt = (waterBlock.block->getWaterAmount()) / 2;
 
             waterBlock.block->setWaterAmount(avgAmt);
 
@@ -205,17 +190,20 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
             leftBlock.block->setWaterAmount(avgAmt);
 
         } else if (leftBlock.block->getBlockID() == BlockID::WATER) {
-            if (leftBlock.block->getWaterAmount() < waterBlockMass) {
-                int leftWaterAmt = leftBlock.block->getWaterAmount();
+            if (leftBlock.block->getWaterAmount() * 2 < waterBlock.block->getWaterAmount()) { // If right water is less than half of waterBlock
 
-                std::cout << "waterAmt: " << waterBlockMass << "  leftWaterAmt: " << leftWaterAmt << std::endl;
+                int quarterSplit = (waterBlock.block->getWaterAmount() / 4); // split 1/4 of waterBlock's water
 
-                int avgAmt = (waterBlockMass + leftWaterAmt) / 2;
+                waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - quarterSplit); // remove 1/4 of waterblock water
 
-                waterBlock.block->setWaterAmount(avgAmt);
+                leftBlock.block->setWaterAmount(leftBlock.block->getWaterAmount() + quarterSplit); // add 1/4 of waterblock water
+                chunk.m_isMeshDirty = true;
 
-                leftBlock.block->setWaterAmount(avgAmt);
+            } else if (leftBlock.block->getWaterAmount() + 2 <= waterBlock.block->getWaterAmount()) { // If water is close to even
 
+                waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - 1);
+                leftBlock.block->setWaterAmount(leftBlock.block->getWaterAmount() + 1);
+                chunk.m_isMeshDirty = true;
             }
         }
         if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
@@ -236,7 +224,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                     blockManager.destroyBlock(upBlock);
                 }
             }
-        }
+        }a
         */
     }
 
