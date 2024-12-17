@@ -1413,6 +1413,7 @@ void LevelEditorScreen::initTestMode() {
 
     // Rest of car setup remains the same
     auto car = std::make_unique<Car>(carBody);
+    car->setObjectManager(m_objectManager.get());
     car->setTrack(m_track.get());
     car->resetPosition({ pos.position.x, pos.position.y }, pos.angle);
     car->setProperties(Car::CarProperties());
@@ -1839,6 +1840,21 @@ void LevelEditorScreen::drawCarPropertiesUI() {
   }
 
   if (ImGui::CollapsingHeader("Boost Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
+    float boosterMult = m_testCars[m_selectedCarIndex]->getProperties().boosterMultiplier;
+    if (ImGui::SliderFloat("Booster Multiplier", &boosterMult, 0.0f, 10.0f, "%.2f")) {
+      auto props = m_testCars[m_selectedCarIndex]->getProperties();
+      props.boosterMultiplier = boosterMult;
+      m_testCars[m_selectedCarIndex]->setProperties(props);
+
+      // If sync is enabled, apply to all AI cars
+      if (m_syncAllAICars) {
+        applySyncedProperties(props);
+      }
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("0 = No boost effect\n1 = Normal boost\n2 = Double effect\netc.");
+    }
+
     Car::CarProperties& props = m_testCars[m_selectedCarIndex]->getProperties();
 
     ImGui::Text("Boost Status:");

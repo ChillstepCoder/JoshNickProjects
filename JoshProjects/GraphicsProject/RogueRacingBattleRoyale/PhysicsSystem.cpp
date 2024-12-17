@@ -1,6 +1,7 @@
 //PhysicsSystem.cpp
 
 #include "PhysicsSystem.h"
+#include "Car.h"
 #include <iostream>
 #include <cmath> 
 #include <algorithm> 
@@ -30,10 +31,23 @@ void PhysicsSystem::init(float gravityX, float gravityY) {
 void PhysicsSystem::update(float timeStep) {
   if (!b2World_IsValid(m_worldId)) return;
 
-  // Ensure fixed timestep for physics
+  // Check collisions between cars and powerups
+  for (b2BodyId carBody : m_dynamicBodies) {
+    if (!b2Body_IsValid(carBody)) continue;
+
+    // Get car position and user data
+    b2Vec2 carPos = b2Body_GetPosition(carBody);
+    void* userData = b2Body_GetUserData(carBody);
+    Car* car = static_cast<Car*>(userData);
+    if (!car) continue;
+
+    // Get any overlapping bodies using our own check
+    findOverlappingBodies(carBody, car);
+  }
+
+  // Normal physics step
   const float fixedTimeStep = 1.0f / 60.0f;
   const int subStepCount = static_cast<int>(std::ceil(timeStep / fixedTimeStep));
-
   for (int i = 0; i < subStepCount; i++) {
     b2World_Step(m_worldId, fixedTimeStep, 1);
   }
@@ -204,6 +218,96 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
     std::cerr << "Failed to create circle shape.\n";
   }
   return shapeId;
+}
+
+void PhysicsSystem::findOverlappingBodies(b2BodyId carBody, Car* car) {
+  if (!car || !b2Body_IsValid(carBody)) return;
+
+  // Get car position
+  b2Vec2 carPos = b2Body_GetPosition(carBody);
+  float carRadius = 15.0f; // Approximate radius of car collision
+
+  // Track current overlaps for this car - use the same comparator type
+  std::set<b2BodyId, BodyIdCompare> currentOverlaps;
+
+  // Check distance to every other dynamic body
+  for (b2BodyId otherId : m_dynamicBodies) {
+    if (otherId.index1 == carBody.index1 || !b2Body_IsValid(otherId)) continue;
+
+    b2Vec2 otherPos = b2Body_GetPosition(otherId);
+    b2Vec2 diff = { otherPos.x - carPos.x, otherPos.y - carPos.y };
+    float distSq = diff.x * diff.x + diff.y * diff.y;
+    float minDist = carRadius + 15.0f;
+
+    if (distSq < minDist * minDist) {
+      if (checkIsPowerup(otherId)) {
+        currentOverlaps.insert(otherId);
+
+        // Check if this is a new overlap
+        auto& previousOverlaps = m_powerupOverlaps[carBody];
+        if (previousOverlaps.find(otherId) == previousOverlaps.end()) {
+          car->onSensorEnter(otherId);
+        }
+      }
+    }
+  }
+
+  // Check for overlaps that ended
+  auto& previousOverlaps = m_powerupOverlaps[carBody];
+  for (const auto& oldOverlap : previousOverlaps) {
+    if (currentOverlaps.find(oldOverlap) == currentOverlaps.end()) {
+      car->onSensorExit(oldOverlap);
+    }
+  }
+
+  // Store current overlaps for next frame
+  m_powerupOverlaps[carBody] = std::move(currentOverlaps);
+}
+
+bool PhysicsSystem::checkIsPowerup(b2BodyId bodyId) {
+  if (!b2Body_IsValid(bodyId)) return false;
+
+  // We know it's a powerup if the body was created with CollisionType::POWERUP
+  // Get the userData from the body which should store the PlaceableObject
+  void* userData = b2Body_GetUserData(bodyId);
+  if (!userData) return false;
+
+  PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
+  return obj && obj->isBooster();
+}
+
+bool PhysicsSystem::onPreSolve(b2ShapeId shapeIdA, b2ShapeId shapeIdB, b2Manifold* manifold, void* context) {
+  return handleContact(shapeIdA, shapeIdB);
+}
+
+bool PhysicsSystem::handleContact(b2ShapeId shapeIdA, b2ShapeId shapeIdB) {
+  // Get filter data directly from shapes
+  b2Filter filterA = b2Shape_GetFilter(shapeIdA);
+  b2Filter filterB = b2Shape_GetFilter(shapeIdB);
+
+  // Get the bodies that own these shapes
+  b2BodyId bodyIdA = b2Shape_GetBody(shapeIdA);
+  b2BodyId bodyIdB = b2Shape_GetBody(shapeIdB);
+
+  if (!b2Body_IsValid(bodyIdA) || !b2Body_IsValid(bodyIdB)) {
+    return true;
+  }
+
+  // Get user data from bodies
+  void* userDataA = b2Body_GetUserData(bodyIdA);
+  void* userDataB = b2Body_GetUserData(bodyIdB);
+
+  Car* carA = static_cast<Car*>(userDataA);
+  Car* carB = static_cast<Car*>(userDataB);
+
+  if (carA && filterB.categoryBits == CATEGORY_POWERUP) {
+    carA->onSensorEnter(bodyIdB);
+  }
+  else if (carB && filterA.categoryBits == CATEGORY_POWERUP) {
+    carB->onSensorEnter(bodyIdA);
+  }
+
+  return true; // Allow collision to continue
 }
 
 void* PhysicsSystem::enqueueTask(b2TaskCallback* task, int32_t itemCount,

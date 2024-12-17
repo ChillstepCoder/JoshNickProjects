@@ -49,6 +49,7 @@ public:
     float boostAccumulator = 0.0f;
     bool isOnBooster = false;
     const PlaceableObject* currentBooster = nullptr;
+    float boosterMultiplier = 1.0f;
   };
 
   struct DebugInfo {

@@ -4,6 +4,19 @@
 #include <Box2D/box2d.h>
 #include <memory>
 #include <vector>
+#include <set>
+#include <map>
+#include <utility> 
+
+class Car;
+
+struct BodyIdCompare {
+  bool operator()(const b2BodyId& a, const b2BodyId& b) const {
+    if (a.index1 != b.index1) return a.index1 < b.index1;
+    if (a.world0 != b.world0) return a.world0 < b.world0;
+    return a.revision < b.revision;
+  }
+};
 
 class PhysicsSystem {
 public:
@@ -50,9 +63,19 @@ public:
 
   b2WorldId getWorld() const { return m_worldId; }
 
+  static bool onPreSolve(b2ShapeId shapeIdA, b2ShapeId shapeIdB, b2Manifold* manifold, void* context);
+  static bool handleContact(b2ShapeId shapeIdA, b2ShapeId shapeIdB);
+
+
 private:
   b2WorldId m_worldId;
   std::vector<b2BodyId> m_dynamicBodies;
+
+  void findOverlappingBodies(b2BodyId carBody, Car* car);
+  bool checkIsPowerup(b2BodyId bodyId);
+
+  std::map<b2BodyId, std::set<b2BodyId, BodyIdCompare>, BodyIdCompare> m_powerupOverlaps;
+  std::set<std::pair<b2BodyId, b2BodyId>, BodyIdCompare> m_currentOverlaps;
 
   static void* enqueueTask(b2TaskCallback* task, int32_t itemCount,
     int32_t minRange, void* taskContext, void* userContext);

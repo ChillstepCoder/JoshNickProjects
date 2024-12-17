@@ -111,7 +111,7 @@ void Car::update(const InputState& input) {
 
   // When not on booster, decay the boost
   if (!m_properties.isOnBooster) {
-      m_properties.currentBoostSpeed *= 0.95f;  // Adjust decay rate as needed
+      m_properties.currentBoostSpeed *= 0.95f;
       if (m_properties.currentBoostSpeed < 0.1f) {
           m_properties.currentBoostSpeed = 0.0f;
       }
@@ -137,10 +137,10 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
   glm::vec2 velocity(debugInfo.velocity);
   glm::vec2 startPos = startNode->getPosition();
 
-  // First check if we're close enough to the start line to even consider crossing
+  // First check if close enough to the start line to consider crossing
   float distToStart = glm::distance(currentPos, startPos);
   float lastDistToStart = glm::distance(lastPos, startPos);
-  const float LINE_DETECTION_RADIUS = startNode->getRoadWidth() * 1.5f;  // Only detect within this radius
+  const float LINE_DETECTION_RADIUS = startNode->getRoadWidth() * 1.5f;
 
   if (distToStart > LINE_DETECTION_RADIUS && lastDistToStart > LINE_DETECTION_RADIUS) {
     m_properties.lastPosition = currentPos;
@@ -150,7 +150,7 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
   // Get track direction at start line
   glm::vec2 startNormal = track->getTrackDirectionAtNode(startNode);
 
-  // Calculate exact position relative to line
+  // Calculate position relative to line
   float currentDot = glm::dot(currentPos - startPos, startNormal);
   float lastDot = glm::dot(lastPos - startPos, startNormal);
 
@@ -199,114 +199,100 @@ void Car::onSensorExit(b2BodyId sensorBody) {
 }
 
 void Car::updateBoostEffects() {
-    // Get default or current booster properties
-    const PlaceableObject::BoosterProperties& boosterProps =
-        (m_properties.currentBooster) ?
-        m_properties.currentBooster->getBoosterProperties() :
-        PlaceableObject::BoosterProperties();
-
     if (m_properties.isOnBooster && m_properties.currentBooster) {
-        // Get car's forward direction
+        const auto& boosterProps = m_properties.currentBooster->getBoosterProperties();
+
         b2Vec2 forwardDir = getForwardVector();
         glm::vec2 carForward(forwardDir.x, forwardDir.y);
-
-        // Get booster's direction
         float boosterAngle = m_properties.currentBooster->getRotation();
         glm::vec2 boosterDir(std::cos(boosterAngle), std::sin(boosterAngle));
-
-        // Calculate alignment factor
         float alignment = glm::dot(carForward, boosterDir);
 
-        // Only apply boost if somewhat aligned with booster
         if (alignment > 0.2f) {
-            // Scale boost power by alignment
-            float boostPower = alignment * boosterProps.boostAccelRate * (1.0f / 60.0f);
+            // Apply boosterMultiplier to accumulation rate
+            float boostPower = alignment * boosterProps.boostAccelRate * (20.0f / 60.0f) * m_properties.boosterMultiplier;
+            float maxBoostSpeed = boosterProps.maxBoostSpeed * m_properties.boosterMultiplier;
 
-            // Accumulate boost up to max speed
             m_properties.boostAccumulator = std::min(
                 m_properties.boostAccumulator + boostPower,
-                boosterProps.maxBoostSpeed
+                maxBoostSpeed
             );
-
-            // Apply immediate boost effect
             m_properties.currentBoostSpeed = m_properties.boostAccumulator;
-
-            std::cout << "Applying boost - Speed: " << m_properties.currentBoostSpeed
-                << " Alignment: " << alignment << std::endl;
         }
     }
     else {
-        // Decay boost when not on booster
-        if (m_properties.currentBoostSpeed > 0.0f) {
-            // Use a default decay rate if no booster properties available
-            float decayRate = boosterProps.boostDecayRate;
+        if (m_properties.boosterMultiplier <= 0.0f) {
+            // If multiplier is 0 or negative, reset boost
+            m_properties.currentBoostSpeed = 0.0f;
+            m_properties.boostAccumulator = 0.0f;
+        }
+        else {
+            // Make decay rate dependent on boosterMultiplier
+            float decayRate = 1.0f - ((1.0f - 0.99999f) / std::max(0.001f, m_properties.boosterMultiplier));
             m_properties.currentBoostSpeed *= decayRate;
 
-            if (m_properties.currentBoostSpeed < 0.1f) {
+            if (m_properties.currentBoostSpeed < 1.0f) {
                 m_properties.currentBoostSpeed = 0.0f;
             }
             m_properties.boostAccumulator = m_properties.currentBoostSpeed;
         }
     }
+
+    // Apply the boost force with multiplier
+    if (m_properties.currentBoostSpeed > 0.1f) {
+        b2Vec2 forwardDir = getForwardVector();
+        b2Vec2 boostForce = {
+            forwardDir.x * m_properties.currentBoostSpeed * 15.0f * m_properties.boosterMultiplier,
+            forwardDir.y * m_properties.currentBoostSpeed * 15.0f * m_properties.boosterMultiplier
+        };
+        b2Body_ApplyForceToCenter(m_bodyId, boostForce, true);
+    }
 }
 
 void Car::checkBoosterCollisions(ObjectManager* objectManager) {
     if (!objectManager) return;
+    if (!b2Body_IsValid(m_bodyId)) return;
 
     b2Vec2 carPos = b2Body_GetPosition(m_bodyId);
     glm::vec2 carPosition(carPos.x, carPos.y);
-    float carAngle = b2Rot_GetAngle(b2Body_GetRotation(m_bodyId));
-    glm::vec2 carForward(std::cos(carAngle), std::sin(carAngle));
 
-    // Use a much larger collision check radius for initial filtering
-    float collisionRadius = 50.0f;  // Increased significantly for better detection
+    // Reset booster state but NOT the speeds
+    bool wasOnBooster = m_properties.isOnBooster;
+    m_properties.isOnBooster = false;
+    m_properties.currentBooster = nullptr;
 
-    // Debug visualization of collision check
-    if (DEBUG_OUTPUT) {
-        std::cout << "Car position: " << carPosition.x << ", " << carPosition.y << "\n";
-        std::cout << "Checking for boosters within radius: " << collisionRadius << "\n";
-    }
-
-    // Get nearby objects using object manager's grid system
-    auto nearbyObjects = objectManager->getNearbyObjects(carPosition, collisionRadius * 2.0f);
-
-    bool foundBooster = false;
-    float bestAlignment = -1.0f;
-    const PlaceableObject* bestBooster = nullptr;
-
-    for (const auto* obj : nearbyObjects) {
+    // Check all placed objects
+    for (const auto& obj : objectManager->getPlacedObjects()) {
         if (obj->isBooster()) {
             glm::vec2 boosterPos = obj->getPosition();
-            float dist = glm::distance(carPosition, boosterPos);
+            float boosterAngle = obj->getRotation();
+            float boosterWidth = 48.0f;   // Width of pill
+            float boosterHeight = 30.0f;  // Height of pill
 
-            if (dist < collisionRadius) {
-                // Calculate alignment between car and booster
-                float boosterAngle = obj->getRotation();
-                glm::vec2 boosterDir(std::cos(boosterAngle), std::sin(boosterAngle));
-                float alignment = glm::dot(carForward, boosterDir);
+            // Transform car position to booster's local space
+            glm::vec2 localPos = carPosition - boosterPos;
+            float cosAngle = cos(-boosterAngle);
+            float sinAngle = sin(-boosterAngle);
+            float localX = localPos.x * cosAngle - localPos.y * sinAngle;
+            float localY = localPos.x * sinAngle + localPos.y * cosAngle;
 
-                // Only consider boosters we're somewhat aligned with
-                if (alignment > 0.2f && alignment > bestAlignment) {
-                    bestAlignment = alignment;
-                    bestBooster = obj;
-                    foundBooster = true;
-                }
+            // Check if point is inside pill shape
+            bool insideRect = std::abs(localX) <= boosterWidth / 2 && std::abs(localY) <= boosterHeight / 2;
+            bool insideCircleLeft = (localX + boosterWidth / 2) * (localX + boosterWidth / 2) + localY * localY <= (boosterHeight / 2) * (boosterHeight / 2);
+            bool insideCircleRight = (localX - boosterWidth / 2) * (localX - boosterWidth / 2) + localY * localY <= (boosterHeight / 2) * (boosterHeight / 2);
 
-                std::cout << "Found booster! Distance: " << dist
-                    << " Alignment: " << alignment << std::endl;
+            if (insideRect || insideCircleLeft || insideCircleRight) {
+                m_properties.isOnBooster = true;
+                m_properties.currentBooster = obj.get();
+                break;
             }
         }
     }
 
-    // Update booster state based on best aligned booster
-    if (foundBooster) {
-        m_properties.isOnBooster = true;
-        m_properties.currentBooster = bestBooster;
-        std::cout << "Activated booster with alignment: " << bestAlignment << std::endl;
-    }
-    else {
-        m_properties.isOnBooster = false;
-        m_properties.currentBooster = nullptr;
+    // Handle leaving booster - only update boost state if we've actually left
+    if (wasOnBooster && !m_properties.isOnBooster) {
+        // We keep currentBoostSpeed and let it decay gradually in updateBoostEffects
+        m_properties.boostAccumulator = m_properties.currentBoostSpeed;
     }
 }
 
