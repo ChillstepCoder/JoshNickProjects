@@ -34,7 +34,7 @@ void BlockDefRepository::initBlockDefs() {
 
     glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
 
-
+    Bengine::ColorRGBA8 waterColor(255, 255, 255, 155);
 
 
 
@@ -43,7 +43,7 @@ void BlockDefRepository::initBlockDefs() {
     m_blockDefs[(int)BlockID::GRASS].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png").id);
     m_blockDefs[(int)BlockID::DIRT].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png").id);
     m_blockDefs[(int)BlockID::STONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png").id);
-    m_blockDefs[(int)BlockID::WATER].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/waterBlock.png"), Bengine::ResourceManager::getTexture("Textures/waterBlock.png").id);
+    m_blockDefs[(int)BlockID::WATER].init(uvRect, waterColor, Bengine::ResourceManager::getTexture("Textures/waterBlock.png"), Bengine::ResourceManager::getTexture("Textures/waterBlock.png").id);
 
     assert(m_blockDefs[(int)BlockID::STONE].m_color == textureColor);
 
