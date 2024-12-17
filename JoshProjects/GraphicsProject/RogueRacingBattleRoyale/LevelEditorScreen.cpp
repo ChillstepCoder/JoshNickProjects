@@ -54,7 +54,34 @@ void LevelEditorScreen::build() {
 }
 
 void LevelEditorScreen::destroy() {
-  //cleanupImGui();
+  // Clean up test mode first, if we were in test mode
+  if (m_testMode) {
+    cleanupTestMode();
+  }
+
+  // Clean up UI resources
+  m_raceTimer.reset();
+  m_raceCountdown.reset();
+  m_countdownFont.reset();
+
+  // Clean up render resources safely
+  if (m_levelRenderer) {
+    m_levelRenderer->destroy();
+    m_levelRenderer.reset();
+  }
+
+  // Reset all pointers in a safe order
+  m_track.reset();
+  m_objectManager.reset();
+  m_physicsSystem.reset();
+  m_debugDraw.reset();
+
+  // Clear vectors
+  m_testCars.clear();
+  m_aiDrivers.clear();
+  m_carTrackingInfo.clear();
+  m_savedObjectStates.clear();
+  m_availableLevels.clear();
 }
 
 void LevelEditorScreen::onEntry() {
@@ -106,23 +133,25 @@ void LevelEditorScreen::onEntry() {
     m_textRenderingProgram.addAttribute("vertexUV");
     m_textRenderingProgram.linkShaders();
 
-    // Check uniforms
-    GLint pUniform = m_textRenderingProgram.getUniformLocation("P");
-    GLint samplerUniform = m_textRenderingProgram.getUniformLocation("mySampler");
-    if (pUniform == -1 || samplerUniform == -1) {
-      throw std::runtime_error("Failed to get shader uniforms");
-    }
-
-    // Initialize font after shader validation
+    // Create and initialize font first
     m_countdownFont = std::make_unique<JAGEngine::SpriteFont>();
     m_countdownFont->init("Fonts/titilium_bold.ttf", 72);
 
-    // Initialize countdown with same font
-    m_raceCountdown = std::make_unique<RaceCountdown>();
-    m_raceCountdown->setFont(m_countdownFont.get());
+    if (!m_countdownFont->isValid()) {
+      throw std::runtime_error("Failed to initialize countdown font");
+    }
 
+    // Initialize countdown and race timer
+    m_raceCountdown = std::make_unique<RaceCountdown>();
     m_raceTimer = std::make_unique<RaceTimer>();
-    m_raceTimer->setFont(m_countdownFont.get());
+
+    // Now it's safe to copy the font to the countdown
+    if (m_raceCountdown) {
+      // Create a new SpriteFont instance for RaceCountdown
+      auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
+      countdownFont->init("Fonts/titilium_bold.ttf", 72);
+      m_raceCountdown->setFont(std::move(countdownFont));
+    }
 
     m_raceCountdown->setOnCountdownStart([this]() {
       m_enableAI = false;
@@ -135,14 +164,10 @@ void LevelEditorScreen::onEntry() {
       m_raceTimer->start();
       });
 
-    std::cout << "Text Rendering Setup Complete:\n"
-      << "- Shader Program ID: " << m_textRenderingProgram.getProgramID() << "\n"
-      << "- Countdown Font Texture ID: " << m_countdownFont->getTextureID() << "\n"
-      << "- P uniform location: " << pUniform << "\n"
-      << "- Sampler uniform location: " << samplerUniform << "\n";
   }
   catch (const std::exception& e) {
-    std::cerr << "Text rendering initialization error: " << e.what() << std::endl;
+    std::cerr << "Error in LevelEditorScreen::onEntry: " << e.what() << std::endl;
+    // Handle initialization failure
   }
 
   std::cout << "LevelEditorScreen::onEntry() complete\n";
@@ -2046,59 +2071,28 @@ void LevelEditorScreen::drawTestModeUI() {
 }
 
 void LevelEditorScreen::cleanupTestMode() {
-  // Clean up physics and test mode resources
-  m_levelRenderer->clearCars();
-  m_objectManager->clearCars();
-  bool savedShowStartPositions = m_showStartPositions;
-
-  if (m_physicsSystem) {
+  // Only cleanup barrier collisions if both levelRenderer and physicsSystem exist
+  if (m_levelRenderer && m_physicsSystem) {
     m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
   }
 
-  // Restore camera state
-  m_camera.setPosition(m_editorCameraPos);
-  m_camera.setScale(m_editorCameraScale);
+  // Clear renderer car references
+  if (m_levelRenderer) {
+    m_levelRenderer->clearCars();
+  }
 
-  m_carTrackingInfo.clear();
+  if (m_objectManager) {
+    m_objectManager->clearCars();
+  }
+
+  // Clean up other test mode resources
   m_testCars.clear();
   m_aiDrivers.clear();
-
-  if (m_physicsSystem) {
-    m_physicsSystem->cleanup();
-    m_physicsSystem.reset();
-  }
-
-  if (m_debugDraw) {
-    m_debugDraw.reset();
-  }
-
-  // Reset race timer
-  if (m_raceTimer) {
-    m_raceTimer->reset();
-  }
-
-  // Restore object placement mode
-  m_objectPlacementMode = m_savedObjectPlacementMode;
-  m_selectedTemplateIndex = m_savedTemplateIndex;
-
-  // Create new object manager and restore objects
-  auto newManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
-  const auto& existingTemplates = m_objectManager->getObjectTemplates();
-  for (const auto& tmpl : existingTemplates) {
-    newManager->addTemplate(std::make_unique<PlaceableObject>(*tmpl));
-  }
-  for (const auto& state : m_savedObjectStates) {
-    newManager->addObject(state.first, state.second);
-  }
-  m_objectManager = std::move(newManager);
-
-  m_showStartPositions = savedShowStartPositions;
-  m_levelRenderer->setShowStartPositions(m_showStartPositions);
+  m_carTrackingInfo.clear();
 
   // Reset countdown and ready state
-  if (m_raceCountdown) {
-    m_raceCountdown->reset();
-  }
+  m_raceTimer.reset();
+  m_raceCountdown.reset();
   m_readyToStart = false;
   m_enableAI = false;
   m_inputEnabled = false;

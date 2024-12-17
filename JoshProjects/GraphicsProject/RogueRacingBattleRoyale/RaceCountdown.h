@@ -31,7 +31,7 @@ public:
   std::string getText() const;
 
   // Setters
-  void setFont(JAGEngine::SpriteFont* font);
+  void setFont(std::unique_ptr<JAGEngine::SpriteFont> font);
 
   // Event callbacks
   void setOnCountdownStart(std::function<void()> callback) { m_onCountdownStart = callback; }

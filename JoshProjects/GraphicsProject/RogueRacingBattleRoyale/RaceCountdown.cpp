@@ -4,7 +4,8 @@
 RaceCountdown::RaceCountdown()
   : m_timer(0.0f)
   , m_isCountingDown(false)
-  , m_hasFinished(false) {
+  , m_hasFinished(false)
+  , m_font(nullptr) {
 }
 
 RaceCountdown::~RaceCountdown() {
@@ -13,7 +14,6 @@ RaceCountdown::~RaceCountdown() {
 void RaceCountdown::init(const char* fontPath, int fontSize) {
   m_font = std::make_unique<JAGEngine::SpriteFont>();
   m_font->init(fontPath, fontSize);
-
   GLuint textureID = m_font->getTextureID();
   std::cout << "RaceCountdown font initialized. Texture ID: " << textureID << std::endl;
 
@@ -93,6 +93,6 @@ std::string RaceCountdown::getText() const {
 }
 
 
-void RaceCountdown::setFont(JAGEngine::SpriteFont* font) {
-  m_font.reset(font);
+void RaceCountdown::setFont(std::unique_ptr<JAGEngine::SpriteFont> font) {
+  m_font = std::move(font);
 }
