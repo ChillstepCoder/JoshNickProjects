@@ -64,7 +64,7 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 
 
     // Check for ground and water contact
-    m_touchingWater = false;
+    //m_touchingWater = false;
     m_isGrounded = false;
     // Check contact with each block
     for (const auto& block : blocksInRange) {
@@ -74,20 +74,17 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         for (int i = 0; i < contactCount; ++i) {
             b2ShapeId shape1 = contacts[i].shapeIdA;
             b2ShapeId shape2 = contacts[i].shapeIdB;
-            if (block.getBlockID() == BlockID::WATER) {
-                m_touchingWater = true;
-            }
 
             // Check if the block's shape ID matches the player's shape ID
             if (B2_ID_EQUALS(shape1, block.getBodyID()) || B2_ID_EQUALS(shape2, block.getBodyID())) {
                 m_isGrounded = true; // Player is grounded on this block
                 break; // No need to check further
-            } 
-
+            }
         }
 
         if (m_isGrounded) break; // Exit if already grounded
     }
+
 
     // Handle movement input
     float force = m_touchingWater ? 20.0f : 50.0f; // Define a base force for movement
@@ -111,16 +108,33 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     b2Vec2 currentVelocity = b2Body_GetLinearVelocity(getID());
     if (currentVelocity.x < -MAX_SPEED) {
         b2Body_SetLinearVelocity(getID(), b2Vec2(-MAX_SPEED, currentVelocity.y));
-    }
-    else if (currentVelocity.x > MAX_SPEED) {
+    } else if (currentVelocity.x > MAX_SPEED) {
         b2Body_SetLinearVelocity(getID(), b2Vec2(MAX_SPEED, currentVelocity.y));
     }
+    if (currentVelocity.y < -MAX_SPEED * 2) {
+        b2Body_SetLinearVelocity(getID(), b2Vec2(currentVelocity.x, -MAX_SPEED * 2));
+    }
+    else if (currentVelocity.y > MAX_SPEED * 2) {
+        b2Body_SetLinearVelocity(getID(), b2Vec2(currentVelocity.x, MAX_SPEED * 2));
+    }
 
-
-    float realJumpForce = m_touchingWater ? m_jumpForce * 0.65f  : m_jumpForce;
+    float realJumpForce = m_touchingWater ? m_jumpForce * 0.05f  : m_jumpForce;
     // Jump only when grounded or in water and space is pressed
-    if ((m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) || (m_touchingWater && inputManager.isKeyPressed(SDLK_SPACE))) {
-        b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, realJumpForce), b2Body_GetPosition(getID()), true);
+    if ((m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE))) {
+        b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, realJumpForce), b2Body_GetPosition(getID()), false);
+    }
+
+    BlockHandle blockHandle = blockManager->getBlockAtPosition(playerPos);
+    if (blockHandle.block->getBlockID() == BlockID::WATER && inputManager.isKeyDown(SDLK_SPACE)) {
+        m_touchingWater = true;
+        b2Body_SetGravityScale(getID(), 0.35f);
+        b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, realJumpForce), b2Body_GetPosition(getID()), false);
+    } else if (blockHandle.block->getBlockID() == BlockID::WATER) {
+        m_touchingWater = true;
+        b2Body_SetGravityScale(getID(), 0.35f);
+    } else {
+        m_touchingWater = false;
+        b2Body_SetGravityScale(getID(), 1.00f);
     }
 
     // Handle block breaking
