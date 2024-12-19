@@ -48,6 +48,8 @@ public:
 
     void updateGravity();
 
+    void setGravity(float gravity) { m_gravity = gravity; }
+
 private:
     void checkInput();
 
