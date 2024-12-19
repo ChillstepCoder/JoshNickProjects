@@ -17,26 +17,26 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
     //Calculate and apply flow for each block
     for (int i = chunk.waterBlocks.size() - 1; i >= 0; --i) {
 
-        int waterPosX = chunk.waterBlocks[i].x + 0.5f;
-        int waterPosY = chunk.waterBlocks[i].y + 0.5f;
+        const int waterPosX = chunk.waterBlocks[i].x + 0.5f;
+        const int waterPosY = chunk.waterBlocks[i].y + 0.5f;
 
-        int downPosX = waterPosX;
-        int downPosY = (waterPosY - 1);
+        const int downPosX = waterPosX;
+        const int downPosY = (waterPosY - 1);
 
-        int downRightPosX = waterPosX + 1;
-        int downRightPosY = (waterPosY - 1);
+        const int downRightPosX = waterPosX + 1;
+        const int downRightPosY = (waterPosY - 1);
 
-        int downLeftPosX = waterPosX - 1;
-        int downLeftPosY = (waterPosY - 1);
+        const int downLeftPosX = waterPosX - 1;
+        const int downLeftPosY = (waterPosY - 1);
 
-        int leftPosX = (waterPosX - 1);
-        int leftPosY = waterPosY;
+        const int leftPosX = (waterPosX - 1);
+        const int leftPosY = waterPosY;
 
-        int rightPosX = (waterPosX + 1);
-        int rightPosY = waterPosY;
+        const int rightPosX = (waterPosX + 1);
+        const int rightPosY = waterPosY;
 
-        int upPosX = waterPosX;
-        int upPosY = (waterPosY + 1);
+        const int upPosX = waterPosX;
+        const int upPosY = (waterPosY + 1);
 
         BlockHandle waterBlock = blockManager.getBlockAtPosition(glm::vec2(waterPosX, waterPosY));
 
@@ -62,8 +62,8 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
             blockManager.placeBlock(downBlock, glm::vec2(downPosX, downPosY));
             downBlock.block->setWaterAmount(waterBlock.block->getWaterAmount());
 
-            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterBlock.block->getWaterAmount());
             blockManager.destroyBlock(waterBlock);
+            continue;
 
             //waterPushedThisStep = waterBlock.block->getWaterAmount();
             //int waterEndLevel = waterBlock.block->getWaterAmount();
@@ -83,15 +83,10 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                 } else { // The waterBlock doesnt have enough to fill up downBlock
                     downBlock.block->setWaterAmount(downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
 
-                    waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterBlock.block->getWaterAmount());
                     blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
-
+                    continue;
                 }
             }
-        }
-        
-        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
-            continue;
         }
 
         if (rightBlock.block->getBlockID() == BlockID::AIR) {
@@ -103,7 +98,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
                 waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterBlock.block->getWaterAmount());
                 blockManager.destroyBlock(waterBlock);
-
+                continue;
 
             } else if (downRightBlock.block->getBlockID() == BlockID::WATER) {
                 if (downRightBlock.block->getWaterAmount() < WATER_LEVELS) { // If downRightBlock isnt full
@@ -126,8 +121,8 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                     }
                     else { // The waterBlock doesnt have enough to fill up downRightBlock
                         downRightBlock.block->setWaterAmount(downRightBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
-                        waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterBlock.block->getWaterAmount());
                         blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
+                        continue;
 
                     }
                 } else { // downRightBlock is full
@@ -166,7 +161,8 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
             }
         }
 
-        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
+        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock
+            blockManager.destroyBlock(waterBlock);
             continue;
         }
 
@@ -179,6 +175,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
                 waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterBlock.block->getWaterAmount());
                 blockManager.destroyBlock(waterBlock);
+                continue;
 
             }
             else if (downLeftBlock.block->getBlockID() == BlockID::WATER) {
@@ -204,6 +201,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                         downLeftBlock.block->setWaterAmount(downLeftBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount());
                         waterBlock.block->setWaterAmount(0);
                         blockManager.destroyBlock(waterBlock); // Destroy old waterblock because it is empty
+                        continue;
 
                     }
                 }
@@ -245,7 +243,8 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
         }
 
 
-        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock 
+        if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock
+            blockManager.destroyBlock(waterBlock);
             continue;
         }
         /*
@@ -274,112 +273,14 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /*
-
-        //Custom push-only flow
-        Flow = 0;
-        remaining_mass = waterBlockMass;
-        if (remaining_mass <= 0) continue;
-
-        //If the block below this one is air or water,
-        if (downBlock.block->getBlockID() == BlockID::AIR || downBlock.block->getBlockID() == BlockID::WATER) {
-            Flow = getStableState(remaining_mass + downBlock.block->getWaterAmount()) - downBlock.block->getWaterAmount();
-            if (Flow > MinFlow) {
-                Flow *= 0.5; //leads to smoother flow
-            }
-            Flow = constrain(Flow, 0, std::min(MaxSpeed, remaining_mass));
-
-            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
-            downBlock.block->setWaterAmount(Flow);
-            remaining_mass -= Flow;
-        }
-
-        if (remaining_mass <= 0) continue;
-
-        //Left
-        if (leftBlock.block->getBlockID() == BlockID::AIR || leftBlock.block->getBlockID() == BlockID::WATER) {
-            //Equalize the amount of water in this block and it's neighbour
-            Flow = (waterBlock.block->getWaterAmount() - leftBlock.block->getWaterAmount()) / 4;
-            if (Flow > MinFlow) { Flow *= 0.5; }
-            Flow = constrain(Flow, 0, remaining_mass);
-
-            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
-            leftBlock.block->setWaterAmount(Flow);
-            remaining_mass -= Flow;
-        }
-
-        if (remaining_mass <= 0) continue;
-
-        //Right
-        if (rightBlock.block->getBlockID() == BlockID::AIR || rightBlock.block->getBlockID() == BlockID::WATER) {
-            //Equalize the amount of water in this block and it's neighbour
-            Flow = (waterBlock.block->getWaterAmount() - rightBlock.block->getWaterAmount()) / 4;
-            if (Flow > MinFlow) { Flow *= 0.5; }
-            Flow = constrain(Flow, 0, remaining_mass);
-
-            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
-            rightBlock.block->setWaterAmount(Flow);
-            remaining_mass -= Flow;
-        }
-
-        if (remaining_mass <= 0) continue;
-
-        //Up. Only compressed water flows upwards.
-        if (upBlock.block->getBlockID() == BlockID::AIR || upBlock.block->getBlockID() == BlockID::WATER) {
-            Flow = remaining_mass - getStableState(remaining_mass + upBlock.block->getWaterAmount());
-            if (Flow > MinFlow) { Flow *= 0.5; }
-            Flow = constrain(Flow, 0, std::min(MaxSpeed, remaining_mass));
-
-            waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - Flow);
-            upBlock.block->setWaterAmount(Flow);
-            remaining_mass -= Flow;
-        }
-        
-    }
-
+// TODO BEN: HOMEWORK! Implement the following functions
+bool CellularAutomataManager::moveWaterToBlock(BlockHandle& sourceBlock, BlockHandle& targetBlock, int amountToPush, BlockManager& blockManager) {
+    // This function will move amountToPush water from sourceBlock to targetBlock, and will destroy sourceBlock if it is empty at the end, and return true if sourceBlock is empty
+    assert(false);
+    return false;
 }
 
-
-float CellularAutomataManager::getStableState(float mass) {
-    if (mass <= 1.0f) {
-        return 1.0f;
-    }
-    else if (mass < 2.0f * m_maxLiquid + m_maxCompress) {
-        return (m_maxLiquid * m_maxLiquid + mass * m_maxCompress) / (m_maxLiquid + m_maxCompress);
-    }
-    else {
-        return (mass + m_maxCompress) / 2.0f;
-    }
+// TODO BEN: HOMEWORK! Implement the following functions
+bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, BlockHandle& diagonalBlock, BlockHandle& adjacentBlock, BlockManager& blockManager) {
+    // Should implement the common diagonal logic, and USE moveWaterToBlock to do the actual moving of water
 }
-
-float CellularAutomataManager::constrain(float val, float min, float max)
-{
-    if (val < min)
-        return min;
-    if (val > max)
-        return max;
-    return val;
-}
-
-float CellularAutomataManager::minVal(float a, float b)
-{
-    return a > b ? b : a;
-}
-
-*/
