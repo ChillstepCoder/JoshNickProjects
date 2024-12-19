@@ -83,6 +83,10 @@ public:
     m_timingData.clear();
   }
 
+  std::unordered_map<std::string, TimingData>& getAllTimingData() {
+      return m_timingData;
+  }
+
 private:
   friend class ScopedTimer;
 
@@ -106,4 +110,6 @@ inline ScopedTimer::~ScopedTimer() {
 }
 
 // Macro that creates a scoped timer
+#define TIME_FUNCTION() ScopedTimer scopedTimer##__FUNCTION__(__FUNCTION__, PerformanceTimer::getInstance())
 #define TIME_SCOPE(name) ScopedTimer scopedTimer##__LINE__(name, PerformanceTimer::getInstance())
+

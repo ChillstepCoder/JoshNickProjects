@@ -16,7 +16,12 @@ enum class PlacementZone {
   Anywhere
 };
 
+enum ObjectType {
+    Booster,
+    XPPickup,
+};
 
+// TODO BEN: Turn this into a base, virtual class (doesnt have to be abstract)
 class PlaceableObject {
 public:
   struct BoosterProperties {
@@ -118,11 +123,13 @@ public:
   }
 
   // Getters
-  bool isBooster() const {
+  // TODO BEN: Can we get RID of isBooster, isXPPickup, ect?
+  // for example: isPowerup(); canBeSensed();
+  virtual bool isBooster() const {
     return m_collisionType == PhysicsSystem::CollisionType::POWERUP &&
       m_displayName.find("booster") != std::string::npos;
   }
-  bool isXPPickup() const {
+  virtual bool isXPPickup() const {
     return m_collisionType == PhysicsSystem::CollisionType::POWERUP &&
       m_displayName.find("xpstar") != std::string::npos;
   }
@@ -206,3 +213,4 @@ private:
   std::unique_ptr<BoosterProperties> m_boosterProps;
   std::unique_ptr<XPProperties> m_xpProps;
 };
+

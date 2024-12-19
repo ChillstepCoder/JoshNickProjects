@@ -7,6 +7,7 @@
 #include <glm/gtx/norm.hpp>
 #include <glm/gtc/constants.hpp>
 
+#include "PerformanceTimer.h"
 
 AIDriver::AIDriver(Car* car)
   : m_car(car)
@@ -18,6 +19,7 @@ AIDriver::AIDriver(Car* car)
 
 void AIDriver::update(float deltaTime) {
   if (!m_car || !m_car->getTrack()) return;
+  TIME_FUNCTION();
 
   if (DEBUG_OUTPUT && m_stuckState.isStuck) {
     auto debugInfo = m_car->getDebugInfo();
@@ -48,7 +50,6 @@ void AIDriver::update(float deltaTime) {
     // Recovery behavior when stuck
     applyStuckRecovery();
   }
-
   m_car->update(m_currentInput);
 }
 
@@ -728,7 +729,7 @@ bool AIDriver::isObjectInPath(const glm::vec2& objectPos, float objectRadius,
 
 void AIDriver::updateStuckState(float deltaTime) {
   if (!m_car) return;
-
+  TIME_SCOPE("Stuck Update");
   auto debugInfo = m_car->getDebugInfo();
   float currentSpeed = debugInfo.currentSpeed;
   glm::vec2 currentPos(debugInfo.position);

@@ -2586,11 +2586,10 @@ void LevelEditorScreen::drawPerformanceWindow() {
         };
 
       // Display timing for each measured system
-      displayTiming("Physics Update");
-      displayTiming("AI Update");
-      displayTiming("Camera Update");
-      displayTiming("Render");
-      displayTiming("Total Frame");
+      std::unordered_map<std::string, PerformanceTimer::TimingData>& timingData = timer.getAllTimingData();
+      for (auto it : timingData) {
+          displayTiming(it.first);
+      }
     }
   }
   ImGui::End();
