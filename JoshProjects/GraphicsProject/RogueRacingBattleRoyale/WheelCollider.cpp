@@ -1,5 +1,7 @@
 // WheelCollider.cpp
 #include "WheelCollider.h"
+#include "Car.h"  // Add this line so that Car is defined
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 #include <iostream>
@@ -95,11 +97,14 @@ void WheelCollider::detectSurface() {
 
   glm::vec2 wheelPos = getPosition();
 
-  SplineTrack* track = static_cast<SplineTrack*>(b2Body_GetUserData(m_carBody));
-  if (!track) {
+  // Instead of directly casting to SplineTrack, get the Car first
+  Car* car = static_cast<Car*>(b2Body_GetUserData(m_carBody));
+  if (!car || !car->getTrack()) {
     m_currentSurface = Surface::Grass;
     return;
   }
+
+  SplineTrack* track = car->getTrack();
 
   auto splinePoints = track->getSplinePoints(50);
   if (splinePoints.empty()) {
@@ -167,3 +172,4 @@ void WheelCollider::detectSurface() {
     m_currentSurface = Surface::Grass;
   }
 }
+

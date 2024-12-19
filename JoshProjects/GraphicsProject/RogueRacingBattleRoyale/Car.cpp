@@ -17,9 +17,15 @@ namespace {
 
 Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
   initializeWheelColliders();
-  m_properties.currentLap = 0;
-  m_properties.lastStartLineSide = false;
-  m_properties.lastPosition = glm::vec2(0.0f);
+  CarProperties props;
+  props.totalXP = 0;
+  props.racePosition = 0;
+  props.currentLap = 0;
+  props.lastStartLineSide = false;
+  props.lastPosition = glm::vec2(0.0f);
+  m_properties = props;
+
+  b2Body_SetUserData(m_bodyId, static_cast<void*>(this));
 }
 
 void Car::update(const InputState& input) {
@@ -33,18 +39,18 @@ void Car::update(const InputState& input) {
     // Apply boost effects
     updateBoostEffects();
 
-  // Get current state
-  b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
-  float currentSpeed = b2Vec2Length(currentVel);
-  b2Vec2 forwardDir = getForwardVector();
-  float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
+    // Get current state
+    b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
+    float currentSpeed = b2Vec2Length(currentVel);
+    b2Vec2 forwardDir = getForwardVector();
+    float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
 
-  // Scale forces if speed is very high to prevent instability
-  float forceScale = 1.0f;
-  const float SPEED_THRESHOLD = 1000.0f;
-  if (currentSpeed > SPEED_THRESHOLD) {
-    forceScale = SPEED_THRESHOLD / currentSpeed;
-  }
+    // Scale forces if speed is very high to prevent instability
+    float forceScale = 1.0f;
+    const float SPEED_THRESHOLD = 1000.0f;
+    if (currentSpeed > SPEED_THRESHOLD) {
+      forceScale = SPEED_THRESHOLD / currentSpeed;
+    }
 
   // Update drift state
   if (input.braking && (input.turningLeft || input.turningRight)) {
@@ -166,11 +172,11 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
     if (speed > MIN_CROSSING_SPEED) {
       if (correctDirection) {
         m_properties.currentLap++;
-        m_properties.lapProgress = 0.0f;  // Reset progress immediately after increasing lap
+        m_properties.lapProgress = 0.0f;
       }
       else if (m_properties.currentLap > 0) {
         m_properties.currentLap--;
-        m_properties.lapProgress = 1.0f;  // Set to end of previous lap
+        m_properties.lapProgress = 1.0f;
       }
     }
   }
@@ -179,13 +185,26 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
 }
 
 void Car::onSensorEnter(b2BodyId sensorBody) {
-    if (!b2Body_IsValid(sensorBody)) return;
+  if (!b2Body_IsValid(sensorBody)) return;
 
-    PlaceableObject* obj = static_cast<PlaceableObject*>(b2Body_GetUserData(sensorBody));
-    if (obj && obj->isBooster()) {
-        m_properties.isOnBooster = true;
-        m_properties.currentBooster = obj;
-    }
+  PlaceableObject* obj = static_cast<PlaceableObject*>(b2Body_GetUserData(sensorBody));
+  if (!obj) return;
+
+  std::cout << "Car with race position " << m_properties.racePosition
+    << " entering sensor for " << obj->getDisplayName() << "\n";
+
+  if (obj->isBooster()) {
+    m_properties.isOnBooster = true;
+    m_properties.currentBooster = obj;
+  }
+  else if (obj->isXPPickup() && obj->getXPProperties().isActive) {
+    std::cout << "Pre-XP state: totalXP=" << m_properties.totalXP
+      << " for car " << m_properties.racePosition << "\n";
+    m_properties.totalXP++;
+    std::cout << "Post-XP state: totalXP=" << m_properties.totalXP
+      << " for car " << m_properties.racePosition << "\n";
+    obj->setActive(false);
+  }
 }
 
 void Car::onSensorExit(b2BodyId sensorBody) {
@@ -289,9 +308,8 @@ void Car::checkBoosterCollisions(ObjectManager* objectManager) {
         }
     }
 
-    // Handle leaving booster - only update boost state if we've actually left
+    // Handle leaving booster
     if (wasOnBooster && !m_properties.isOnBooster) {
-        // We keep currentBoostSpeed and let it decay gradually in updateBoostEffects
         m_properties.boostAccumulator = m_properties.currentBoostSpeed;
     }
 }
@@ -326,8 +344,6 @@ float Car::getTotalRaceProgress() const {
   int currentLap = m_properties.currentLap;
   float lapProgress = m_properties.lapProgress;
 
-  // If we're behind the start line at race start (progress > 0.9),
-  // we want to represent this as a negative progress
   if (currentLap == 0 && lapProgress > 0.9f) {
     return -0.1f;  // Start slightly behind the line
   }
@@ -390,7 +406,7 @@ void Car::checkCollisions() {
     glm::vec2 carPosition(carPos.x, carPos.y);
 
     // Print debug info
-    std::cout << "Car Position: " << carPosition.x << ", " << carPosition.y << std::endl;
+    //std::cout << "Car Position: " << carPosition.x << ", " << carPosition.y << std::endl;
 
     // Simple AABB collision check
     const float COLLISION_RADIUS = 100.0f;  // Adjust based on your scale
@@ -401,10 +417,10 @@ void Car::checkCollisions() {
         if (obj->isBooster()) {
             glm::vec2 boosterPos = obj->getPosition();
             float dist = glm::distance(carPosition, boosterPos);
-            std::cout << "Distance to booster: " << dist << std::endl;
+            //std::cout << "Distance to booster: " << dist << std::endl;
 
             if (dist < COLLISION_RADIUS) {
-                std::cout << "Contact with booster detected!" << std::endl;
+                //std::cout << "Contact with booster detected!" << std::endl;
                 m_properties.isOnBooster = true;
                 m_properties.currentBooster = obj.get();
                 break;
@@ -547,7 +563,7 @@ void Car::resetPosition(const b2Vec2& position, float angle) {
   if (!b2Body_IsValid(m_bodyId)) return;
 
   // Create rotation from angle
-  b2Rot rotation = b2MakeRot(angle);  // This creates a proper b2Rot object from the angle
+  b2Rot rotation = b2MakeRot(angle);
 
   b2Body_SetTransform(m_bodyId, position, rotation);
   b2Body_SetLinearVelocity(m_bodyId, { 0.0f, 0.0f });
@@ -572,7 +588,7 @@ void Car::applyDrag(const b2Vec2& currentVel, float forwardSpeed) {
 
   // Stabilize lateral velocity to reduce bouncing
   if (lateralSpeed > m_properties.maxSpeed * 0.1f) {
-    lateralVel.x *= 0.7f;  // Reduce lateral velocity
+    lateralVel.x *= 0.7f;
     lateralVel.y *= 0.7f;
   }
 
@@ -619,15 +635,14 @@ void Car::initializeWheelColliders() {
   float wheelWidth = 6.0f;
   float wheelHeight = 3.0f;
 
-  // Create wheel colliders in the correct order to match the debug output
   WheelCollider::Config wheelConfigs[4] = {
-    // Back Left (index 0 should show as Front Left)
+    // Back Left 
     { wheelWidth, wheelHeight, glm::vec2(-wheelBaseWidth / 2, -wheelBaseLength / 2) },
-    // Back Right (index 1 should show as Front Right)
+    // Back Right
     { wheelWidth, wheelHeight, glm::vec2(wheelBaseWidth / 2, -wheelBaseLength / 2) },
-    // Front Left (index 2 should show as Back Left)
+    // Front Left
     { wheelWidth, wheelHeight, glm::vec2(-wheelBaseWidth / 2, wheelBaseLength / 2) },
-    // Front Right (index 3 should show as Back Right)
+    // Front Right
     { wheelWidth, wheelHeight, glm::vec2(wheelBaseWidth / 2, wheelBaseLength / 2) }
   };
 
@@ -638,7 +653,7 @@ void Car::initializeWheelColliders() {
 }
 
 void Car::updateWheelColliders() {
-  // Reorder the wheel states to match the expected debug output order
+
   const int wheelOrder[4] = { 3, 1, 2, 0 };  // Maps physical wheels to debug output order
 
   // Update each wheel collider

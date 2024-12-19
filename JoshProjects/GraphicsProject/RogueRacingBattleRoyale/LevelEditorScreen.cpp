@@ -269,10 +269,10 @@ void LevelEditorScreen::draw() {
   // Update camera
   m_camera.update();
 
-  // Check if level renderer exists before using it
+  // Ensure level renderer exists
   if (m_levelRenderer) {
-    // Update level renderer settings from GUI state
     try {
+      // Update level renderer settings from GUI state
       m_levelRenderer->setGrassColor(m_grassColor);
       m_levelRenderer->setOffroadColor(m_offroadColor);
       m_levelRenderer->setGrassNoiseParams(m_grassNoiseScale, m_grassNoiseIntensity);
@@ -280,13 +280,12 @@ void LevelEditorScreen::draw() {
       m_levelRenderer->setBarrierPatternScale(m_barrierPatternScale);
       m_levelRenderer->setRoadLOD(m_roadLOD);
 
-      // Automatically hide start positions in test mode
+      // Forcefully disable start positions in test mode
       if (m_testMode) {
         m_levelRenderer->setShowStartPositions(false);
       }
 
-      // Add back this critical preview setup code
-      // Set preview node if in add node mode
+      // Handle preview node for adding nodes
       if (m_addNodeMode) {
         m_levelRenderer->setPreviewNode(m_previewNodePosition, m_showPreviewNode);
       }
@@ -294,29 +293,22 @@ void LevelEditorScreen::draw() {
         m_levelRenderer->setPreviewNode(glm::vec2(0.0f), false);
       }
 
-      // Object placement preview
-      m_levelRenderer->setObjectPlacementMode(m_objectPlacementMode,
-        m_selectedTemplateIndex,
-        m_testMode);  // Pass test mode state
-      if (m_objectPlacementMode && !m_testMode) {  // Only show preview if not in test mode
-        glm::vec2 mousePos = m_camera.convertScreenToWorld(
-          m_game->getInputManager().getMouseCoords());
+      // Handle object placement preview
+      m_levelRenderer->setObjectPlacementMode(m_objectPlacementMode, m_selectedTemplateIndex, m_testMode);
+      if (m_objectPlacementMode && !m_testMode) {
+        glm::vec2 mousePos = m_camera.convertScreenToWorld(m_game->getInputManager().getMouseCoords());
         m_levelRenderer->setPreviewPosition(mousePos);
       }
 
-      bool showSplinePoints = m_showSplinePoints;
-      if (m_testMode) showSplinePoints = false;
+      // Determine whether to show spline points
+      bool showSplinePoints = m_showSplinePoints && !m_testMode;
 
-      // Main render call
+      // Render the main track and objects
       if (m_track) {
-        m_levelRenderer->render(m_camera,
-          m_track.get(),
-          m_objectManager.get(),
-          showSplinePoints,
-          static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
+        m_levelRenderer->render(m_camera, m_track.get(), m_objectManager.get(), showSplinePoints, static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
 
-        // Draw start positions after main render, but only if not in test mode
-        if (m_levelRenderer->getShowStartPositions() && !m_testMode) {
+        // Render start positions ONLY if not in test mode
+        if (!m_testMode && m_levelRenderer->getShowStartPositions()) {
           m_levelRenderer->renderStartPositions(m_camera.getCameraMatrix(), m_track.get());
         }
       }
@@ -1436,20 +1428,24 @@ void LevelEditorScreen::initTestMode() {
     massData.rotationalInertia = 2.5f;  // Slightly increased for more stability
     b2Body_SetMassData(carBody, massData);
 
-    // Rest of car setup remains the same
     auto car = std::make_unique<Car>(carBody);
+
+    // Initialize properties ONCE with all needed values
+    Car::CarProperties props;
+    props = Car::CarProperties();  // Get defaults
+    props.totalXP = 0;  // Explicitly set XP
+    props.racePosition = static_cast<int>(i + 1);
+    car->setProperties(props);  // Set properties ONCE
+
     car->setObjectManager(m_objectManager.get());
     car->setTrack(m_track.get());
     car->resetPosition({ pos.position.x, pos.position.y }, pos.angle);
-    car->setProperties(Car::CarProperties());
     car->setColor(carColors[i]);
 
     // Create AI driver for all cars except the first one (player)
     if (i > 0) {
       auto aiDriver = std::make_unique<AIDriver>(car.get());
-      // Set initial AI configuration
       aiDriver->setConfig(m_aiConfig);
-      // Set ObjectManager for this specific AI driver
       aiDriver->setObjectManager(m_objectManager.get());
       std::cout << "Set object manager for AI car " << i << " (manager addr: "
         << m_objectManager.get() << ")\n";
@@ -1464,7 +1460,7 @@ void LevelEditorScreen::initTestMode() {
         0.0f,
         static_cast<int>(i + 1),
         i == 0
-    });
+      });
   }
 
   if (m_objectManager) {
@@ -1820,14 +1816,50 @@ void LevelEditorScreen::drawCarPropertiesUI() {
     }
 
     if (ImGui::CollapsingHeader("Race Progress", ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Text("Current Lap: %d/%d",
-        m_testCars[m_selectedCarIndex]->getProperties().currentLap,
-        m_totalLaps);
-      ImGui::Text("Lap Progress: %.3f",
-        m_testCars[m_selectedCarIndex]->getProperties().lapProgress);
-      ImGui::Text("Total Race Progress: %.3f",
-        m_testCars[m_selectedCarIndex]->getTotalRaceProgress());
+      const auto& props = m_testCars[m_selectedCarIndex]->getProperties();
+      ImGui::Text("Current Lap: %d/%d", props.currentLap, m_totalLaps);
+      ImGui::Text("Lap Progress: %.3f", props.lapProgress);
+      ImGui::Text("Total Race Progress: %.3f", m_testCars[m_selectedCarIndex]->getTotalRaceProgress());
       ImGui::Separator();
+    }
+
+    // XP Properties section with unique ID
+    if (ImGui::CollapsingHeader("XP Stats##unique", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (m_testCars.empty() || m_selectedCarIndex >= m_testCars.size()) {
+        ImGui::Text("No car selected");
+      }
+      else {
+        const auto& props = m_testCars[m_selectedCarIndex]->getProperties();
+
+        // Display total XP
+        ImGui::Text("Total XP: %d", props.totalXP);
+
+        // Show car type (player or AI)
+        ImGui::Text("Car Type: %s", m_selectedCarIndex == 0 ? "Player" : "AI");
+
+        // If there's a nearby XP star, show its info
+        if (m_objectManager) {
+          const auto& cars = m_testCars[m_selectedCarIndex];
+          if (cars) {
+            glm::vec2 carPos = cars->getDebugInfo().position;
+            auto nearbyObjects = m_objectManager->getNearbyObjects(carPos, 150.0f);
+
+            for (const auto* obj : nearbyObjects) {
+              if (obj && obj->isXPPickup()) {
+                ImGui::Separator();
+                ImGui::Text("Nearby XP Star Info:");
+                const auto& xpProps = obj->getXPProperties();
+                ImGui::Text("XP Amount: %d", xpProps.xpAmount);
+                ImGui::Text("Is Active: %s", xpProps.isActive ? "Yes" : "No");
+                if (!xpProps.isActive) {
+                  ImGui::Text("Respawn in: %.1f seconds", xpProps.respawnTimer);
+                }
+                break;  // Just show the first one
+              }
+            }
+          }
+        }
+      }
     }
 
     // Wheel state information
@@ -1863,6 +1895,7 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       }
     }
   }
+  
 
   if (ImGui::CollapsingHeader("Boost Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
     float boosterMult = m_testCars[m_selectedCarIndex]->getProperties().boosterMultiplier;
@@ -2075,29 +2108,58 @@ void LevelEditorScreen::cleanupTestMode() {
   if (m_levelRenderer && m_physicsSystem) {
     m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
   }
-
   // Clear renderer car references
   if (m_levelRenderer) {
     m_levelRenderer->clearCars();
+    m_levelRenderer->setShowStartPositions(m_showStartPositions);
   }
-
   if (m_objectManager) {
     m_objectManager->clearCars();
+    // Restore object states from backup
+    m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
+    m_objectManager->createDefaultTemplates();
+    for (const auto& state : m_savedObjectStates) {
+      m_objectManager->addObject(state.first, state.second);
+    }
   }
-
-  // Clean up other test mode resources
+  // Clean up other test mode resources 
   m_testCars.clear();
   m_aiDrivers.clear();
   m_carTrackingInfo.clear();
-
-  // Reset countdown and ready state
-  m_raceTimer.reset();
-  m_raceCountdown.reset();
+  // Restore camera state
+  m_camera.setPosition(m_editorCameraPos);
+  m_camera.setScale(m_editorCameraScale);
+  // Restore object placement state
+  m_objectPlacementMode = m_savedObjectPlacementMode;
+  m_selectedTemplateIndex = m_savedTemplateIndex;
+  // Clean up race elements
+  if (m_raceTimer) {
+    m_raceTimer.reset();
+  }
+  if (m_raceCountdown) {
+    m_raceCountdown.reset();
+  }
   m_readyToStart = false;
   m_enableAI = false;
   m_inputEnabled = false;
-
   m_testMode = false;
+  // Recreate race elements for next time
+  m_raceTimer = std::make_unique<RaceTimer>();
+  m_raceCountdown = std::make_unique<RaceCountdown>();
+  if (m_raceCountdown && m_countdownFont) {
+    auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
+    countdownFont->init("Fonts/titilium_bold.ttf", 72);
+    m_raceCountdown->setFont(std::move(countdownFont));
+    m_raceCountdown->setOnCountdownStart([this]() {
+      m_enableAI = false;
+      m_inputEnabled = false;
+      });
+    m_raceCountdown->setOnCountdownComplete([this]() {
+      m_enableAI = true;
+      m_inputEnabled = true;
+      m_raceTimer->start();
+      });
+  }
 }
 
 LevelEditorScreen::CarTrackingInfo LevelEditorScreen::calculateCarTrackingInfo(const Car* car) const {

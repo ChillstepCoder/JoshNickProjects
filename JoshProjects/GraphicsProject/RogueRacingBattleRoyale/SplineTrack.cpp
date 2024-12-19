@@ -182,7 +182,9 @@ void SplineTrack::setStartLine(TrackNode* node) {
 
 std::vector<SplineTrack::SplinePointInfo> SplineTrack::getSplinePoints(int subdivisions) const {
   std::vector<SplinePointInfo> points;
-  if (m_nodes.size() < 4) return points;
+  if (m_nodes.empty() || subdivisions <= 0) return points;
+
+  points.reserve(subdivisions + 1);
 
   for (size_t i = 0; i < m_nodes.size(); ++i) {
     for (int j = 0; j < subdivisions; ++j) {

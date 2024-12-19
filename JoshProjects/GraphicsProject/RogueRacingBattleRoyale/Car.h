@@ -50,6 +50,12 @@ public:
     bool isOnBooster = false;
     const PlaceableObject* currentBooster = nullptr;
     float boosterMultiplier = 1.0f;
+    // Leveling
+    int totalXP = 0;
+
+    void reset() {
+      totalXP = 0;
+    }
   };
 
   struct DebugInfo {
@@ -79,13 +85,22 @@ public:
   void onSensorExit(b2BodyId sensorBody);
 
   CarProperties& getProperties() { return m_properties; }
-  const CarProperties& getProperties() const { return m_properties; }
-  void setProperties(const CarProperties& props) { m_properties = props; }
+  void setProperties(const CarProperties& props) {
+    // Ensure XP from previous state is preserved and only incremented
+    int previousXP = m_properties.totalXP;
+    m_properties = props;
+    if (props.totalXP > previousXP) {
+      m_properties.totalXP = props.totalXP; // Keep new XP if it's higher
+    }
+    else {
+      m_properties.totalXP = previousXP; // Keep old XP if new is lower/same
+    }
+  }
   DebugInfo getDebugInfo() const;
   void setColor(const JAGEngine::ColorRGBA8& color) { m_color = color; }
   void setTrack(SplineTrack* track) {
     m_track = track;
-    b2Body_SetUserData(m_bodyId, static_cast<void*>(track));
+    //b2Body_SetUserData(m_bodyId, static_cast<void*>(track));
   }
   void setObjectManager(ObjectManager* manager) { m_objectManager = manager; }
 

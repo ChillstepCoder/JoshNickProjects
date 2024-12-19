@@ -23,7 +23,7 @@ void PhysicsSystem::init(float gravityX, float gravityY) {
   worldDef.enableContinuous = true;
   worldDef.restitutionThreshold = 0.5f;
   worldDef.contactPushoutVelocity = 3.0f;
-  worldDef.enableSleep = false;  // Disable sleeping for more consistent behavior
+  worldDef.enableSleep = false;
 
   m_worldId = b2CreateWorld(&worldDef);
 }
@@ -41,7 +41,6 @@ void PhysicsSystem::update(float timeStep) {
     Car* car = static_cast<Car*>(userData);
     if (!car) continue;
 
-    // Get any overlapping bodies using our own check
     findOverlappingBodies(carBody, car);
   }
 
@@ -93,6 +92,11 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
 
   if (!b2Body_IsValid(bodyId)) return;
 
+  std::cout << "\nCreating pill shape physics:\n";
+  std::cout << "Category bits: " << categoryBits << "\n";
+  std::cout << "Mask bits: " << maskBits << "\n";
+  std::cout << "Collision type: " << static_cast<int>(collisionType) << "\n";
+
   // Central rectangle (main body)
   float bodyWidth = width * 0.6f;
   float bodyHeight = height * 0.5f;
@@ -135,14 +139,14 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
   b2Vec2 frontCapVertices[b2_maxPolygonVertices];
   b2Vec2 backCapVertices[b2_maxPolygonVertices];
 
-  // Create front cap - semicircle rotated 90 degrees clockwise
+  // Create front cap
   for (int i = 0; i < numCapVertices; ++i) {
     float angle = -b2_pi * 0.5f + (float)i / (numCapVertices - 1) * b2_pi;
     frontCapVertices[i].x = bodyWidth * 0.5f + cosf(angle) * radius;
     frontCapVertices[i].y = sinf(angle) * radius;
   }
 
-  // Create back cap - semicircle rotated 90 degrees clockwise
+  // Create back cap
   for (int i = 0; i < numCapVertices; ++i) {
     float angle = b2_pi * 0.5f + (float)i / (numCapVertices - 1) * b2_pi;
     backCapVertices[i].x = -bodyWidth * 0.5f + cosf(angle) * radius;
@@ -184,8 +188,8 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
   // Configure physics based on collision type
   switch (collisionType) {
   case CollisionType::HAZARD:
-  case CollisionType::POWERUP:  // Handle powerups like hazards for collision
-    shapeDef.isSensor = true;  // Make it a trigger
+  case CollisionType::POWERUP:
+    shapeDef.isSensor = true;
     shapeDef.density = 0.0f;
     shapeDef.friction = 0.0f;
     break;
@@ -223,57 +227,37 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
 void PhysicsSystem::findOverlappingBodies(b2BodyId carBody, Car* car) {
   if (!car || !b2Body_IsValid(carBody)) return;
 
-  // Get car position
   b2Vec2 carPos = b2Body_GetPosition(carBody);
-  float carRadius = 15.0f; // Approximate radius of car collision
+  float carRadius = 7.0f;
+  float detectionRadius = carRadius + 10.0f;
 
-  // Track current overlaps for this car - use the same comparator type
-  std::set<b2BodyId, BodyIdCompare> currentOverlaps;
-
-  // Check distance to every other dynamic body
   for (b2BodyId otherId : m_dynamicBodies) {
-    if (otherId.index1 == carBody.index1 || !b2Body_IsValid(otherId)) continue;
+    if (!b2Body_IsValid(otherId) || otherId.index1 == carBody.index1) continue;
+
+    void* userData = b2Body_GetUserData(otherId);
+    if (!userData) continue;
+
+    PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
+    if (!obj) continue;
 
     b2Vec2 otherPos = b2Body_GetPosition(otherId);
     b2Vec2 diff = { otherPos.x - carPos.x, otherPos.y - carPos.y };
     float distSq = diff.x * diff.x + diff.y * diff.y;
-    float minDist = carRadius + 15.0f;
 
-    if (distSq < minDist * minDist) {
-      if (checkIsPowerup(otherId)) {
-        currentOverlaps.insert(otherId);
-
-        // Check if this is a new overlap
-        auto& previousOverlaps = m_powerupOverlaps[carBody];
-        if (previousOverlaps.find(otherId) == previousOverlaps.end()) {
-          car->onSensorEnter(otherId);
-        }
-      }
+    if (distSq < detectionRadius * detectionRadius && (obj->isBooster() || obj->isXPPickup())) {
+      car->onSensorEnter(otherId);
     }
   }
-
-  // Check for overlaps that ended
-  auto& previousOverlaps = m_powerupOverlaps[carBody];
-  for (const auto& oldOverlap : previousOverlaps) {
-    if (currentOverlaps.find(oldOverlap) == currentOverlaps.end()) {
-      car->onSensorExit(oldOverlap);
-    }
-  }
-
-  // Store current overlaps for next frame
-  m_powerupOverlaps[carBody] = std::move(currentOverlaps);
 }
 
 bool PhysicsSystem::checkIsPowerup(b2BodyId bodyId) {
   if (!b2Body_IsValid(bodyId)) return false;
 
-  // We know it's a powerup if the body was created with CollisionType::POWERUP
-  // Get the userData from the body which should store the PlaceableObject
   void* userData = b2Body_GetUserData(bodyId);
   if (!userData) return false;
 
   PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
-  return obj && obj->isBooster();
+  return obj && (obj->isBooster() || obj->isXPPickup());
 }
 
 bool PhysicsSystem::onPreSolve(b2ShapeId shapeIdA, b2ShapeId shapeIdB, b2Manifold* manifold, void* context) {
@@ -281,33 +265,50 @@ bool PhysicsSystem::onPreSolve(b2ShapeId shapeIdA, b2ShapeId shapeIdB, b2Manifol
 }
 
 bool PhysicsSystem::handleContact(b2ShapeId shapeIdA, b2ShapeId shapeIdB) {
+  if (!b2Shape_IsValid(shapeIdA) || !b2Shape_IsValid(shapeIdB)) {
+    std::cout << "Invalid shapes in contact\n";
+    return true;
+  }
+
   // Get filter data directly from shapes
   b2Filter filterA = b2Shape_GetFilter(shapeIdA);
   b2Filter filterB = b2Shape_GetFilter(shapeIdB);
+
+  std::cout << "\nHandling contact:\n";
+  std::cout << "Shape A category: 0x" << std::hex << filterA.categoryBits << std::dec << "\n";
+  std::cout << "Shape B category: 0x" << std::hex << filterB.categoryBits << std::dec << "\n";
 
   // Get the bodies that own these shapes
   b2BodyId bodyIdA = b2Shape_GetBody(shapeIdA);
   b2BodyId bodyIdB = b2Shape_GetBody(shapeIdB);
 
-  if (!b2Body_IsValid(bodyIdA) || !b2Body_IsValid(bodyIdB)) {
-    return true;
-  }
-
   // Get user data from bodies
   void* userDataA = b2Body_GetUserData(bodyIdA);
   void* userDataB = b2Body_GetUserData(bodyIdB);
+
+  // Try to identify the colliding objects
+  if (userDataA) {
+    PlaceableObject* objA = static_cast<PlaceableObject*>(userDataA);
+    std::cout << "Object A: " << objA->getDisplayName() << "\n";
+  }
+  if (userDataB) {
+    PlaceableObject* objB = static_cast<PlaceableObject*>(userDataB);
+    std::cout << "Object B: " << objB->getDisplayName() << "\n";
+  }
 
   Car* carA = static_cast<Car*>(userDataA);
   Car* carB = static_cast<Car*>(userDataB);
 
   if (carA && filterB.categoryBits == CATEGORY_POWERUP) {
+    std::cout << "Car A colliding with powerup\n";
     carA->onSensorEnter(bodyIdB);
   }
   else if (carB && filterA.categoryBits == CATEGORY_POWERUP) {
+    std::cout << "Car B colliding with powerup\n";
     carB->onSensorEnter(bodyIdA);
   }
 
-  return true; // Allow collision to continue
+  return true;
 }
 
 void* PhysicsSystem::enqueueTask(b2TaskCallback* task, int32_t itemCount,

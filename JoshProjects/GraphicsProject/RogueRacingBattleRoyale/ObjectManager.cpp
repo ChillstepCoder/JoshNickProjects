@@ -18,7 +18,12 @@ void ObjectManager::addObject(size_t templateIndex, const glm::vec2& position) {
     return;
   }
 
+  std::cout << "\nAdding new object from template " << templateIndex << "\n";
   auto newObject = std::make_unique<PlaceableObject>(*m_objectTemplates[templateIndex]);
+  std::cout << "New object display name: " << newObject->getDisplayName() << "\n";
+  std::cout << "Is XP pickup: " << (newObject->isXPPickup() ? "yes" : "no") << "\n";
+  std::cout << "Collision type: " << static_cast<int>(newObject->getCollisionType()) << "\n";
+
   newObject->setPosition(position);
 
   // Handle track alignment for objects that need it
@@ -48,6 +53,8 @@ void ObjectManager::addObject(size_t templateIndex, const glm::vec2& position) {
 
   createPhysicsForObject(newObject.get());
   m_placedObjects.push_back(std::move(newObject));
+
+  updateGrid();
 }
 
 void ObjectManager::removeSelectedObject() {
@@ -110,9 +117,10 @@ bool ObjectManager::isValidPlacement(const PlaceableObject* obj, const glm::vec2
 void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
   if (!m_physicsSystem || !obj) return;
 
-  // Create the body only once
+  // Create the body
   b2BodyId bodyId;
-  if (obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
+  if (obj->getCollisionType() == PhysicsSystem::CollisionType::POWERUP ||
+    obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
     bodyId = m_physicsSystem->createDynamicBody(obj->getPosition().x, obj->getPosition().y);
   }
   else {
@@ -122,8 +130,6 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
   // Set initial rotation and position
   b2Rot rotation = b2MakeRot(obj->getRotation());
   b2Body_SetTransform(bodyId, b2Vec2{ obj->getPosition().x, obj->getPosition().y }, rotation);
-
-  // Store the PlaceableObject pointer in the body's user data
   b2Body_SetUserData(bodyId, static_cast<void*>(obj));
 
   // Set collision filters
@@ -153,46 +159,28 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
     break;
   }
 
-  // Create collision shape
-  if (obj->getDisplayName().find("booster") != std::string::npos) {
-    float width = 400.0f * obj->getScale().x;   // Full width
-    float height = 200.0f * obj->getScale().y;  // Full height
-
-    // Add debug output
-    std::cout << "Creating booster physics with dimensions: " << width << "x" << height
-      << " at rotation: " << obj->getRotation() << std::endl;
-
+  // Create collision shape based on object type
+  if (obj->isBooster()) {
+    // Pill shape for boosters
+    float width = 400.0f * obj->getScale().x;
+    float height = 200.0f * obj->getScale().y;
     m_physicsSystem->createPillShape(bodyId, width, height,
+      categoryBits, maskBits, obj->getCollisionType());
+  }
+  else if (obj->isXPPickup()) {
+    // Circle shape for XP stars
+    float radius = 100.0f * obj->getScale().x;
+    m_physicsSystem->createCircleShape(bodyId, radius,
       categoryBits, maskBits, obj->getCollisionType());
   }
   else {
     float radius = obj->getDisplayName().find("tree") != std::string::npos ? 10.0f :
       obj->getDisplayName().find("cone") != std::string::npos ? 5.0f : 7.5f;
-
     m_physicsSystem->createCircleShape(bodyId, radius,
       categoryBits, maskBits, obj->getCollisionType());
   }
 
-  if (obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
-    b2MassData massData;
-    massData.mass = 1.0f;
-    massData.center = b2Vec2_zero;
-    massData.rotationalInertia = 0.5f;
-    b2Body_SetMassData(bodyId, massData);
-    b2Body_SetLinearDamping(bodyId, 2.0f);
-    b2Body_SetAngularDamping(bodyId, 4.0f);
-  }
-
-  // Store the body ID in the object
   obj->setPhysicsBody(bodyId);
-
-  // Debug output to verify user data was set
-  if (obj->isBooster()) {
-    void* userData = b2Body_GetUserData(bodyId);
-    PlaceableObject* storedObj = static_cast<PlaceableObject*>(userData);
-    std::cout << "Booster physics body created. User data verification: "
-      << (storedObj == obj ? "SUCCESS" : "FAILED") << std::endl;
-  }
 }
 
 void ObjectManager::removeInvalidObjects(const std::vector<PlaceableObject*>& objectsToRemove) {
@@ -229,19 +217,41 @@ void ObjectManager::removeInvalidObjects(const std::vector<PlaceableObject*>& ob
 }
 
 void ObjectManager::update() {
-  // Update existing object positions
+  // Update object positions and timers
   for (auto& obj : m_placedObjects) {
+    if (!obj) continue;
+
     if (m_physicsSystem && b2Body_IsValid(obj->getPhysicsBody())) {
       b2Vec2 pos = b2Body_GetPosition(obj->getPhysicsBody());
       float angle = b2Rot_GetAngle(b2Body_GetRotation(obj->getPhysicsBody()));
       obj->setPosition(glm::vec2(pos.x, pos.y));
       obj->setRotation(angle);
+
+      // Update physics properties for pushable objects
+      if (obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
+        b2Body_SetLinearDamping(obj->getPhysicsBody(), 4.0f);
+        b2Body_SetAngularDamping(obj->getPhysicsBody(), 4.0f);
+      }
+    }
+
+    if (obj->isXPPickup()) {
+      obj->updateRespawnTimer(1.0f / 60.0f);
     }
   }
-  updateGrid();
+
+  // Update grid
+  m_grid.clear();
+  for (const auto& obj : m_placedObjects) {
+    if (obj) {
+      int64_t cell = getGridCell(obj->getPosition());
+      m_grid[cell].push_back(obj.get());
+    }
+  }
 }
 
+
 void ObjectManager::createDefaultTemplates() {
+  std::cout << "\nCreating default templates...\n";
   m_objectTemplates.emplace_back(
     std::make_unique<PlaceableObject>("Textures/pothole.png", PlacementZone::Road));
   m_objectTemplates.emplace_back(
@@ -250,10 +260,18 @@ void ObjectManager::createDefaultTemplates() {
     std::make_unique<PlaceableObject>("Textures/traffic_cone.png", PlacementZone::Anywhere));
   m_objectTemplates.emplace_back(
     std::make_unique<PlaceableObject>("Textures/booster.png", PlacementZone::Road));
+  std::cout << "Adding XP star template\n";
+  m_objectTemplates.emplace_back(
+    std::make_unique<PlaceableObject>("Textures/xpstar.png", PlacementZone::Road));
 
-  // The booster's collision type and auto-align are already set in its constructor
-  if (m_objectTemplates.back()->getDisplayName().find("booster") != std::string::npos) {
-    m_objectTemplates.back()->setScale(glm::vec2(0.15f)); // Adjust scale as needed
+  // Configure XP orb template
+  if (auto* xpstar = m_objectTemplates.back().get()) {
+    std::cout << "Configuring XP star template:\n";
+    std::cout << "Display name: " << xpstar->getDisplayName() << "\n";
+    std::cout << "Is XP pickup: " << (xpstar->isXPPickup() ? "yes" : "no") << "\n";
+    std::cout << "Collision type: " << static_cast<int>(xpstar->getCollisionType()) << "\n";
+    xpstar->setScale(glm::vec2(0.1f));
+    xpstar->setAutoAlignToTrack(true);
   }
 }
 
@@ -306,43 +324,45 @@ int64_t ObjectManager::getGridCell(const glm::vec2& pos) const {
 }
 
 void ObjectManager::updateGrid() {
-  m_grid.clear();
+  // Clear vectors
+  for (auto& pair : m_grid) {
+    pair.second.clear();
+  }
+
+  // Re-add all objects to their current cells
   for (const auto& obj : m_placedObjects) {
-    int64_t cell = getGridCell(obj->getPosition());
-    m_grid[cell].push_back(obj.get());
+    if (obj) {
+      int64_t cell = getGridCell(obj->getPosition());
+      m_grid[cell].push_back(obj.get());
+    }
   }
 }
 
 std::vector<const PlaceableObject*> ObjectManager::getNearbyObjects(const glm::vec2& pos, float radius) {
   std::vector<const PlaceableObject*> nearby;
+  nearby.reserve(16);
 
-  if (DEBUG_OUTPUT) {
-    std::cout << "\nGetting nearby objects from position (" << pos.x << ", " << pos.y
-      << ") with radius " << radius << std::endl;
-  }
-
+  // Calculate grid cells to check
   int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
   int centerX = static_cast<int>(std::floor(pos.x / CELL_SIZE));
   int centerY = static_cast<int>(std::floor(pos.y / CELL_SIZE));
 
   std::set<const PlaceableObject*> uniqueObjects;
 
+  // Iterate through cells
   for (int y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
     for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
       int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
       auto it = m_grid.find(cell);
       if (it != m_grid.end()) {
+        // Check each object in the cell
         for (auto* obj : it->second) {
-          if (uniqueObjects.insert(obj).second) {
+          if (obj && uniqueObjects.insert(obj).second) {
             nearby.push_back(obj);
           }
         }
       }
     }
-  }
-
-  if (DEBUG_OUTPUT) {
-    std::cout << "Found " << nearby.size() << " unique objects in grid" << std::endl;
   }
 
   return nearby;

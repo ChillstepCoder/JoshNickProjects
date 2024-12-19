@@ -252,7 +252,7 @@ void AIDriver::updateSteering() {
 
         // Strong response to very close cars
         if (mostThreatening->distance < 30.0f) {
-          distanceThreat = std::pow(distanceThreat, 0.5f); // Square root to increase close-range response
+          distanceThreat = std::pow(distanceThreat, 0.5f);
         }
 
         // Angle weight with more forgiving falloff for close objects
@@ -766,7 +766,7 @@ void AIDriver::updateStuckState(float deltaTime) {
       }
     }
     else {
-      // Moving well - reset timers
+      // Reset timers
       m_stuckState.stuckTimer = 0.0f;
       m_stuckState.reverseStuckTimer = 0.0f;
     }
@@ -854,7 +854,7 @@ void AIDriver::applyStuckRecovery() {
 
   // Mix reverse direction with centering force
   float centeringStrength = glm::clamp(distanceToSpline / 50.0f, 0.0f, 1.0f);
-  centeringStrength *= m_config.centeringForce; // Use existing centering force config
+  centeringStrength *= m_config.centeringForce;
 
   // Blend between pure reverse direction and centering direction
   glm::vec2 targetDir = glm::normalize(
@@ -884,7 +884,7 @@ void AIDriver::applyStuckRecovery() {
   m_currentInput.accelerating = false;
   m_currentInput.braking = true;
 
-  // Debug output if needed
+  // Debug output
   if (DEBUG_OUTPUT) {
     std::cout << "Recovery - Angle diff: " << glm::degrees(angleDiff)
       << " Distance to spline: " << distanceToSpline

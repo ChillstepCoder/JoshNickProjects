@@ -68,6 +68,7 @@ public:
 
 
 private:
+  static constexpr bool DEBUG_OUTPUT = true;
   b2WorldId m_worldId;
   std::vector<b2BodyId> m_dynamicBodies;
 

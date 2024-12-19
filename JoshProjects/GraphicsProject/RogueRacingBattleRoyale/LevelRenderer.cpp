@@ -292,10 +292,19 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
     float baseWidth = texture.width * obj->getScale().x;
     float baseHeight = texture.height * obj->getScale().y;
 
+    // Skip rendering inactive XP orbs
+    if (obj->isXPPickup() && !obj->getXPProperties().isActive) {
+      continue;
+    }
+
+    // Calculate depth based on object type
     float depth;
     std::string name = obj->getDisplayName();
     if (name.find("tree") != std::string::npos) {
       depth = 0.0f;       // Trees on top
+    }
+    else if (name.find("xp_orb") != std::string::npos) {
+      depth = 0.2f;       // XP orbs above potholes but below other objects
     }
     else if (name.find("pothole") != std::string::npos) {
       depth = 0.7f;       // Potholes on bottom
@@ -317,6 +326,14 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
     JAGEngine::ColorRGBA8 color = obj->isSelected() ?
       JAGEngine::ColorRGBA8(255, 255, 255, 255) :
       JAGEngine::ColorRGBA8(200, 200, 200, 255);
+
+    // Add pulsing effect for XP orbs
+    if (obj->isXPPickup()) {
+      static float pulseTime = 0.0f;
+      pulseTime += 1.0f / 60.0f;  // Increment based on frame time
+      float pulse = (sin(pulseTime * 4.0f) + 1.0f) * 0.5f;  // 0 to 1 pulsing
+      color.a = static_cast<uint8_t>(200 + pulse * 55);  // Pulse alpha between 200 and 255
+    }
 
     m_spriteBatch.draw(destRect,
       glm::vec4(0, 0, 1, 1),
