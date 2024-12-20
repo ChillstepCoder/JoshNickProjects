@@ -52,8 +52,9 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         if (downBlock.block->getBlockID() == BlockID::AIR) { // If downBlock is air, transfers all water to downBlock
 
-            moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), waterBlock.block->getWaterAmount(), blockManager);
-            continue;
+            if (moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), waterBlock.block->getWaterAmount(), blockManager)) {
+                continue;
+            }
 
         } else if (downBlock.block->getBlockID() == BlockID::WATER) { // If downBlock is water, check if it is full
             if (downBlock.block->getWaterAmount() < WATER_LEVELS) { // If downBlock isnt full
@@ -65,8 +66,9 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                     waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
                     chunk.m_isMeshDirty = true;
                 } else { // The waterBlock doesnt have enough to fill up downBlock
-                    moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount(), blockManager);
-                    continue;
+                    if (moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount(), blockManager)) {
+                        continue;
+                    }
                 }
             }
         }
@@ -100,19 +102,16 @@ bool CellularAutomataManager::moveWaterToBlock(BlockHandle& sourceBlock, BlockHa
         blockManager.placeBlock(targetBlock, glm::vec2(targetPos.x, targetPos.y));
     }
 
-    targetBlock.block->setWaterAmount(amountToPush);
-
     if (amountToPush >= sourceBlock.block->getWaterAmount()) {
+        targetBlock.block->setWaterAmount(sourceBlock.block->getWaterAmount());
         blockManager.destroyBlock(sourceBlock);
         return true;
     } else {
+        targetBlock.block->setWaterAmount(amountToPush);
         sourceBlock.block->setWaterAmount(sourceBlock.block->getWaterAmount() - amountToPush);
-        return true;
+        return false;
     }
 
-
-    assert(false);
-    return false;
 }
 
 // TODO BEN: HOMEWORK! Implement the following functions
