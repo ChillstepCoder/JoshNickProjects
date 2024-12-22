@@ -372,7 +372,6 @@ bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& c
     const float farthestChunkAllowed = 3.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
-
     return distance > unloadDistance;
 
 }
