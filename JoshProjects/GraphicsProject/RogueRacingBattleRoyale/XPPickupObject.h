@@ -3,14 +3,24 @@
 #pragma once
 #include "PlaceableObject.h"
 #include "ObjectProperties.h"
+#include <iostream>
 
-// Forward declare Car
 class Car;
 
 class XPPickupObject : public PlaceableObject {
 public:
   XPPickupObject(const std::string& texturePath, PlacementZone zone);
   XPPickupObject(const XPPickupObject& other);
+
+  void createCollisionShape(b2BodyId bodyId, PhysicsSystem* physics) override {
+    float radius = 10.0f; //10 is perfect
+    std::cout << "Creating XP star collision shape with radius: " << radius << std::endl;
+
+    physics->createCircleShape(bodyId, radius,
+      CATEGORY_POWERUP,
+      CATEGORY_CAR,
+      CollisionType::POWERUP);
+  }
 
   void onCarCollision(Car* car) override;
   std::unique_ptr<PlaceableObject> clone() const override;

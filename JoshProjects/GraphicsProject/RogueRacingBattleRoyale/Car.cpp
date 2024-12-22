@@ -191,8 +191,6 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
 }
 
 void Car::onSensorEnter(b2BodyId sensorBody) {
-  std::cout << "Car sensor enter with body: " << sensorBody.index1 << std::endl;
-
   if (!b2Body_IsValid(sensorBody)) {
     std::cout << "Invalid sensor body" << std::endl;
     return;
@@ -210,17 +208,8 @@ void Car::onSensorEnter(b2BodyId sensorBody) {
     return;
   }
 
-  std::cout << "Processing collision with: " << obj->getDisplayName() << std::endl;
-
-  if (obj->isXPPickup()) {
-    XPPickupObject* xpObj = static_cast<XPPickupObject*>(obj);
-    if (xpObj->getXPProperties().isActive) {
-      std::cout << "Collecting XP" << std::endl;
-      m_properties.totalXP++;
-      xpObj->setActive(false);
-    }
-  }
-  else if (obj->isBooster()) {
+  // Only handle boosters here since XP pickups handle themselves
+  if (obj->isBooster()) {
     std::cout << "Activating booster" << std::endl;
     m_properties.isOnBooster = true;
     m_properties.currentBooster = obj;

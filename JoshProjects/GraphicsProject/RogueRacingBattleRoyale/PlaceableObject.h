@@ -55,6 +55,14 @@ public:
     return std::make_unique<PlaceableObject>(*this);
   }
 
+  virtual void createCollisionShape(b2BodyId bodyId, PhysicsSystem* physics) {
+    // Default simple circle shape for basic objects
+    float radius = 5.5f;
+    physics->createCircleShape(bodyId, radius,
+      CATEGORY_SOLID, CATEGORY_CAR | CATEGORY_PUSHABLE,
+      m_collisionType);
+  }
+
   // Virtual functions overridden by derived classes
   virtual bool isBooster() const { return false; }
   virtual bool isXPPickup() const { return false; }

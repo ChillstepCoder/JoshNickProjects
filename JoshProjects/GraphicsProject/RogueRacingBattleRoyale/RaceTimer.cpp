@@ -62,7 +62,7 @@ void RaceTimer::draw(JAGEngine::SpriteBatch& batch, const JAGEngine::Camera2D& c
     return;
   }
 
-  std::cout << "Drawing race timer - Time: " << formatTime() << std::endl;
+  //std::cout << "Drawing race timer - Time: " << formatTime() << std::endl;
 
   // Draw the timer text
   drawCenteredText(batch, camera, formatTime());

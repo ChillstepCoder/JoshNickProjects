@@ -1539,7 +1539,7 @@ void LevelEditorScreen::drawHUD() {
 
   // Draw race timer if running
   if (m_raceTimer && m_raceTimer->isRunning()) {
-    std::cout << "Drawing race timer..." << std::endl;
+    //std::cout << "Drawing race timer..." << std::endl;
     int currentLap = m_testCars[0]->getProperties().currentLap;
     m_raceTimer->draw(m_hudSpriteBatch, m_hudCamera, currentLap, m_totalLaps);
   }

@@ -117,7 +117,6 @@ bool ObjectManager::isValidPlacement(const PlaceableObject* obj, const glm::vec2
 void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
   if (!m_physicsSystem || !obj) return;
 
-  // Create the body
   b2BodyId bodyId;
   if (obj->getCollisionType() == CollisionType::POWERUP ||
     obj->getCollisionType() == CollisionType::PUSHABLE) {
@@ -127,86 +126,22 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
     bodyId = m_physicsSystem->createStaticBody(obj->getPosition().x, obj->getPosition().y);
   }
 
-  if (!b2Body_IsValid(bodyId)) {
-    return;
-  }
+  if (!b2Body_IsValid(bodyId)) return;
 
-  // Set initial rotation and position
+  // Set transform and user data
   b2Rot rotation = b2MakeRot(obj->getRotation());
   b2Body_SetTransform(bodyId, b2Vec2{ obj->getPosition().x, obj->getPosition().y }, rotation);
-
-  // Set user data and verify
   b2Body_SetUserData(bodyId, static_cast<void*>(obj));
-  void* verifyData = b2Body_GetUserData(bodyId);
-  if (verifyData != static_cast<void*>(obj)) {
-    std::cout << "WARNING: User data not set correctly!" << std::endl;
-    std::cout << "Expected: " << static_cast<void*>(obj) << std::endl;
-    std::cout << "Got: " << verifyData << std::endl;
-  }
 
-  // Set collision filters
-  uint16_t categoryBits;
-  uint16_t maskBits;
-
-  switch (obj->getCollisionType()) {
-  case CollisionType::HAZARD:
-    categoryBits = CATEGORY_HAZARD;
-    maskBits = CATEGORY_CAR;
-    break;
-  case CollisionType::POWERUP:
-    std::cout << "Setting POWERUP collision category\n";
-    categoryBits = CATEGORY_POWERUP;
-    maskBits = CATEGORY_CAR;
-    break;
-  case CollisionType::PUSHABLE:
-    categoryBits = CATEGORY_PUSHABLE;
-    maskBits = CATEGORY_CAR |
-      CATEGORY_SOLID |
-      CATEGORY_PUSHABLE |
-      CATEGORY_BARRIER;
-    break;
-  default:
-    categoryBits = CATEGORY_SOLID;
-    maskBits = CATEGORY_CAR |
-      CATEGORY_PUSHABLE;
-    break;
-  }
-
-  std::cout << "Creating physics shape for " << obj->getDisplayName()
-    << " with category: " << categoryBits
-    << " and mask: " << maskBits << "\n";
-
-  // Create collision shape based on object type
-  if (obj->isBooster()) {
-    // Pill shape for boosters
-    float width = 400.0f * obj->getScale().x;
-    float height = 200.0f * obj->getScale().y;
-    std::cout << "Creating booster shape with dimensions: " << width << "x" << height << "\n";
-    m_physicsSystem->createPillShape(bodyId, width, height,
-      categoryBits, maskBits, obj->getCollisionType());
-  }
-  else if (obj->isXPPickup()) {
-    // Circle shape for XP stars
-    float radius = 100.0f * obj->getScale().x;
-    std::cout << "Creating XP pickup shape with radius: " << radius << "\n";
-    m_physicsSystem->createCircleShape(bodyId, radius,
-      categoryBits, maskBits, obj->getCollisionType());
-  }
-  else {
-    float radius = obj->getDisplayName().find("tree") != std::string::npos ? 10.0f :
-      obj->getDisplayName().find("cone") != std::string::npos ? 5.0f : 7.5f;
-    std::cout << "Creating standard shape with radius: " << radius << "\n";
-    m_physicsSystem->createCircleShape(bodyId, radius,
-      categoryBits, maskBits, obj->getCollisionType());
-  }
-
-  // Store the physics body ID in the object
+  // Let the object create its own collision shape
+  obj->createCollisionShape(bodyId, m_physicsSystem);
   obj->setPhysicsBody(bodyId);
 
-  // Verify the setup
-  std::cout << "Physics object created. Body ID: " << bodyId.index1
-    << " Object type: " << obj->getDisplayName()
-    << " Is sensor: " << (obj->getCollisionType() == CollisionType::POWERUP) << "\n";
+  // Set damping for pushable objects
+  if (obj->getCollisionType() == CollisionType::PUSHABLE) {
+    b2Body_SetLinearDamping(bodyId, 4.0f);
+    b2Body_SetAngularDamping(bodyId, 4.0f);
+  }
 }
 
 void ObjectManager::removeInvalidObjects(const std::vector<PlaceableObject*>& objectsToRemove) {
