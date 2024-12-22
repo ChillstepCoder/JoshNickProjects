@@ -3,7 +3,14 @@
 #pragma once
 #include <vector>
 #include <memory>
+
 #include "PlaceableObject.h"
+#include "BoosterObject.h"
+#include "XPPickupObject.h"
+#include "PotholeObject.h"
+#include "TreeObject.h"
+#include "TrafficConeObject.h"
+
 #include "SplineTrack.h"
 #include "PhysicsSystem.h"
 #include <unordered_map>

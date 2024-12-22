@@ -19,7 +19,7 @@ void ObjectManager::addObject(size_t templateIndex, const glm::vec2& position) {
   }
 
   std::cout << "\nAdding new object from template " << templateIndex << "\n";
-  auto newObject = std::make_unique<PlaceableObject>(*m_objectTemplates[templateIndex]);
+  auto newObject = m_objectTemplates[templateIndex]->clone();
   std::cout << "New object display name: " << newObject->getDisplayName() << "\n";
   std::cout << "Is XP pickup: " << (newObject->isXPPickup() ? "yes" : "no") << "\n";
   std::cout << "Collision type: " << static_cast<int>(newObject->getCollisionType()) << "\n";
@@ -119,68 +119,94 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
 
   // Create the body
   b2BodyId bodyId;
-  if (obj->getCollisionType() == PhysicsSystem::CollisionType::POWERUP ||
-    obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
+  if (obj->getCollisionType() == CollisionType::POWERUP ||
+    obj->getCollisionType() == CollisionType::PUSHABLE) {
     bodyId = m_physicsSystem->createDynamicBody(obj->getPosition().x, obj->getPosition().y);
   }
   else {
     bodyId = m_physicsSystem->createStaticBody(obj->getPosition().x, obj->getPosition().y);
   }
 
+  if (!b2Body_IsValid(bodyId)) {
+    return;
+  }
+
   // Set initial rotation and position
   b2Rot rotation = b2MakeRot(obj->getRotation());
   b2Body_SetTransform(bodyId, b2Vec2{ obj->getPosition().x, obj->getPosition().y }, rotation);
+
+  // Set user data and verify
   b2Body_SetUserData(bodyId, static_cast<void*>(obj));
+  void* verifyData = b2Body_GetUserData(bodyId);
+  if (verifyData != static_cast<void*>(obj)) {
+    std::cout << "WARNING: User data not set correctly!" << std::endl;
+    std::cout << "Expected: " << static_cast<void*>(obj) << std::endl;
+    std::cout << "Got: " << verifyData << std::endl;
+  }
 
   // Set collision filters
   uint16_t categoryBits;
   uint16_t maskBits;
 
   switch (obj->getCollisionType()) {
-  case PhysicsSystem::CollisionType::HAZARD:
-    categoryBits = PhysicsSystem::CATEGORY_HAZARD;
-    maskBits = PhysicsSystem::CATEGORY_CAR;
+  case CollisionType::HAZARD:
+    categoryBits = CATEGORY_HAZARD;
+    maskBits = CATEGORY_CAR;
     break;
-  case PhysicsSystem::CollisionType::POWERUP:
-    categoryBits = PhysicsSystem::CATEGORY_POWERUP;
-    maskBits = PhysicsSystem::CATEGORY_CAR;
+  case CollisionType::POWERUP:
+    std::cout << "Setting POWERUP collision category\n";
+    categoryBits = CATEGORY_POWERUP;
+    maskBits = CATEGORY_CAR;
     break;
-  case PhysicsSystem::CollisionType::PUSHABLE:
-    categoryBits = PhysicsSystem::CATEGORY_PUSHABLE;
-    maskBits = PhysicsSystem::CATEGORY_CAR |
-      PhysicsSystem::CATEGORY_SOLID |
-      PhysicsSystem::CATEGORY_PUSHABLE |
-      PhysicsSystem::CATEGORY_BARRIER;
+  case CollisionType::PUSHABLE:
+    categoryBits = CATEGORY_PUSHABLE;
+    maskBits = CATEGORY_CAR |
+      CATEGORY_SOLID |
+      CATEGORY_PUSHABLE |
+      CATEGORY_BARRIER;
     break;
   default:
-    categoryBits = PhysicsSystem::CATEGORY_SOLID;
-    maskBits = PhysicsSystem::CATEGORY_CAR |
-      PhysicsSystem::CATEGORY_PUSHABLE;
+    categoryBits = CATEGORY_SOLID;
+    maskBits = CATEGORY_CAR |
+      CATEGORY_PUSHABLE;
     break;
   }
+
+  std::cout << "Creating physics shape for " << obj->getDisplayName()
+    << " with category: " << categoryBits
+    << " and mask: " << maskBits << "\n";
 
   // Create collision shape based on object type
   if (obj->isBooster()) {
     // Pill shape for boosters
     float width = 400.0f * obj->getScale().x;
     float height = 200.0f * obj->getScale().y;
+    std::cout << "Creating booster shape with dimensions: " << width << "x" << height << "\n";
     m_physicsSystem->createPillShape(bodyId, width, height,
       categoryBits, maskBits, obj->getCollisionType());
   }
   else if (obj->isXPPickup()) {
     // Circle shape for XP stars
     float radius = 100.0f * obj->getScale().x;
+    std::cout << "Creating XP pickup shape with radius: " << radius << "\n";
     m_physicsSystem->createCircleShape(bodyId, radius,
       categoryBits, maskBits, obj->getCollisionType());
   }
   else {
     float radius = obj->getDisplayName().find("tree") != std::string::npos ? 10.0f :
       obj->getDisplayName().find("cone") != std::string::npos ? 5.0f : 7.5f;
+    std::cout << "Creating standard shape with radius: " << radius << "\n";
     m_physicsSystem->createCircleShape(bodyId, radius,
       categoryBits, maskBits, obj->getCollisionType());
   }
 
+  // Store the physics body ID in the object
   obj->setPhysicsBody(bodyId);
+
+  // Verify the setup
+  std::cout << "Physics object created. Body ID: " << bodyId.index1
+    << " Object type: " << obj->getDisplayName()
+    << " Is sensor: " << (obj->getCollisionType() == CollisionType::POWERUP) << "\n";
 }
 
 void ObjectManager::removeInvalidObjects(const std::vector<PlaceableObject*>& objectsToRemove) {
@@ -228,7 +254,7 @@ void ObjectManager::update() {
       obj->setRotation(angle);
 
       // Update physics properties for pushable objects
-      if (obj->getCollisionType() == PhysicsSystem::CollisionType::PUSHABLE) {
+      if (obj->getCollisionType() == CollisionType::PUSHABLE) {
         b2Body_SetLinearDamping(obj->getPhysicsBody(), 4.0f);
         b2Body_SetAngularDamping(obj->getPhysicsBody(), 4.0f);
       }
@@ -252,28 +278,30 @@ void ObjectManager::update() {
 
 void ObjectManager::createDefaultTemplates() {
   std::cout << "\nCreating default templates...\n";
+
+  // Pothole
   m_objectTemplates.emplace_back(
-    std::make_unique<PlaceableObject>("Textures/pothole.png", PlacementZone::Road));
+    std::make_unique<PotholeObject>("Textures/pothole.png", PlacementZone::Road));
+
+  // Tree
   m_objectTemplates.emplace_back(
-    std::make_unique<PlaceableObject>("Textures/tree.png", PlacementZone::Grass));
+    std::make_unique<TreeObject>("Textures/tree.png", PlacementZone::Grass));
+
+  // Traffic cone
   m_objectTemplates.emplace_back(
-    std::make_unique<PlaceableObject>("Textures/traffic_cone.png", PlacementZone::Anywhere));
+    std::make_unique<TrafficConeObject>("Textures/traffic_cone.png", PlacementZone::Anywhere));
+
+  // Booster
   m_objectTemplates.emplace_back(
-    std::make_unique<PlaceableObject>("Textures/booster.png", PlacementZone::Road));
+    std::make_unique<BoosterObject>("Textures/booster.png", PlacementZone::Road));
+
+  // XP star
   std::cout << "Adding XP star template\n";
   m_objectTemplates.emplace_back(
-    std::make_unique<PlaceableObject>("Textures/xpstar.png", PlacementZone::Road));
-
-  // Configure XP orb template
-  if (auto* xpstar = m_objectTemplates.back().get()) {
-    std::cout << "Configuring XP star template:\n";
-    std::cout << "Display name: " << xpstar->getDisplayName() << "\n";
-    std::cout << "Is XP pickup: " << (xpstar->isXPPickup() ? "yes" : "no") << "\n";
-    std::cout << "Collision type: " << static_cast<int>(xpstar->getCollisionType()) << "\n";
-    xpstar->setScale(glm::vec2(0.1f));
-    xpstar->setAutoAlignToTrack(true);
-  }
+    std::make_unique<XPPickupObject>("Textures/xpstar.png", PlacementZone::Road));
 }
+
+
 
 void ObjectManager::addTemplate(std::unique_ptr<PlaceableObject> templ) {
   m_objectTemplates.push_back(std::move(templ));

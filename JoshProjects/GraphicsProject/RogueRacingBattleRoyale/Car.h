@@ -9,8 +9,8 @@
 #include "JAGEngine/Vertex.h"
 #include <array>
 #include <memory>
-#include "PlaceableObject.h"
 
+class PlaceableObject;
 class ObjectManager;
 
 class Car {
@@ -83,6 +83,7 @@ public:
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
   void onSensorEnter(b2BodyId sensorBody);
   void onSensorExit(b2BodyId sensorBody);
+  void handleBoosterCollision(const PlaceableObject* booster);
 
   CarProperties& getProperties() { return m_properties; }
   void setProperties(const CarProperties& props) {
@@ -136,7 +137,6 @@ private:
   void updateMovement(const InputState& input);
   void updateBoostEffects();
   void checkBoosterCollisions(ObjectManager* objectManager);
-  void handleBoosterCollision(const PlaceableObject* booster);
   void handleTurning(const InputState& input, float forwardSpeed);
   void applyDrag(const b2Vec2& currentVel, float forwardSpeed);
   void applyFriction(const b2Vec2& currentVel);

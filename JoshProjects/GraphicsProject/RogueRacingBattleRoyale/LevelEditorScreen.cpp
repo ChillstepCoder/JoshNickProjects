@@ -1343,7 +1343,7 @@ void LevelEditorScreen::initTestMode() {
 
     // Copy templates first
     for (const auto& tmpl : existingTemplates) {
-      newManager->addTemplate(std::make_unique<PlaceableObject>(*tmpl));
+      newManager->addTemplate(tmpl->clone());
     }
 
     // Transfer existing objects
@@ -1359,18 +1359,41 @@ void LevelEditorScreen::initTestMode() {
     }
 
     m_objectManager = std::move(newManager);
+  }
 
-    // Initialize countdown
-    if (!m_countdownFont || !m_countdownFont->getTextureID()) {
-      std::cerr << "Font not properly initialized!" << std::endl;
-      return;
-    }
+  // Initialize race timer and countdown
+  m_raceTimer = std::make_unique<RaceTimer>();
+  m_raceCountdown = std::make_unique<RaceCountdown>();
 
-    m_readyToStart = true;
+  // Initialize countdown font and settings
+  if (m_countdownFont) {
+    auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
+    countdownFont->init("Fonts/titilium_bold.ttf", 72);
+    m_raceCountdown->setFont(std::move(countdownFont));
+  }
+
+  // Initialize race timer font
+  if (m_raceTimer) {
+    m_raceTimer->init("Fonts/titilium_bold.ttf", 72);
+  }
+
+  // Set up countdown callbacks
+  m_raceCountdown->setOnCountdownStart([this]() {
+    std::cout << "Countdown started!" << std::endl;
     m_enableAI = false;
     m_inputEnabled = false;
+    });
 
-  }
+  m_raceCountdown->setOnCountdownComplete([this]() {
+    std::cout << "Countdown complete - Starting race timer!" << std::endl;
+    m_enableAI = true;
+    m_inputEnabled = true;
+    if (m_raceTimer) {
+      m_raceTimer->reset();
+      m_raceTimer->start();
+      std::cout << "Race timer started!" << std::endl;
+    }
+    });
 
   // Load car texture
   m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
@@ -1379,12 +1402,10 @@ void LevelEditorScreen::initTestMode() {
   int numCars = startPositions.size();
   std::vector<JAGEngine::ColorRGBA8> carColors(numCars);
   for (int i = 0; i < numCars; i++) {
-    // Convert index to hue (0 to 1)
     float hue = float(i) / float(numCars);
-    float saturation = 0.8f;  // Slightly reduced for better visibility
+    float saturation = 0.8f;
     float value = 1.0f;
 
-    // Convert HSV to RGB
     float c = value * saturation;
     float x = c * (1 - std::abs(std::fmod(hue * 6, 2.0f) - 1));
     float m = value - c;
@@ -1410,56 +1431,48 @@ void LevelEditorScreen::initTestMode() {
     const auto& pos = startPositions[i];
     b2BodyId carBody = m_physicsSystem->createDynamicBody(pos.position.x, pos.position.y);
 
-    // Cars should collide with everything using the combined mask
-    uint16_t carCategory = PhysicsSystem::CATEGORY_CAR;
-    uint16_t carMask = PhysicsSystem::MASK_CAR;
+    uint16_t carCategory = CATEGORY_CAR;
+    uint16_t carMask = MASK_CAR;
 
     m_physicsSystem->createPillShape(carBody, 15.0f, 15.0f,
-      carCategory, carMask, PhysicsSystem::CollisionType::DEFAULT);
+      carCategory, carMask, CollisionType::DEFAULT);
 
-    // Adjusted physics properties for better car-to-car collisions
-    b2Body_SetLinearDamping(carBody, 0.8f);     // Increased for more stability
-    b2Body_SetAngularDamping(carBody, 3.0f);    // Increased to prevent excessive spinning
+    b2Body_SetLinearDamping(carBody, 0.8f);
+    b2Body_SetAngularDamping(carBody, 3.0f);
 
-    // Create mass data with adjusted properties
     b2MassData massData;
     massData.mass = 15.0f;
     massData.center = b2Vec2_zero;
-    massData.rotationalInertia = 2.5f;  // Slightly increased for more stability
+    massData.rotationalInertia = 2.5f;
     b2Body_SetMassData(carBody, massData);
 
     auto car = std::make_unique<Car>(carBody);
 
-    // Initialize properties ONCE with all needed values
     Car::CarProperties props;
-    props = Car::CarProperties();  // Get defaults
-    props.totalXP = 0;  // Explicitly set XP
+    props = Car::CarProperties();
+    props.totalXP = 0;
     props.racePosition = static_cast<int>(i + 1);
-    car->setProperties(props);  // Set properties ONCE
+    car->setProperties(props);
 
     car->setObjectManager(m_objectManager.get());
     car->setTrack(m_track.get());
     car->resetPosition({ pos.position.x, pos.position.y }, pos.angle);
     car->setColor(carColors[i]);
 
-    // Create AI driver for all cars except the first one (player)
     if (i > 0) {
       auto aiDriver = std::make_unique<AIDriver>(car.get());
       aiDriver->setConfig(m_aiConfig);
       aiDriver->setObjectManager(m_objectManager.get());
-      std::cout << "Set object manager for AI car " << i << " (manager addr: "
-        << m_objectManager.get() << ")\n";
       m_aiDrivers.push_back(std::move(aiDriver));
     }
 
     m_testCars.push_back(std::move(car));
 
-    // Initialize tracking info
     m_carTrackingInfo.push_back(CarTrackingInfo{
-        glm::vec2(0.0f),
-        0.0f,
-        static_cast<int>(i + 1),
-        i == 0
+      glm::vec2(0.0f),
+      0.0f,
+      static_cast<int>(i + 1),
+      i == 0
       });
   }
 
@@ -1470,7 +1483,7 @@ void LevelEditorScreen::initTestMode() {
     }
   }
 
-  // Initialize AI config with default values
+  // Initialize AI config
   m_aiConfig.lookAheadDistance = 200.0f;
   m_aiConfig.centeringForce = 0.8f;
   m_aiConfig.turnAnticipation = 1.2f;
@@ -1481,75 +1494,53 @@ void LevelEditorScreen::initTestMode() {
   m_levelRenderer->setCarTexture(m_carTexture);
   m_levelRenderer->setCars(m_testCars);
   m_camera.setScale(m_testCameraScale);
+
+  m_readyToStart = true;
+  m_enableAI = false;
+  m_inputEnabled = false;
 }
 
 void LevelEditorScreen::drawHUD() {
-  if (!m_raceCountdown || !m_countdownFont) {
-    std::cout << "Missing font or countdown" << std::endl;
+  if (!m_countdownFont) {
+    std::cout << "Error: Missing countdown font" << std::endl;
     return;
   }
 
-  JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
-  int screenWidth = game->getWindow().getScreenWidth();
-  int screenHeight = game->getWindow().getScreenHeight();
-
+  // Setup GL state
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   m_textRenderingProgram.use();
 
-  glActiveTexture(GL_TEXTURE0);
-
-  GLuint fontTextureID = m_countdownFont->getTextureID();
-  //std::cout << "Drawing HUD - Font texture ID: " << fontTextureID << std::endl;
-  glBindTexture(GL_TEXTURE_2D, fontTextureID);
-
-  GLint textureUniform = m_textRenderingProgram.getUniformLocation("mySampler");
-  glUniform1i(textureUniform, 0);
-
+  // Update HUD camera
   m_hudCamera.update();
-
   glm::mat4 projectionMatrix = m_hudCamera.getCameraMatrix();
 
   GLint pUniform = m_textRenderingProgram.getUniformLocation("P");
   glUniformMatrix4fv(pUniform, 1, GL_FALSE, &(projectionMatrix[0][0]));
 
-  // Debug projection matrix
-  //std::cout << "Projection Matrix:\n";
-  //for (int i = 0; i < 4; i++) {
-  //  std::cout << projectionMatrix[i].x << ", "
-  //    << projectionMatrix[i].y << ", "
-  //    << projectionMatrix[i].z << ", "
-  //    << projectionMatrix[i].w << std::endl;
-  //}
-
-  // Debug the shader state
-  GLint currentProgram;
-  glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);
-  //std::cout << "Current shader program: " << currentProgram
-  //  << " (expected: " << m_textRenderingProgram.getProgramID() << ")" << std::endl;
-
   m_hudSpriteBatch.begin();
 
+  // Draw countdown if active
   std::string countdownText = m_raceCountdown->getText();
   if (!countdownText.empty()) {
-    // Keep screen center position
-    glm::vec2 textPos(screenWidth / 2.0f, screenHeight / 2.0f);
+    JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
+    glm::vec2 textPos(game->getWindow().getScreenWidth() / 2.0f,
+      game->getWindow().getScreenHeight() / 2.0f);
 
     m_countdownFont->draw(m_hudSpriteBatch,
       countdownText.c_str(),
       textPos,
-      glm::vec2(4.0f),     
+      glm::vec2(4.0f),
       0.0f,
-      JAGEngine::ColorRGBA8(0, 0, 0, 0),
+      JAGEngine::ColorRGBA8(0, 0, 0, 255),
       JAGEngine::Justification::MIDDLE);
-
-    //std::cout << "Drawing at: " << textPos.x << ", " << textPos.y
-    //  << " with scale 6.0" << std::endl;
   }
 
+  // Draw race timer if running
   if (m_raceTimer && m_raceTimer->isRunning()) {
-    int currentLap = m_testCars[0]->getProperties().currentLap;  // Player car
+    std::cout << "Drawing race timer..." << std::endl;
+    int currentLap = m_testCars[0]->getProperties().currentLap;
     m_raceTimer->draw(m_hudSpriteBatch, m_hudCamera, currentLap, m_totalLaps);
   }
 
@@ -1557,12 +1548,6 @@ void LevelEditorScreen::drawHUD() {
   m_hudSpriteBatch.renderBatch();
 
   m_textRenderingProgram.unuse();
-
-  // Check for GL errors
-  GLenum err;
-  while ((err = glGetError()) != GL_NO_ERROR) {
-    std::cout << "GL Error in drawHUD: 0x" << std::hex << err << std::dec << std::endl;
-  }
 }
 
 void LevelEditorScreen::drawTestMode() {
@@ -1934,7 +1919,7 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       }
 
       if (ImGui::BeginPopup("BoosterPropsEdit")) {
-        auto& bp = const_cast<PlaceableObject::BoosterProperties&>(boosterProps);
+        auto& bp = const_cast<BoosterProperties&>(boosterProps);
         ImGui::SliderFloat("Max Speed", &bp.maxBoostSpeed, 500.0f, 3000.0f);
         ImGui::SliderFloat("Acceleration Rate", &bp.boostAccelRate, 50.0f, 500.0f);
         ImGui::SliderFloat("Decay Rate", &bp.boostDecayRate, 0.8f, 0.99f);
