@@ -89,9 +89,11 @@ void PhysicsSystem::findOverlappingBodies(b2BodyId carBody, Car* car) {
 
     if (distSq < detectionRadius * detectionRadius) {
       if (obj->isXPPickup()) {
-        std::cout << "XP Pickup overlap detected at distance: " << sqrt(distSq) << std::endl;
-        std::cout << "Car position: " << carPos.x << "," << carPos.y << std::endl;
-        std::cout << "XP position: " << otherPos.x << "," << otherPos.y << std::endl;
+        if (DEBUG_OUTPUT) {
+          std::cout << "XP Pickup overlap detected at distance: " << sqrt(distSq) << std::endl;
+          std::cout << "Car position: " << carPos.x << "," << carPos.y << std::endl;
+          std::cout << "XP position: " << otherPos.x << "," << otherPos.y << std::endl;
+        }
       }
       obj->onCarCollision(car);
     }
@@ -138,7 +140,9 @@ b2BodyId PhysicsSystem::createDynamicBody(float x, float y) {
     }
 
     if (!bodyExists) {
-      std::cout << "Adding new dynamic body " << bodyId.index1 << " to tracking list" << std::endl;
+      if (DEBUG_OUTPUT) {
+        std::cout << "Adding new dynamic body " << bodyId.index1 << " to tracking list" << std::endl;
+      }
       m_dynamicBodies.push_back(bodyId);
     }
   }
@@ -225,15 +229,15 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
   uint16_t categoryBits, uint16_t maskBits,
   CollisionType collisionType,
   float density, float friction) {
-
-  std::cout << "\nCreating circle shape at:"
-    << "\nRadius: " << radius
-    << "\nCategory: " << categoryBits
-    << "\nMask: " << maskBits
-    << "\nCollision Type: " << static_cast<int>(collisionType)
-    << "\nDensity: " << density
-    << "\nFriction: " << friction << std::endl;
-
+  if (DEBUG_OUTPUT) {
+    std::cout << "\nCreating circle shape at:"
+      << "\nRadius: " << radius
+      << "\nCategory: " << categoryBits
+      << "\nMask: " << maskBits
+      << "\nCollision Type: " << static_cast<int>(collisionType)
+      << "\nDensity: " << density
+      << "\nFriction: " << friction << std::endl;
+  }
   if (!b2Body_IsValid(bodyId)) return b2_nullShapeId;
 
   b2ShapeDef shapeDef = b2DefaultShapeDef();

@@ -41,6 +41,8 @@ public:
   bool checkIsPowerup(b2BodyId bodyId);
 
 private:
+  static constexpr bool DEBUG_OUTPUT = false;
+
   b2WorldId m_worldId;
   std::vector<b2BodyId> m_dynamicBodies;
   b2ContactBeginTouchEvent m_beginContactEvents[256];

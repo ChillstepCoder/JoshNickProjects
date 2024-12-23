@@ -26,9 +26,11 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
   m_properties = props;
 
   // Debug output for car physics setup
-  std::cout << "Creating car physics body..." << std::endl;
-  if (b2Body_IsValid(bodyId)) {
-    std::cout << "Car body is valid" << std::endl;
+  if (DEBUG_OUTPUT) {
+    std::cout << "Creating car physics body..." << std::endl;
+    if (b2Body_IsValid(bodyId)) {
+      std::cout << "Car body is valid" << std::endl;
+    }
   }
 
   b2Body_SetUserData(m_bodyId, static_cast<void*>(this));
