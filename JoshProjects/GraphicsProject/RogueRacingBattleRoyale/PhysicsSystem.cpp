@@ -243,9 +243,14 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
   switch (collisionType) {
   case CollisionType::POWERUP:
     shapeDef.isSensor = true;
+    shapeDef.density = 0.0f;
+    shapeDef.friction = 0.0f;
     shapeDef.enableSensorEvents = true;
     shapeDef.enableContactEvents = true;
     shapeDef.enableHitEvents = true;
+    shapeDef.filter.categoryBits = categoryBits;
+    shapeDef.filter.maskBits = maskBits;
+    shapeDef.filter.groupIndex = 0;
     break;
   case CollisionType::PUSHABLE:
     shapeDef.density = 0.2f;

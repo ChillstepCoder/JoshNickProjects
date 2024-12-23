@@ -56,8 +56,8 @@ public:
   }
 
   virtual void createCollisionShape(b2BodyId bodyId, PhysicsSystem* physics) {
-    // Default simple circle shape for basic objects
-    float radius = 5.5f;
+    // Default simple circle shape
+    float radius = 7.5f;
     physics->createCircleShape(bodyId, radius,
       CATEGORY_SOLID, CATEGORY_CAR | CATEGORY_PUSHABLE,
       m_collisionType);

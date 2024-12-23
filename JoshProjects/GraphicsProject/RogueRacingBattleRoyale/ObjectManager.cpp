@@ -14,15 +14,23 @@ ObjectManager::ObjectManager(SplineTrack* track, PhysicsSystem* physicsSystem)
 
 void ObjectManager::addObject(size_t templateIndex, const glm::vec2& position) {
   if (templateIndex >= m_objectTemplates.size()) {
-    std::cout << "Invalid template index: " << templateIndex << "\n";
+    if (DEBUG_OUTPUT) {
+      std::cout << "Invalid template index: " << templateIndex << "\n";
+    }
     return;
   }
+  if (DEBUG_OUTPUT) {
+    std::cout << "\nAdding new object from template " << templateIndex << "\n";
+    std::cout << "Template RTTI type: " << typeid(*m_objectTemplates[templateIndex]).name() << std::endl;
+  }
 
-  std::cout << "\nAdding new object from template " << templateIndex << "\n";
   auto newObject = m_objectTemplates[templateIndex]->clone();
-  std::cout << "New object display name: " << newObject->getDisplayName() << "\n";
-  std::cout << "Is XP pickup: " << (newObject->isXPPickup() ? "yes" : "no") << "\n";
-  std::cout << "Collision type: " << static_cast<int>(newObject->getCollisionType()) << "\n";
+  if (DEBUG_OUTPUT) {
+    std::cout << "New object display name: " << newObject->getDisplayName() << "\n";
+    std::cout << "Is XP pickup: " << (newObject->isXPPickup() ? "yes" : "no") << "\n";
+    std::cout << "Collision type: " << static_cast<int>(newObject->getCollisionType()) << "\n";
+    std::cout << "Cloned RTTI type: " << typeid(*newObject).name() << std::endl;
+  }
 
   newObject->setPosition(position);
 
@@ -53,7 +61,6 @@ void ObjectManager::addObject(size_t templateIndex, const glm::vec2& position) {
 
   createPhysicsForObject(newObject.get());
   m_placedObjects.push_back(std::move(newObject));
-
   updateGrid();
 }
 
@@ -117,6 +124,14 @@ bool ObjectManager::isValidPlacement(const PlaceableObject* obj, const glm::vec2
 void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
   if (!m_physicsSystem || !obj) return;
 
+  if (DEBUG_OUTPUT) {
+    std::cout << "\n=== Creating Physics for Object ===\n";
+    std::cout << "Object type: " << obj->getDisplayName() << std::endl;
+    std::cout << "Collision type: " << static_cast<int>(obj->getCollisionType()) << std::endl;
+    std::cout << "Object address: " << obj << std::endl;
+    std::cout << "Dynamic RTTI type: " << typeid(*obj).name() << std::endl;
+  }
+
   b2BodyId bodyId;
   if (obj->getCollisionType() == CollisionType::POWERUP ||
     obj->getCollisionType() == CollisionType::PUSHABLE) {
@@ -133,14 +148,25 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
   b2Body_SetTransform(bodyId, b2Vec2{ obj->getPosition().x, obj->getPosition().y }, rotation);
   b2Body_SetUserData(bodyId, static_cast<void*>(obj));
 
-  // Let the object create its own collision shape
-  obj->createCollisionShape(bodyId, m_physicsSystem);
-  obj->setPhysicsBody(bodyId);
+  // Debug output before shape creation
+  if (DEBUG_OUTPUT) {
+    std::cout << "About to create collision shape for: " << obj->getDisplayName()
+      << " CollisionType: " << static_cast<int>(obj->getCollisionType()) << std::endl;
+  }
 
-  // Set damping for pushable objects
-  if (obj->getCollisionType() == CollisionType::PUSHABLE) {
-    b2Body_SetLinearDamping(bodyId, 4.0f);
-    b2Body_SetAngularDamping(bodyId, 4.0f);
+  // Let the object create its own collision shape
+  if (DEBUG_OUTPUT) {
+    std::cout << "Calling object's createCollisionShape..." << std::endl;
+  }
+    obj->createCollisionShape(bodyId, m_physicsSystem);
+
+  // Store the physics body ID
+  if (DEBUG_OUTPUT) {
+    std::cout << "Setting Physics Body\n";
+  }
+  obj->setPhysicsBody(bodyId);
+  if (DEBUG_OUTPUT) {
+    std::cout << "=== End Physics Creation ===\n";
   }
 }
 
@@ -213,27 +239,11 @@ void ObjectManager::update() {
 
 void ObjectManager::createDefaultTemplates() {
   std::cout << "\nCreating default templates...\n";
-
-  // Pothole
-  m_objectTemplates.emplace_back(
-    std::make_unique<PotholeObject>("Textures/pothole.png", PlacementZone::Road));
-
-  // Tree
-  m_objectTemplates.emplace_back(
-    std::make_unique<TreeObject>("Textures/tree.png", PlacementZone::Grass));
-
-  // Traffic cone
-  m_objectTemplates.emplace_back(
-    std::make_unique<TrafficConeObject>("Textures/traffic_cone.png", PlacementZone::Anywhere));
-
-  // Booster
-  m_objectTemplates.emplace_back(
-    std::make_unique<BoosterObject>("Textures/booster.png", PlacementZone::Road));
-
-  // XP star
-  std::cout << "Adding XP star template\n";
-  m_objectTemplates.emplace_back(
-    std::make_unique<XPPickupObject>("Textures/xpstar.png", PlacementZone::Road));
+  m_objectTemplates.emplace_back(std::make_unique<PotholeObject>());
+  m_objectTemplates.emplace_back(std::make_unique<TreeObject>());
+  m_objectTemplates.emplace_back(std::make_unique<TrafficConeObject>());
+  m_objectTemplates.emplace_back(std::make_unique<BoosterObject>());
+  m_objectTemplates.emplace_back(std::make_unique<XPPickupObject>());
 }
 
 

@@ -10,16 +10,9 @@ const BoosterProperties BoosterObject::m_defaultBoosterProps = {
     1.0f      // directionFactor
 };
 
-
-BoosterObject::BoosterObject(const std::string& texturePath, PlacementZone zone)
-  : PlaceableObject(texturePath, zone) {
-  setCollisionType(CollisionType::POWERUP);
-  setAutoAlignToTrack(true);
-  setScale(glm::vec2(0.15f));
-  m_boosterProps = std::make_unique<BoosterProperties>();
-}
-
-BoosterObject::BoosterObject(const BoosterObject& other) : PlaceableObject(other) {
+// Remove old constructor, only keep copy constructor
+BoosterObject::BoosterObject(const BoosterObject& other)
+  : PlaceableObject(other) {
   if (other.m_boosterProps) {
     m_boosterProps = std::make_unique<BoosterProperties>(*other.m_boosterProps);
   }
