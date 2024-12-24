@@ -64,6 +64,22 @@ void Chunk::render() {
     m_spriteBatch.renderBatch();
 }
 
+void Chunk::save() {
+    // Save all blocks in the chunk before the unload
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            Block& block = blocks[x][y];
+            
+            // save the stuff somehow
+        }
+    }
+
+    // Clear the sprite batch
+    m_spriteBatch.dispose();
+
+    m_isLoaded = false;
+}
+
 void Chunk::destroy() {
     // Destroy physics bodies for all blocks in the chunk
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
@@ -142,7 +158,6 @@ void BlockManager::update(BlockManager& blockManager) {
     for (int i = 0; i < m_activeChunks.size(); i++) { // Simulate water for all active chunks
         m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager);
     }
-
 
 }
 
@@ -365,6 +380,18 @@ void BlockManager::loadChunk(int chunkX, int chunkY) {
 
 }
 
+void BlockManager::loadSavedChunk(int chunkX, int chunkY) {
+
+    Chunk& chunk = m_chunks[chunkX][chunkY];
+
+    chunk.init();
+
+    chunk.buildChunkMesh();
+
+    m_activeChunks.push_back(&m_chunks[chunkX][chunkY]);
+}
+
+
 bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
@@ -404,9 +431,10 @@ void BlockManager::unloadChunk(int x, int y) {
             break;
         }
     }
+    //saveChunk(x, y);
+    m_chunks[x][y].waterBlocks.clear();
 
-
-    m_chunks[x][y].destroy(); // Clean up resources
+    m_chunks[x][y].m_isLoaded = false;;
 }
 
 std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {

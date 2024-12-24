@@ -18,7 +18,9 @@ public:
     void init();
     void buildChunkMesh() ;
     void render();
+    void save();
     void destroy();
+
 
     bool isLoaded() const { return m_isLoaded; }
     glm::vec2 getWorldPosition() {
@@ -90,6 +92,8 @@ public:
     bool isChunkLoaded(int x, int y);
 
     void loadChunk(int x, int y);
+
+    void loadSavedChunk(int chunkX, int chunkY);
 
     bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
 
