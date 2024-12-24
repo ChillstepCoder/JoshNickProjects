@@ -21,32 +21,39 @@ namespace JAGEngine {
     m_atlas = ftgl::texture_atlas_new(512, 512, 1);
     ftgl::texture_atlas_clear(m_atlas);  // Clear atlas first
     m_font = ftgl::texture_font_new_from_file(m_atlas, size, font);
-
-    std::cout << "Atlas created: size=" << size
-      << " width=" << m_atlas->width
-      << " height=" << m_atlas->height
-      << " depth=" << m_atlas->depth << std::endl;
-
+    if (DEBUG_OUTPUT) {
+      std::cout << "Atlas created: size=" << size
+        << " width=" << m_atlas->width
+        << " height=" << m_atlas->height
+        << " depth=" << m_atlas->depth << std::endl;
+    }
     if (!m_font) {
-      std::cerr << "Failed to load font: " << font << std::endl;
+      if (DEBUG_OUTPUT) {
+        std::cerr << "Failed to load font: " << font << std::endl;
+      }
       return;
     }
 
     m_fontHeight = m_font->height;
-    std::cout << "Font height: " << m_fontHeight << std::endl;
+    if (DEBUG_OUTPUT) {
+      std::cout << "Font height: " << m_fontHeight << std::endl;
+    }
 
     // Load all ASCII printable characters
     const char* cache = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 
     // Debug each character's metrics before loading
-    for (const char* p = cache; *p; ++p) {
-      ftgl::texture_glyph_t* glyph = ftgl::texture_font_get_glyph(m_font, p);
-      if (glyph) {
-        std::cout << "Pre-load metrics for '" << *p << "': "
-          << "width=" << glyph->width
-          << " height=" << glyph->height
-          << " offset_x=" << glyph->offset_x
-          << " offset_y=" << glyph->offset_y << std::endl;
+    
+      for (const char* p = cache; *p; ++p) {
+        ftgl::texture_glyph_t* glyph = ftgl::texture_font_get_glyph(m_font, p);
+        if (DEBUG_OUTPUT) {
+        if (glyph) {
+          std::cout << "Pre-load metrics for '" << *p << "': "
+            << "width=" << glyph->width
+            << " height=" << glyph->height
+            << " offset_x=" << glyph->offset_x
+            << " offset_y=" << glyph->offset_y << std::endl;
+        }
       }
     }
 
@@ -70,11 +77,15 @@ namespace JAGEngine {
       }
     }
     // After loading glyphs
-    for (const auto& pair : m_glyphMap) {
-      auto glyph = pair.second;
-      std::cout << "Glyph '" << pair.first << "' UV coords: "
-        << glyph->s0 << ", " << glyph->t0 << ", "
-        << glyph->s1 << ", " << glyph->t1 << std::endl;
+    if (DEBUG_OUTPUT) {
+      for (const auto& pair : m_glyphMap) {
+        auto glyph = pair.second;
+        if (DEBUG_OUTPUT) {
+          std::cout << "Glyph '" << pair.first << "' UV coords: "
+            << glyph->s0 << ", " << glyph->t0 << ", "
+            << glyph->s1 << ", " << glyph->t1 << std::endl;
+        }
+      }
     }
 
   }
@@ -122,8 +133,10 @@ namespace JAGEngine {
     }
 
     if (!m_font || !m_textureID) {
-      std::cout << "Invalid font state: font=" << (m_font != nullptr)
-        << " textureID=" << m_textureID << std::endl;
+      if (DEBUG_OUTPUT) {
+        std::cout << "Invalid font state: font=" << (m_font != nullptr)
+          << " textureID=" << m_textureID << std::endl;
+      }
       return;
     }
 

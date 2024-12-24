@@ -25,6 +25,14 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
   props.lastPosition = glm::vec2(0.0f);
   m_properties = props;
 
+  // Debug output for car physics setup
+  if (DEBUG_OUTPUT) {
+    std::cout << "Creating car physics body..." << std::endl;
+    if (b2Body_IsValid(bodyId)) {
+      std::cout << "Car body is valid" << std::endl;
+    }
+  }
+
   b2Body_SetUserData(m_bodyId, static_cast<void*>(this));
 }
 
@@ -185,25 +193,28 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
 }
 
 void Car::onSensorEnter(b2BodyId sensorBody) {
-  if (!b2Body_IsValid(sensorBody)) return;
+  if (!b2Body_IsValid(sensorBody)) {
+    std::cout << "Invalid sensor body" << std::endl;
+    return;
+  }
 
-  PlaceableObject* obj = static_cast<PlaceableObject*>(b2Body_GetUserData(sensorBody));
-  if (!obj) return;
+  void* userData = b2Body_GetUserData(sensorBody);
+  if (!userData) {
+    std::cout << "No user data for sensor" << std::endl;
+    return;
+  }
 
-  std::cout << "Car with race position " << m_properties.racePosition
-    << " entering sensor for " << obj->getDisplayName() << "\n";
+  PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
+  if (!obj) {
+    std::cout << "Failed to cast user data to PlaceableObject" << std::endl;
+    return;
+  }
 
+  // Only handle boosters here since XP pickups handle themselves
   if (obj->isBooster()) {
+    std::cout << "Activating booster" << std::endl;
     m_properties.isOnBooster = true;
     m_properties.currentBooster = obj;
-  }
-  else if (obj->isXPPickup() && obj->getXPProperties().isActive) {
-    std::cout << "Pre-XP state: totalXP=" << m_properties.totalXP
-      << " for car " << m_properties.racePosition << "\n";
-    m_properties.totalXP++;
-    std::cout << "Post-XP state: totalXP=" << m_properties.totalXP
-      << " for car " << m_properties.racePosition << "\n";
-    obj->setActive(false);
   }
 }
 
@@ -281,6 +292,7 @@ void Car::checkBoosterCollisions(ObjectManager* objectManager) {
     m_properties.currentBooster = nullptr;
 
     // Check all placed objects
+    // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
     for (const auto& obj : objectManager->getPlacedObjects()) {
         if (obj->isBooster()) {
             glm::vec2 boosterPos = obj->getPosition();
@@ -413,6 +425,7 @@ void Car::checkCollisions() {
     m_properties.isOnBooster = false;
     m_properties.currentBooster = nullptr;
 
+    // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
     for (const auto& obj : m_objectManager->getPlacedObjects()) {
         if (obj->isBooster()) {
             glm::vec2 boosterPos = obj->getPosition();

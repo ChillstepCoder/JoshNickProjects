@@ -89,9 +89,9 @@ void GameplayScreen::onEntry() {
     // Create car body
     m_playerCarBody = m_physicsSystem->createDynamicBody(-100.0f, -100.0f);
     m_physicsSystem->createPillShape(m_playerCarBody, 15.0f, 15.0f,
-      PhysicsSystem::CATEGORY_CAR,  // Category
-      PhysicsSystem::CATEGORY_BARRIER | PhysicsSystem::CATEGORY_CAR,  // Mask
-      PhysicsSystem::CollisionType::DEFAULT);  // Collision type
+      CATEGORY_CAR,  // Category
+      CATEGORY_BARRIER | CATEGORY_CAR,  // Mask
+      CollisionType::DEFAULT);  // Collision type
 
     // Initialize default car properties
     m_defaultCarProps = Car::CarProperties();

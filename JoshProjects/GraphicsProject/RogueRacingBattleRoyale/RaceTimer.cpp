@@ -4,9 +4,12 @@
 #include <iomanip>
 #include <sstream>
 
-RaceTimer::RaceTimer()
-  : m_elapsedTime(0.0f)
-  , m_isRunning(false) {
+RaceTimer::RaceTimer() :
+  m_elapsedTime(0.0f),
+  m_isRunning(false) {
+  // Initialize font right away
+  m_font = std::make_unique<JAGEngine::SpriteFont>();
+  m_font->init("Fonts/titilium_bold.ttf", 72);
 }
 
 void RaceTimer::init(const char* fontPath, int fontSize) {
@@ -54,8 +57,17 @@ std::string RaceTimer::formatTime() const {
 }
 
 void RaceTimer::draw(JAGEngine::SpriteBatch& batch, const JAGEngine::Camera2D& camera, int currentLap, int totalLaps) {
-  if (!m_font || !m_font->getTextureID()) return;
+  if (!m_font || !m_font->getTextureID()) {
+    std::cout << "Race Timer Error: Invalid font!" << std::endl;
+    return;
+  }
+
+  //std::cout << "Drawing race timer - Time: " << formatTime() << std::endl;
+
+  // Draw the timer text
   drawCenteredText(batch, camera, formatTime());
+
+  // Draw lap count if provided
   if (currentLap >= 0 && totalLaps > 0) {
     drawLapCount(batch, camera, currentLap, totalLaps);
   }

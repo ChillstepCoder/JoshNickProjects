@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClCompile Include="AIDriver.cpp" />
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="BoosterObject.cpp" />
     <ClCompile Include="Car.cpp" />
     <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
@@ -161,10 +162,12 @@
     <ClCompile Include="RoadMeshGenerator.cpp" />
     <ClCompile Include="SplineTrack.cpp" />
     <ClCompile Include="WheelCollider.cpp" />
+    <ClCompile Include="XPPickupObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AIDriver.h" />
     <ClInclude Include="App.h" />
+    <ClInclude Include="BoosterObject.h" />
     <ClInclude Include="Box2DColors.h" />
     <ClInclude Include="Car.h" />
     <ClInclude Include="DebugDraw.h" />
@@ -176,9 +179,12 @@
     <ClInclude Include="LevelRenderer.h" />
     <ClInclude Include="LevelSaveLoad.h" />
     <ClInclude Include="ObjectManager.h" />
+    <ClInclude Include="ObjectProperties.h" />
     <ClInclude Include="PerformanceTimer.h" />
+    <ClInclude Include="PhysicsCategories.h" />
     <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="PlaceableObject.h" />
+    <ClInclude Include="PotholeObject.h" />
     <ClInclude Include="RaceCountdown.h" />
     <ClInclude Include="RaceManager.h" />
     <ClInclude Include="RaceTimer.h" />
@@ -186,7 +192,10 @@
     <ClInclude Include="ScreenState.h" />
     <ClInclude Include="SplineTrack.h" />
     <ClInclude Include="TrackNode.h" />
+    <ClInclude Include="TrafficConeObject.h" />
+    <ClInclude Include="TreeObject.h" />
     <ClInclude Include="WheelCollider.h" />
+    <ClInclude Include="XPPickupObject.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

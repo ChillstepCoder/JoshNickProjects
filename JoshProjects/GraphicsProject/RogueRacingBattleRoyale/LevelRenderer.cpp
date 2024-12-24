@@ -608,10 +608,10 @@ void LevelRenderer::createBarrierCollisions(SplineTrack* track, b2WorldId worldI
       shapeDef.friction = 0.1f;
       shapeDef.restitution = 0.0f;
       shapeDef.density = 1.0f;
-      shapeDef.filter.categoryBits = PhysicsSystem::CATEGORY_BARRIER;
+      shapeDef.filter.categoryBits = CATEGORY_BARRIER;
       // Make barriers collide with cars AND pushable objects
-      shapeDef.filter.maskBits = PhysicsSystem::CATEGORY_CAR |
-        PhysicsSystem::CATEGORY_PUSHABLE;
+      shapeDef.filter.maskBits = CATEGORY_CAR |
+        CATEGORY_PUSHABLE;
 
       // Create box using the actual edge length plus overlap
       b2Polygon box = b2MakeBox(edgeLength * 0.5f * OVERLAP_FACTOR, BARRIER_THICKNESS * 0.5f);
