@@ -61,12 +61,16 @@ void PhysicsSystem::update(float timeStep) {
   }
 }
 
+// TODO: BEN - We are passing in sensors here, when it assumes cars
 void PhysicsSystem::findOverlappingBodies(b2BodyId carBody, Car* car) {
   if (!car || !b2Body_IsValid(carBody)) return;
 
   b2Vec2 carPos = b2Body_GetPosition(carBody);
   float detectionRadius = 15.0f;
+ // TODO: BEN - use sensors instead of manually doing overlap checks
+  // ALSO: im pretty sure box2d has some kind of query for this
 
+  // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
   for (b2BodyId otherId : m_dynamicBodies) {
     if (otherId.index1 == carBody.index1) continue;
     if (!b2Body_IsValid(otherId)) continue;
@@ -76,6 +80,7 @@ void PhysicsSystem::findOverlappingBodies(b2BodyId carBody, Car* car) {
 
     // First check if it's a Car object
     Car* otherCar = dynamic_cast<Car*>(static_cast<Car*>(userData));
+    // TODO: BEN - all objects have car so we dont do anything
     if (otherCar) continue;
 
     // If not a car, must be a PlaceableObject

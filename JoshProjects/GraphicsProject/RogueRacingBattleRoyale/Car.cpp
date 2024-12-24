@@ -292,6 +292,7 @@ void Car::checkBoosterCollisions(ObjectManager* objectManager) {
     m_properties.currentBooster = nullptr;
 
     // Check all placed objects
+    // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
     for (const auto& obj : objectManager->getPlacedObjects()) {
         if (obj->isBooster()) {
             glm::vec2 boosterPos = obj->getPosition();
@@ -424,6 +425,7 @@ void Car::checkCollisions() {
     m_properties.isOnBooster = false;
     m_properties.currentBooster = nullptr;
 
+    // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
     for (const auto& obj : m_objectManager->getPlacedObjects()) {
         if (obj->isBooster()) {
             glm::vec2 boosterPos = obj->getPosition();

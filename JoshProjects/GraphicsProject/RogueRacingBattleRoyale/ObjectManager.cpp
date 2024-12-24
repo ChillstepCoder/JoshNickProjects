@@ -135,6 +135,9 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
   b2BodyId bodyId;
   if (obj->getCollisionType() == CollisionType::POWERUP ||
     obj->getCollisionType() == CollisionType::PUSHABLE) {
+      // TODO: BEN: USE SENSORS HERE PROBABLY
+      // https://box2d.org/documentation/md_simulation.html#autotoc_md79
+      // https://box2d.org/documentation/md_simulation.html#autotoc_md92
     bodyId = m_physicsSystem->createDynamicBody(obj->getPosition().x, obj->getPosition().y);
   }
   else {

@@ -64,6 +64,9 @@ public:
   }
 
   // Virtual functions overridden by derived classes
+  // TODO: JOSH: Later, strive to get rid of isBooster and isXPPickup
+  // If you NEED to find the object type for some reason, you can use
+  // dynamic_cast OR you can make an enum class ObjectType { Booster, XPPickup, Default } and have a getter for that
   virtual bool isBooster() const { return false; }
   virtual bool isXPPickup() const { return false; }
   virtual bool isDetectable() const { return false; }
