@@ -33,5 +33,5 @@ public:
       0.4f);
     std::cout << "=== End TrafficCone Shape Creation ===\n";
   }
-  bool isDetectable() const override { return true; }
+  ObjectType getObjectType() const override { return ObjectType::TrafficCone; }
 };

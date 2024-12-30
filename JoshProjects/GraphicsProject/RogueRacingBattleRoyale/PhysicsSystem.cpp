@@ -32,77 +32,91 @@ void PhysicsSystem::init(float gravityX, float gravityY) {
 void PhysicsSystem::update(float timeStep) {
   if (!b2World_IsValid(m_worldId)) return;
 
-  // Clean invalid bodies first
-  auto it = m_dynamicBodies.begin();
-  while (it != m_dynamicBodies.end()) {
-    if (!isValidBody(*it)) {
-      std::cout << "Removing invalid body: " << it->index1 << std::endl;
-      it = m_dynamicBodies.erase(it);
-    }
-    else {
-      ++it;
-    }
-  }
-
-  // Now process the remaining valid bodies
-  for (b2BodyId carBody : m_dynamicBodies) {
-    void* userData = tryGetUserData(carBody);
-    if (!userData) continue;
-
-    Car* car = static_cast<Car*>(userData);
-    findOverlappingBodies(carBody, car);
-  }
-
   // Physics step
   const float fixedTimeStep = 1.0f / 60.0f;
   const int subStepCount = static_cast<int>(std::ceil(timeStep / fixedTimeStep));
   for (int i = 0; i < subStepCount; i++) {
     b2World_Step(m_worldId, fixedTimeStep, 1);
   }
-}
 
-// TODO: BEN - We are passing in sensors here, when it assumes cars
-void PhysicsSystem::findOverlappingBodies(b2BodyId carBody, Car* car) {
-  if (!car || !b2Body_IsValid(carBody)) return;
+  // Handle sensor events
+  b2SensorEvents sensorEvents = b2World_GetSensorEvents(m_worldId);
 
-  b2Vec2 carPos = b2Body_GetPosition(carBody);
-  float detectionRadius = 15.0f;
- // TODO: BEN - use sensors instead of manually doing overlap checks
-  // ALSO: im pretty sure box2d has some kind of query for this
+  // Handle begin touch events
+  for (int i = 0; i < sensorEvents.beginCount; ++i) {
+    b2SensorBeginTouchEvent* beginTouch = sensorEvents.beginEvents + i;
 
-  // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
-  for (b2BodyId otherId : m_dynamicBodies) {
-    if (otherId.index1 == carBody.index1) continue;
-    if (!b2Body_IsValid(otherId)) continue;
+    b2BodyId sensorBody = b2Shape_GetBody(beginTouch->sensorShapeId);
+    b2BodyId visitorBody = b2Shape_GetBody(beginTouch->visitorShapeId);
 
-    void* userData = tryGetUserData(otherId); // Use safe getter
-    if (!userData) continue;
+    if (!b2Body_IsValid(sensorBody) || !b2Body_IsValid(visitorBody)) {
+      continue;
+    }
 
-    // First check if it's a Car object
-    Car* otherCar = dynamic_cast<Car*>(static_cast<Car*>(userData));
-    // TODO: BEN - all objects have car so we dont do anything
-    if (otherCar) continue;
+    void* sensorData = b2Body_GetUserData(sensorBody);
+    void* visitorData = b2Body_GetUserData(visitorBody);
 
-    // If not a car, must be a PlaceableObject
-    PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
-    if (!obj || !obj->isDetectable()) continue;
+    if (!sensorData || !visitorData) {
+      continue;
+    }
 
-    // Calculate distance
-    b2Vec2 otherPos = b2Body_GetPosition(otherId);
-    b2Vec2 diff = { otherPos.x - carPos.x, otherPos.y - carPos.y };
-    float distSq = diff.x * diff.x + diff.y * diff.y;
+    PlaceableObject* object = static_cast<PlaceableObject*>(sensorData);
+    Car* car = static_cast<Car*>(visitorData);
 
-    if (distSq < detectionRadius * detectionRadius) {
-      if (obj->isXPPickup()) {
-        if (DEBUG_OUTPUT) {
-          std::cout << "XP Pickup overlap detected at distance: " << sqrt(distSq) << std::endl;
-          std::cout << "Car position: " << carPos.x << "," << carPos.y << std::endl;
-          std::cout << "XP position: " << otherPos.x << "," << otherPos.y << std::endl;
-        }
-      }
-      obj->onCarCollision(car);
+    if (!object || !car) {
+      continue;
+    }
+
+    object->onCarCollision(car);
+  }
+
+  // Handle end touch events with extra validation
+  for (int i = 0; i < sensorEvents.endCount; ++i) {
+    b2SensorEndTouchEvent* endTouch = sensorEvents.endEvents + i;
+
+    b2BodyId sensorBody = b2Shape_GetBody(endTouch->sensorShapeId);
+    b2BodyId visitorBody = b2Shape_GetBody(endTouch->visitorShapeId);
+
+    // Extra validation for end collision bodies
+    if (!b2Body_IsValid(sensorBody) || !b2Body_IsValid(visitorBody)) {
+      continue;
+    }
+
+    // Double check that the bodies are still enabled
+    if (!b2Body_IsEnabled(sensorBody) || !b2Body_IsEnabled(visitorBody)) {
+      continue;
+    }
+
+    void* sensorData = nullptr;
+    void* visitorData = nullptr;
+
+    try {
+      sensorData = b2Body_GetUserData(sensorBody);
+      if (!sensorData) continue;
+
+      visitorData = b2Body_GetUserData(visitorBody);
+      if (!visitorData) continue;
+    }
+    catch (...) {
+      continue;
+    }
+
+    PlaceableObject* object = static_cast<PlaceableObject*>(sensorData);
+    Car* car = static_cast<Car*>(visitorData);
+
+    if (!object || !car) {
+      continue;
+    }
+
+    try {
+        object->onEndCollision(car);
+    }
+    catch (...) {
+      continue;
     }
   }
+
+  synchronizeTransforms();
 }
 
 void PhysicsSystem::cleanup() {
@@ -167,6 +181,7 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
   case CollisionType::HAZARD:
   case CollisionType::POWERUP:
     shapeDef.isSensor = true;
+    shapeDef.enableSensorEvents = true;
     shapeDef.density = 0.0f;
     shapeDef.friction = 0.0f;
     break;
@@ -234,44 +249,33 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
   uint16_t categoryBits, uint16_t maskBits,
   CollisionType collisionType,
   float density, float friction) {
-  if (DEBUG_OUTPUT) {
-    std::cout << "\nCreating circle shape at:"
-      << "\nRadius: " << radius
-      << "\nCategory: " << categoryBits
-      << "\nMask: " << maskBits
-      << "\nCollision Type: " << static_cast<int>(collisionType)
-      << "\nDensity: " << density
-      << "\nFriction: " << friction << std::endl;
-  }
+
   if (!b2Body_IsValid(bodyId)) return b2_nullShapeId;
 
   b2ShapeDef shapeDef = b2DefaultShapeDef();
-  shapeDef.filter.categoryBits = categoryBits;
-  shapeDef.filter.maskBits = maskBits;
 
-  switch (collisionType) {
-  case CollisionType::POWERUP:
+  // Get the object from body user data
+  void* userData = b2Body_GetUserData(bodyId);
+  PlaceableObject* object = static_cast<PlaceableObject*>(userData);
+
+  // Configure shape based on object type and collision type
+  if (object && object->isSensor()) {
+    // Configure as sensor
     shapeDef.isSensor = true;
+    shapeDef.enableSensorEvents = true;
     shapeDef.density = 0.0f;
     shapeDef.friction = 0.0f;
-    shapeDef.enableSensorEvents = true;
-    shapeDef.enableContactEvents = true;
-    shapeDef.enableHitEvents = true;
-    shapeDef.filter.categoryBits = categoryBits;
-    shapeDef.filter.maskBits = maskBits;
-    shapeDef.filter.groupIndex = 0;
-    break;
-  case CollisionType::PUSHABLE:
-    shapeDef.density = 0.2f;
-    shapeDef.friction = 0.4f;
-    shapeDef.restitution = 0.2f;
-    break;
-  default:
+    shapeDef.restitution = 0.0f;
+  }
+  else {
+    // Configure as normal physics object
     shapeDef.density = density;
     shapeDef.friction = friction;
     shapeDef.restitution = 0.1f;
-    break;
   }
+
+  shapeDef.filter.categoryBits = categoryBits;
+  shapeDef.filter.maskBits = maskBits;
 
   b2Circle circle;
   circle.radius = radius;
@@ -282,12 +286,14 @@ b2ShapeId PhysicsSystem::createCircleShape(b2BodyId bodyId, float radius,
 
 bool PhysicsSystem::checkIsPowerup(b2BodyId bodyId) {
   if (!b2Body_IsValid(bodyId)) return false;
-
   void* userData = b2Body_GetUserData(bodyId);
   if (!userData) return false;
 
   PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
-  return obj && (obj->isBooster() || obj->isXPPickup());
+  if (!obj) return false;
+
+  ObjectType type = obj->getObjectType();
+  return type == ObjectType::Booster || type == ObjectType::XPPickup;
 }
 
 void* PhysicsSystem::enqueueTask(b2TaskCallback* task, int32_t itemCount,

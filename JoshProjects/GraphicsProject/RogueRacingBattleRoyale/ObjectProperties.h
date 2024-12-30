@@ -23,3 +23,11 @@ struct XPProperties {
   float respawnTimer = 0.0f;
 };
 
+enum class ObjectType {
+  Default,
+  Booster,
+  XPPickup,
+  Tree,
+  TrafficCone,
+  Pothole
+};

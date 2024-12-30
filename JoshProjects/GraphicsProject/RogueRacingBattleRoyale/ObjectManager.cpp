@@ -27,7 +27,7 @@ void ObjectManager::addObject(size_t templateIndex, const glm::vec2& position) {
   auto newObject = m_objectTemplates[templateIndex]->clone();
   if (DEBUG_OUTPUT) {
     std::cout << "New object display name: " << newObject->getDisplayName() << "\n";
-    std::cout << "Is XP pickup: " << (newObject->isXPPickup() ? "yes" : "no") << "\n";
+    std::cout << "Is XP pickup: " << (newObject->getObjectType() == ObjectType::XPPickup ? "yes" : "no") << "\n";
     std::cout << "Collision type: " << static_cast<int>(newObject->getCollisionType()) << "\n";
     std::cout << "Cloned RTTI type: " << typeid(*newObject).name() << std::endl;
   }
@@ -224,7 +224,7 @@ void ObjectManager::update() {
       }
     }
 
-    if (obj->isXPPickup()) {
+    if (obj->getObjectType() == ObjectType::XPPickup) {
       obj->updateRespawnTimer(1.0f / 60.0f);
     }
   }

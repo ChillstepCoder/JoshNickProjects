@@ -31,5 +31,5 @@ public:
       0.3f   // Standard friction
     );
   }
-  bool isDetectable() const override { return false; }
+  ObjectType getObjectType() const override { return ObjectType::Tree; }
 };

@@ -81,9 +81,6 @@ public:
   void update(const InputState& input);
   void updateStartLineCrossing(const SplineTrack* track);
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
-  void onSensorEnter(b2BodyId sensorBody);
-  void onSensorExit(b2BodyId sensorBody);
-  void handleBoosterCollision(const PlaceableObject* booster);
 
   CarProperties& getProperties() { return m_properties; }
   void setProperties(const CarProperties& props) {
@@ -132,11 +129,10 @@ private:
   ObjectManager* m_objectManager = nullptr;
 
   b2Vec2 getForwardVector() const;
-  void checkCollisions();
   float calculateLapProgress(const SplineTrack* track);
   void updateMovement(const InputState& input);
   void updateBoostEffects();
-  void checkBoosterCollisions(ObjectManager* objectManager);
+  //void checkBoosterCollisions(ObjectManager* objectManager);
   void handleTurning(const InputState& input, float forwardSpeed);
   void applyDrag(const b2Vec2& currentVel, float forwardSpeed);
   void applyFriction(const b2Vec2& currentVel);

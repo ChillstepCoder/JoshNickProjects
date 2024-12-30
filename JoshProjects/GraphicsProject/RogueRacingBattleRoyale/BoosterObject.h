@@ -31,9 +31,10 @@ public:
   }
 
   void onCarCollision(Car* car) override;
+  void onEndCollision(Car* car) override;
+
   std::unique_ptr<PlaceableObject> clone() const override;
-  bool isBooster() const override { return true; }
-  bool isDetectable() const override { return true; }
+  ObjectType getObjectType() const override { return ObjectType::Booster; }
   const BoosterProperties& getBoosterProperties() const override;
 
 private:

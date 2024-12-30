@@ -42,6 +42,10 @@ void XPPickupObject::onCarCollision(Car* car) {
   std::cout << "XP Pickup complete - XP changed from " << oldXP << " to " << props.totalXP << std::endl;
 }
 
+void XPPickupObject::onEndCollision(Car* car) {
+// do nothing
+}
+
 std::unique_ptr<PlaceableObject> XPPickupObject::clone() const {
   auto copy = std::make_unique<XPPickupObject>(*this);
   copy->setActive(true);
@@ -64,7 +68,7 @@ void XPPickupObject::updateRespawnTimer(float deltaTime) {
   if (m_xpProps && !m_xpProps->isActive) {
     m_xpProps->respawnTimer -= deltaTime;
     if (m_xpProps->respawnTimer <= 0.0f) {
-      m_xpProps->isActive = true;
+      setActive(true);
       m_xpProps->respawnTimer = 0.0f;
     }
   }

@@ -56,7 +56,5 @@ private:
     void* taskContext, void* userContext);
   static void finishTask(void* taskPtr, void* userContext);
 
-  void findOverlappingBodies(b2BodyId carBody, Car* car);
-
 };
 

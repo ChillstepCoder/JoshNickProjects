@@ -67,9 +67,17 @@ public:
   // TODO: JOSH: Later, strive to get rid of isBooster and isXPPickup
   // If you NEED to find the object type for some reason, you can use
   // dynamic_cast OR you can make an enum class ObjectType { Booster, XPPickup, Default } and have a getter for that
-  virtual bool isBooster() const { return false; }
-  virtual bool isXPPickup() const { return false; }
-  virtual bool isDetectable() const { return false; }
+  virtual ObjectType getObjectType() const { return ObjectType::Default; }
+
+  bool isSensor() const {
+    try {
+      ObjectType type = getObjectType();
+      return type == ObjectType::Booster || type == ObjectType::XPPickup;
+    }
+    catch (...) {
+      return false;  // If anything goes wrong, assume it's not a sensor
+    }
+  }
 
   virtual const BoosterProperties& getBoosterProperties() const {
     static BoosterProperties defaultProps; return defaultProps;
@@ -79,6 +87,10 @@ public:
   }
   virtual void onCarCollision(Car* car) {
     // Empty
+  }
+
+  virtual void onEndCollision(Car* car) {
+    // Empty default implementation
   }
 
   const glm::vec2& getPosition() const { return m_position; }

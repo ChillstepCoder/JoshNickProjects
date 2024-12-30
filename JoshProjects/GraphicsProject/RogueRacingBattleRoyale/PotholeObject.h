@@ -31,5 +31,5 @@ public:
       m_collisionType);
     std::cout << "=== End Pothole Shape Creation ===\n";
   }
-  bool isDetectable() const override { return false; }
+  ObjectType getObjectType() const override { return ObjectType::Pothole; }
 };

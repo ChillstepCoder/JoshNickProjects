@@ -10,7 +10,6 @@ const BoosterProperties BoosterObject::m_defaultBoosterProps = {
     1.0f      // directionFactor
 };
 
-// Remove old constructor, only keep copy constructor
 BoosterObject::BoosterObject(const BoosterObject& other)
   : PlaceableObject(other) {
   if (other.m_boosterProps) {
@@ -20,10 +19,30 @@ BoosterObject::BoosterObject(const BoosterObject& other)
 
 void BoosterObject::onCarCollision(Car* car) {
   if (!car || !m_boosterProps) return;
-  car->onSensorEnter(getPhysicsBody());
+
+  std::cout << "Booster collision begin with car" << std::endl;
+
+  // Set the car's booster state
+  auto props = car->getProperties();
+  props.isOnBooster = true;
+  props.currentBooster = this;
+  car->setProperties(props);
+}
+
+void BoosterObject::onEndCollision(Car* car) {
+  if (!car) return;
+
+  std::cout << "Booster collision end with car" << std::endl;
+
+  auto props = car->getProperties();
+  props.isOnBooster = false;
+  props.currentBooster = nullptr;
+  props.boostAccumulator = props.currentBoostSpeed;
+  car->setProperties(props);
 }
 
 std::unique_ptr<PlaceableObject> BoosterObject::clone() const {
+  std::cout << "Booster clone called" << std::endl;
   return std::make_unique<BoosterObject>(*this);
 }
 

@@ -1830,7 +1830,7 @@ void LevelEditorScreen::drawCarPropertiesUI() {
             auto nearbyObjects = m_objectManager->getNearbyObjects(carPos, 150.0f);
 
             for (const auto* obj : nearbyObjects) {
-              if (obj && obj->isXPPickup()) {
+              if (obj && obj->getObjectType() == ObjectType::XPPickup) {
                 ImGui::Separator();
                 ImGui::Text("Nearby XP Star Info:");
                 const auto& xpProps = obj->getXPProperties();

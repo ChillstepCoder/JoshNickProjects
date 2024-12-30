@@ -293,7 +293,7 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
     float baseHeight = texture.height * obj->getScale().y;
 
     // Skip rendering inactive XP orbs
-    if (obj->isXPPickup() && !obj->getXPProperties().isActive) {
+    if (obj->getObjectType() == ObjectType::XPPickup && !obj->getXPProperties().isActive) {
       continue;
     }
 
@@ -328,9 +328,9 @@ void LevelRenderer::renderObjects(const glm::mat4& cameraMatrix, ObjectManager* 
       JAGEngine::ColorRGBA8(200, 200, 200, 255);
 
     // Add pulsing effect for XP orbs
-    if (obj->isXPPickup()) {
+    if (obj->getObjectType() == ObjectType::XPPickup) {
       static float pulseTime = 0.0f;
-      pulseTime += 1.0f / 60.0f;  // Increment based on frame time
+      pulseTime += 1.0f / 120.0f;  // Increment based on frame time
       float pulse = (sin(pulseTime * 4.0f) + 1.0f) * 0.5f;  // 0 to 1 pulsing
       color.a = static_cast<uint8_t>(200 + pulse * 55);  // Pulse alpha between 200 and 255
     }

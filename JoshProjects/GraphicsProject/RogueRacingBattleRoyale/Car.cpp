@@ -42,7 +42,7 @@ void Car::update(const InputState& input) {
     updateWheelColliders();
 
     // Check for booster collisions
-    checkBoosterCollisions(m_objectManager);
+    //checkBoosterCollisions(m_objectManager);
 
     // Apply boost effects
     updateBoostEffects();
@@ -192,41 +192,6 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
   m_properties.lastPosition = currentPos;
 }
 
-void Car::onSensorEnter(b2BodyId sensorBody) {
-  if (!b2Body_IsValid(sensorBody)) {
-    std::cout << "Invalid sensor body" << std::endl;
-    return;
-  }
-
-  void* userData = b2Body_GetUserData(sensorBody);
-  if (!userData) {
-    std::cout << "No user data for sensor" << std::endl;
-    return;
-  }
-
-  PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
-  if (!obj) {
-    std::cout << "Failed to cast user data to PlaceableObject" << std::endl;
-    return;
-  }
-
-  // Only handle boosters here since XP pickups handle themselves
-  if (obj->isBooster()) {
-    std::cout << "Activating booster" << std::endl;
-    m_properties.isOnBooster = true;
-    m_properties.currentBooster = obj;
-  }
-}
-
-void Car::onSensorExit(b2BodyId sensorBody) {
-    if (!b2Body_IsValid(sensorBody)) return;
-
-    PlaceableObject* obj = static_cast<PlaceableObject*>(b2Body_GetUserData(sensorBody));
-    if (obj && obj->isBooster() && m_properties.currentBooster == obj) {
-        m_properties.isOnBooster = false;
-        m_properties.currentBooster = nullptr;
-    }
-}
 
 void Car::updateBoostEffects() {
     if (m_properties.isOnBooster && m_properties.currentBooster) {
@@ -279,6 +244,7 @@ void Car::updateBoostEffects() {
     }
 }
 
+/*
 void Car::checkBoosterCollisions(ObjectManager* objectManager) {
     if (!objectManager) return;
     if (!b2Body_IsValid(m_bodyId)) return;
@@ -294,7 +260,7 @@ void Car::checkBoosterCollisions(ObjectManager* objectManager) {
     // Check all placed objects
     // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
     for (const auto& obj : objectManager->getPlacedObjects()) {
-        if (obj->isBooster()) {
+      if (obj->getObjectType() == ObjectType::Booster) {
             glm::vec2 boosterPos = obj->getPosition();
             float boosterAngle = obj->getRotation();
             float boosterWidth = 48.0f;   // Width of pill
@@ -325,12 +291,7 @@ void Car::checkBoosterCollisions(ObjectManager* objectManager) {
         m_properties.boostAccumulator = m_properties.currentBoostSpeed;
     }
 }
-
-void Car::handleBoosterCollision(const PlaceableObject* booster) {
-    if (!booster || !booster->isBooster()) return;
-    m_properties.isOnBooster = true;
-    m_properties.currentBooster = booster;
-}
+*/
 
 void Car::applyFriction(const b2Vec2& currentVel) {
   float averageWheelFriction = calculateAverageWheelFriction();
@@ -411,36 +372,6 @@ float Car::calculateLapProgress(const SplineTrack* track) {
   return progress;
 }
 
-void Car::checkCollisions() {
-    if (!m_objectManager || !b2Body_IsValid(m_bodyId)) return;
-
-    b2Vec2 carPos = b2Body_GetPosition(m_bodyId);
-    glm::vec2 carPosition(carPos.x, carPos.y);
-
-    // Print debug info
-    //std::cout << "Car Position: " << carPosition.x << ", " << carPosition.y << std::endl;
-
-    // Simple AABB collision check
-    const float COLLISION_RADIUS = 100.0f;  // Adjust based on your scale
-    m_properties.isOnBooster = false;
-    m_properties.currentBooster = nullptr;
-
-    // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
-    for (const auto& obj : m_objectManager->getPlacedObjects()) {
-        if (obj->isBooster()) {
-            glm::vec2 boosterPos = obj->getPosition();
-            float dist = glm::distance(carPosition, boosterPos);
-            //std::cout << "Distance to booster: " << dist << std::endl;
-
-            if (dist < COLLISION_RADIUS) {
-                //std::cout << "Contact with booster detected!" << std::endl;
-                m_properties.isOnBooster = true;
-                m_properties.currentBooster = obj.get();
-                break;
-            }
-        }
-    }
-}
 
 void Car::updateMovement(const InputState& input) {
   b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
