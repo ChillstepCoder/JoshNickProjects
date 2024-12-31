@@ -40,15 +40,16 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         BlockHandle waterBlock = blockManager.getBlockAtPosition(glm::vec2(waterPosX, waterPosY));
 
-        BlockHandle downBlock = blockManager.getBlockAtPosition(glm::vec2(downPosX, downPosY));
+        BlockHandle downBlock = getBlockAtPositionSafely(blockManager, glm::vec2(downPosX, downPosY));
 
-        BlockHandle downRightBlock = blockManager.getBlockAtPosition(glm::vec2(downRightPosX, downRightPosY));
+        BlockHandle downRightBlock = getBlockAtPositionSafely(blockManager, glm::vec2(downRightPosX, downRightPosY));
 
-        BlockHandle downLeftBlock = blockManager.getBlockAtPosition(glm::vec2(downLeftPosX, downLeftPosY));
+        BlockHandle downLeftBlock = getBlockAtPositionSafely(blockManager, glm::vec2(downLeftPosX, downLeftPosY));
 
-        BlockHandle leftBlock = blockManager.getBlockAtPosition(glm::vec2(leftPosX, leftPosY));
+        BlockHandle leftBlock = getBlockAtPositionSafely(blockManager, glm::vec2(leftPosX, leftPosY));
+        
+        BlockHandle rightBlock = getBlockAtPositionSafely(blockManager, glm::vec2(rightPosX, rightPosY));
 
-        BlockHandle rightBlock = blockManager.getBlockAtPosition(glm::vec2(rightPosX, rightPosY));
 
         if (downBlock.block->getBlockID() == BlockID::AIR) { // If downBlock is air, transfers all water to downBlock
 
@@ -71,6 +72,8 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                     }
                 }
             }
+        } else if (downBlock.block == nullptr) {
+            continue;
         }
 
         if (moveWaterDiagonally(waterBlock, downRightBlock, glm::vec2(downRightPosX, downRightPosY), rightBlock, glm::vec2(rightPosX, rightPosY), blockManager)) {
@@ -136,6 +139,11 @@ bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, Bloc
 
     // Should implement the common diagonal logic, and USE moveWaterToBlock to do the actual moving of water
 
+    if (adjacentBlock.block == nullptr) {
+        return isMeshDirty;
+    }
+
+
     if (adjacentBlock.block->getBlockID() == BlockID::AIR) {
 
         if (diagonalBlock.block->getBlockID() == BlockID::AIR) { // Check the diagonalBlock first to see if water is placeable
@@ -196,4 +204,15 @@ bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, Bloc
         }
     }
     return isMeshDirty;
+}
+
+BlockHandle CellularAutomataManager::getBlockAtPositionSafely(BlockManager& blockManager, glm::vec2 position) {
+    Chunk* neighboringChunk = blockManager.getChunkAtPosition(position);
+
+    if (neighboringChunk->isLoaded() == false) {
+        // Chunk is not loaded, return a default block handle (e.g., air or null block)
+        return BlockHandle();
+    }
+
+    return blockManager.getBlockAtPosition(position);
 }

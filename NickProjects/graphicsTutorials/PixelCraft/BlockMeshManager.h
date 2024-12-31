@@ -77,6 +77,8 @@ public:
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
+    Chunk* getChunkAtPosition(glm::vec2 position);
+
     glm::ivec2 getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset);
 
     void destroyBlock(const BlockHandle& blockHandle);

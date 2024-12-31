@@ -179,6 +179,25 @@ BlockHandle BlockManager::getBlockAtPosition(glm::vec2 position) {
         return BlockHandle{ nullptr, glm::ivec2(chunkPosX, chunkPosY), glm::ivec2(blockOffsetX, blockOffsetY) };
     }
 }
+Chunk* BlockManager::getChunkAtPosition(glm::vec2 position) {
+    int blockPosX = std::floor(position.x);
+    int blockPosY = std::floor(position.y);
+    int chunkPosX = blockPosX / CHUNK_WIDTH;
+    int chunkPosY = blockPosY / CHUNK_WIDTH;
+
+    if (chunkPosX < WORLD_WIDTH_CHUNKS && chunkPosY < WORLD_HEIGHT_CHUNKS && chunkPosX >= 0 && chunkPosY >= 0) {
+        Chunk& chunk = m_chunks[chunkPosX][chunkPosY];
+        return &chunk;
+
+    }
+    else {
+        Chunk blankChunk{};
+        std::cout << "Chunk out of bounds!!!";
+        return &blankChunk;
+    }
+}
+
+
 
 glm::ivec2 BlockManager::getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset) {
     int chunkBlockTotalX = chunkCoords.x * CHUNK_WIDTH;
@@ -396,7 +415,7 @@ bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& c
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
 
-    const float farthestChunkAllowed = 3.0f;
+    const float farthestChunkAllowed = 1.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
     return distance > unloadDistance;
@@ -434,7 +453,7 @@ void BlockManager::unloadChunk(int x, int y) {
     //saveChunk(x, y);
     m_chunks[x][y].waterBlocks.clear();
 
-    m_chunks[x][y].m_isLoaded = false;;
+    m_chunks[x][y].m_isLoaded = false;
 }
 
 std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {
