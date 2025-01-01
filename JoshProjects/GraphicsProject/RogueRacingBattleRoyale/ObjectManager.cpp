@@ -153,6 +153,7 @@ void ObjectManager::createPhysicsForObject(PlaceableObject* obj) {
 
   // Debug output before shape creation
   if (DEBUG_OUTPUT) {
+    std::cout << "SETTING OBJECT USER DATA FOR " << (unsigned)bodyId.index1 << " WITH " << (int)obj->getCollisionType() << std::endl;
     std::cout << "About to create collision shape for: " << obj->getDisplayName()
       << " CollisionType: " << static_cast<int>(obj->getCollisionType()) << std::endl;
   }
@@ -207,35 +208,41 @@ void ObjectManager::removeInvalidObjects(const std::vector<PlaceableObject*>& ob
 }
 
 void ObjectManager::update() {
-  // Update object positions and timers
-  for (auto& obj : m_placedObjects) {
-    if (!obj) continue;
-
-    if (m_physicsSystem && b2Body_IsValid(obj->getPhysicsBody())) {
-      b2Vec2 pos = b2Body_GetPosition(obj->getPhysicsBody());
-      float angle = b2Rot_GetAngle(b2Body_GetRotation(obj->getPhysicsBody()));
-      obj->setPosition(glm::vec2(pos.x, pos.y));
-      obj->setRotation(angle);
-
-      // Update physics properties for pushable objects
-      if (obj->getCollisionType() == CollisionType::PUSHABLE) {
-        b2Body_SetLinearDamping(obj->getPhysicsBody(), 4.0f);
-        b2Body_SetAngularDamping(obj->getPhysicsBody(), 4.0f);
-      }
-    }
-
-    if (obj->getObjectType() == ObjectType::XPPickup) {
-      obj->updateRespawnTimer(1.0f / 60.0f);
-    }
+  if (DEBUG_OUTPUT) {
+    std::cout << "Starting ObjectManager update\n";
+    std::cout << "Number of placed objects: " << m_placedObjects.size() << "\n";
   }
 
-  // Update grid
-  m_grid.clear();
-  for (const auto& obj : m_placedObjects) {
-    if (obj) {
-      int64_t cell = getGridCell(obj->getPosition());
-      m_grid[cell].push_back(obj.get());
+  // Update object positions and timers
+  for (auto& obj : m_placedObjects) {
+    if (!obj) {
+      std::cerr << "Warning: Null object in update loop\n";
+      continue;
     }
+      if (m_physicsSystem && b2Body_IsValid(obj->getPhysicsBody())) {
+        b2Vec2 pos = b2Body_GetPosition(obj->getPhysicsBody());
+        float angle = b2Rot_GetAngle(b2Body_GetRotation(obj->getPhysicsBody()));
+        obj->setPosition(glm::vec2(pos.x, pos.y));
+        obj->setRotation(angle);
+
+        // Update physics properties for pushable objects
+        if (obj->getCollisionType() == CollisionType::PUSHABLE) {
+          b2Body_SetLinearDamping(obj->getPhysicsBody(), 4.0f);
+          b2Body_SetAngularDamping(obj->getPhysicsBody(), 4.0f);
+        }
+      }
+
+      // Update XP pickup timers
+      if (obj->getObjectType() == ObjectType::XPPickup) {
+        obj->updateRespawnTimer(1.0f / 60.0f);
+      }
+  }
+
+  // Update grid with validation
+  updateGrid();
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "ObjectManager update complete\n";
   }
 }
 
@@ -300,16 +307,46 @@ int64_t ObjectManager::getGridCell(const glm::vec2& pos) const {
 }
 
 void ObjectManager::updateGrid() {
-  // Clear vectors
-  for (auto& pair : m_grid) {
-    pair.second.clear();
+  // Clear the grid first
+  m_grid.clear();
+
+  // Debug output
+  if (DEBUG_OUTPUT) {
+    std::cout << "Updating grid with " << m_placedObjects.size() << " objects\n";
   }
 
-  // Re-add all objects to their current cells
+  // Re-add all objects with type checking
   for (const auto& obj : m_placedObjects) {
-    if (obj) {
-      int64_t cell = getGridCell(obj->getPosition());
-      m_grid[cell].push_back(obj.get());
+    if (!obj) {
+      std::cerr << "Warning: Null object found in m_placedObjects\n";
+      continue;
+    }
+
+    // Verify object type
+    ObjectType type = obj->getObjectType();
+    glm::vec2 pos = obj->getPosition();
+
+    if (DEBUG_OUTPUT) {
+      std::cout << "Adding object to grid - Type: " << static_cast<int>(type)
+        << " Position: (" << pos.x << "," << pos.y << ")\n";
+    }
+
+    int64_t cell = getGridCell(pos);
+    m_grid[cell].push_back(obj.get());
+  }
+
+  // Verify grid contents after update
+  if (DEBUG_OUTPUT) {
+    for (const auto& pair : m_grid) {
+      std::cout << "Grid cell " << pair.first << " contains " << pair.second.size() << " objects:\n";
+      for (const auto* obj : pair.second) {
+        if (obj) {
+          std::cout << "  Object type: " << static_cast<int>(obj->getObjectType()) << "\n";
+        }
+        else {
+          std::cout << "  WARNING: Null object in grid\n";
+        }
+      }
     }
   }
 }
@@ -330,12 +367,26 @@ std::vector<const PlaceableObject*> ObjectManager::getNearbyObjects(const glm::v
     for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
       int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
       auto it = m_grid.find(cell);
+
       if (it != m_grid.end()) {
         // Check each object in the cell
         for (auto* obj : it->second) {
-          if (obj && uniqueObjects.insert(obj).second) {
-            nearby.push_back(obj);
+          if (!obj) {
+            std::cerr << "Warning: Null object found in grid cell\n";
+            continue;
           }
+
+          // Validate object type
+            ObjectType type = obj->getObjectType();
+            // Only add if it's a valid object and not already in the set
+            if (uniqueObjects.insert(obj).second) {
+              nearby.push_back(obj);
+
+              if (DEBUG_OUTPUT) {
+                std::cout << "Found nearby object of type: "
+                  << static_cast<int>(type) << "\n";
+              }
+            }
         }
       }
     }

@@ -9,6 +9,7 @@
 #include "JAGEngine/Vertex.h"
 #include <array>
 #include <memory>
+#include "ObjectProperties.h"
 
 class PlaceableObject;
 class ObjectManager;
@@ -106,6 +107,7 @@ public:
     return m_properties.wheelFriction * m_properties.baseFriction;
   }
   int getCurrentLap() const { return m_properties.currentLap; }
+  ObjectType getObjectType() const { return ObjectType::Default; }
 
   SplineTrack* getTrack() const { return m_track; }
 

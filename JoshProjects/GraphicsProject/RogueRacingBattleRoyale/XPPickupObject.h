@@ -31,6 +31,8 @@ public:
     }
   }
 
+  bool m_pendingDeactivation = false;
+
   void onCarCollision(Car* car) override;
   void onEndCollision(Car* car) override;
 

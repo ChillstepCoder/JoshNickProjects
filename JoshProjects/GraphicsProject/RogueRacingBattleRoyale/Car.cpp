@@ -33,6 +33,9 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
     }
   }
 
+  if (DEBUG_OUTPUT) {
+    std::cout << "SETTING CAR USER DATA FOR " << (unsigned)bodyId.index1 << std::endl;
+  }
   b2Body_SetUserData(m_bodyId, static_cast<void*>(this));
 }
 

@@ -3,6 +3,7 @@
 #include "PhysicsSystem.h"
 #include "Car.h"
 #include "PlaceableObject.h"
+#include "XPPickupObject.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
@@ -39,83 +40,7 @@ void PhysicsSystem::update(float timeStep) {
     b2World_Step(m_worldId, fixedTimeStep, 1);
   }
 
-  // Handle sensor events
-  b2SensorEvents sensorEvents = b2World_GetSensorEvents(m_worldId);
-
-  // Handle begin touch events
-  for (int i = 0; i < sensorEvents.beginCount; ++i) {
-    b2SensorBeginTouchEvent* beginTouch = sensorEvents.beginEvents + i;
-
-    b2BodyId sensorBody = b2Shape_GetBody(beginTouch->sensorShapeId);
-    b2BodyId visitorBody = b2Shape_GetBody(beginTouch->visitorShapeId);
-
-    if (!b2Body_IsValid(sensorBody) || !b2Body_IsValid(visitorBody)) {
-      continue;
-    }
-
-    void* sensorData = b2Body_GetUserData(sensorBody);
-    void* visitorData = b2Body_GetUserData(visitorBody);
-
-    if (!sensorData || !visitorData) {
-      continue;
-    }
-
-    PlaceableObject* object = static_cast<PlaceableObject*>(sensorData);
-    Car* car = static_cast<Car*>(visitorData);
-
-    if (!object || !car) {
-      continue;
-    }
-
-    object->onCarCollision(car);
-  }
-
-  // Handle end touch events with extra validation
-  for (int i = 0; i < sensorEvents.endCount; ++i) {
-    b2SensorEndTouchEvent* endTouch = sensorEvents.endEvents + i;
-
-    b2BodyId sensorBody = b2Shape_GetBody(endTouch->sensorShapeId);
-    b2BodyId visitorBody = b2Shape_GetBody(endTouch->visitorShapeId);
-
-    // Extra validation for end collision bodies
-    if (!b2Body_IsValid(sensorBody) || !b2Body_IsValid(visitorBody)) {
-      continue;
-    }
-
-    // Double check that the bodies are still enabled
-    if (!b2Body_IsEnabled(sensorBody) || !b2Body_IsEnabled(visitorBody)) {
-      continue;
-    }
-
-    void* sensorData = nullptr;
-    void* visitorData = nullptr;
-
-    try {
-      sensorData = b2Body_GetUserData(sensorBody);
-      if (!sensorData) continue;
-
-      visitorData = b2Body_GetUserData(visitorBody);
-      if (!visitorData) continue;
-    }
-    catch (...) {
-      continue;
-    }
-
-    PlaceableObject* object = static_cast<PlaceableObject*>(sensorData);
-    Car* car = static_cast<Car*>(visitorData);
-
-    if (!object || !car) {
-      continue;
-    }
-
-    try {
-        object->onEndCollision(car);
-    }
-    catch (...) {
-      continue;
-    }
-  }
-
+  handleSensorEvents();
   synchronizeTransforms();
 }
 
@@ -310,23 +235,120 @@ bool PhysicsSystem::isValidBody(b2BodyId bodyId) {
   return userData != nullptr && reinterpret_cast<uintptr_t>(userData) >= 1000;
 }
 
+bool PhysicsSystem::isValidUserData(void* userData) const {
+  // Check if pointer is null or suspiciously small/invalid
+  return userData != nullptr && reinterpret_cast<uintptr_t>(userData) > 1000;
+}
+
+bool PhysicsSystem::isCarBody(b2BodyId bodyId) const {
+  if (!b2Body_IsValid(bodyId)) return false;
+
+  void* userData = nullptr;
+  userData = b2Body_GetUserData(bodyId);
+
+
+  return isValidUserData(userData) &&
+    static_cast<Car*>(userData) != nullptr;
+}
+
+bool PhysicsSystem::isObjectBody(b2BodyId bodyId) const {
+  if (!b2Body_IsValid(bodyId)) return false;
+
+  void* userData = nullptr;
+
+  userData = b2Body_GetUserData(bodyId);
+
+  if (!isValidUserData(userData)) {
+    return false;
+  }
+
+  // Check if it has the correct type
+  PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
+  return obj->getObjectType() != ObjectType::Default;
+  
+}
+void PhysicsSystem::handleSensorEvents() {
+  if (!b2World_IsValid(m_worldId)) return;
+
+  b2SensorEvents sensorEvents = b2World_GetSensorEvents(m_worldId);
+
+  // Handle begin touch events
+  for (int i = 0; i < sensorEvents.beginCount; ++i) {
+    b2SensorBeginTouchEvent* beginTouch = sensorEvents.beginEvents + i;
+
+    b2BodyId sensorBody = b2Shape_GetBody(beginTouch->sensorShapeId);
+    b2BodyId visitorBody = b2Shape_GetBody(beginTouch->visitorShapeId);
+
+    // Validate bodies exist and are the right types
+    if (!isObjectBody(sensorBody) || !isCarBody(visitorBody)) {
+      continue;
+    }
+
+    void* sensorData = b2Body_GetUserData(sensorBody);
+    void* visitorData = b2Body_GetUserData(visitorBody);
+
+    PlaceableObject* object = static_cast<PlaceableObject*>(sensorData);
+    Car* car = static_cast<Car*>(visitorData);
+
+    if (!object || !car) {
+      continue;
+    }
+
+    // Check if it's an XP pickup and if it's active
+    if (object->getObjectType() == ObjectType::XPPickup) {
+      const auto& xpProps = object->getXPProperties();
+      if (!xpProps.isActive) {
+        continue;
+      }
+    }
+
+    object->onCarCollision(car);
+  }
+
+  // Handle end touch events - same validation
+  for (int i = 0; i < sensorEvents.endCount; ++i) {
+    b2SensorEndTouchEvent* endTouch = sensorEvents.endEvents + i;
+
+    b2BodyId sensorBody = b2Shape_GetBody(endTouch->sensorShapeId);
+    b2BodyId visitorBody = b2Shape_GetBody(endTouch->visitorShapeId);
+
+    if (!b2Shape_IsSensor(endTouch->sensorShapeId)) {
+      // Sometimes box2d fucks up and inverts our sensor and visitor
+      // TODO: We may not want to continue here, and actually just swap the bodies like
+      // std::swap(SensorBody, visitorBody); so we can still process the end touch.
+      continue;
+    }
+
+    void* sensorData = b2Body_GetUserData(sensorBody);
+    void* visitorData = b2Body_GetUserData(visitorBody);
+
+    PlaceableObject* object = static_cast<PlaceableObject*>(sensorData);
+    Car* car = static_cast<Car*>(visitorData);
+
+    if (!object || !car) {
+      continue;
+    }
+
+    // Skip end collision events for XP pickups
+    if (object->getObjectType() == ObjectType::XPPickup) {
+      continue;
+    }
+
+    object->onEndCollision(car);
+  }
+}
+
 void* PhysicsSystem::tryGetUserData(b2BodyId bodyId) {
   if (!b2Body_IsValid(bodyId)) {
     std::cout << "Body " << bodyId.index1 << " is invalid" << std::endl;
     return nullptr;
   }
 
-  try {
     void* userData = b2Body_GetUserData(bodyId);
     if (!userData) {
       std::cout << "No user data for body " << bodyId.index1 << std::endl;
     }
     return userData;
-  }
-  catch (...) {
-    std::cout << "Exception getting user data for body " << bodyId.index1 << std::endl;
-    return nullptr;
-  }
 }
 
 void PhysicsSystem::finishTask(void* taskPtr, void* userContext) {

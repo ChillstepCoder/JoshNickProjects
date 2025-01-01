@@ -1105,6 +1105,15 @@ void LevelEditorScreen::initDefaultTrack() {
     m_track->createDefaultTrack();
     std::cout << "Track created with " << m_track->getNodes().size() << " nodes\n";
 
+    // Add this new section to clear objects
+    if (m_objectManager) {
+      // Clear all placed objects
+      m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
+      m_objectManager->createDefaultTemplates();
+      m_selectedObject = nullptr;
+      m_selectedTemplateIndex = -1;
+    }
+
     updateRoadMesh();
   }
 }

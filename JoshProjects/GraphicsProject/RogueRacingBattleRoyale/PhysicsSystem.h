@@ -8,6 +8,8 @@
 #include "PhysicsCategories.h"
 
 class Car;
+class PlaceableObject;
+class XPPickupObject;
 
 class PhysicsSystem {
 public:
@@ -50,8 +52,12 @@ private:
   b2ContactHitEvent m_hitContactEvents[256];
 
   bool isValidBody(b2BodyId bodyId);
+  bool isValidUserData(void* userData) const;
+  bool isCarBody(b2BodyId bodyId) const;
+  bool isObjectBody(b2BodyId bodyId) const;
   void* tryGetUserData(b2BodyId bodyId);
 
+  void handleSensorEvents();
   static void* enqueueTask(b2TaskCallback* task, int32_t itemCount, int32_t minRange,
     void* taskContext, void* userContext);
   static void finishTask(void* taskPtr, void* userContext);

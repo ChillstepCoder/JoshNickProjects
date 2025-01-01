@@ -70,13 +70,8 @@ public:
   virtual ObjectType getObjectType() const { return ObjectType::Default; }
 
   bool isSensor() const {
-    try {
       ObjectType type = getObjectType();
       return type == ObjectType::Booster || type == ObjectType::XPPickup;
-    }
-    catch (...) {
-      return false;  // If anything goes wrong, assume it's not a sensor
-    }
   }
 
   virtual const BoosterProperties& getBoosterProperties() const {
