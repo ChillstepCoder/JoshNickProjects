@@ -4,6 +4,7 @@
 #include "CellularAutomataManager.h"
 #include "PerlinNoise.hpp"
 #include <iostream>
+#include <fstream>
 
 
 void Chunk::init() {
@@ -65,20 +66,54 @@ void Chunk::render() {
 }
 
 void Chunk::save() {
-    // Save all blocks in the chunk before the unload
+    std::ofstream outFile("World/chunk_" + std::to_string(static_cast<int>(m_worldPosition.x)) +
+        "_" + std::to_string(static_cast<int>(m_worldPosition.y)) + ".dat", std::ios::binary);
+
+    if (!outFile) {
+        std::cerr << "Failed to open file for saving chunk!" << std::endl;
+        return;
+    }
+
+    // Write chunk position to file (for loading purposes)
+    outFile.write(reinterpret_cast<const char*>(&m_worldPosition.x), sizeof(m_worldPosition.x));
+    outFile.write(reinterpret_cast<const char*>(&m_worldPosition.y), sizeof(m_worldPosition.y));
+
+    // Save each block in the chunk
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
-            Block& block = blocks[x][y];
-            
-            // save the stuff somehow
+            blocks[x][y].saveToFile(outFile);
         }
     }
 
-    // Clear the sprite batch
-    m_spriteBatch.dispose();
-
-    m_isLoaded = false;
+    outFile.close();
+    std::cout << "Chunk saved!" << std::endl;
 }
+
+void Chunk::load() {
+    std::ifstream inFile("World/chunk_" + std::to_string(static_cast<int>(m_worldPosition.x)) +
+        "_" + std::to_string(static_cast<int>(m_worldPosition.y)) + ".dat", std::ios::binary);
+
+    if (!inFile) {
+        std::cerr << "Failed to open file for loading chunk!" << std::endl;
+        return;
+    }
+
+    // Read chunk position from file
+    inFile.read(reinterpret_cast<char*>(&m_worldPosition.x), sizeof(m_worldPosition.x));
+    inFile.read(reinterpret_cast<char*>(&m_worldPosition.y), sizeof(m_worldPosition.y));
+
+    // Load each block in the chunk
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            blocks[x][y].loadFromFile(inFile);
+        }
+    }
+
+    inFile.close();
+    std::cout << "Chunk loaded!" << std::endl;
+}
+
+
 
 void Chunk::destroy() {
     // Destroy physics bodies for all blocks in the chunk
@@ -146,9 +181,7 @@ void BlockManager::initializeChunks(glm::vec2 playerPosition) {
         for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
             Chunk& chunk = m_chunks[chunkX][chunkY];
 
-            if (!isChunkFarAway(playerPosition, chunk.getWorldPosition())) {
-                loadChunk(chunkX, chunkY);
-            }
+            generateChunk(chunkX, chunkY, chunk);
         }
     }
 }
@@ -233,7 +266,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
 
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
 
-        std::cout << "Block destroyed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
+        //std::cout << "Block destroyed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
 
         chunk.m_isMeshDirty = true;
     }
@@ -274,7 +307,7 @@ void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& p
         chunk.waterBlocks.push_back(glm::vec2(position.x, position.y)); // Add to the list of water blocks.
     }
 
-    std::cout << "water placed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
+    //std::cout << "water placed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
 
 
     chunk.m_isMeshDirty = true;
@@ -341,23 +374,12 @@ bool BlockManager::isChunkLoaded(int x, int y) {
     return m_chunks[x][y].isLoaded();
 }
 
-void BlockManager::loadChunk(int chunkX, int chunkY) {
 
-    assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
-    
-    // Create Perlin noise instance with random seed
-    static siv::PerlinNoise perlin(12345); // Can change this seed for different terrain
-
-    // Parameters for terrain generation
+void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
+    static siv::PerlinNoise perlin(12345);  // Use a fixed seed to regenerate terrain consistently
     const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
     const float AMPLITUDE = 10.0f;    // Controls the height variation
-    const float BASE_SURFACE_Y = 384.0f;    // Base height of the surface (6 chunks of ground, 2 chunks of sky)
-
-    Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
-    
-    Chunk& chunk = m_chunks[chunkX][chunkY];
-
-    chunk.init(); // Explicitly call init for each chunk
+    const float BASE_SURFACE_Y = 384.0f;  // Base height for the surface (6 chunks of ground, 2 chunks of sky)
 
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         int worldX = chunkX * CHUNK_WIDTH + x;
@@ -370,44 +392,91 @@ void BlockManager::loadChunk(int chunkX, int chunkY) {
             int worldY = chunkY * CHUNK_WIDTH + y;
             glm::vec2 position(worldX, worldY);
 
-            if (worldY == height) { // Create surface (grass) blocks
+            if (worldY == height) {  // Surface block (grass)
                 Block surfaceBlock;
                 surfaceBlock.init(m_world, BlockID::GRASS, position);
                 chunk.blocks[x][y] = surfaceBlock;
             }
-            else if (worldY < height && worldY > DIRT_BOTTOM) { // Fill blocks below surface with dirt
+            else if (worldY < height && worldY > DIRT_BOTTOM) {  // Dirt blocks
                 Block dirtBlock;
                 dirtBlock.init(m_world, BlockID::DIRT, position);
                 chunk.blocks[x][y] = dirtBlock;
             }
-            else if (worldY <= DIRT_BOTTOM) { // Fill deeper blocks with stone
+            else if (worldY <= DIRT_BOTTOM) {  // Stone blocks
                 Block stoneBlock;
                 stoneBlock.init(m_world, BlockID::STONE, position);
                 chunk.blocks[x][y] = stoneBlock;
-            } else {
+            }
+            else {  // Air blocks
                 Block airBlock;
                 airBlock.init(m_world, BlockID::AIR, position);
                 chunk.blocks[x][y] = airBlock;
             }
         }
     }
-
-    // Build mesh
-    chunk.buildChunkMesh();
-
-    m_activeChunks.push_back(&m_chunks[chunkX][chunkY]);
-
 }
 
-void BlockManager::loadSavedChunk(int chunkX, int chunkY) {
 
+
+void BlockManager::loadChunk(int chunkX, int chunkY) {
     Chunk& chunk = m_chunks[chunkX][chunkY];
 
-    chunk.init();
+    if (loadChunkFromFile(chunkX, chunkY, chunk)) {
+        // If the chunk is successfully loaded from the file
+        chunk.init();
+        chunk.buildChunkMesh();
+        m_activeChunks.push_back(&chunk);
+    }
+    else {
+        // If no saved chunk data exists, generate it
+        generateChunk(chunkX, chunkY, chunk);
+        saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
+        chunk.init();
+        chunk.buildChunkMesh();
+        m_activeChunks.push_back(&chunk);
+    }
+}
 
-    chunk.buildChunkMesh();
+bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
+    std::ofstream file("World/chunk_" + std::to_string(chunkX) + "_" + std::to_string(chunkY) + ".dat", std::ios::binary);
 
-    m_activeChunks.push_back(&m_chunks[chunkX][chunkY]);
+    if (!file) {
+        std::cerr << "Failed to open file for saving chunk " << chunkX << ", " << chunkY << std::endl;
+        return false;
+    }
+
+    // Save block data 
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            Block& block = chunk.blocks[x][y];
+            BlockID blockID = block.getBlockID(); 
+            file.write(reinterpret_cast<char*>(&blockID), sizeof(BlockID));
+        }
+    }
+
+    file.close();
+    return true;
+}
+
+// Load chunk data from a binary file
+bool BlockManager::loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk) {
+    std::ifstream file("chunk_" + std::to_string(chunkX) + "_" + std::to_string(chunkY) + ".dat", std::ios::binary);
+
+    if (!file) {
+        return false;  // Return false if the file doesn't exist
+    }
+
+    // Load block data
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            BlockID blockID;
+            file.read(reinterpret_cast<char*>(&blockID), sizeof(BlockID));
+            chunk.blocks[x][y].init(m_world, blockID, glm::vec2(x, y));  // Reinitialize the block with the loaded BlockID
+        }
+    }
+
+    file.close();
+    return true;
 }
 
 
@@ -415,7 +484,7 @@ bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& c
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
 
-    const float farthestChunkAllowed = 1.0f;
+    const float farthestChunkAllowed = 2.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
     return distance > unloadDistance;
@@ -443,6 +512,11 @@ void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
 void BlockManager::unloadChunk(int x, int y) {
     assert(x >= 0 && y >= 0 && x < WORLD_WIDTH_CHUNKS && y < WORLD_HEIGHT_CHUNKS);
 
+    Chunk& chunk = m_chunks[x][y];
+    if (chunk.isLoaded()) {
+        chunk.save(); // Save the chunk before unloading
+    }
+
     for (int i = 0; i < m_activeChunks.size(); i++) { // Fixes the list of active chunks
         if (m_activeChunks[i] == &m_chunks[x][y]) {
             m_activeChunks[i] = m_activeChunks.back();
@@ -450,9 +524,7 @@ void BlockManager::unloadChunk(int x, int y) {
             break;
         }
     }
-    //saveChunk(x, y);
     m_chunks[x][y].waterBlocks.clear();
-
     m_chunks[x][y].m_isLoaded = false;
 }
 

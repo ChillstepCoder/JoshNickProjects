@@ -42,13 +42,33 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         BlockHandle downBlock = getBlockAtPositionSafely(blockManager, glm::vec2(downPosX, downPosY));
 
+        if (downBlock.block == nullptr) {
+            continue;
+        }
+
         BlockHandle downRightBlock = getBlockAtPositionSafely(blockManager, glm::vec2(downRightPosX, downRightPosY));
+
+        if (downRightBlock.block == nullptr) {
+            continue;
+        }
 
         BlockHandle downLeftBlock = getBlockAtPositionSafely(blockManager, glm::vec2(downLeftPosX, downLeftPosY));
 
+        if (downLeftBlock.block == nullptr) {
+            continue;
+        }
+
         BlockHandle leftBlock = getBlockAtPositionSafely(blockManager, glm::vec2(leftPosX, leftPosY));
+
+        if (leftBlock.block == nullptr) {
+            continue;
+        }
         
         BlockHandle rightBlock = getBlockAtPositionSafely(blockManager, glm::vec2(rightPosX, rightPosY));
+
+        if (rightBlock.block == nullptr) {
+            continue;
+        }
 
 
         if (downBlock.block->getBlockID() == BlockID::AIR) { // If downBlock is air, transfers all water to downBlock
@@ -72,8 +92,6 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                     }
                 }
             }
-        } else if (downBlock.block == nullptr) {
-            continue;
         }
 
         if (moveWaterDiagonally(waterBlock, downRightBlock, glm::vec2(downRightPosX, downRightPosY), rightBlock, glm::vec2(rightPosX, rightPosY), blockManager)) {
