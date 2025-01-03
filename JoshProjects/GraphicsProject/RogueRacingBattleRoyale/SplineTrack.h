@@ -3,6 +3,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "TrackNode.h"
+#include <unordered_map>
+
 class SplineTrack {
 public:
   struct SplinePointInfo {
@@ -29,11 +31,7 @@ public:
   void createDefaultTrack();
   void addNode(const glm::vec2& position);
   void removeNode(size_t index);
-  void insertNode(size_t index, const TrackNode& node) {
-    if (index <= m_nodes.size()) {
-      m_nodes.insert(m_nodes.begin() + index, node);
-    }
-  }
+  void insertNode(size_t index, const TrackNode& node);
 
   bool isDefaultDirection() const {
       return !m_startConfig.isClockwise;  // Counter-clockwise is default
@@ -48,28 +46,14 @@ public:
   const std::vector<TrackNode>& getNodes() const { return m_nodes; }
   std::vector<TrackNode>& getNodes() { return m_nodes; }
 
-  TrackNode* getStartLineNode() {
-    for (auto& node : m_nodes) {
-      if (node.isStartLine()) {
-        return &node;
-      }
-    }
-    return nullptr;
-  }
+  TrackNode* getStartLineNode();
 
-  const TrackNode* getStartLineNode() const {
-    for (const auto& node : m_nodes) {
-      if (node.isStartLine()) {
-        return &node;
-      }
-    }
-    return nullptr;
-  }
+  const TrackNode* getStartLineNode() const;
 
   glm::vec2 getTrackDirectionAtNode(const TrackNode* node) const;
   std::vector<glm::vec2> getBarrierVertices() const;
 
-  // Start Position Configuration - Keep only one set of these methods
+  // Start Position Configuration
   StartPositionConfig& getStartPositionConfig() { return m_startConfig; }
   const StartPositionConfig& getStartPositionConfig() const { return m_startConfig; }
   void setStartPositionConfig(const StartPositionConfig& config) { m_startConfig = config; }
@@ -81,9 +65,14 @@ public:
   // Start points calculation
   std::vector<StartPosition> calculateStartPositions() const;
 
+  void modifyNode(size_t index, const TrackNode& newNode);
+
 private:
   std::vector<TrackNode> m_nodes;
   StartPositionConfig m_startConfig;
+
+  mutable std::unordered_map<int, std::vector<SplinePointInfo>> m_splinePointCache;
+  mutable bool m_cacheValid = false;
 
   glm::vec2 catmullRom(const glm::vec2& p0, const glm::vec2& p1,
     const glm::vec2& p2, const glm::vec2& p3, float t) const;
@@ -95,4 +84,8 @@ private:
 
   std::pair<std::vector<glm::vec2>, std::vector<glm::vec2>> calculateStartLanes(
     const TrackNode* startNode, const glm::vec2& direction) const;
+
+  void invalidateCache();
+  std::vector<SplinePointInfo> buildSplinePoints(int subdivisions) const;
+
 };

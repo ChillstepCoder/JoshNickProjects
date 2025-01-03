@@ -3,7 +3,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-SplineTrack::SplineTrack() {
+SplineTrack::SplineTrack() : m_cacheValid(false) {
   createDefaultTrack();
 }
 
@@ -28,15 +28,28 @@ void SplineTrack::createDefaultTrack() {
   m_nodes.push_back(node2);
   m_nodes.push_back(node3);
   m_nodes.push_back(node4);
+
+  // Clear cache and mark as valid
+  invalidateCache();
+  m_cacheValid = true;
 }
 
 void SplineTrack::addNode(const glm::vec2& position) {
   m_nodes.push_back(TrackNode(position));
+  invalidateCache();
 }
 
 void SplineTrack::removeNode(size_t index) {
   if (index < m_nodes.size()) {
     m_nodes.erase(m_nodes.begin() + index);
+    invalidateCache();
+  }
+}
+
+void SplineTrack::insertNode(size_t index, const TrackNode& node) {
+  if (index <= m_nodes.size()) {
+    m_nodes.insert(m_nodes.begin() + index, node);
+    invalidateCache();
   }
 }
 
@@ -164,11 +177,17 @@ std::vector<SplineTrack::StartPosition> SplineTrack::calculateStartPositions() c
   return positions;
 }
 
+void SplineTrack::modifyNode(size_t index, const TrackNode& newNode) {
+  if (index < m_nodes.size()) {
+    m_nodes[index] = newNode;
+    invalidateCache();
+  }
+}
+
 void SplineTrack::setStartLine(TrackNode* node) {
   // Clear existing start line
   for (auto& existingNode : m_nodes) {
     if (&existingNode != node && existingNode.isStartLine()) {
-      std::cout << "Clearing previous start line\n";
       existingNode.setStartLine(false);
     }
   }
@@ -176,11 +195,11 @@ void SplineTrack::setStartLine(TrackNode* node) {
   // Set new start line
   if (node) {
     node->setStartLine(true);
-    std::cout << "Set new start line\n";
   }
+  invalidateCache();
 }
 
-std::vector<SplineTrack::SplinePointInfo> SplineTrack::getSplinePoints(int subdivisions) const {
+std::vector<SplineTrack::SplinePointInfo> SplineTrack::buildSplinePoints(int subdivisions) const {
   std::vector<SplinePointInfo> points;
   if (m_nodes.empty() || subdivisions <= 0) return points;
 
@@ -222,6 +241,23 @@ std::vector<SplineTrack::SplinePointInfo> SplineTrack::getSplinePoints(int subdi
     }
   }
 
+  return points;
+}
+
+std::vector<SplineTrack::SplinePointInfo> SplineTrack::getSplinePoints(int subdivisions) const {
+  if (!m_cacheValid || m_nodes.empty() || subdivisions <= 0) {
+    return std::vector<SplinePointInfo>();
+  }
+
+  // Check if we have this subdivision level cached
+  auto it = m_splinePointCache.find(subdivisions);
+  if (it != m_splinePointCache.end()) {
+    return it->second;
+  }
+
+  // Build and cache the spline points for this subdivision level
+  auto points = buildSplinePoints(subdivisions);
+  m_splinePointCache[subdivisions] = points;
   return points;
 }
 
@@ -273,6 +309,24 @@ float SplineTrack::catmullRomValue(float p0, float p1, float p2, float p3, float
   result *= 0.5f;
 
   return result;
+}
+
+TrackNode* SplineTrack::getStartLineNode() {
+  for (auto& node : m_nodes) {
+    if (node.isStartLine()) {
+      return &node;
+    }
+  }
+  return nullptr;
+}
+
+const TrackNode* SplineTrack::getStartLineNode() const {
+  for (const auto& node : m_nodes) {
+    if (node.isStartLine()) {
+      return &node;
+    }
+  }
+  return nullptr;
 }
 
 glm::vec2 SplineTrack::getTrackDirectionAtNode(const TrackNode* node) const {
@@ -368,5 +422,15 @@ SplineTrack::calculateStartLanes(const TrackNode* startNode, const glm::vec2& di
   rightLane.push_back(rightCenter);
 
   return { leftLane, rightLane };
+}
+
+void SplineTrack::invalidateCache() {
+  m_splinePointCache.clear();
+  if (!m_nodes.empty()) {
+    m_cacheValid = true;
+  }
+  else {
+    m_cacheValid = false;
+  }
 }
 

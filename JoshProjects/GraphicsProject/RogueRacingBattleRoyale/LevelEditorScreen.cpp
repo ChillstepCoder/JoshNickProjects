@@ -595,8 +595,8 @@ void LevelEditorScreen::drawDebugWindow() {
       ImGui::SetTooltip("Counter-clockwise is the default direction.\nToggle to change racing direction.");
     }
 
-    if (ImGui::SliderInt("Number of Cars", &config.numPositions, 2, 20)) {
-      config.numPositions = glm::clamp(config.numPositions, 2, 20);
+    if (ImGui::SliderInt("Number of Cars", &config.numPositions, 2, 100)) {
+      config.numPositions = glm::clamp(config.numPositions, 2, 100);
       updateRoadMesh();
     }
 

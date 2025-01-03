@@ -29,25 +29,33 @@ void AIDriver::update(float deltaTime) {
   }
 
   // Update stuck detection
-  updateStuckState(deltaTime);
+  {
+    TIME_SCOPE("Stuck Detection");
+    updateStuckState(deltaTime);
+  }
 
   // Update sensors periodically
   m_sensorTimer += deltaTime;
   if (m_sensorTimer >= SENSOR_UPDATE_INTERVAL) {
+    TIME_SCOPE("Sensor Update");
     m_sensorTimer = 0.0f;
     updateSensors();
   }
 
-  m_targetPoint = findClosestSplinePoint();
-  m_lookAheadPoint = calculateLookAheadPoint();
+  {
+    TIME_SCOPE("Spline Navigation");
+    m_targetPoint = findClosestSplinePoint();
+    m_lookAheadPoint = calculateLookAheadPoint();
+  }
 
   // Normal driving behavior if not stuck
   if (!m_stuckState.isStuck) {
+    TIME_SCOPE("Normal Driving");
     updateSteering();
     updateThrottle();
   }
   else {
-    // Recovery behavior when stuck
+    TIME_SCOPE("Stuck Recovery");
     applyStuckRecovery();
   }
   m_car->update(m_currentInput);
