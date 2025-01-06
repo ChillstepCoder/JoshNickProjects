@@ -15,13 +15,13 @@ void RaceCountdown::init(const char* fontPath, int fontSize) {
   m_font = std::make_unique<JAGEngine::SpriteFont>();
   m_font->init(fontPath, fontSize);
   GLuint textureID = m_font->getTextureID();
-  std::cout << "RaceCountdown font initialized. Texture ID: " << textureID << std::endl;
+  //std::cout << "RaceCountdown font initialized. Texture ID: " << textureID << std::endl;
 
   // Verify texture is valid
   GLint width = 0;
   glBindTexture(GL_TEXTURE_2D, textureID);
   glGetTextureLevelParameteriv(textureID, 0, GL_TEXTURE_WIDTH, &width);
-  std::cout << "Font texture width: " << width << std::endl;
+  //std::cout << "Font texture width: " << width << std::endl;
 }
 
 void RaceCountdown::startCountdown() {
@@ -34,7 +34,7 @@ void RaceCountdown::startCountdown() {
 void RaceCountdown::update(float deltaTime) {
   if (m_isCountingDown) {
     m_timer -= deltaTime;
-    std::cout << "Countdown timer: " << m_timer << std::endl;
+    //std::cout << "Countdown timer: " << m_timer << std::endl;
 
     if (m_timer <= 0.0f) {
       m_isCountingDown = false;
@@ -72,8 +72,8 @@ void RaceCountdown::draw(JAGEngine::SpriteBatch& batch, const JAGEngine::Camera2
     JAGEngine::ColorRGBA8(0, 0, 0, 0), // black
     JAGEngine::Justification::MIDDLE); // Center align
 
-  std::cout << "Drawing text '" << text << "' at position: "
-    << screenCenter.x << ", " << screenCenter.y << std::endl;
+  //std::cout << "Drawing text '" << text << "' at position: "
+  //  << screenCenter.x << ", " << screenCenter.y << std::endl;
 }
 
 std::string RaceCountdown::getText() const {

@@ -51,6 +51,7 @@ public:
   int64_t getGridCell(const glm::vec2& pos) const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getPlacedObjects() const;
   const std::vector<std::unique_ptr<PlaceableObject>>& getObjectTemplates() const;
+  std::vector<Car*> getNearbyCars(const glm::vec2& pos, float radius);
   SplineTrack* getTrack() const { return m_track; }
 
   friend class AIDriver;
@@ -65,6 +66,6 @@ private:
   PlaceableObject* m_selectedObject;
   std::vector<Car*> m_cars;
 
-  static constexpr float CELL_SIZE = 100.0f;
-  std::unordered_map<int64_t, std::vector<PlaceableObject*>> m_grid;
+  static constexpr float CELL_SIZE = 50.0f;
+  std::unordered_map<int64_t, std::vector<void*>> m_grid;
 };

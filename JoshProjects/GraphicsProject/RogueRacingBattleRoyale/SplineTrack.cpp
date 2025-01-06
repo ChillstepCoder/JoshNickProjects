@@ -69,7 +69,7 @@ std::vector<SplineTrack::StartPosition> SplineTrack::calculateStartPositions() c
   const TrackNode* startNode = getStartLineNode();
   if (!startNode || m_nodes.size() < 4) return positions;
 
-  auto splinePoints = getSplinePoints(200);  // Get higher resolution for smoother curves
+  auto splinePoints = getSplinePoints(200);
   if (splinePoints.empty()) return positions;
 
   // Find start line index

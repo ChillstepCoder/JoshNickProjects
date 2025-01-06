@@ -300,6 +300,43 @@ const std::vector<std::unique_ptr<PlaceableObject>>& ObjectManager::getObjectTem
   return m_objectTemplates;
 }
 
+std::vector<Car*> ObjectManager::getNearbyCars(const glm::vec2& pos, float radius) {
+  std::vector<Car*> nearbyCars;
+  nearbyCars.reserve(8);
+
+  int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
+  int centerX = static_cast<int>(std::floor(pos.x / CELL_SIZE));
+  int centerY = static_cast<int>(std::floor(pos.y / CELL_SIZE));
+
+  std::set<Car*> uniqueCars;
+
+  for (int y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
+    for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
+      int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
+      auto it = m_grid.find(cell);
+
+      if (it != m_grid.end()) {
+        for (void* entity : it->second) {
+          // Try to cast to Car
+          if (Car* car = static_cast<Car*>(entity)) {
+            if (car == m_cars[0]) continue;  // Skip player car (first car)
+
+            // Skip if we've already seen this car
+            if (uniqueCars.insert(car).second) {
+              float dist = glm::distance(pos, car->getDebugInfo().position);
+              if (dist <= radius) {
+                nearbyCars.push_back(car);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return nearbyCars;
+}
+
 int64_t ObjectManager::getGridCell(const glm::vec2& pos) const {
   int x = static_cast<int>(std::floor(pos.x / CELL_SIZE));
   int y = static_cast<int>(std::floor(pos.y / CELL_SIZE));
@@ -322,31 +359,26 @@ void ObjectManager::updateGrid() {
       continue;
     }
 
-    // Verify object type
-    ObjectType type = obj->getObjectType();
+    // Add object as void*
     glm::vec2 pos = obj->getPosition();
-
-    if (DEBUG_OUTPUT) {
-      std::cout << "Adding object to grid - Type: " << static_cast<int>(type)
-        << " Position: (" << pos.x << "," << pos.y << ")\n";
-    }
-
     int64_t cell = getGridCell(pos);
-    m_grid[cell].push_back(obj.get());
+    m_grid[cell].push_back(static_cast<void*>(obj.get()));
+  }
+
+  // Add cars as void*
+  for (Car* car : m_cars) {
+    if (!car) continue;
+
+    auto debugInfo = car->getDebugInfo();
+    glm::vec2 carPos(debugInfo.position);
+    int64_t cell = getGridCell(carPos);
+    m_grid[cell].push_back(static_cast<void*>(car));
   }
 
   // Verify grid contents after update
   if (DEBUG_OUTPUT) {
     for (const auto& pair : m_grid) {
-      std::cout << "Grid cell " << pair.first << " contains " << pair.second.size() << " objects:\n";
-      for (const auto* obj : pair.second) {
-        if (obj) {
-          std::cout << "  Object type: " << static_cast<int>(obj->getObjectType()) << "\n";
-        }
-        else {
-          std::cout << "  WARNING: Null object in grid\n";
-        }
-      }
+      std::cout << "Grid cell " << pair.first << " contains " << pair.second.size() << " entities\n";
     }
   }
 }
@@ -369,24 +401,23 @@ std::vector<const PlaceableObject*> ObjectManager::getNearbyObjects(const glm::v
       auto it = m_grid.find(cell);
 
       if (it != m_grid.end()) {
-        // Check each object in the cell
-        for (auto* obj : it->second) {
-          if (!obj) {
-            std::cerr << "Warning: Null object found in grid cell\n";
-            continue;
-          }
+        // Check each entity in the cell
+        for (void* entity : it->second) {
+          if (!entity) continue;
 
-          // Validate object type
-            ObjectType type = obj->getObjectType();
-            // Only add if it's a valid object and not already in the set
+          // Try to cast to PlaceableObject
+          if (const PlaceableObject* obj = static_cast<const PlaceableObject*>(entity)) {
+            // Skip if we've already seen this object
             if (uniqueObjects.insert(obj).second) {
-              nearby.push_back(obj);
-
-              if (DEBUG_OUTPUT) {
-                std::cout << "Found nearby object of type: "
-                  << static_cast<int>(type) << "\n";
+              float dist = glm::distance(pos, obj->getPosition());
+              if (dist <= radius) {
+                nearby.push_back(obj);
+                if (DEBUG_OUTPUT) {
+                  std::cout << "Found nearby object at distance: " << dist << "\n";
+                }
               }
             }
+          }
         }
       }
     }

@@ -28,20 +28,41 @@ void PhysicsSystem::init(float gravityX, float gravityY) {
   worldDef.enableSleep = false;
 
   m_worldId = b2CreateWorld(&worldDef);
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Created physics world with ID: " << (unsigned)m_worldId.index1 << std::endl;
+  }
 }
 
 void PhysicsSystem::update(float timeStep) {
-  if (!b2World_IsValid(m_worldId)) return;
+  if (!b2World_IsValid(m_worldId)) {
+    std::cerr << "Invalid world ID in PhysicsSystem::update!" << std::endl;
+    return;
+  }
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Updating physics world ID: " << (unsigned)m_worldId.index1 << std::endl;
+  }
 
   // Physics step
   const float fixedTimeStep = 1.0f / 60.0f;
   const int subStepCount = static_cast<int>(std::ceil(timeStep / fixedTimeStep));
-  for (int i = 0; i < subStepCount; i++) {
-    b2World_Step(m_worldId, fixedTimeStep, 1);
-  }
 
-  handleSensorEvents();
-  synchronizeTransforms();
+  try {
+    for (int i = 0; i < subStepCount; i++) {
+      if (!b2World_IsValid(m_worldId)) {
+        std::cerr << "World became invalid during step!" << std::endl;
+        return;
+      }
+      b2World_Step(m_worldId, fixedTimeStep, 1);
+    }
+
+    handleSensorEvents();
+    synchronizeTransforms();
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Exception in physics update: " << e.what() << std::endl;
+  }
 }
 
 void PhysicsSystem::cleanup() {
