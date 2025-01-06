@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLTexture.h>
+#include <fstream>
 
 enum class BlockID {
     AIR = 0,
@@ -91,6 +92,17 @@ public:
     }
 
     bool isEmpty() const { return B2_IS_NULL(m_BodyID); }
+
+    void saveToFile(std::ofstream& out) const {
+        out.write(reinterpret_cast<const char*>(&m_BlockID), sizeof(m_BlockID));
+        out.write(reinterpret_cast<const char*>(&m_waterAmount), sizeof(m_waterAmount));
+    }
+
+    void loadFromFile(std::ifstream& in) {
+        in.read(reinterpret_cast<char*>(&m_BlockID), sizeof(m_BlockID));
+        in.read(reinterpret_cast<char*>(&m_waterAmount), sizeof(m_waterAmount));
+    }
+
 
     void clearID() {
         m_BodyID.index1 = 0;

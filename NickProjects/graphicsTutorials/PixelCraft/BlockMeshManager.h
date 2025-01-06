@@ -19,6 +19,7 @@ public:
     void buildChunkMesh() ;
     void render();
     void save();
+    void load();
     void destroy();
 
 
@@ -93,9 +94,13 @@ public:
 
     bool isChunkLoaded(int x, int y);
 
+    void generateChunk(int chunkX, int chunkY, Chunk& chunk);
+
     void loadChunk(int x, int y);
 
-    void loadSavedChunk(int chunkX, int chunkY);
+    bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
+
+    bool loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk);
 
     bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
 
