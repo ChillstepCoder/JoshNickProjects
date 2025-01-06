@@ -304,6 +304,9 @@ std::vector<Car*> ObjectManager::getNearbyCars(const glm::vec2& pos, float radiu
   std::vector<Car*> nearbyCars;
   nearbyCars.reserve(8);
 
+  // Early distance squared check constant
+  const float radiusSquared = radius * radius;
+
   int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
   int centerX = static_cast<int>(std::floor(pos.x / CELL_SIZE));
   int centerY = static_cast<int>(std::floor(pos.y / CELL_SIZE));
@@ -312,19 +315,28 @@ std::vector<Car*> ObjectManager::getNearbyCars(const glm::vec2& pos, float radiu
 
   for (int y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
     for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
+      // Cell distance check
+      float cellDistX = (x - centerX) * CELL_SIZE;
+      float cellDistY = (y - centerY) * CELL_SIZE;
+      if ((cellDistX * cellDistX + cellDistY * cellDistY) > radiusSquared * 2) {
+        continue;
+      }
+
       int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
       auto it = m_grid.find(cell);
 
       if (it != m_grid.end()) {
         for (void* entity : it->second) {
-          // Try to cast to Car
           if (Car* car = static_cast<Car*>(entity)) {
-            if (car == m_cars[0]) continue;  // Skip player car (first car)
+            if (car == m_cars[0]) continue;
 
-            // Skip if we've already seen this car
             if (uniqueCars.insert(car).second) {
-              float dist = glm::distance(pos, car->getDebugInfo().position);
-              if (dist <= radius) {
+              auto otherPos = car->getDebugInfo().position;
+              float dx = otherPos.x - pos.x;
+              float dy = otherPos.y - pos.y;
+              float distSquared = dx * dx + dy * dy;
+
+              if (distSquared <= radiusSquared) {
                 nearbyCars.push_back(car);
               }
             }
@@ -387,34 +399,37 @@ std::vector<const PlaceableObject*> ObjectManager::getNearbyObjects(const glm::v
   std::vector<const PlaceableObject*> nearby;
   nearby.reserve(16);
 
-  // Calculate grid cells to check
+  const float radiusSquared = radius * radius;
+
   int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
   int centerX = static_cast<int>(std::floor(pos.x / CELL_SIZE));
   int centerY = static_cast<int>(std::floor(pos.y / CELL_SIZE));
 
   std::set<const PlaceableObject*> uniqueObjects;
 
-  // Iterate through cells
   for (int y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
     for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
+      // Early cell distance check
+      float cellDistX = (x - centerX) * CELL_SIZE;
+      float cellDistY = (y - centerY) * CELL_SIZE;
+      if ((cellDistX * cellDistX + cellDistY * cellDistY) > radiusSquared * 2) {
+        continue;
+      }
+
       int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
       auto it = m_grid.find(cell);
 
       if (it != m_grid.end()) {
-        // Check each entity in the cell
         for (void* entity : it->second) {
-          if (!entity) continue;
-
-          // Try to cast to PlaceableObject
           if (const PlaceableObject* obj = static_cast<const PlaceableObject*>(entity)) {
-            // Skip if we've already seen this object
             if (uniqueObjects.insert(obj).second) {
-              float dist = glm::distance(pos, obj->getPosition());
-              if (dist <= radius) {
+              auto objPos = obj->getPosition();
+              float dx = objPos.x - pos.x;
+              float dy = objPos.y - pos.y;
+              float distSquared = dx * dx + dy * dy;
+
+              if (distSquared <= radiusSquared) {
                 nearby.push_back(obj);
-                if (DEBUG_OUTPUT) {
-                  std::cout << "Found nearby object at distance: " << dist << "\n";
-                }
               }
             }
           }

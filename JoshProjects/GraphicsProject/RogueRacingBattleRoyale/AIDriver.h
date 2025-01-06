@@ -33,10 +33,10 @@ public:
 
   struct SensorData {
     std::vector<SensorReading> readings;
-    static constexpr float SENSOR_RANGE = 50.0f;        // Reduced from 100.0f
-    static constexpr float SENSOR_WIDTH = 20.0f;        // Reduced from 30.0f
-    static constexpr float MIN_DISTANCE = 15.0f;        // Minimum distance to maintain
-    static constexpr float SIDE_SENSOR_ANGLE = 0.5f;    // ~30 degrees for side sensors
+    static constexpr float SENSOR_RANGE = 30.0f;
+    static constexpr float SENSOR_WIDTH = 15.0f;
+    static constexpr float MIN_DISTANCE = 10.0f;
+    static constexpr float SIDE_SENSOR_ANGLE = 0.5f;
   };
 
   AIDriver(Car* car);

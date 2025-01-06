@@ -19,6 +19,7 @@ class Car;
 
 class ObjectManager {
 public:
+
   // Constructor/Destructor
   ObjectManager(SplineTrack* track, PhysicsSystem* physicsSystem);
   ~ObjectManager() = default;
@@ -53,6 +54,7 @@ public:
   const std::vector<std::unique_ptr<PlaceableObject>>& getObjectTemplates() const;
   std::vector<Car*> getNearbyCars(const glm::vec2& pos, float radius);
   SplineTrack* getTrack() const { return m_track; }
+  PhysicsSystem* getPhysicsSystem() const { return m_physicsSystem; }
 
   friend class AIDriver;
 
@@ -66,6 +68,6 @@ private:
   PlaceableObject* m_selectedObject;
   std::vector<Car*> m_cars;
 
-  static constexpr float CELL_SIZE = 50.0f;
+  static constexpr float CELL_SIZE = 25.0f;
   std::unordered_map<int64_t, std::vector<void*>> m_grid;
 };

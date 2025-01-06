@@ -559,6 +559,7 @@ void Car::applyDrag(const b2Vec2& currentVel, float forwardSpeed) {
 
 Car::DebugInfo Car::getDebugInfo() const {
   DebugInfo info;
+
   b2Vec2 pos = b2Body_GetPosition(m_bodyId);
   b2Vec2 vel = b2Body_GetLinearVelocity(m_bodyId);
 

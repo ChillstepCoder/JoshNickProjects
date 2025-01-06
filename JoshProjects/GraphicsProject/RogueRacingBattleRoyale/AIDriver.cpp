@@ -669,20 +669,23 @@ void AIDriver::scanForObjects() {
 }
 
 void AIDriver::scanForCars(const std::vector<Car*>& cars) {
-  if (!m_car) return;
+  if (!m_car || !m_objectManager) return;
+  TIME_SCOPE("AI Car Scanning");
 
   auto debugInfo = m_car->getDebugInfo();
   glm::vec2 carPos(debugInfo.position);
   glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
 
-  for (Car* otherCar : cars) {
-    if (otherCar == m_car) continue;  // Skip self
+  // Get nearby cars using spatial grid - O(1) for number of cells checked
+  auto nearbyCars = m_objectManager->getNearbyCars(carPos, SensorData::SENSOR_RANGE);
 
+  // Process only nearby cars - O(k) where k is number of nearby cars
+  for (Car* otherCar : nearbyCars) {
     auto otherDebugInfo = otherCar->getDebugInfo();
+    glm::vec2 otherPos(otherDebugInfo.position);
     float distance, angle;
 
-    if (isObjectInPath(glm::vec2(otherDebugInfo.position), 15.0f,
-      carPos, carForward, &distance, &angle)) {
+    if (isObjectInPath(otherPos, 15.0f, carPos, carForward, &distance, &angle)) {
       if (distance < SensorData::SENSOR_RANGE) {
         SensorReading reading;
         reading.car = otherCar;
