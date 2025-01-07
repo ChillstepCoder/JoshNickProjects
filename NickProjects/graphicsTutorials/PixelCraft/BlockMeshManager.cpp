@@ -419,6 +419,9 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 
 void BlockManager::loadChunk(int chunkX, int chunkY) {
     Chunk& chunk = m_chunks[chunkX][chunkY];
+    // Make sure we never double load
+    assert(!chunk.isLoaded());
+
 
     chunk.init();
 
@@ -465,7 +468,7 @@ bool BlockManager::loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk) {
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             BlockID blockID;
             file.read(reinterpret_cast<char*>(&blockID), sizeof(BlockID));
-            chunk.blocks[x][y].init(m_world, blockID, glm::vec2(x, y));  // Reinitialize the block with the loaded BlockID
+            chunk.blocks[x][y].init(m_world, blockID, glm::vec2(chunk.getWorldPosition().x + x, chunk.getWorldPosition().y + y));  // Reinitialize the block with the loaded BlockID
         }
     }
 
