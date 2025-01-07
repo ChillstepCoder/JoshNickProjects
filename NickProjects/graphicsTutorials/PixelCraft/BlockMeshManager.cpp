@@ -266,6 +266,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
 
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
 
+
         //std::cout << "Block destroyed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
 
         chunk.m_isMeshDirty = true;
@@ -376,10 +377,19 @@ bool BlockManager::isChunkLoaded(int x, int y) {
 
 
 void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
+    assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
+
     static siv::PerlinNoise perlin(12345);  // Use a fixed seed to regenerate terrain consistently
+
+
     const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
     const float AMPLITUDE = 10.0f;    // Controls the height variation
     const float BASE_SURFACE_Y = 384.0f;  // Base height for the surface (6 chunks of ground, 2 chunks of sky)
+
+    Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
+
+    chunk.init(); 
+
 
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         int worldX = chunkX * CHUNK_WIDTH + x;
@@ -414,6 +424,10 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             }
         }
     }
+
+    chunk.buildChunkMesh();
+
+    m_activeChunks.push_back(&m_chunks[chunkX][chunkY]);
 }
 
 
@@ -431,14 +445,11 @@ void BlockManager::loadChunk(int chunkX, int chunkY) {
         // If no saved chunk data exists, generate it
         generateChunk(chunkX, chunkY, chunk);
         saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
-        chunk.init();
-        chunk.buildChunkMesh();
-        m_activeChunks.push_back(&chunk);
     }
 }
 
 bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
-    std::ofstream file("World/chunk_" + std::to_string(chunkX) + "_" + std::to_string(chunkY) + ".dat", std::ios::binary);
+    std::ofstream file("World/chunk_" + std::to_string(chunkX) + "_" + std::to_string(chunkY) + ".dat", std::ios::binary | std::ios::trunc);
 
     if (!file) {
         std::cerr << "Failed to open file for saving chunk " << chunkX << ", " << chunkY << std::endl;
@@ -460,7 +471,7 @@ bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
 
 // Load chunk data from a binary file
 bool BlockManager::loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk) {
-    std::ifstream file("chunk_" + std::to_string(chunkX) + "_" + std::to_string(chunkY) + ".dat", std::ios::binary);
+    std::ifstream file("World/chunk_" + std::to_string(chunkX) + "_" + std::to_string(chunkY) + ".dat", std::ios::binary);
 
     if (!file) {
         return false;  // Return false if the file doesn't exist
