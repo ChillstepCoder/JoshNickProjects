@@ -175,15 +175,6 @@ void BlockManager::initializeChunks(glm::vec2 playerPosition) {
             chunk.m_worldPosition = glm::vec2(chunkX * CHUNK_WIDTH, chunkY * CHUNK_WIDTH);
         }
     }
-
-    // Generate terrain for each chunk
-    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
-        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
-            Chunk& chunk = m_chunks[chunkX][chunkY];
-
-            generateChunk(chunkX, chunkY, chunk);
-        }
-    }
 }
 
 void BlockManager::update(BlockManager& blockManager) {
@@ -388,9 +379,6 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 
     Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
 
-    chunk.init(); 
-
-
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         int worldX = chunkX * CHUNK_WIDTH + x;
         float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
@@ -425,9 +413,6 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         }
     }
 
-    chunk.buildChunkMesh();
-
-    m_activeChunks.push_back(&m_chunks[chunkX][chunkY]);
 }
 
 
@@ -435,17 +420,15 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 void BlockManager::loadChunk(int chunkX, int chunkY) {
     Chunk& chunk = m_chunks[chunkX][chunkY];
 
-    if (loadChunkFromFile(chunkX, chunkY, chunk)) {
-        // If the chunk is successfully loaded from the file
-        chunk.init();
-        chunk.buildChunkMesh();
-        m_activeChunks.push_back(&chunk);
-    }
-    else {
+    chunk.init();
+
+    if (!loadChunkFromFile(chunkX, chunkY, chunk)) {
         // If no saved chunk data exists, generate it
         generateChunk(chunkX, chunkY, chunk);
         saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
     }
+    chunk.buildChunkMesh();
+    m_activeChunks.push_back(&chunk);
 }
 
 bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
