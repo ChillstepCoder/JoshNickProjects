@@ -10,6 +10,7 @@
 #include "PotholeObject.h"
 #include "TreeObject.h"
 #include "TrafficConeObject.h"
+#include "PerformanceTimer.h"
 
 #include "SplineTrack.h"
 #include "PhysicsSystem.h"
@@ -19,6 +20,11 @@ class Car;
 
 class ObjectManager {
 public:
+  struct CachedCarInfo {
+    Car* car;
+    glm::vec2 position;
+    float angle;
+  };
 
   // Constructor/Destructor
   ObjectManager(SplineTrack* track, PhysicsSystem* physicsSystem);
@@ -56,6 +62,14 @@ public:
   SplineTrack* getTrack() const { return m_track; }
   PhysicsSystem* getPhysicsSystem() const { return m_physicsSystem; }
 
+  const CachedCarInfo& getCachedCarInfo(Car* car) const {
+    static const CachedCarInfo nullInfo = { nullptr, glm::vec2(0.0f) };
+    for (const auto& info : m_cachedCarPositions) {
+      if (info.car == car) return info;
+    }
+    return nullInfo;
+  }
+
   friend class AIDriver;
 
 private:
@@ -67,6 +81,7 @@ private:
   std::vector<std::unique_ptr<PlaceableObject>> m_placedObjects;
   PlaceableObject* m_selectedObject;
   std::vector<Car*> m_cars;
+  std::vector<CachedCarInfo> m_cachedCarPositions;
 
   static constexpr float CELL_SIZE = 25.0f;
   std::unordered_map<int64_t, std::vector<void*>> m_grid;

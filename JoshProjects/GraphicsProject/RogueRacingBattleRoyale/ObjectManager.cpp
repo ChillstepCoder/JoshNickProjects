@@ -239,7 +239,10 @@ void ObjectManager::update() {
   }
 
   // Update grid with validation
-  updateGrid();
+  {
+    TIME_SCOPE("UPDATE GRID");
+    updateGrid();
+  }
 
   if (DEBUG_OUTPUT) {
     std::cout << "ObjectManager update complete\n";
@@ -302,47 +305,16 @@ const std::vector<std::unique_ptr<PlaceableObject>>& ObjectManager::getObjectTem
 
 std::vector<Car*> ObjectManager::getNearbyCars(const glm::vec2& pos, float radius) {
   std::vector<Car*> nearbyCars;
-  nearbyCars.reserve(8);
-
-  // Early distance squared check constant
   const float radiusSquared = radius * radius;
 
-  int cellRadius = static_cast<int>(std::ceil(radius / CELL_SIZE));
-  int centerX = static_cast<int>(std::floor(pos.x / CELL_SIZE));
-  int centerY = static_cast<int>(std::floor(pos.y / CELL_SIZE));
+  for (const auto& carInfo : m_cachedCarPositions) {
+    if (carInfo.car == m_cars[0]) continue; // Skip player
 
-  std::set<Car*> uniqueCars;
-
-  for (int y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
-    for (int x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
-      // Cell distance check
-      float cellDistX = (x - centerX) * CELL_SIZE;
-      float cellDistY = (y - centerY) * CELL_SIZE;
-      if ((cellDistX * cellDistX + cellDistY * cellDistY) > radiusSquared * 2) {
-        continue;
-      }
-
-      int64_t cell = (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(y);
-      auto it = m_grid.find(cell);
-
-      if (it != m_grid.end()) {
-        for (void* entity : it->second) {
-          if (Car* car = static_cast<Car*>(entity)) {
-            if (car == m_cars[0]) continue;
-
-            if (uniqueCars.insert(car).second) {
-              auto otherPos = car->getDebugInfo().position;
-              float dx = otherPos.x - pos.x;
-              float dy = otherPos.y - pos.y;
-              float distSquared = dx * dx + dy * dy;
-
-              if (distSquared <= radiusSquared) {
-                nearbyCars.push_back(car);
-              }
-            }
-          }
-        }
-      }
+    float dx = carInfo.position.x - pos.x;
+    float dy = carInfo.position.y - pos.y;
+    float distSquared = dx * dx + dy * dy;
+    if (distSquared <= radiusSquared) {
+      nearbyCars.push_back(carInfo.car);
     }
   }
 
@@ -356,41 +328,48 @@ int64_t ObjectManager::getGridCell(const glm::vec2& pos) const {
 }
 
 void ObjectManager::updateGrid() {
-  // Clear the grid first
   m_grid.clear();
+  m_cachedCarPositions.clear();
+  m_cachedCarPositions.reserve(m_cars.size());
 
-  // Debug output
   if (DEBUG_OUTPUT) {
     std::cout << "Updating grid with " << m_placedObjects.size() << " objects\n";
   }
 
-  // Re-add all objects with type checking
+  // Cache car positions first
+  for (Car* car : m_cars) {
+    if (!car) continue;
+    auto debugInfo = car->getDebugInfo(); // Single Box2D query per car
+    m_cachedCarPositions.push_back({
+        car,
+        debugInfo.position,
+        debugInfo.angle
+      });
+  }
+
+  // Add objects to grid
   for (const auto& obj : m_placedObjects) {
     if (!obj) {
       std::cerr << "Warning: Null object found in m_placedObjects\n";
       continue;
     }
-
-    // Add object as void*
     glm::vec2 pos = obj->getPosition();
     int64_t cell = getGridCell(pos);
     m_grid[cell].push_back(static_cast<void*>(obj.get()));
   }
 
-  // Add cars as void*
-  for (Car* car : m_cars) {
-    if (!car) continue;
-
-    auto debugInfo = car->getDebugInfo();
-    glm::vec2 carPos(debugInfo.position);
-    int64_t cell = getGridCell(carPos);
-    m_grid[cell].push_back(static_cast<void*>(car));
+  // Add cars to grid using cached positions
+  for (const auto& carInfo : m_cachedCarPositions) {
+    if (!carInfo.car) continue;
+    int64_t cell = getGridCell(carInfo.position);
+    m_grid[cell].push_back(static_cast<void*>(carInfo.car));
   }
 
-  // Verify grid contents after update
   if (DEBUG_OUTPUT) {
+    std::cout << "Cached " << m_cachedCarPositions.size() << " car positions\n";
     for (const auto& pair : m_grid) {
-      std::cout << "Grid cell " << pair.first << " contains " << pair.second.size() << " entities\n";
+      std::cout << "Grid cell " << pair.first << " contains "
+        << pair.second.size() << " entities\n";
     }
   }
 }

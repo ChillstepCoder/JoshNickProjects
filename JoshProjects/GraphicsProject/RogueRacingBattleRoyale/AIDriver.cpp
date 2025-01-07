@@ -58,7 +58,10 @@ void AIDriver::update(float deltaTime) {
     TIME_SCOPE("Stuck Recovery");
     applyStuckRecovery();
   }
-  m_car->update(m_currentInput);
+  {
+    TIME_SCOPE("Car Update");
+    m_car->update(m_currentInput);
+  }
 }
 
 float AIDriver::calculateObjectThreat(const SensorReading& reading) {
@@ -672,20 +675,20 @@ void AIDriver::scanForCars(const std::vector<Car*>& cars) {
   if (!m_car || !m_objectManager) return;
   TIME_SCOPE("AI Car Scanning");
 
-  auto debugInfo = m_car->getDebugInfo();
-  glm::vec2 carPos(debugInfo.position);
-  glm::vec2 carForward(std::cos(debugInfo.angle), std::sin(debugInfo.angle));
+  // Get our car's cached position (no Box2D query)
+  const ObjectManager::CachedCarInfo& myCachedInfo = m_objectManager->getCachedCarInfo(m_car);
+  glm::vec2 carPos = myCachedInfo.position;
+  glm::vec2 carForward(std::cos(myCachedInfo.angle), std::sin(myCachedInfo.angle));
 
-  // Get nearby cars using spatial grid - O(1) for number of cells checked
+  // Get nearby cars using grid (O(1) lookup)
   auto nearbyCars = m_objectManager->getNearbyCars(carPos, SensorData::SENSOR_RANGE);
 
-  // Process only nearby cars - O(k) where k is number of nearby cars
+  // Process only nearby cars using their cached positions (no Box2D queries)
   for (Car* otherCar : nearbyCars) {
-    auto otherDebugInfo = otherCar->getDebugInfo();
-    glm::vec2 otherPos(otherDebugInfo.position);
-    float distance, angle;
+    const ObjectManager::CachedCarInfo& otherCachedInfo = m_objectManager->getCachedCarInfo(otherCar);
 
-    if (isObjectInPath(otherPos, 15.0f, carPos, carForward, &distance, &angle)) {
+    float distance, angle;
+    if (isObjectInPath(otherCachedInfo.position, 15.0f, carPos, carForward, &distance, &angle)) {
       if (distance < SensorData::SENSOR_RANGE) {
         SensorReading reading;
         reading.car = otherCar;
@@ -718,7 +721,7 @@ bool AIDriver::isObjectInPath(const glm::vec2& objectPos, float objectRadius,
   float angle = std::atan2(normalizedToObject.y, normalizedToObject.x) -
     std::atan2(carForward.y, carForward.x);
 
-  // Normalize angle to [-π, π]
+  // Normalize angle
   while (angle > glm::pi<float>()) angle -= 2.0f * glm::pi<float>();
   while (angle < -glm::pi<float>()) angle += 2.0f * glm::pi<float>();
 
