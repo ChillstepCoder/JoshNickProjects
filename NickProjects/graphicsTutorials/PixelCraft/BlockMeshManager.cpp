@@ -481,7 +481,7 @@ bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& c
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
 
-    const float farthestChunkAllowed = 2.0f;
+    const float farthestChunkAllowed = 3.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
     return distance > unloadDistance;
@@ -510,8 +510,20 @@ void BlockManager::unloadChunk(int x, int y) {
     assert(x >= 0 && y >= 0 && x < WORLD_WIDTH_CHUNKS && y < WORLD_HEIGHT_CHUNKS);
 
     Chunk& chunk = m_chunks[x][y];
-    if (chunk.isLoaded()) {
-        chunk.save(); // Save the chunk before unloading
+
+    saveChunkToFile(x, y, chunk); //Save the chunk before unloading
+
+    for (int i = 0; i < CHUNK_WIDTH; i++) {
+        for (int j = 0; j < CHUNK_WIDTH; j++) {
+
+            float realpositionX = (x * CHUNK_WIDTH) + i + 0.5f;
+            float realPositionY = (y * CHUNK_WIDTH) + j + 0.5f;
+
+            BlockHandle blockHandle = getBlockAtPosition(glm::vec2(realpositionX, realPositionY));
+
+
+            destroyBlock(blockHandle);
+        }
     }
 
     for (int i = 0; i < m_activeChunks.size(); i++) { // Fixes the list of active chunks
