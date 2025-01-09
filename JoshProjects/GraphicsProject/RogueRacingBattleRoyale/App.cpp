@@ -3,7 +3,10 @@
 #include "JAGEngine/ScreenList.h"
 
 void App::onInit() {
-  // Any game-specific initialization
+  m_audioEngine = std::make_unique<AudioEngine>();
+  if (!m_audioEngine->init()) {
+    std::cout << "Failed to initialize racing audio engine!\n";
+  }
 }
 
 void App::addScreens() {
@@ -17,5 +20,7 @@ void App::addScreens() {
 }
 
 void App::onExit() {
-  // Any game-specific cleanup
+  if (m_audioEngine) {
+    m_audioEngine->cleanup();
+  }
 }

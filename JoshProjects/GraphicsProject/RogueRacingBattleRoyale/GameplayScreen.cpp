@@ -295,14 +295,7 @@ void GameplayScreen::checkInput() {
 void GameplayScreen::createTrack() {
 
   // For now, we'll skip track creation
-// We'll add walls and boundaries later
-// 
-  // Create ground
-  //b2BodyId groundBody = m_physicsSystem->createStaticBody(0.0f, -10.0f);
-  //m_physicsSystem->createBoxShape(groundBody, 100.0f, 20.0f);
-  //m_trackBodies.push_back(groundBody);
-
-  // Add more track elements as needed
+  // game play screen is currently just a menu with a car that you can drive around an empty area.
 }
 
 void GameplayScreen::initShaders() {

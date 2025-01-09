@@ -85,6 +85,12 @@
     <Filter Include="Source Files\Objects">
       <UniqueIdentifier>{75547f39-9976-4611-a494-6e4b4bd713bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Audio">
+      <UniqueIdentifier>{354d7b20-86b4-433d-9d9a-2bc07dacdaf0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Audio">
+      <UniqueIdentifier>{f4c5a86c-ec93-48f7-bffa-fedca33fabce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoosterObject.cpp">
@@ -149,6 +155,9 @@
     </ClCompile>
     <ClCompile Include="SplineTrack.cpp">
       <Filter>Source Files\Levels</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioEngine.cpp">
+      <Filter>Source Files\Audio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -244,6 +253,9 @@
     </ClInclude>
     <ClInclude Include="GameplayScreen.h">
       <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioEngine.h">
+      <Filter>Header Files\Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

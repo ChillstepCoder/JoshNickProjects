@@ -1,6 +1,7 @@
 // App.h
 #pragma once
 #include <JAGEngine/IMainGame.h>
+#include "AudioEngine.h"
 #include "GameplayScreen.h"
 #include "LevelEditorScreen.h"
 
@@ -16,7 +17,11 @@ public:
   virtual void onInit() override;
   virtual void addScreens() override;
   virtual void onExit() override;
+
+  AudioEngine& getAudioEngine() { return *m_audioEngine; }
+
 private:
   std::unique_ptr<GameplayScreen> m_gameplayScreen = nullptr;
   std::unique_ptr<LevelEditorScreen> m_levelEditorScreen = nullptr;
+  std::unique_ptr<AudioEngine> m_audioEngine = nullptr;
 };
