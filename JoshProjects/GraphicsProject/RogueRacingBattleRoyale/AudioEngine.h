@@ -1,8 +1,11 @@
 // AudioEngine.h
 
 #pragma once
-#include <JAGEngine/WWiseAudioEngine.h>
 #include <memory>
+
+namespace JAGEngine {
+  class WWiseAudioEngine;
+}
 
 class AudioEngine {
 public:
@@ -41,7 +44,6 @@ public:
 
 private:
   std::unique_ptr<JAGEngine::WWiseAudioEngine> m_audioEngine;
-
   bool m_isBoostPlaying;
   bool m_isEnginePlaying;
   float m_currentRPM;

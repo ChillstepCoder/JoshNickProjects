@@ -248,9 +248,6 @@ void GameplayScreen::update() {
   if (b2Body_IsValid(m_playerCarBody)) {
     b2Vec2 position = b2Body_GetPosition(m_playerCarBody);
     b2Vec2 velocity = b2Body_GetLinearVelocity(m_playerCarBody);
-    std::cout << "Before physics update:\n"
-      << "Position: (" << position.x << ", " << position.y << ")\n"
-      << "Velocity: (" << velocity.x << ", " << velocity.y << ")\n";
   }
 
   m_physicsSystem->update(timeStep);
@@ -259,9 +256,6 @@ void GameplayScreen::update() {
   if (b2Body_IsValid(m_playerCarBody)) {
     b2Vec2 position = b2Body_GetPosition(m_playerCarBody);
     b2Vec2 velocity = b2Body_GetLinearVelocity(m_playerCarBody);
-    std::cout << "After physics update:\n"
-      << "Position: (" << position.x << ", " << position.y << ")\n"
-      << "Velocity: (" << velocity.x << ", " << velocity.y << ")\n";
   }
 
   checkInput();

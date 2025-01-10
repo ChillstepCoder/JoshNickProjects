@@ -7,6 +7,9 @@ void App::onInit() {
   if (!m_audioEngine->init()) {
     std::cout << "Failed to initialize racing audio engine!\n";
   }
+  else {
+    std::cout << "Racing audio engine Initialized!\n";
+  }
 }
 
 void App::addScreens() {

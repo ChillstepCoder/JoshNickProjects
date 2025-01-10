@@ -1,6 +1,7 @@
 // AudioEngine.cpp
 
 #include "AudioEngine.h"
+#include <JAGEngine/WWiseAudioEngine.h>
 #include <iostream>
 
 AudioEngine::AudioEngine() :
