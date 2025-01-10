@@ -67,6 +67,8 @@ public:
 
   void modifyNode(size_t index, const TrackNode& newNode);
 
+  void invalidateCache();
+
 private:
   std::vector<TrackNode> m_nodes;
   StartPositionConfig m_startConfig;
@@ -85,7 +87,6 @@ private:
   std::pair<std::vector<glm::vec2>, std::vector<glm::vec2>> calculateStartLanes(
     const TrackNode* startNode, const glm::vec2& direction) const;
 
-  void invalidateCache();
   std::vector<SplinePointInfo> buildSplinePoints(int subdivisions) const;
 
 };

@@ -11,11 +11,16 @@ void SplineTrack::createDefaultTrack() {
   m_nodes.clear();
   float radius = 100.0f;
 
-  // Create nodes with explicit positions and default properties
   TrackNode node1(glm::vec2(radius, 0.0f));
   TrackNode node2(glm::vec2(0.0f, radius));
   TrackNode node3(glm::vec2(-radius, 0.0f));
   TrackNode node4(glm::vec2(0.0f, -radius));
+
+  // Set parent track for each node
+  node1.setParentTrack(this);
+  node2.setParentTrack(this);
+  node3.setParentTrack(this);
+  node4.setParentTrack(this);
 
   // Set default barrier distances
   glm::vec2 defaultBarrierDist(10.0f, 10.0f); // Increased from 0.0f
@@ -35,7 +40,9 @@ void SplineTrack::createDefaultTrack() {
 }
 
 void SplineTrack::addNode(const glm::vec2& position) {
-  m_nodes.push_back(TrackNode(position));
+  TrackNode node(position);
+  node.setParentTrack(this);
+  m_nodes.push_back(node);
   invalidateCache();
 }
 

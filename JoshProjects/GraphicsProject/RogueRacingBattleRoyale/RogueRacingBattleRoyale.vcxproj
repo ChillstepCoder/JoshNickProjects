@@ -167,6 +167,7 @@ CommunicationCentral.lib;%(AdditionalDependencies)</AdditionalDependencies>
     <ClCompile Include="RaceTimer.cpp" />
     <ClCompile Include="RoadMeshGenerator.cpp" />
     <ClCompile Include="SplineTrack.cpp" />
+    <ClCompile Include="TrackNode.cpp" />
     <ClCompile Include="WheelCollider.cpp" />
     <ClCompile Include="XPPickupObject.cpp" />
   </ItemGroup>

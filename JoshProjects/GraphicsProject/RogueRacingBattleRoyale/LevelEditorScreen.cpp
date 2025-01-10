@@ -1094,6 +1094,7 @@ void LevelEditorScreen::exitGame() {
 void LevelEditorScreen::updateRoadMesh() {
   std::cout << "Updating road meshes...\n";
   if (m_levelRenderer) {
+    m_track->invalidateCache();
     m_levelRenderer->updateRoadMesh(m_track.get());
   }
 }
