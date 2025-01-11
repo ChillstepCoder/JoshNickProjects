@@ -143,8 +143,7 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\x64_vc170\Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <OutputFile>
-      </OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>

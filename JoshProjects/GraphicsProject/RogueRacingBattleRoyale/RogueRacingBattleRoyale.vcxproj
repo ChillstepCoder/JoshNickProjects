@@ -112,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;GLM_FORCE_CXX17;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common;$(SolutionDir)\JoshProjects\GraphicsProject\deps\include\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\IntegrationDemo\WwiseProject\GeneratedSoundBanks;$(SolutionDir)\JoshProjects\GraphicsProject\deps\include\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -135,7 +135,7 @@ CommunicationCentral.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\include;$(SolutionDir)\JoshProjects\GraphicsProject\deps\include\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\IntegrationDemo\WwiseProject\GeneratedSoundBanks;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\include;$(SolutionDir)\JoshProjects\GraphicsProject\deps\include\ImGui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
