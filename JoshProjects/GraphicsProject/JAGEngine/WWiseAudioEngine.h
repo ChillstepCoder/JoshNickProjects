@@ -29,8 +29,11 @@ namespace JAGEngine {
   {
   public:
     bool init();
+    void update();
+    void cleanup();
   private:
     bool m_isInitialized = false;
+    CAkFilePackageLowLevelIODeferred m_lowLevelIO;
   };
 
 }
