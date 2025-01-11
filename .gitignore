@@ -250,3 +250,37 @@ JoshProjects/GraphicsProject/deps/imgui-master/misc/freetype/imgui_freetype.h
 JoshProjects/GraphicsProject/deps/imgui-master/misc/freetype/README.md
 JoshProjects/GraphicsProject/deps/imgui-master/misc/README.txt
 JoshProjects/GraphicsProject/deps/imgui-master/misc/single_file/imgui_single_file.h
+
+# Wwise - Ignore everything in WwiseProjects
+WwiseProjects/**
+.cache/
+.validationcache
+*.akd
+*.prof
+*.validationcache
+*.wsettings
+*.wwu
+*.wproj
+*.validationcache
+*.cache/
+*.wav
+*.wav.meta
+*.aif
+*.aiff
+*.mp3
+*.ogg
+*.flac
+*.wav.meta
+
+# Ignore specific Wwise folders commonly containing audio sources
+**/Originals/**
+**/Wavetable/**
+**/SoundSeed/**
+**/Factory/**
+**/Roomtone/**
+
+# Only allow sound banks and their metadata
+!WwiseProjects/RacingGame/GeneratedSoundBanks/
+!WwiseProjects/RacingGame/GeneratedSoundBanks/Windows/
+!WwiseProjects/RacingGame/GeneratedSoundBanks/Windows/*.bnk
+!WwiseProjects/RacingGame/GeneratedSoundBanks/Windows/SoundbanksInfo.xml
