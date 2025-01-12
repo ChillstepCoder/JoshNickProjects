@@ -480,7 +480,7 @@ bool BlockManager::loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk) {
 bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos) {
     // Calcs the distance between the player and the chunk
     float distance = glm::distance(playerPos, chunkPos);
-
+        
     const float farthestChunkAllowed = 3.0f;
 
     const float unloadDistance = farthestChunkAllowed * CHUNK_WIDTH;
