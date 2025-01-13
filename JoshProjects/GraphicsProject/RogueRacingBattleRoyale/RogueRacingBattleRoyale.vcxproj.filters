@@ -260,5 +260,8 @@
     <ClInclude Include="AudioEngine.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
+    <ClInclude Include="RacingAudioDefs.h">
+      <Filter>Header Files\Audio</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

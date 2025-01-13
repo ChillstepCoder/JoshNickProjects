@@ -1,6 +1,7 @@
 // AudioEngine.cpp
 
 #include "AudioEngine.h"
+#include "RacingAudioDefs.h"
 #include <JAGEngine/WWiseAudioEngine.h>
 #include <iostream>
 
@@ -27,6 +28,24 @@ bool AudioEngine::init() {
 
   // Initialize racing-specific audio settings here
   // Set up RTPC parameters for engine, tire sounds, etc.
+  std::cout << "Registering audio game objects...\n";
+  AkGameObjectID countdownID = RacingAudio::GAME_OBJECT_COUNTDOWN;
+  AKRESULT result = AK::SoundEngine::RegisterGameObj(countdownID, "Countdown");
+  if (result != AK_Success) {
+    std::cout << "Failed to register countdown game object. Result: " << result << std::endl;
+    return false;
+  }
+  std::cout << "Game objects registered successfully\n";
+
+  // Set initial volumes
+  m_masterVolume = 1.0f;
+  m_effectsVolume = 1.0f;
+  m_musicVolume = 1.0f;
+
+  // Apply volumes to WWise
+  AK::SoundEngine::SetRTPCValue("Master_Volume", m_masterVolume * 100.0f);
+  AK::SoundEngine::SetRTPCValue("Effects_Volume", m_effectsVolume * 100.0f);
+  AK::SoundEngine::SetRTPCValue("Music_Volume", m_musicVolume * 100.0f);
 
   std::cout << "Racing Audio Engine initialized successfully!\n";
   return true;

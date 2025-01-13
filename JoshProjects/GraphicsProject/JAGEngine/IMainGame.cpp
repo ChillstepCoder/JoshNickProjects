@@ -83,6 +83,7 @@ namespace JAGEngine {
       beginImGuiFrame();
 
       m_inputManager.update();
+      updateAudio();
       update();
       draw();
 
@@ -215,6 +216,7 @@ namespace JAGEngine {
     if (m_currentScreen) {
       m_inputManager.update();  // Make sure this is being called!
       //std::cout << "Input manager updated\n";
+      updateAudio();
 
       switch (m_currentScreen->getState()) {
       case ScreenState::RUNNING:

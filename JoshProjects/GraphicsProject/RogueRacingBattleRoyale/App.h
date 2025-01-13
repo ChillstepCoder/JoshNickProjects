@@ -18,6 +18,12 @@ public:
   virtual void addScreens() override;
   virtual void onExit() override;
 
+  virtual void updateAudio() override {
+    if (m_audioEngine) {
+      m_audioEngine->update();
+    }
+  }
+
   AudioEngine& getAudioEngine() { return *m_audioEngine; }
 
 private:

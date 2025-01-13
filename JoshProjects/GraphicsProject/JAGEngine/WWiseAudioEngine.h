@@ -22,8 +22,6 @@
 
 #define WWISE_BANK_PATH AKTEXT("../WwiseProjects/RacingGame/GeneratedSoundBanks/Windows")
 
-const AkGameObjectID GAME_OBJECT_ID_THEME = 100;
-
 namespace JAGEngine {
 
   class WWiseAudioEngine

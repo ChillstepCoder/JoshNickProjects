@@ -35,6 +35,7 @@ namespace JAGEngine {
       }
     }
 
+    virtual void updateAudio() {}
 
   protected:
     virtual void update();

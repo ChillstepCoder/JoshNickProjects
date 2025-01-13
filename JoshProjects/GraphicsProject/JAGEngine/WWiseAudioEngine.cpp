@@ -59,12 +59,17 @@ namespace JAGEngine {
       std::cout << "AK: Could not load Init Bank." << std::endl;
       return false;
     }
+    else {
+      std::cout << "AK: Init Bank Loaded Successfully!" << std::endl;
+    }
 
     if (AK::SoundEngine::LoadBank(BANKNAME_MAIN, bankID) != AK_Success) {
       std::cout << "AK: Could not load Main Bank." << std::endl;
       return false;
     }
-    std::cout << "AK: Main Bank Loaded Successfully!" << std::endl;
+    else {
+      std::cout << "AK: Main Bank Loaded Successfully!" << std::endl;
+    }
 
     m_isInitialized = true;
     return true;

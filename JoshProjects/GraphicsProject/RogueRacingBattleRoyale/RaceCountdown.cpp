@@ -1,5 +1,8 @@
 // RaceCountdown.cpp
 #include "RaceCountdown.h"
+#include <AK/SoundEngine/Common/AkSoundEngine.h>
+#include "RacingAudioDefs.h"
+#include "Wwise_IDs.h"
 
 RaceCountdown::RaceCountdown()
   : m_timer(0.0f)
@@ -41,13 +44,17 @@ void RaceCountdown::update(float deltaTime) {
     int oldCount = static_cast<int>(std::ceil(oldTime));
     int newCount = static_cast<int>(std::ceil(m_timer));
 
-    // Play appropriate sound when crossing number boundary
-    if (oldCount != newCount && m_audioEngine) {
+    // Play countdown sounds
+    if (oldCount != newCount) {
       if (newCount > 0) {
-        m_audioEngine->playCountdownBeep();
+        std::cout << "Playing countdown beep for count: " << newCount << std::endl;
+        AkPlayingID playingID = AK::SoundEngine::PostEvent("Play_Countdown_SFX_1", RacingAudio::GAME_OBJECT_COUNTDOWN);
+        std::cout << "PostEvent ID: " << playingID << std::endl;  // If 0, event failed to play
       }
       else if (newCount == 0) {
-        m_audioEngine->playCountdownStart();
+        std::cout << "Playing final countdown sound!" << std::endl;
+        AkPlayingID playingID = AK::SoundEngine::PostEvent("Play_Countdown_SFX_2", RacingAudio::GAME_OBJECT_COUNTDOWN);
+        std::cout << "PostEvent ID: " << playingID << std::endl;  // If 0, event failed to play
       }
     }
 
