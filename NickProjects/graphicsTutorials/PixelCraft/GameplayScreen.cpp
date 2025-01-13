@@ -116,7 +116,7 @@ void GameplayScreen::update() {
 
     {
         PROFILE_SCOPE("player.update + camera.setPosition");
-        const glm::vec2 playerPos = glm::vec2(b2Body_GetPosition(m_player.getID()).x, b2Body_GetPosition(m_player.getID()).y);
+        const glm::vec2 playerPos = m_player.getPosition();
         m_player.update(m_game->inputManager, playerPos, m_blockManager);
 
         {
