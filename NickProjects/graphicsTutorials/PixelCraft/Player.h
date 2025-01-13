@@ -26,11 +26,11 @@ public:
 
     void update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager);
 
-    void movePlayer(float xVelocity, float yVelocity, std::vector<Block> blocksInRange, BlockManager* blockManager);
+    void movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager);
 
     void setPlayerImage();
 
-    bool checkIntersection(std::vector<Block> blocksInRange, BlockManager* blockManager);
+    bool checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager);
 
     bool intersect(glm::vec2 playerPos1, glm::vec2 playerPos2, glm::vec2 blockPos1, glm::vec2 blockPos2);
 
@@ -59,7 +59,7 @@ private:
     bool m_facingRight = true;
     //b2ShapeId m_groundShapeId; // Store reference to ground shape
     float m_jumpForce = 1.0f;
-    float m_gravity = -0.01f;
+    float m_gravity = 0.01f;
 
     Bengine::Camera2D* m_camera;
     BlockManager* m_blockManager;

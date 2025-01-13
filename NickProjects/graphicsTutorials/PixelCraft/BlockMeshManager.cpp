@@ -133,6 +133,13 @@ void Chunk::destroy() {
     m_isLoaded = false;
 }
 
+
+glm::vec2 BlockHandle::getWorldPosition() {
+    return (chunkCoords * CHUNK_WIDTH) + blockOffset;
+}
+
+
+
 BlockMeshManager::BlockMeshManager() {
 
 }
@@ -537,8 +544,8 @@ void BlockManager::unloadChunk(int x, int y) {
     m_chunks[x][y].m_isLoaded = false;
 }
 
-std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {
-    std::vector<Block> blocksInRange;
+std::vector<BlockHandle> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {
+    std::vector<BlockHandle> blocksInRange;
 
     // Loop through the range of blocks around the player (in both x and y directions)
     for (int dx = -range; dx <= range; ++dx) {
@@ -551,7 +558,7 @@ std::vector<Block> BlockManager::getBlocksInRange(const glm::vec2& playerPos, in
 
             // If a valid block is returned, add it to the list
             if (blockHandle.block != nullptr) {
-                blocksInRange.push_back(*blockHandle.block);
+                blocksInRange.push_back(blockHandle);
             }
         }
     }

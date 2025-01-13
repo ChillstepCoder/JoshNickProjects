@@ -68,8 +68,8 @@ void Player::draw(Bengine::SpriteBatch& spriteBatch) {
 
 void Player::update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager) {
     // Get the blocks in range around the player
-    std::vector<Block> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);  // Use a range of 2 chunks
-    m_position.y = m_position.y - 0.2f;
+    std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);  // Use a range of 2 chunks
+
 
     if (!m_facingRight) {
         m_velocity.x = -1 * m_horizontalSpeed;
@@ -99,7 +99,7 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     setPlayerImage();
 
 
-
+    /* old movement code
     // Check for ground and water contact
     //m_touchingWater = false;
     m_isGrounded = false;
@@ -175,6 +175,7 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         m_touchingWater = false;
         //b2Body_SetGravityScale(getID(), 1.00f);
     }
+    */
 
     // Handle block breaking
     if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
@@ -201,15 +202,23 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 }
 
 
-void Player::movePlayer(float xVelocity, float yVelocity, std::vector<Block> blocksInRange, BlockManager* blockManager) {
-    m_position.x += xVelocity;
-    m_position.y += yVelocity;
+void Player::movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager) {
+
     bool intersect = checkIntersection(blocksInRange, blockManager);
-    if (!intersect) {
-        return;
-    } 
-    if (xVelocity == 0) {
-        yVelocity == 0;
+
+    if (intersect) {
+        // Collision detected, stop the movement
+        if (xVelocity != 0.0f) {
+            m_position.x -= xVelocity;  // Undo x movement
+            m_velocity.x = 0.0f;
+        }
+        if (yVelocity != 0.0f) {
+            m_position.y -= yVelocity;  // Undo y movement
+            m_velocity.y = 0.0f;
+        }
+    } else {
+        m_position.x = m_position.x + xVelocity;
+        m_position.y = m_position.y + yVelocity;
     }
 }
 
@@ -218,14 +227,17 @@ void Player::setPlayerImage() {
     m_image += m_direction;
 }
 
-bool Player::checkIntersection(std::vector<Block> blocksInRange, BlockManager* blockManager) {
+bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager) {
 
     for (int i = 0; i < blocksInRange.size(); i++) {
 
-        BlockHandle block = blockManager->getBlockAtPosition(m_position - glm::vec2(1.0, 1.0)); // Has a temporary incorrect position for now to see if the game runs
+        BlockHandle blockHandle = blocksInRange[i];
 
+        glm::vec2 blockWorldPos = blockHandle.getWorldPosition();
 
-        if (intersect(m_position, glm::vec2(m_position.x + m_dimensions.x, m_position.y + m_dimensions.y), block.chunkCoords + block.blockOffset, block.chunkCoords + block.blockOffset + glm::ivec2(0.5, 0.5))) {
+        glm::vec2 blockDimensions(1, 1);
+
+        if (intersect(m_position, m_position + m_dimensions, blockWorldPos, blockWorldPos + blockDimensions)) {
             return true;
         }
     }
