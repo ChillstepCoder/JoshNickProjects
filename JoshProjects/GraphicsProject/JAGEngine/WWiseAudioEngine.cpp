@@ -14,7 +14,6 @@ namespace JAGEngine {
     // Initialize Memory Manager
     AkMemSettings memSettings;
     AK::MemoryMgr::GetDefaultSettings(memSettings);
-
     if (AK::MemoryMgr::Init(&memSettings) != AK_Success) {
       std::cout << "AK: Memory Manager Failed to Initialize." << std::endl;
       return false;
@@ -24,7 +23,6 @@ namespace JAGEngine {
     // Initialize Stream Manager
     AkStreamMgrSettings stmSettings;
     AK::StreamMgr::GetDefaultSettings(stmSettings);
-
     if (!AK::StreamMgr::Create(stmSettings)) {
       std::cout << "AK: Stream Manager Failed to Create." << std::endl;
       return false;
@@ -34,7 +32,6 @@ namespace JAGEngine {
     // Initialize Streaming Device
     AkDeviceSettings deviceSettings;
     AK::StreamMgr::GetDefaultDeviceSettings(deviceSettings);
-
     if (m_lowLevelIO.Init(deviceSettings) != AK_Success) {
       std::cout << "AK: Could not create the streaming device and Low-Level I/O system." << std::endl;
       return false;
@@ -46,14 +43,29 @@ namespace JAGEngine {
     AkPlatformInitSettings platformInitSettings;
     AK::SoundEngine::GetDefaultInitSettings(initSettings);
     AK::SoundEngine::GetDefaultPlatformInitSettings(platformInitSettings);
-
     if (AK::SoundEngine::Init(&initSettings, &platformInitSettings) != AK_Success) {
       std::cout << "AK: Could not initialize the Sound Engine." << std::endl;
       return false;
     }
     std::cout << "AK: Sound Engine Initialized!" << std::endl;
 
-    // Success!
+    // Set base path and load Main bank
+    m_lowLevelIO.SetBasePath(WWISE_BANK_PATH);
+    AK::StreamMgr::SetCurrentLanguage(AKTEXT("English(US)"));
+
+    AkBankID bankID;
+
+    if (AK::SoundEngine::LoadBank(BANKNAME_INIT, bankID) != AK_Success) {
+      std::cout << "AK: Could not load Init Bank." << std::endl;
+      return false;
+    }
+
+    if (AK::SoundEngine::LoadBank(BANKNAME_MAIN, bankID) != AK_Success) {
+      std::cout << "AK: Could not load Main Bank." << std::endl;
+      return false;
+    }
+    std::cout << "AK: Main Bank Loaded Successfully!" << std::endl;
+
     m_isInitialized = true;
     return true;
   }

@@ -5,6 +5,7 @@
 #include <JAGEngine/SpriteBatch.h>
 #include <JAGEngine/Camera2D.h>
 #include <functional>
+#include "AudioEngine.h"
 
 class RaceCountdown {
 public:
@@ -42,6 +43,7 @@ private:
   float m_timer;
   bool m_isCountingDown;
   bool m_hasFinished;
+  AudioEngine* m_audioEngine;
 
   // Countdown settings
   static constexpr float COUNTDOWN_START = 3.0f;

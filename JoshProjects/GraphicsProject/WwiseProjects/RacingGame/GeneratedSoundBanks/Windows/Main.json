@@ -1,0 +1,69 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "154",
+  "SoundBanks": [
+   {
+    "Id": "3161908922",
+    "Type": "User",
+    "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
+    "Language": "SFX",
+    "Hash": "{F598E9E3-0394-9B8A-E72A-8A00220D7770}",
+    "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
+    "ShortName": "Main",
+    "Path": "Main.bnk",
+    "Media": [
+     {
+      "Id": "108366440",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Countdown_SFX_1.wav",
+      "CachePath": "77/{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem"
+     },
+     {
+      "Id": "685517915",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Countdown_SFX_2.wav",
+      "CachePath": "0D/{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "755225579",
+      "Name": "Play_Countdown_SFX_1",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Countdown_SFX_1",
+      "GUID": "{3BAC8B1A-0457-4AFC-B79F-754A0514A852}",
+      "DurationType": "OneShot",
+      "DurationMin": "2.0364625",
+      "DurationMax": "2.0364625",
+      "MediaRefs": [
+       {
+        "Id": "108366440"
+       }
+      ]
+     },
+     {
+      "Id": "755225576",
+      "Name": "Play_Countdown_SFX_2",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Countdown_SFX_2",
+      "GUID": "{196070EF-636A-427D-A096-D0DF5DDD8675}",
+      "DurationType": "OneShot",
+      "DurationMin": "2.0364625",
+      "DurationMax": "2.0364625",
+      "MediaRefs": [
+       {
+        "Id": "685517915"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{5F5876B9-F048-688A-21AA-365C3B0BB7F8}"
+ }
+}

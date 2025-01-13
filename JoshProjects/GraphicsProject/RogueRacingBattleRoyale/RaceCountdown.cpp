@@ -5,7 +5,8 @@ RaceCountdown::RaceCountdown()
   : m_timer(0.0f)
   , m_isCountingDown(false)
   , m_hasFinished(false)
-  , m_font(nullptr) {
+  , m_font(nullptr)
+  , m_audioEngine(nullptr) {
 }
 
 RaceCountdown::~RaceCountdown() {
@@ -33,13 +34,26 @@ void RaceCountdown::startCountdown() {
 
 void RaceCountdown::update(float deltaTime) {
   if (m_isCountingDown) {
+    float oldTime = m_timer;
     m_timer -= deltaTime;
-    //std::cout << "Countdown timer: " << m_timer << std::endl;
+
+    // Check if we just crossed a whole number
+    int oldCount = static_cast<int>(std::ceil(oldTime));
+    int newCount = static_cast<int>(std::ceil(m_timer));
+
+    // Play appropriate sound when crossing number boundary
+    if (oldCount != newCount && m_audioEngine) {
+      if (newCount > 0) {
+        m_audioEngine->playCountdownBeep();
+      }
+      else if (newCount == 0) {
+        m_audioEngine->playCountdownStart();
+      }
+    }
 
     if (m_timer <= 0.0f) {
       m_isCountingDown = false;
       m_hasFinished = true;
-      std::cout << "Countdown finished!" << std::endl;
       if (m_onCountdownComplete) m_onCountdownComplete();
     }
   }

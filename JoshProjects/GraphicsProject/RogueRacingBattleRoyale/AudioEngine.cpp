@@ -67,8 +67,16 @@ void AudioEngine::stopBoostSound() {
 
 }
 
-void AudioEngine::playCountdownSound() {
+void AudioEngine::playCountdownBeep() {
+  if (m_audioEngine) {
+    //AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_COUNTDOWN_SFX_1, GAME_OBJECT_ID_THEME);
+  }
+}
 
+void AudioEngine::playCountdownStart() {
+  if (m_audioEngine) {
+    //AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_COUNTDOWN_SFX_2, GAME_OBJECT_ID_THEME);
+  }
 }
 
 void AudioEngine::playLapCompletedSound() {

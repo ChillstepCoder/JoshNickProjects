@@ -22,7 +22,8 @@ public:
   void playCollisionSound(float impactForce);
   void playBoostSound();
   void stopBoostSound();
-  void playCountdownSound();
+  void playCountdownBeep();
+  void playCountdownStart();
   void playLapCompletedSound();
   void playRaceStartSound();
   void playRaceFinishSound();

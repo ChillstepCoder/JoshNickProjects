@@ -18,6 +18,7 @@
 
 #define BANKNAME_INIT L"Init.bnk"
 #define BANKNAME_RAYCASTER L"RayCast.bnk"
+#define BANKNAME_MAIN L"Main.bnk"
 
 #define WWISE_BANK_PATH AKTEXT("../WwiseProjects/RacingGame/GeneratedSoundBanks/Windows")
 

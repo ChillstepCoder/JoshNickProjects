@@ -1,0 +1,8 @@
+Event	ID	Name			Wwise Object Path	Notes
+	755225576	Play_Countdown_SFX_2			\Default Work Unit\Play_Countdown_SFX_2	
+	755225579	Play_Countdown_SFX_1			\Default Work Unit\Play_Countdown_SFX_1	
+
+In Memory Audio	ID	Name	Audio source file		Wwise Object Path	Notes	Data Size
+	108366440	Countdown_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\77\{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_1		359376
+	685517915	Countdown_SFX_2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0D\{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_2		359376
+

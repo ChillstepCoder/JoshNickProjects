@@ -1,0 +1,29 @@
+{
+ "ProjectInfo": {
+  "Project": {
+   "Name": "RacingGame",
+   "GUID": "{CAF8B39B-B8A9-4ACA-8DD0-B164631B79B7}",
+   "Generator": "2024.1.1.8691"
+  },
+  "CacheRoot": "../.cache",
+  "Platforms": [
+   {
+    "Name": "Windows",
+    "GUID": "{CBCD602E-8D69-44E8-A6BE-02E9455E2458}",
+    "BasePlatform": "Windows",
+    "BasePlatformGUID": "{6E0CB257-C6C8-4C5C-8366-2740DFC441EB}",
+    "Path": "Windows"
+   }
+  ],
+  "Languages": [
+   {
+    "Name": "English(US)",
+    "Id": "684519430",
+    "GUID": "{9FF11DB2-0896-4249-8651-C26A4B7CBC23}",
+    "Default": "true",
+    "UseAsStandIn": "true"
+   }
+  ],
+  "FileHash": "{965B36BE-3F61-6EDD-765E-C074CE7E4167}"
+ }
+}
