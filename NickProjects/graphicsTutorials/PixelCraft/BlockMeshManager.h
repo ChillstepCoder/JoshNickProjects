@@ -41,6 +41,9 @@ public:
 struct BlockHandle {
     auto operator<=>(const BlockHandle&) const = default;
     Block* block;
+
+    glm::vec2 getWorldPosition();
+
     glm::ivec2 chunkCoords;
     glm::ivec2 blockOffset;
 };
@@ -108,7 +111,7 @@ public:
 
     void unloadChunk(int x, int y);
 
-    std::vector<Block> getBlocksInRange(const glm::vec2& playerPos, int range);
+    std::vector<BlockHandle> getBlocksInRange(const glm::vec2& playerPos, int range);
 
     std::vector<Chunk*> m_activeChunks;
 

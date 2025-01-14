@@ -151,7 +151,6 @@ void CellularAutomataManager::splitWaterToEmpty(BlockHandle& sourceBlock, BlockH
 }
 
 
-// TODO BEN: HOMEWORK! Implement the following functions
 bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, BlockHandle& diagonalBlock, glm::vec2 diagonalPos, BlockHandle& adjacentBlock, glm::vec2 adjacentPos, BlockManager& blockManager) {
     bool isMeshDirty = false;
 
