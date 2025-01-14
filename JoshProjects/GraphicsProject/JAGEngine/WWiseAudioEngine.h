@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include <windows.h>
 #include <iostream>
+
 #include <AK/SoundEngine/Common/AkMemoryMgr.h>
 #include <AK/SoundEngine/Common/AkMemoryMgrModule.h>
 
@@ -16,11 +18,9 @@
 
 #include <Wwise_IDs.h>
 
+#define WWISE_BANK_PATH AKTEXT("../WwiseProjects/RacingGame/GeneratedSoundBanks/Windows/")
 #define BANKNAME_INIT L"Init.bnk"
-#define BANKNAME_RAYCASTER L"RayCast.bnk"
 #define BANKNAME_MAIN L"Main.bnk"
-
-#define WWISE_BANK_PATH AKTEXT("../WwiseProjects/RacingGame/GeneratedSoundBanks/Windows")
 
 namespace JAGEngine {
 
@@ -33,6 +33,7 @@ namespace JAGEngine {
   private:
     bool m_isInitialized = false;
     CAkFilePackageLowLevelIODeferred m_lowLevelIO;
+    uint32_t m_frameCounter = 0;
   };
 
 }

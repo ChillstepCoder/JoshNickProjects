@@ -42,6 +42,16 @@ bool AudioEngine::init() {
   m_effectsVolume = 1.0f;
   m_musicVolume = 1.0f;
 
+  // Apply volumes to WWise - use explicit RTPC IDs if defined in Wwise_IDs.h
+  AK::SoundEngine::SetRTPCValue("Master_Volume", m_masterVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
+  AK::SoundEngine::SetRTPCValue("Effects_Volume", m_effectsVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
+  AK::SoundEngine::SetRTPCValue("Music_Volume", m_musicVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
+
+  // Print current volume settings
+  std::cout << "Volume settings - Master: " << m_masterVolume
+    << " Effects: " << m_effectsVolume
+    << " Music: " << m_musicVolume << std::endl;
+
   // Apply volumes to WWise
   AK::SoundEngine::SetRTPCValue("Master_Volume", m_masterVolume * 100.0f);
   AK::SoundEngine::SetRTPCValue("Effects_Volume", m_effectsVolume * 100.0f);
@@ -52,9 +62,8 @@ bool AudioEngine::init() {
 }
 
 void AudioEngine::update() {
-  // Update sound parameters based on game state
-  if (m_isEnginePlaying) {
-    // Update engine sound parameters
+  if (m_audioEngine) {
+    m_audioEngine->update();
   }
 }
 

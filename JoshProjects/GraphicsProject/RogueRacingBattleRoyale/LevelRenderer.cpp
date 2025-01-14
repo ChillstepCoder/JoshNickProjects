@@ -179,7 +179,7 @@ void LevelRenderer::renderStartLine(const glm::mat4& cameraMatrix, SplineTrack* 
     glBindVertexArray(0);
   }
   else {
-    std::cout << "Start line mesh VAO is invalid or indices are empty.\n";
+    //std::cout << "Start line mesh VAO is invalid or indices are empty.\n";
   }
 
   m_startLineShader.unuse();

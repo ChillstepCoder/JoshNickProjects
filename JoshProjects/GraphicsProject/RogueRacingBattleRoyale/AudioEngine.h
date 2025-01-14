@@ -43,6 +43,8 @@ public:
   float getEffectsVolume() { return m_effectsVolume; }
   float getMusicVolume() { return m_musicVolume; }
 
+  JAGEngine::WWiseAudioEngine* getWWiseEngine() { return m_audioEngine.get(); }
+
 private:
   std::unique_ptr<JAGEngine::WWiseAudioEngine> m_audioEngine;
   bool m_isBoostPlaying;

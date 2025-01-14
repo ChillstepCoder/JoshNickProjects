@@ -43,33 +43,36 @@ namespace JAGEngine {
     AkPlatformInitSettings platformInitSettings;
     AK::SoundEngine::GetDefaultInitSettings(initSettings);
     AK::SoundEngine::GetDefaultPlatformInitSettings(platformInitSettings);
+
     if (AK::SoundEngine::Init(&initSettings, &platformInitSettings) != AK_Success) {
       std::cout << "AK: Could not initialize the Sound Engine." << std::endl;
       return false;
     }
     std::cout << "AK: Sound Engine Initialized!" << std::endl;
 
-    // Set base path and load Main bank
+    // Set up bank path and language
     m_lowLevelIO.SetBasePath(WWISE_BANK_PATH);
     AK::StreamMgr::SetCurrentLanguage(AKTEXT("English(US)"));
 
+    // Load banks
     AkBankID bankID;
+    AKRESULT result;
 
-    if (AK::SoundEngine::LoadBank(BANKNAME_INIT, bankID) != AK_Success) {
-      std::cout << "AK: Could not load Init Bank." << std::endl;
+    // Load Init bank first
+    result = AK::SoundEngine::LoadBank(BANKNAME_INIT, bankID);
+    if (result != AK_Success) {
+      std::cout << "Failed to load Init bank. Error code: " << result << std::endl;
       return false;
     }
-    else {
-      std::cout << "AK: Init Bank Loaded Successfully!" << std::endl;
-    }
+    std::cout << "Init Bank loaded successfully." << std::endl;
 
-    if (AK::SoundEngine::LoadBank(BANKNAME_MAIN, bankID) != AK_Success) {
-      std::cout << "AK: Could not load Main Bank." << std::endl;
+    // Load Main bank
+    result = AK::SoundEngine::LoadBank(BANKNAME_MAIN, bankID);
+    if (result != AK_Success) {
+      std::cout << "Failed to load Main bank. Error code: " << result << std::endl;
       return false;
     }
-    else {
-      std::cout << "AK: Main Bank Loaded Successfully!" << std::endl;
-    }
+    std::cout << "Main Bank loaded successfully." << std::endl;
 
     m_isInitialized = true;
     return true;
@@ -77,7 +80,21 @@ namespace JAGEngine {
 
   void WWiseAudioEngine::update() {
     if (m_isInitialized) {
-      AK::SoundEngine::RenderAudio();
+      static uint32_t frameCount = 0;
+      frameCount++;
+
+      AKRESULT result = AK::SoundEngine::RenderAudio();
+      if (result != AK_Success) {
+        std::cout << "Error rendering audio. Result: " << result << std::endl;
+      }
+
+      // Add detailed logging every few seconds
+      if (frameCount % 300 == 0) {  // Every ~5 seconds at 60fps
+        std::cout << "Audio frame " << frameCount
+          << " - Memory status: " << (AK::MemoryMgr::IsInitialized() ? "OK" : "Failed")
+          << " - Sound Engine: " << (AK::SoundEngine::IsInitialized() ? "OK" : "Failed")
+          << std::endl;
+      }
     }
   }
 

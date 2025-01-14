@@ -39,29 +39,58 @@ void RaceCountdown::update(float deltaTime) {
   if (m_isCountingDown) {
     float oldTime = m_timer;
     m_timer -= deltaTime;
-
-    // Check if we just crossed a whole number
     int oldCount = static_cast<int>(std::ceil(oldTime));
     int newCount = static_cast<int>(std::ceil(m_timer));
 
-    // Play countdown sounds
+    // Check if we need to play the initial countdown sound
+    if (oldTime == COUNTDOWN_START) {
+      std::cout << "Playing countdown beep for start (3)" << std::endl;
+      AkPlayingID playingID = AK::SoundEngine::PostEvent(
+        AK::EVENTS::PLAY_COUNTDOWN_SFX_1,
+        RacingAudio::GAME_OBJECT_COUNTDOWN
+      );
+      std::cout << "PostEvent ID: " << playingID
+        << (playingID == AK_INVALID_PLAYING_ID ? " (INVALID)" : " (Valid)")
+        << " Game object active: "
+        //<< (AK::SoundEngine::Query::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
+        << std::endl;
+    }
+
+    // Check if count changed
     if (oldCount != newCount) {
       if (newCount > 0) {
         std::cout << "Playing countdown beep for count: " << newCount << std::endl;
-        AkPlayingID playingID = AK::SoundEngine::PostEvent("Play_Countdown_SFX_1", RacingAudio::GAME_OBJECT_COUNTDOWN);
-        std::cout << "PostEvent ID: " << playingID << std::endl;  // If 0, event failed to play
+        AkPlayingID playingID = AK::SoundEngine::PostEvent(
+          AK::EVENTS::PLAY_COUNTDOWN_SFX_1,
+          RacingAudio::GAME_OBJECT_COUNTDOWN
+        );
+        std::cout << "PostEvent ID: " << playingID
+          << (playingID == AK_INVALID_PLAYING_ID ? " (INVALID)" : " (Valid)")
+          << " Game object active: "
+          //<< (AK::SoundEngine::Query::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
+          << std::endl;
       }
       else if (newCount == 0) {
         std::cout << "Playing final countdown sound!" << std::endl;
-        AkPlayingID playingID = AK::SoundEngine::PostEvent("Play_Countdown_SFX_2", RacingAudio::GAME_OBJECT_COUNTDOWN);
-        std::cout << "PostEvent ID: " << playingID << std::endl;  // If 0, event failed to play
+        AkPlayingID playingID = AK::SoundEngine::PostEvent(
+          AK::EVENTS::PLAY_COUNTDOWN_SFX_2,
+          RacingAudio::GAME_OBJECT_COUNTDOWN
+        );
+        std::cout << "PostEvent ID: " << playingID
+          << (playingID == AK_INVALID_PLAYING_ID ? " (INVALID)" : " (Valid)")
+          << " Game object active: "
+          //<< (AK::SoundEngine::Query::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
+          << std::endl;
       }
     }
 
     if (m_timer <= 0.0f) {
       m_isCountingDown = false;
       m_hasFinished = true;
-      if (m_onCountdownComplete) m_onCountdownComplete();
+      std::cout << "Countdown complete - calling completion callback" << std::endl;
+      if (m_onCountdownComplete) {
+        m_onCountdownComplete();
+      }
     }
   }
 }
