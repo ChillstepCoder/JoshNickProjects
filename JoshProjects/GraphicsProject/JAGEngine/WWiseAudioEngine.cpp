@@ -74,6 +74,57 @@ namespace JAGEngine {
     }
     std::cout << "Main Bank loaded successfully." << std::endl;
 
+    std::cout << "Verifying sound setup..." << std::endl;
+
+    const char* eventNames[] = { "Play_Countdown_SFX_1", "Play_Countdown_SFX_2" };
+    AKRESULT prepareResult = AK::SoundEngine::PrepareEvent(
+      AK::SoundEngine::Preparation_Load,
+      eventNames,
+      2
+    );
+
+    if (prepareResult != AK_Success) {
+        std::cout << "Failed to prepare Events. Error code: " << prepareResult << std::endl;
+    }
+    else {
+      std::cout << "Events prepared successfully" << std::endl;
+    }
+
+    const AkGameObjectID TEST_OBJECT_ID = 999;
+
+    const char* defaultShareSet = nullptr;
+    AkUInt32 deviceID = 0;
+    AkOutputDeviceID outputID = AK::SoundEngine::GetOutputID(defaultShareSet, deviceID);
+    std::cout << "Output device ID: " << outputID << std::endl;
+
+    AKRESULT outputResult = AK::SoundEngine::SetDefaultListeners(&TEST_OBJECT_ID, 1);
+    std::cout << "Set default listener result: " << outputResult << std::endl;
+
+    AKRESULT regResult = AK::SoundEngine::RegisterGameObj(TEST_OBJECT_ID, "TestObject");
+    if (regResult != AK_Success) {
+      std::cout << "Failed to register test object. Error: " << regResult << std::endl;
+    }
+    else {
+      std::cout << "Test object registered successfuly." << std::endl;
+    }
+
+    // Explicit volume levels
+
+    AK::SoundEngine::SetRTPCValue(AKTEXT("Master_Volume"), 100.0f);
+    AK::SoundEngine::SetRTPCValue(AKTEXT("Effects_Volume"), 100.0f);
+
+    AkPlayingID testID = AK::SoundEngine::PostEvent(
+      AKTEXT("Play_Countdown_SFX_1"),
+      TEST_OBJECT_ID,
+      AK_EndOfEvent,
+      [](AkCallbackType type, AkCallbackInfo* info) {
+        std::cout << "Sound callback received, type: " << type << std::endl;
+      },
+      nullptr
+    );
+
+    std::cout << "Test sound play attempt - ID: " << testID << std::endl;
+
     m_isInitialized = true;
     return true;
   }

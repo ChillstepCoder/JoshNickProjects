@@ -51,8 +51,8 @@ void RaceCountdown::update(float deltaTime) {
       );
       std::cout << "PostEvent ID: " << playingID
         << (playingID == AK_INVALID_PLAYING_ID ? " (INVALID)" : " (Valid)")
-        << " Game object active: "
-        //<< (AK::SoundEngine::Query::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
+        //<< " Game object active: "
+        //<< (AK::SoundEngine::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
         << std::endl;
     }
 
@@ -66,8 +66,8 @@ void RaceCountdown::update(float deltaTime) {
         );
         std::cout << "PostEvent ID: " << playingID
           << (playingID == AK_INVALID_PLAYING_ID ? " (INVALID)" : " (Valid)")
-          << " Game object active: "
-          //<< (AK::SoundEngine::Query::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
+          //<< " Game object active: "
+          //<< (AK::SoundEngine::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
           << std::endl;
       }
       else if (newCount == 0) {
@@ -78,8 +78,8 @@ void RaceCountdown::update(float deltaTime) {
         );
         std::cout << "PostEvent ID: " << playingID
           << (playingID == AK_INVALID_PLAYING_ID ? " (INVALID)" : " (Valid)")
-          << " Game object active: "
-          //<< (AK::SoundEngine::Query::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
+          //<< " Game object active: "
+          //<< (AK::SoundEngine::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
           << std::endl;
       }
     }

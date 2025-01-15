@@ -142,7 +142,7 @@ void LevelEditorScreen::onEntry() {
     }
 
     // Initialize countdown and race timer
-    m_raceCountdown = std::make_unique<RaceCountdown>(&App::getAudioEngine());
+    m_raceCountdown = std::make_unique<RaceCountdown>();
     m_raceTimer = std::make_unique<RaceTimer>();
 
     // Now it's safe to copy the font to the countdown
