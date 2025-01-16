@@ -48,7 +48,7 @@ private:
     glm::vec2 m_position;
     glm::vec2 m_dimensions;
     glm::vec2 m_velocity;
-    float m_horizontalSpeed = 0.3f;
+    float m_horizontalSpeed = 0.0f;
     Bengine::ColorRGBA8 m_color;
     Bengine::GLTexture m_texture;
     std::string m_direction;
@@ -59,7 +59,7 @@ private:
     bool m_facingRight = true;
     //b2ShapeId m_groundShapeId; // Store reference to ground shape
     float m_jumpForce = 1.0f;
-    float m_gravity = 0.01f;
+    float m_gravity = -0.01f;
 
     Bengine::Camera2D* m_camera;
     BlockManager* m_blockManager;
