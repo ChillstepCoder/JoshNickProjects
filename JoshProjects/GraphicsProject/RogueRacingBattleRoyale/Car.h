@@ -10,10 +10,11 @@
 #include <array>
 #include <memory>
 #include "ObjectProperties.h"
-#include "AudioEngine.h"
 
+class AudioEngine;
 class PlaceableObject;
 class ObjectManager;
+
 
 class Car {
 public:
@@ -104,6 +105,7 @@ public:
     //b2Body_SetUserData(m_bodyId, static_cast<void*>(track));
   }
   void setObjectManager(ObjectManager* manager) { m_objectManager = manager; }
+  void setAudioEngine(AudioEngine* engine) { m_audioEngine = engine; }
 
   float getEffectiveFriction() const {
     return m_properties.wheelFriction * m_properties.baseFriction;
@@ -153,5 +155,6 @@ private:
   void initializeWheelColliders();
   float calculateAverageWheelFriction() const;
 
+  AudioEngine* m_audioEngine = nullptr;
 
 };

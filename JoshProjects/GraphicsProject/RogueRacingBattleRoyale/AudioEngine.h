@@ -3,6 +3,10 @@
 #pragma once
 #include <memory>
 #include <AK/SoundEngine/Common/AkTypes.h>
+#include <unordered_map>
+#include "RacingAudioDefs.h"
+
+class Car;
 
 struct Vec2 {
   float x, y;
@@ -40,9 +44,12 @@ public:
   void setCarSpeed(float speed);
   void setTireSurfaceType(int surfaceType);
 
-  void setDefaultListener(const Vec2& position, float rotation);
+  void setDefaultListener(const Vec2& position, float rotation); // not used ATM
   void setObjectPosition(AkGameObjectID id, const Vec2& position) const;
-  void initCarAudio(AkGameObjectID carId);
+
+  void initializeCarAudio(Car* car);
+  void updateCarAudio(Car* car);
+  void removeCarAudio(Car* car);
 
   // Volume controls
   void setMasterVolume(float volume);
@@ -57,6 +64,9 @@ public:
 
 private:
   std::unique_ptr<JAGEngine::WWiseAudioEngine> m_audioEngine;
+  void updateCarEngineState(Car* car, float speedRatio);
+  std::unordered_map<Car*, AkGameObjectID> m_carAudioIds;
+
   bool m_isBoostPlaying;
   bool m_isEnginePlaying;
   float m_currentRPM;

@@ -1,7 +1,7 @@
 // AudioEngine.cpp
 
 #include "AudioEngine.h"
-#include "RacingAudioDefs.h"
+#include "Car.h"
 #include <JAGEngine/WWiseAudioEngine.h>
 #include <iostream>
 
@@ -26,8 +26,9 @@ bool AudioEngine::init() {
     return false;
   }
 
-  // Initialize racing-specific audio settings here
-  // Set up RTPC parameters for engine, tire sounds, etc.
+  // Initialize racing-specific audio settings
+  // 
+  // Set up RTPC parameters
   std::cout << "Registering audio game objects...\n";
   AkGameObjectID countdownID = RacingAudio::GAME_OBJECT_COUNTDOWN;
   AKRESULT result = AK::SoundEngine::RegisterGameObj(countdownID, "Countdown");
@@ -42,7 +43,7 @@ bool AudioEngine::init() {
   m_effectsVolume = 1.0f;
   m_musicVolume = 1.0f;
 
-  // Apply volumes to WWise - use explicit RTPC IDs if defined in Wwise_IDs.h
+  // Apply volumes to WWise
   AK::SoundEngine::SetRTPCValue("Master_Volume", m_masterVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
   AK::SoundEngine::SetRTPCValue("Effects_Volume", m_effectsVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
   AK::SoundEngine::SetRTPCValue("Music_Volume", m_musicVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
@@ -96,20 +97,26 @@ void AudioEngine::stopBoostSound() {
 }
 
 void AudioEngine::playCountdownBeep() {
-  if (m_audioEngine) {
+  if (m_audioEngine && m_audioEngine->isInitialized()) {
     AkPlayingID playingID = AK::SoundEngine::PostEvent(
       AK::EVENTS::PLAY_COUNTDOWN_SFX_1,
       RacingAudio::GAME_OBJECT_COUNTDOWN
     );
+    if (playingID == AK_INVALID_PLAYING_ID) {
+      std::cout << "Failed to play countdown beep" << std::endl;
+    }
   }
 }
 
 void AudioEngine::playCountdownStart() {
-  if (m_audioEngine) {
+  if (m_audioEngine && m_audioEngine->isInitialized()) {
     AkPlayingID playingID = AK::SoundEngine::PostEvent(
       AK::EVENTS::PLAY_COUNTDOWN_SFX_2,
       RacingAudio::GAME_OBJECT_COUNTDOWN
     );
+    if (playingID == AK_INVALID_PLAYING_ID) {
+      std::cout << "Failed to play countdown start" << std::endl;
+    }
   }
 }
 
@@ -194,16 +201,6 @@ void AudioEngine::setObjectPosition(AkGameObjectID id, const Vec2& position) con
   AK::SoundEngine::SetPosition(id, soundPos);
 }
 
-void AudioEngine::initCarAudio(AkGameObjectID carId) {
-  if (!m_audioEngine) return;
-
-  // Register the car as a game object if not already registered
-  AK::SoundEngine::RegisterGameObj(carId, "Car");
-
-  // Start playing the idle sound
-  AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_ENGINE_IDLE_SFX_1, carId);
-}
-
 void AudioEngine::setMasterVolume(float volume) {
   m_masterVolume = volume;
 }
@@ -216,3 +213,97 @@ void AudioEngine::setMusicVolume(float volume) {
   m_musicVolume = volume;
 }
 
+void AudioEngine::initializeCarAudio(Car* car) {
+  if (!m_audioEngine || !car) return;
+
+  AkGameObjectID audioId = car->getAudioId();
+
+  // Register the car's game object
+  AKRESULT result = AK::SoundEngine::RegisterGameObj(audioId, "CarEngine");
+  if (result != AK_Success) {
+    std::cout << "Failed to register car audio object. Result: " << result << std::endl;
+    return;
+  }
+
+  // Start playing the idle sound
+  AK::SoundEngine::PostEvent(
+    AK::EVENTS::PLAY_ENGINE_IDLE_SFX_1,
+    audioId
+  );
+
+  // Start playing the rev sound
+  AK::SoundEngine::PostEvent(
+    AK::EVENTS::PLAY_ENGINE_REV_SFX_1,
+    audioId
+  );
+
+  // Store the audio ID
+  m_carAudioIds[car] = audioId;
+
+  // Set initial volumes
+  AK::SoundEngine::SetRTPCValue("Engine_Idle_Volume", 100.0f, audioId);
+  AK::SoundEngine::SetRTPCValue("Engine_Rev_Volume", 0.0f, audioId);
+}
+
+void AudioEngine::updateCarAudio(Car* car) {
+  if (!m_audioEngine || !car) return;
+
+  auto it = m_carAudioIds.find(car);
+  if (it == m_carAudioIds.end()) return;
+
+  AkGameObjectID audioId = it->second;
+  auto info = car->getDebugInfo();
+
+  // Update position relative to listener
+  if (info.position.x != 0.0f || info.position.y != 0.0f) {
+    AkSoundPosition soundPos;
+
+    // Position
+    AkVector position;
+    position.X = info.position.x;
+    position.Y = info.position.y;
+    position.Z = 0.0f;
+
+    // Forward vector
+    AkVector forward;
+    forward.X = cos(info.angle);
+    forward.Y = sin(info.angle);
+    forward.Z = 0.0f;
+
+    // Up vector
+    AkVector up;
+    up.X = 0.0f;
+    up.Y = 0.0f;
+    up.Z = 1.0f;
+
+    soundPos.Set(position, forward, up);
+    AK::SoundEngine::SetPosition(audioId, soundPos);
+  }
+
+  // Update engine state
+  float speedRatio = abs(info.forwardSpeed) / car->getProperties().maxSpeed;
+  updateCarEngineState(car, speedRatio);
+}
+
+void AudioEngine::updateCarEngineState(Car* car, float speedRatio) {
+  auto it = m_carAudioIds.find(car);
+  if (it == m_carAudioIds.end()) return;
+
+  AkGameObjectID audioId = it->second;
+
+  // Update engine sound parameters
+  float idleVolume = 100.0f * (1.0f - speedRatio);
+  float revVolume = 100.0f * speedRatio;
+
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::ENGINE_IDLE_VOLUME, idleVolume, audioId);
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::ENGINE_REV_VOLUME, revVolume, audioId);
+}
+
+void AudioEngine::removeCarAudio(Car* car) {
+  auto it = m_carAudioIds.find(car);
+  if (it == m_carAudioIds.end()) return;
+
+  AK::SoundEngine::UnregisterGameObj(it->second);
+
+  m_carAudioIds.erase(it);
+}

@@ -45,24 +45,24 @@ void RaceCountdown::update(float deltaTime) {
     // Check if we need to play the initial countdown sound
     if (oldTime == COUNTDOWN_START) {
       std::cout << "Playing countdown beep for start (3)" << std::endl;
-      AkPlayingID playingID = AK::SoundEngine::PostEvent(
-        AK::EVENTS::PLAY_COUNTDOWN_SFX_1,
-        RacingAudio::GAME_OBJECT_COUNTDOWN
-      );
-      std::cout << "PostEvent ID: " << playingID
-        << (playingID == AK_INVALID_PLAYING_ID ? " (INVALID)" : " (Valid)")
-        //<< " Game object active: "
-        //<< (AK::SoundEngine::GetIsGameObjectActive(RacingAudio::GAME_OBJECT_COUNTDOWN) ? "Yes" : "No")
-        << std::endl;
+      if (m_audioEngine) {
+        m_audioEngine->playCountdownBeep();
+      }
     }
 
     // Check if count changed
     if (oldCount != newCount) {
       if (newCount > 0) {
-        m_audioEngine->playCountdownBeep();
+        std::cout << "Playing countdown beep for count: " << newCount << std::endl;
+        if (m_audioEngine) {
+          m_audioEngine->playCountdownBeep();
+        }
       }
       else if (newCount == 0) {
-        m_audioEngine->playCountdownStart();
+        std::cout << "Playing final countdown sound!" << std::endl;
+        if (m_audioEngine) {
+          m_audioEngine->playCountdownStart();
+        }
       }
     }
 

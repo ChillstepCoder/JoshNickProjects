@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{701ECBBD-9C7B-4030-8CDB-749EE5D1C7B9}",
     "Language": "SFX",
-    "Hash": "{022DBE67-0C78-6C13-CFD3-1C14D48F974A}",
+    "Hash": "{ED2767C8-E414-19B2-933F-40EF5384FD7E}",
     "ObjectPath": "Init",
     "ShortName": "Init",
     "Path": "Init.bnk",
@@ -78,10 +78,22 @@
       "Name": "Density_FA_SSGrain",
       "ObjectPath": "\\Game Parameters\\Factory Soundseed Grain\\Density_FA_SSGrain",
       "GUID": "{63B3F29E-04F3-4887-BA1A-4D7694644B24}"
+     },
+     {
+      "Id": "3886434353",
+      "Name": "Engine_Idle_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Idle_Volume",
+      "GUID": "{3938FE94-49BA-49E3-90A7-99AE09DF0379}"
+     },
+     {
+      "Id": "3966876546",
+      "Name": "Engine_Rev_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Rev_Volume",
+      "GUID": "{DDFFDE0C-B301-4D9A-BA00-190D8490E3FE}"
      }
     ]
    }
   ],
-  "FileHash": "{FFFD80BE-D9D6-B618-C181-834D2ADF3145}"
+  "FileHash": "{0853A09D-023F-D125-10FD-B516B24D1474}"
  }
 }

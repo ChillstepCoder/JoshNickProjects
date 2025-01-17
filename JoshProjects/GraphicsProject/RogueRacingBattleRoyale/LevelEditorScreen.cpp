@@ -32,6 +32,7 @@
 // Local includes
 #include "LevelEditorScreen.h"
 #include "SplineTrack.h"
+#include "App.h"
 
 template<typename T>
 T getMin(T a, T b) {
@@ -142,8 +143,13 @@ void LevelEditorScreen::onEntry() {
     }
 
     // Initialize countdown and race timer
-    m_raceCountdown = std::make_unique<RaceCountdown>();
-    m_raceTimer = std::make_unique<RaceTimer>();
+    if (!m_raceCountdown) {
+      m_raceCountdown = std::make_unique<RaceCountdown>();
+      m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+    }
+    if (!m_raceTimer) {
+      m_raceTimer = std::make_unique<RaceTimer>();
+    }
 
     // Now it's safe to copy the font to the countdown
     if (m_raceCountdown) {
@@ -1372,8 +1378,13 @@ void LevelEditorScreen::initTestMode() {
   }
 
   // Initialize race timer and countdown
-  m_raceTimer = std::make_unique<RaceTimer>();
-  m_raceCountdown = std::make_unique<RaceCountdown>();
+  if (!m_raceTimer) {
+    m_raceTimer = std::make_unique<RaceTimer>();
+  }
+  if (!m_raceCountdown) {
+    m_raceCountdown = std::make_unique<RaceCountdown>();
+    m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+  }
 
   // Initialize countdown font and settings
   if (m_countdownFont) {
@@ -1457,6 +1468,8 @@ void LevelEditorScreen::initTestMode() {
     b2Body_SetMassData(carBody, massData);
 
     auto car = std::make_unique<Car>(carBody);
+    // Initialize Car Audio
+    car->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
 
     Car::CarProperties props;
     props = Car::CarProperties();
@@ -1484,6 +1497,8 @@ void LevelEditorScreen::initTestMode() {
       static_cast<int>(i + 1),
       i == 0
       });
+
+    m_testCars.push_back(std::move(car));
   }
 
   if (m_objectManager) {
@@ -2139,8 +2154,10 @@ void LevelEditorScreen::cleanupTestMode() {
   m_inputEnabled = false;
   m_testMode = false;
   // Recreate race elements for next time
-  m_raceTimer = std::make_unique<RaceTimer>();
-  m_raceCountdown = std::make_unique<RaceCountdown>();
+    m_raceTimer = std::make_unique<RaceTimer>();
+    m_raceCountdown = std::make_unique<RaceCountdown>();
+    m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+
   if (m_raceCountdown && m_countdownFont) {
     auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
     countdownFont->init("Fonts/titilium_bold.ttf", 72);

@@ -30,6 +30,8 @@ namespace JAGEngine {
     bool init();
     void update();
     void cleanup();
+    bool isInitialized() const { return m_isInitialized; }
+
   private:
     bool m_isInitialized = false;
     CAkFilePackageLowLevelIODeferred m_lowLevelIO;

@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
     "Language": "SFX",
-    "Hash": "{CAE1E53C-26D7-6CDF-211B-A09ECB4EC5C8}",
+    "Hash": "{65B93B1B-A16B-038F-CF94-ECC5B2D6E260}",
     "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
     "ShortName": "Main",
     "Path": "Main.bnk",
@@ -101,9 +101,23 @@
        }
       ]
      }
+    ],
+    "GameParameters": [
+     {
+      "Id": "3886434353",
+      "Name": "Engine_Idle_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Idle_Volume",
+      "GUID": "{3938FE94-49BA-49E3-90A7-99AE09DF0379}"
+     },
+     {
+      "Id": "3966876546",
+      "Name": "Engine_Rev_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Rev_Volume",
+      "GUID": "{DDFFDE0C-B301-4D9A-BA00-190D8490E3FE}"
+     }
     ]
    }
   ],
-  "FileHash": "{3AF28A8D-5476-777C-934A-F0EE714795C5}"
+  "FileHash": "{9657FF5F-E528-FEAE-FB33-A2976BF21ECC}"
  }
 }

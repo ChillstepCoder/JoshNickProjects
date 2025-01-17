@@ -14,6 +14,11 @@ namespace JAGEngine {
 
   class IMainGame {
   public:
+    template<typename T>
+    T* getGameAs() {
+      return static_cast<T*>(this);
+    }
+
     IMainGame();
     virtual ~IMainGame();
     void run();

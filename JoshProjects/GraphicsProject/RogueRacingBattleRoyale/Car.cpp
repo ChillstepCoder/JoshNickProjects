@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include "AudioEngine.h"
 
 namespace {
   float clamp(float value, float min, float max) {
@@ -138,6 +139,11 @@ void Car::update(const InputState& input) {
   // Update lap progress
   if (m_track) {
     m_properties.lapProgress = calculateLapProgress(m_track);
+  }
+
+  // Update audio at the end of the update
+  if (m_audioEngine) {
+    m_audioEngine->updateCarAudio(this);
   }
 }
 

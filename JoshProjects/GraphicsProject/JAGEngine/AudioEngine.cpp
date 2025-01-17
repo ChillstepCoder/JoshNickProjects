@@ -5,14 +5,12 @@
 
 namespace JAGEngine {
 
-  // Initialize static members
-  int SoundEffect::nextChannel = 0;
-  int SoundEffect::totalChannels = 8; // Default to 8 channels, can be changed later
+  int SoundEffect::nextChannel = 0; // not used for wwise
+  int SoundEffect::totalChannels = 8; // not used for wwise
 
   void SoundEffect::play(int loops /* = 0 */) {
     if (Mix_PlayChannel(-1, m_chunk, loops) == -1) {
       if (Mix_PlayChannel(nextChannel, m_chunk, loops) == -1) {
-        // If it still fails, log the error but don't crash
         fatalError("Mix_PlayChannel error: " + std::string(Mix_GetError()));
       }
       // Move to the next channel
@@ -56,7 +54,7 @@ void AudioEngine::init() {
   if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 1024) == -1) {
     fatalError("Mix_OpenAudio error: " + std::string(Mix_GetError()));
   }
-  setChannels(8); // Set default number of channels
+  setChannels(8);
   m_isInitialized = true;
 }
 
@@ -86,7 +84,6 @@ void AudioEngine::destroy() {
 }
 
 SoundEffect AudioEngine::loadSoundEffect(const std::string& filePath) {
-  //try to find the audio in the cache
   auto it = m_effectMap.find(filePath);
 
   SoundEffect effect;
@@ -110,7 +107,6 @@ SoundEffect AudioEngine::loadSoundEffect(const std::string& filePath) {
 }
 
 Music AudioEngine::loadMusic(const std::string& filePath) {
-  //try to find the audio in the cache
   auto it = m_musicMap.find(filePath);
 
   Music music;

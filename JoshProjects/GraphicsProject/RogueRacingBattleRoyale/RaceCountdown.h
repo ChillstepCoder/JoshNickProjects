@@ -37,6 +37,7 @@ public:
   // Event callbacks
   void setOnCountdownStart(std::function<void()> callback) { m_onCountdownStart = callback; }
   void setOnCountdownComplete(std::function<void()> callback) { m_onCountdownComplete = callback; }
+  void setAudioEngine(AudioEngine* engine) { m_audioEngine = engine; }
 
 private:
   std::unique_ptr<JAGEngine::SpriteFont> m_font;
