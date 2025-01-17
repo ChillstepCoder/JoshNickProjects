@@ -77,11 +77,11 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     }
 
     if (!m_facingRight) {
-        m_velocity.x = -1 * m_horizontalSpeed;
+        //m_velocity.x = -1 * m_horizontalSpeed;
         m_direction = "Left";
     }
     else if (m_facingRight) {
-        m_velocity.x = m_horizontalSpeed;
+        //m_velocity.x = m_horizontalSpeed;
         m_direction = "Right";
     }
 
@@ -105,10 +105,19 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 
 
     if (inputManager.isKeyDown(SDLK_a)) {
-        m_velocity.x -= 0.2f;
+        m_velocity.x -= 0.02f;
     }
     else if (inputManager.isKeyDown(SDLK_d)) {
-        m_velocity.x += 0.2f;
+        m_velocity.x += 0.02f;
+    }
+    else {
+        m_velocity.x = (m_velocity.x / 1.2); // slowdown
+    }
+
+    if ((m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE))) {
+        m_velocity.y = 0.4f;
+        m_isGrounded = false;
+        movePlayer(0, m_velocity.y, blocksInRange, blockManager);
     }
 
     /* old movement code
@@ -216,11 +225,11 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 
 void Player::movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager) {
 
-
     m_position.y += yVelocity;
     m_position.x += xVelocity;
 
     bool intersect = checkIntersection(blocksInRange, blockManager);
+
     if (!intersect) {
         return;
     }
@@ -275,10 +284,13 @@ bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockMan
         glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - 0.25, (m_position.y - 0.95));
 
         if (intersect(correctedPlayerPosition, correctedPlayerPosition + m_dimensions, blockWorldPos, blockWorldPos + blockDimensions)) {
-            if (blockWorldPos.y <= m_position.y) {
+            if (blockWorldPos.y <= correctedPlayerPosition.y) {
                 m_isGrounded = true;
                 m_velocity.y = 0;
-                return true;
+
+            }
+            if (blockWorldPos.y > correctedPlayerPosition.y && blockWorldPos.y < correctedPlayerPosition.y + m_dimensions.y) {
+                m_velocity.x = 0;
             }
 
 
