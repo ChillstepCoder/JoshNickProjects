@@ -557,7 +557,7 @@ std::vector<BlockHandle> BlockManager::getBlocksInRange(const glm::vec2& playerP
             BlockHandle blockHandle = getBlockAtPosition(blockPos);
 
             // If a valid block is returned, add it to the list
-            if (blockHandle.block != nullptr) {
+            if (blockHandle.block->getBlockID() != BlockID::AIR) {
                 blocksInRange.push_back(blockHandle);
             }
         }

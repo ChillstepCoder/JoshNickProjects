@@ -70,6 +70,11 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     // Get the blocks in range around the player
     std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);  // Use a range of 2 chunks
 
+    if (m_velocity.x > 0) {
+        m_facingRight = true;
+    } else if (m_velocity.x < 0) {
+        m_facingRight = false;
+    }
 
     if (!m_facingRight) {
         m_velocity.x = -1 * m_horizontalSpeed;
@@ -78,9 +83,6 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     else if (m_facingRight) {
         m_velocity.x = m_horizontalSpeed;
         m_direction = "Right";
-    }
-    else {
-        m_velocity.x = 0;
     }
 
     if (m_isGrounded) {
@@ -93,11 +95,21 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     }
 
     movePlayer(m_velocity.x, 0, blocksInRange, blockManager);
-    m_velocity.y += m_gravity;
 
+
+    if (m_isGrounded == false) {
+        m_velocity.y += m_gravity;
+    }
     movePlayer(0, m_velocity.y, blocksInRange, blockManager);
     setPlayerImage();
 
+
+    if (inputManager.isKeyDown(SDLK_a)) {
+        m_velocity.x -= 0.2f;
+    }
+    else if (inputManager.isKeyDown(SDLK_d)) {
+        m_velocity.x += 0.2f;
+    }
 
     /* old movement code
     // Check for ground and water contact
@@ -204,22 +216,44 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 
 void Player::movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager) {
 
-    bool intersect = checkIntersection(blocksInRange, blockManager);
 
-    if (intersect) {
-        // Collision detected, stop the movement
-        if (xVelocity != 0.0f) {
-            m_position.x -= xVelocity;  // Undo x movement
-            m_velocity.x = 0.0f;
-        }
-        if (yVelocity != 0.0f) {
-            m_position.y -= yVelocity;  // Undo y movement
-            m_velocity.y = 0.0f;
-        }
-    } else {
-        m_position.x = m_position.x + xVelocity;
-        m_position.y = m_position.y + yVelocity;
+    m_position.y += yVelocity;
+    m_position.x += xVelocity;
+
+    bool intersect = checkIntersection(blocksInRange, blockManager);
+    if (!intersect) {
+        return;
     }
+    if (xVelocity == 0) {
+        yVelocity = 0;
+    }
+    /*
+    int slope = 0;
+    int maxSlope = 17;
+    while (!(slope == maxSlope || !intersect)) {
+        m_position.y += 1.0f;
+        intersect = checkIntersection(blocksInRange, blockManager);
+        slope++;
+    }
+    if (!intersect) {
+        m_isGrounded = true;
+    }
+    if (slope == maxSlope) {
+        if (yVelocity == 0) {
+            m_position.y += 1.0f + 10.0f;
+            if (xVelocity > 0) {
+                m_position.x -= xVelocity + 2.0f;
+            }
+            else if (xVelocity < 0) {
+                m_position.x += xVelocity + 2.0f;
+            }
+        }
+        else if (yVelocity < 0.001f) {
+            m_position.y += 1.0f + 10.0f;
+            m_isGrounded = false;
+        }
+    }
+    */
 }
 
 
@@ -237,10 +271,21 @@ bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockMan
 
         glm::vec2 blockDimensions(1, 1);
 
-        if (intersect(m_position, m_position + m_dimensions, blockWorldPos, blockWorldPos + blockDimensions)) {
+        //glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - (m_dimensions.x * 0.5), (m_position.y - (m_dimensions.y * 0.5))); // incorrect for some reason
+        glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - 0.25, (m_position.y - 0.95));
+
+        if (intersect(correctedPlayerPosition, correctedPlayerPosition + m_dimensions, blockWorldPos, blockWorldPos + blockDimensions)) {
+            if (blockWorldPos.y <= m_position.y) {
+                m_isGrounded = true;
+                m_velocity.y = 0;
+                return true;
+            }
+
+
             return true;
         }
     }
+    m_isGrounded = false;
     return false;
 
 }
