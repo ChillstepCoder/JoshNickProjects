@@ -10,6 +10,7 @@
 #include <array>
 #include <memory>
 #include "ObjectProperties.h"
+#include "AudioEngine.h"
 
 class PlaceableObject;
 class ObjectManager;
@@ -80,6 +81,7 @@ public:
   ~Car() = default;
 
   void update(const InputState& input);
+  //void updateAudio(const AudioEngine& audioEngine);
   void updateStartLineCrossing(const SplineTrack* track);
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
 
@@ -110,6 +112,10 @@ public:
   ObjectType getObjectType() const { return ObjectType::Default; }
 
   SplineTrack* getTrack() const { return m_track; }
+
+  AkGameObjectID getAudioId() const {
+    return static_cast<AkGameObjectID>(m_bodyId.index1);
+  }
 
   float getTotalRaceProgress() const;
 

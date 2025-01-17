@@ -40,28 +40,28 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
 }
 
 void Car::update(const InputState& input) {
-    if (!b2Body_IsValid(m_bodyId)) return;
+  if (!b2Body_IsValid(m_bodyId)) return;
 
-    updateWheelColliders();
+  updateWheelColliders();
 
-    // Check for booster collisions
-    //checkBoosterCollisions(m_objectManager);
+  // Check for booster collisions
+  //checkBoosterCollisions(m_objectManager);
 
-    // Apply boost effects
-    updateBoostEffects();
+  // Apply boost effects
+  updateBoostEffects();
 
-    // Get current state
-    b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
-    float currentSpeed = b2Vec2Length(currentVel);
-    b2Vec2 forwardDir = getForwardVector();
-    float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
+  // Get current state
+  b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
+  float currentSpeed = b2Vec2Length(currentVel);
+  b2Vec2 forwardDir = getForwardVector();
+  float forwardSpeed = currentVel.x * forwardDir.x + currentVel.y * forwardDir.y;
 
-    // Scale forces if speed is very high to prevent instability
-    float forceScale = 1.0f;
-    const float SPEED_THRESHOLD = 1000.0f;
-    if (currentSpeed > SPEED_THRESHOLD) {
-      forceScale = SPEED_THRESHOLD / currentSpeed;
-    }
+  // Scale forces if speed is very high to prevent instability
+  float forceScale = 1.0f;
+  const float SPEED_THRESHOLD = 1000.0f;
+  if (currentSpeed > SPEED_THRESHOLD) {
+    forceScale = SPEED_THRESHOLD / currentSpeed;
+  }
 
   // Update drift state
   if (input.braking && (input.turningLeft || input.turningRight)) {
@@ -118,28 +118,68 @@ void Car::update(const InputState& input) {
 
   // Apply the boost force
   if (m_properties.currentBoostSpeed > 0.1f) {
-      b2Vec2 forwardDir = getForwardVector();
-      b2Vec2 boostForce = {
-          forwardDir.x * m_properties.currentBoostSpeed,
-          forwardDir.y * m_properties.currentBoostSpeed
-      };
-      b2Body_ApplyForceToCenter(m_bodyId, boostForce, true);
+    b2Vec2 forwardDir = getForwardVector();
+    b2Vec2 boostForce = {
+        forwardDir.x * m_properties.currentBoostSpeed,
+        forwardDir.y * m_properties.currentBoostSpeed
+    };
+    b2Body_ApplyForceToCenter(m_bodyId, boostForce, true);
   }
 
   // When not on booster, decay the boost
   if (!m_properties.isOnBooster) {
-      m_properties.currentBoostSpeed *= 0.95f;
-      if (m_properties.currentBoostSpeed < 0.1f) {
-          m_properties.currentBoostSpeed = 0.0f;
-      }
-      m_properties.boostAccumulator = m_properties.currentBoostSpeed;
+    m_properties.currentBoostSpeed *= 0.95f;
+    if (m_properties.currentBoostSpeed < 0.1f) {
+      m_properties.currentBoostSpeed = 0.0f;
+    }
+    m_properties.boostAccumulator = m_properties.currentBoostSpeed;
   }
 
   // Update lap progress
   if (m_track) {
-      m_properties.lapProgress = calculateLapProgress(m_track);
+    m_properties.lapProgress = calculateLapProgress(m_track);
   }
 }
+
+/*
+void Car::updateAudio(const AudioEngine& audioEngine) {
+  auto info = getDebugInfo();
+
+  // Update 3D position
+  //audioEngine.setObjectPosition(getAudioId(), info.position);
+
+  // Calculate engine parameters based on forward speed
+  float forwardSpeedRatio = glm::abs(info.forwardSpeed) / m_properties.maxSpeed;
+  float normalizedRPM = glm::clamp(forwardSpeedRatio, 0.0f, 1.0f);
+
+  // Update engine sound parameters
+  //audioEngine.setEngineRPM(normalizedRPM);
+
+  // Determine dominant surface type from wheels
+  WheelCollider::Surface dominantSurface = WheelCollider::Surface::Road;
+  int surfaceCount[5] = { 0 }; // Count of each surface type
+
+  for (const auto& wheel : m_wheelStates) {
+    surfaceCount[static_cast<int>(wheel.surface)]++;
+  }
+
+  // Find most common surface type
+  int maxCount = 0;
+  for (int i = 0; i < 5; i++) {
+    if (surfaceCount[i] > maxCount) {
+      maxCount = surfaceCount[i];
+      dominantSurface = static_cast<WheelCollider::Surface>(i);
+    }
+  }
+
+  //audioEngine.setTireSurfaceType(static_cast<int>(dominantSurface));
+  //Severity	Code	Description	Project	File	Line	Suppression State	Details
+  //  Error	C2662	'void AudioEngine::setTireSurfaceType(int)': cannot convert 'this' pointer from 'const AudioEngine' to 'AudioEngine &'	RogueRacingBattleRoyale	C : \Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\RogueRacingBattleRoyale\Car.cpp	174
+  //  Error	C2662	'void AudioEngine::setEngineRPM(float)': cannot convert 'this' pointer from 'const AudioEngine' to 'AudioEngine &'	RogueRacingBattleRoyale	C : \Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\RogueRacingBattleRoyale\Car.cpp	155
+   // Error	C2664	'void AudioEngine::setObjectPosition(AkGameObjectID,const Vec2 &) const': cannot convert argument 2 from 'glm::vec2' to 'const Vec2 &'	RogueRacingBattleRoyale	C : \Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\RogueRacingBattleRoyale\Car.cpp	148
+
+}
+*/
 
 void Car::updateStartLineCrossing(const SplineTrack* track) {
   if (!track) return;
@@ -197,104 +237,55 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
 
 
 void Car::updateBoostEffects() {
-    if (m_properties.isOnBooster && m_properties.currentBooster) {
-        const auto& boosterProps = m_properties.currentBooster->getBoosterProperties();
+  if (m_properties.isOnBooster && m_properties.currentBooster) {
+    const auto& boosterProps = m_properties.currentBooster->getBoosterProperties();
 
-        b2Vec2 forwardDir = getForwardVector();
-        glm::vec2 carForward(forwardDir.x, forwardDir.y);
-        float boosterAngle = m_properties.currentBooster->getRotation();
-        glm::vec2 boosterDir(std::cos(boosterAngle), std::sin(boosterAngle));
-        float alignment = glm::dot(carForward, boosterDir);
+    b2Vec2 forwardDir = getForwardVector();
+    glm::vec2 carForward(forwardDir.x, forwardDir.y);
+    float boosterAngle = m_properties.currentBooster->getRotation();
+    glm::vec2 boosterDir(std::cos(boosterAngle), std::sin(boosterAngle));
+    float alignment = glm::dot(carForward, boosterDir);
 
-        if (alignment > 0.2f) {
-            // Apply boosterMultiplier to accumulation rate
-            float boostPower = alignment * boosterProps.boostAccelRate * (20.0f / 60.0f) * m_properties.boosterMultiplier;
-            float maxBoostSpeed = boosterProps.maxBoostSpeed * m_properties.boosterMultiplier;
+    if (alignment > 0.2f) {
+      // Apply boosterMultiplier to accumulation rate
+      float boostPower = alignment * boosterProps.boostAccelRate * (20.0f / 60.0f) * m_properties.boosterMultiplier;
+      float maxBoostSpeed = boosterProps.maxBoostSpeed * m_properties.boosterMultiplier;
 
-            m_properties.boostAccumulator = std::min(
-                m_properties.boostAccumulator + boostPower,
-                maxBoostSpeed
-            );
-            m_properties.currentBoostSpeed = m_properties.boostAccumulator;
-        }
+      m_properties.boostAccumulator = std::min(
+        m_properties.boostAccumulator + boostPower,
+        maxBoostSpeed
+      );
+      m_properties.currentBoostSpeed = m_properties.boostAccumulator;
+    }
+  }
+  else {
+    if (m_properties.boosterMultiplier <= 0.0f) {
+      // If multiplier is 0 or negative, reset boost
+      m_properties.currentBoostSpeed = 0.0f;
+      m_properties.boostAccumulator = 0.0f;
     }
     else {
-        if (m_properties.boosterMultiplier <= 0.0f) {
-            // If multiplier is 0 or negative, reset boost
-            m_properties.currentBoostSpeed = 0.0f;
-            m_properties.boostAccumulator = 0.0f;
-        }
-        else {
-            // Make decay rate dependent on boosterMultiplier
-            float decayRate = 1.0f - ((1.0f - 0.99999f) / std::max(0.001f, m_properties.boosterMultiplier));
-            m_properties.currentBoostSpeed *= decayRate;
+      // Make decay rate dependent on boosterMultiplier
+      float decayRate = 1.0f - ((1.0f - 0.99999f) / std::max(0.001f, m_properties.boosterMultiplier));
+      m_properties.currentBoostSpeed *= decayRate;
 
-            if (m_properties.currentBoostSpeed < 1.0f) {
-                m_properties.currentBoostSpeed = 0.0f;
-            }
-            m_properties.boostAccumulator = m_properties.currentBoostSpeed;
-        }
+      if (m_properties.currentBoostSpeed < 1.0f) {
+        m_properties.currentBoostSpeed = 0.0f;
+      }
+      m_properties.boostAccumulator = m_properties.currentBoostSpeed;
     }
+  }
 
-    // Apply the boost force with multiplier
-    if (m_properties.currentBoostSpeed > 0.1f) {
-        b2Vec2 forwardDir = getForwardVector();
-        b2Vec2 boostForce = {
-            forwardDir.x * m_properties.currentBoostSpeed * 15.0f * m_properties.boosterMultiplier,
-            forwardDir.y * m_properties.currentBoostSpeed * 15.0f * m_properties.boosterMultiplier
-        };
-        b2Body_ApplyForceToCenter(m_bodyId, boostForce, true);
-    }
+  // Apply the boost force with multiplier
+  if (m_properties.currentBoostSpeed > 0.1f) {
+    b2Vec2 forwardDir = getForwardVector();
+    b2Vec2 boostForce = {
+        forwardDir.x * m_properties.currentBoostSpeed * 15.0f * m_properties.boosterMultiplier,
+        forwardDir.y * m_properties.currentBoostSpeed * 15.0f * m_properties.boosterMultiplier
+    };
+    b2Body_ApplyForceToCenter(m_bodyId, boostForce, true);
+  }
 }
-
-/*
-void Car::checkBoosterCollisions(ObjectManager* objectManager) {
-    if (!objectManager) return;
-    if (!b2Body_IsValid(m_bodyId)) return;
-
-    b2Vec2 carPos = b2Body_GetPosition(m_bodyId);
-    glm::vec2 carPosition(carPos.x, carPos.y);
-
-    // Reset booster state but NOT the speeds
-    bool wasOnBooster = m_properties.isOnBooster;
-    m_properties.isOnBooster = false;
-    m_properties.currentBooster = nullptr;
-
-    // Check all placed objects
-    // TODO: BEN - This is a O(n) collision check, we should use box2d sensor overlaps instead!
-    for (const auto& obj : objectManager->getPlacedObjects()) {
-      if (obj->getObjectType() == ObjectType::Booster) {
-            glm::vec2 boosterPos = obj->getPosition();
-            float boosterAngle = obj->getRotation();
-            float boosterWidth = 48.0f;   // Width of pill
-            float boosterHeight = 30.0f;  // Height of pill
-
-            // Transform car position to booster's local space
-            glm::vec2 localPos = carPosition - boosterPos;
-            float cosAngle = cos(-boosterAngle);
-            float sinAngle = sin(-boosterAngle);
-            float localX = localPos.x * cosAngle - localPos.y * sinAngle;
-            float localY = localPos.x * sinAngle + localPos.y * cosAngle;
-
-            // Check if point is inside pill shape
-            bool insideRect = std::abs(localX) <= boosterWidth / 2 && std::abs(localY) <= boosterHeight / 2;
-            bool insideCircleLeft = (localX + boosterWidth / 2) * (localX + boosterWidth / 2) + localY * localY <= (boosterHeight / 2) * (boosterHeight / 2);
-            bool insideCircleRight = (localX - boosterWidth / 2) * (localX - boosterWidth / 2) + localY * localY <= (boosterHeight / 2) * (boosterHeight / 2);
-
-            if (insideRect || insideCircleLeft || insideCircleRight) {
-                m_properties.isOnBooster = true;
-                m_properties.currentBooster = obj.get();
-                break;
-            }
-        }
-    }
-
-    // Handle leaving booster
-    if (wasOnBooster && !m_properties.isOnBooster) {
-        m_properties.boostAccumulator = m_properties.currentBoostSpeed;
-    }
-}
-*/
 
 void Car::applyFriction(const b2Vec2& currentVel) {
   float averageWheelFriction = calculateAverageWheelFriction();

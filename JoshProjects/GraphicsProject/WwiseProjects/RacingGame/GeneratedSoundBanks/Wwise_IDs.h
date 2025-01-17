@@ -15,6 +15,8 @@ namespace AK
     {
         static const AkUniqueID PLAY_COUNTDOWN_SFX_1 = 755225579U;
         static const AkUniqueID PLAY_COUNTDOWN_SFX_2 = 755225576U;
+        static const AkUniqueID PLAY_ENGINE_IDLE_SFX_1 = 184892105U;
+        static const AkUniqueID PLAY_ENGINE_REV_SFX_1 = 983973850U;
     } // namespace EVENTS
 
     namespace GAME_PARAMETERS

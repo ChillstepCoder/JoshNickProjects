@@ -97,13 +97,19 @@ void AudioEngine::stopBoostSound() {
 
 void AudioEngine::playCountdownBeep() {
   if (m_audioEngine) {
-    //AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_COUNTDOWN_SFX_1, GAME_OBJECT_ID_THEME);
+    AkPlayingID playingID = AK::SoundEngine::PostEvent(
+      AK::EVENTS::PLAY_COUNTDOWN_SFX_1,
+      RacingAudio::GAME_OBJECT_COUNTDOWN
+    );
   }
 }
 
 void AudioEngine::playCountdownStart() {
   if (m_audioEngine) {
-    //AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_COUNTDOWN_SFX_2, GAME_OBJECT_ID_THEME);
+    AkPlayingID playingID = AK::SoundEngine::PostEvent(
+      AK::EVENTS::PLAY_COUNTDOWN_SFX_2,
+      RacingAudio::GAME_OBJECT_COUNTDOWN
+    );
   }
 }
 
@@ -134,6 +140,68 @@ void AudioEngine::setCarSpeed(float speed) {
 
 void AudioEngine::setTireSurfaceType(int surfaceType) {
   m_currentSurfaceType = surfaceType;
+}
+
+void AudioEngine::setDefaultListener(const Vec2& position, float rotation) {
+  if (!m_audioEngine) return;
+
+  AkListenerPosition listenerPos;
+  AkVector position3D;
+  position3D.X = position.x;
+  position3D.Y = position.y;
+  position3D.Z = 0.0f;
+
+  // Create orientation vectors
+  AkVector orientFront;
+  orientFront.X = cosf(rotation);
+  orientFront.Y = sinf(rotation);
+  orientFront.Z = 0.0f;
+
+  AkVector orientTop;
+  orientTop.X = 0.0f;
+  orientTop.Y = 0.0f;
+  orientTop.Z = 1.0f;
+
+  // Set the position and orientation
+  listenerPos.Set(position3D, orientFront, orientTop);
+
+  // Use RacingAudio namespace
+  AK::SoundEngine::SetDefaultListeners(&RacingAudio::LISTENER_ID, 1);
+  AK::SoundEngine::SetPosition(RacingAudio::LISTENER_ID, listenerPos);
+}
+
+void AudioEngine::setObjectPosition(AkGameObjectID id, const Vec2& position) const {
+  if (!m_audioEngine) return;
+
+  AkSoundPosition soundPos;
+  AkVector position3D;
+  position3D.X = position.x;
+  position3D.Y = position.y;
+  position3D.Z = 0.0f;
+
+  // Create default orientation
+  AkVector orientFront;
+  orientFront.X = 1.0f;
+  orientFront.Y = 0.0f;
+  orientFront.Z = 0.0f;
+
+  AkVector orientTop;
+  orientTop.X = 0.0f;
+  orientTop.Y = 0.0f;
+  orientTop.Z = 1.0f;
+
+  soundPos.Set(position3D, orientFront, orientTop);
+  AK::SoundEngine::SetPosition(id, soundPos);
+}
+
+void AudioEngine::initCarAudio(AkGameObjectID carId) {
+  if (!m_audioEngine) return;
+
+  // Register the car as a game object if not already registered
+  AK::SoundEngine::RegisterGameObj(carId, "Car");
+
+  // Start playing the idle sound
+  AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_ENGINE_IDLE_SFX_1, carId);
 }
 
 void AudioEngine::setMasterVolume(float volume) {

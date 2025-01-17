@@ -10,6 +10,8 @@ namespace RacingAudio {
   static const AkGameObjectID GAME_OBJECT_TIRES = 102;
   static const AkGameObjectID GAME_OBJECT_IMPACTS = 103;
   static const AkGameObjectID GAME_OBJECT_MUSIC = 104;
+
+  const AkGameObjectID LISTENER_ID = 1;
 }
 
 // Bank definitions

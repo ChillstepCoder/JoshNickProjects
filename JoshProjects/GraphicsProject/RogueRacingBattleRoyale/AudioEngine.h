@@ -2,6 +2,12 @@
 
 #pragma once
 #include <memory>
+#include <AK/SoundEngine/Common/AkTypes.h>
+
+struct Vec2 {
+  float x, y;
+  Vec2(float x_ = 0, float y_ = 0) : x(x_), y(y_) {}
+};
 
 namespace JAGEngine {
   class WWiseAudioEngine;
@@ -33,6 +39,10 @@ public:
   void setEngineRPM(float rpm);
   void setCarSpeed(float speed);
   void setTireSurfaceType(int surfaceType);
+
+  void setDefaultListener(const Vec2& position, float rotation);
+  void setObjectPosition(AkGameObjectID id, const Vec2& position) const;
+  void initCarAudio(AkGameObjectID carId);
 
   // Volume controls
   void setMasterVolume(float volume);
