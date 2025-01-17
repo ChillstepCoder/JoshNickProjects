@@ -59,7 +59,7 @@ private:
     bool m_facingRight = true;
     //b2ShapeId m_groundShapeId; // Store reference to ground shape
     float m_jumpForce = 1.0f;
-    float m_gravity = -0.01f;
+    float m_gravity = -0.015f;
 
     Bengine::Camera2D* m_camera;
     BlockManager* m_blockManager;
