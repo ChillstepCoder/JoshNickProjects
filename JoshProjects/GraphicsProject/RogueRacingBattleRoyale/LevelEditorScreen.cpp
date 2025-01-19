@@ -1469,7 +1469,11 @@ void LevelEditorScreen::initTestMode() {
 
     auto car = std::make_unique<Car>(carBody);
     // Initialize Car Audio
+    std::cout << "About to set audio engine for car" << std::endl;
     car->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+    std::cout << "About to initialize car audio" << std::endl;
+    m_game->getGameAs<App>()->getAudioEngine().initializeCarAudio(car.get());
+    std::cout << "Car audio initialized" << std::endl;
 
     Car::CarProperties props;
     props = Car::CarProperties();
@@ -1497,8 +1501,6 @@ void LevelEditorScreen::initTestMode() {
       static_cast<int>(i + 1),
       i == 0
       });
-
-    m_testCars.push_back(std::move(car));
   }
 
   if (m_objectManager) {
@@ -2331,6 +2333,12 @@ void LevelEditorScreen::updateTestMode() {
 
   if (m_objectManager) {
     m_objectManager->update();
+  }
+  // Update audio listener position based on player car
+  if (!m_testCars.empty() && m_testCars[0]) {
+    auto debugInfo = m_testCars[0]->getDebugInfo();
+    Vec2 listenerPos(debugInfo.position.x, debugInfo.position.y);
+    m_game->getGameAs<App>()->getAudioEngine().setDefaultListener(listenerPos, debugInfo.angle);
   }
 
   // Update camera

@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
     "Language": "SFX",
-    "Hash": "{65B93B1B-A16B-038F-CF94-ECC5B2D6E260}",
+    "Hash": "{391763CD-B2AB-999A-367B-792B9550FC0D}",
     "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
     "ShortName": "Main",
     "Path": "Main.bnk",
@@ -45,7 +45,7 @@
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Engine_Rev_SFX_1.wav",
-      "CachePath": "3D/{3DBC85F1-88F4-4784-AC21-AC71457720D8}.wem"
+      "CachePath": "51/{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem"
      }
     ],
     "Events": [
@@ -82,6 +82,7 @@
       "Name": "Play_Engine_Idle_SFX_1",
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Engine_Idle_SFX_1",
       "GUID": "{9E5B23F7-D560-4385-BD43-AC8DC6CF2AA6}",
+      "MaxAttenuation": "500",
       "DurationType": "Infinite",
       "MediaRefs": [
        {
@@ -94,6 +95,7 @@
       "Name": "Play_Engine_Rev_SFX_1",
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Engine_Rev_SFX_1",
       "GUID": "{3BA07A97-0660-4555-9474-35BA89E6754F}",
+      "MaxAttenuation": "500",
       "DurationType": "Infinite",
       "MediaRefs": [
        {
@@ -118,6 +120,6 @@
     ]
    }
   ],
-  "FileHash": "{9657FF5F-E528-FEAE-FB33-A2976BF21ECC}"
+  "FileHash": "{091F9A92-FB65-AA9B-3F0C-B9EFA311BC3C}"
  }
 }

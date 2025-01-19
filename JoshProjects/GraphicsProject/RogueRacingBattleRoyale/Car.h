@@ -10,6 +10,7 @@
 #include <array>
 #include <memory>
 #include "ObjectProperties.h"
+#include <AK/SoundEngine/Common/AkTypes.h>
 
 class AudioEngine;
 class PlaceableObject;
@@ -105,7 +106,10 @@ public:
     //b2Body_SetUserData(m_bodyId, static_cast<void*>(track));
   }
   void setObjectManager(ObjectManager* manager) { m_objectManager = manager; }
-  void setAudioEngine(AudioEngine* engine) { m_audioEngine = engine; }
+  void setAudioEngine(AudioEngine* engine) {
+    std::cout << "Setting audio engine for car" << std::endl;
+    m_audioEngine = engine;
+  }
 
   float getEffectiveFriction() const {
     return m_properties.wheelFriction * m_properties.baseFriction;

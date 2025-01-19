@@ -63,6 +63,8 @@ public:
   JAGEngine::WWiseAudioEngine* getWWiseEngine() { return m_audioEngine.get(); }
 
 private:
+  static constexpr bool DEBUG_OUTPUT = false;
+
   std::unique_ptr<JAGEngine::WWiseAudioEngine> m_audioEngine;
   void updateCarEngineState(Car* car, float speedRatio);
   std::unordered_map<Car*, AkGameObjectID> m_carAudioIds;

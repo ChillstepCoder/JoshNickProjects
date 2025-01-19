@@ -147,46 +147,6 @@ void Car::update(const InputState& input) {
   }
 }
 
-/*
-void Car::updateAudio(const AudioEngine& audioEngine) {
-  auto info = getDebugInfo();
-
-  // Update 3D position
-  //audioEngine.setObjectPosition(getAudioId(), info.position);
-
-  // Calculate engine parameters based on forward speed
-  float forwardSpeedRatio = glm::abs(info.forwardSpeed) / m_properties.maxSpeed;
-  float normalizedRPM = glm::clamp(forwardSpeedRatio, 0.0f, 1.0f);
-
-  // Update engine sound parameters
-  //audioEngine.setEngineRPM(normalizedRPM);
-
-  // Determine dominant surface type from wheels
-  WheelCollider::Surface dominantSurface = WheelCollider::Surface::Road;
-  int surfaceCount[5] = { 0 }; // Count of each surface type
-
-  for (const auto& wheel : m_wheelStates) {
-    surfaceCount[static_cast<int>(wheel.surface)]++;
-  }
-
-  // Find most common surface type
-  int maxCount = 0;
-  for (int i = 0; i < 5; i++) {
-    if (surfaceCount[i] > maxCount) {
-      maxCount = surfaceCount[i];
-      dominantSurface = static_cast<WheelCollider::Surface>(i);
-    }
-  }
-
-  //audioEngine.setTireSurfaceType(static_cast<int>(dominantSurface));
-  //Severity	Code	Description	Project	File	Line	Suppression State	Details
-  //  Error	C2662	'void AudioEngine::setTireSurfaceType(int)': cannot convert 'this' pointer from 'const AudioEngine' to 'AudioEngine &'	RogueRacingBattleRoyale	C : \Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\RogueRacingBattleRoyale\Car.cpp	174
-  //  Error	C2662	'void AudioEngine::setEngineRPM(float)': cannot convert 'this' pointer from 'const AudioEngine' to 'AudioEngine &'	RogueRacingBattleRoyale	C : \Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\RogueRacingBattleRoyale\Car.cpp	155
-   // Error	C2664	'void AudioEngine::setObjectPosition(AkGameObjectID,const Vec2 &) const': cannot convert argument 2 from 'glm::vec2' to 'const Vec2 &'	RogueRacingBattleRoyale	C : \Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\RogueRacingBattleRoyale\Car.cpp	148
-
-}
-*/
-
 void Car::updateStartLineCrossing(const SplineTrack* track) {
   if (!track) return;
   const TrackNode* startNode = track->getStartLineNode();
