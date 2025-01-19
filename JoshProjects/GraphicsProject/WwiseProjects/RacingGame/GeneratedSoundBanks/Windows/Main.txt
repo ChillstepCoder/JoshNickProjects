@@ -5,6 +5,8 @@ Event	ID	Name			Wwise Object Path	Notes
 	983973850	Play_Engine_Rev_SFX_1			\Default Work Unit\Play_Engine_Rev_SFX_1	
 
 Game Parameter	ID	Name			Wwise Object Path	Notes
+	3142076734	Engine_Rev_Pitch			\Default Work Unit\Engine_Rev_Pitch	
+	3478629116	Engine_Rev_Doppler_Effect			\Default Work Unit\Engine_Rev_Doppler_Effect	
 	3886434353	Engine_Idle_Volume			\Default Work Unit\Engine_Idle_Volume	
 	3966876546	Engine_Rev_Volume			\Default Work Unit\Engine_Rev_Volume	
 

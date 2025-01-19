@@ -1835,6 +1835,16 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       ImGui::Separator();
     }
 
+    if (ImGui::CollapsingHeader("Audio Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+      static float dopplerIntensity = 1.0f;
+      if (ImGui::SliderFloat("Doppler Intensity", &dopplerIntensity, 0.0f, 5.0f)) {
+        m_game->getGameAs<App>()->getAudioEngine().setDopplerIntensity(dopplerIntensity);
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Adjusts the strength of the Doppler effect");
+      }
+    }
+
     // XP Properties section with unique ID
     if (ImGui::CollapsingHeader("XP Stats##unique", ImGuiTreeNodeFlags_DefaultOpen)) {
       if (m_testCars.empty() || m_selectedCarIndex >= m_testCars.size()) {
@@ -2116,6 +2126,12 @@ void LevelEditorScreen::drawTestModeUI() {
 }
 
 void LevelEditorScreen::cleanupTestMode() {
+  if (!m_testCars.empty() && m_game) {
+    auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
+    for (auto& car : m_testCars) {
+      audioEngine.removeCarAudio(car.get());
+    }
+  }
   // Only cleanup barrier collisions if both levelRenderer and physicsSystem exist
   if (m_levelRenderer && m_physicsSystem) {
     m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
@@ -2334,11 +2350,25 @@ void LevelEditorScreen::updateTestMode() {
   if (m_objectManager) {
     m_objectManager->update();
   }
-  // Update audio listener position based on player car
+
+  auto playerPos = m_testCars[0]->getDebugInfo().position;
+  Vec2 listenerPos(playerPos.x, playerPos.y);
+
+  // Update audio for all cars
   if (!m_testCars.empty() && m_testCars[0]) {
-    auto debugInfo = m_testCars[0]->getDebugInfo();
-    Vec2 listenerPos(debugInfo.position.x, debugInfo.position.y);
-    m_game->getGameAs<App>()->getAudioEngine().setDefaultListener(listenerPos, debugInfo.angle);
+    auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
+
+    // Get listener position from player car
+    auto playerInfo = m_testCars[0]->getDebugInfo();
+    Vec2 listenerPos(playerInfo.position.x, playerInfo.position.y);
+
+    // Update listener position
+    audioEngine.setDefaultListener(listenerPos, playerInfo.angle);
+
+    // Update each car's audio
+    for (const auto& car : m_testCars) {
+      audioEngine.updateCarAudio(car.get(), listenerPos);
+    }
   }
 
   // Update camera

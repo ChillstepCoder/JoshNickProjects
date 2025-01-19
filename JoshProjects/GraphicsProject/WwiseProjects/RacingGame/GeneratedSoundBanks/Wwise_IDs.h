@@ -23,6 +23,8 @@ namespace AK
     {
         static const AkUniqueID DENSITY_FA_SSGRAIN = 2715217995U;
         static const AkUniqueID ENGINE_IDLE_VOLUME = 3886434353U;
+        static const AkUniqueID ENGINE_REV_DOPPLER_EFFECT = 3478629116U;
+        static const AkUniqueID ENGINE_REV_PITCH = 3142076734U;
         static const AkUniqueID ENGINE_REV_VOLUME = 3966876546U;
         static const AkUniqueID IMMERSION_FA_SSGRAIN = 2481728872U;
         static const AkUniqueID INSTRUMENT_FA_SSGRAIN = 2317409760U;

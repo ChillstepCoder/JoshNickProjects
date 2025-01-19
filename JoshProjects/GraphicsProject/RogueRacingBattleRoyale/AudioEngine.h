@@ -48,13 +48,14 @@ public:
   void setObjectPosition(AkGameObjectID id, const Vec2& position) const;
 
   void initializeCarAudio(Car* car);
-  void updateCarAudio(Car* car);
+  void updateCarAudio(Car* car, const Vec2& listenerPos);
   void removeCarAudio(Car* car);
 
   // Volume controls
   void setMasterVolume(float volume);
   void setEffectsVolume(float volume);
   void setMusicVolume(float volume);
+  void setDopplerIntensity(float intensity) { m_dopplerIntensity = intensity; }
 
   float getMasterVolume() { return m_masterVolume; }
   float getEffectsVolume() { return m_effectsVolume; }
@@ -63,6 +64,14 @@ public:
   JAGEngine::WWiseAudioEngine* getWWiseEngine() { return m_audioEngine.get(); }
 
 private:
+  struct CarAudioData {
+    AkGameObjectID audioId;
+    Vec2 lastPosition;
+    float lastDistanceToListener;
+  };
+  std::unordered_map<Car*, CarAudioData> m_carAudioData;
+  float m_dopplerIntensity = 1.0f;
+
   static constexpr bool DEBUG_OUTPUT = false;
 
   std::unique_ptr<JAGEngine::WWiseAudioEngine> m_audioEngine;

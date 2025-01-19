@@ -5,6 +5,8 @@
 #include "Car.h"
 #include <JAGEngine/WWiseAudioEngine.h>
 #include <iostream>
+#include <algorithm>
+#include <cmath>
 
 AudioEngine::AudioEngine() :
   m_isBoostPlaying(false),
@@ -174,13 +176,13 @@ void AudioEngine::setDefaultListener(const Vec2& position, float rotation) {
 
   AkVector position3D;
   position3D.X = position.x * positionScale;
-  position3D.Y = position.y * positionScale;
+  position3D.Y = -position.y * positionScale;
   position3D.Z = 0.0f;
 
   // Forward vector from rotation
   AkVector orientFront;
-  orientFront.X = cos(rotation);
-  orientFront.Y = sin(rotation);
+  orientFront.X = cos(-rotation);
+  orientFront.Y = sin(-rotation);
   orientFront.Z = 0.0f;
 
   // Up vector
@@ -266,6 +268,13 @@ void AudioEngine::initializeCarAudio(Car* car) {
     std::cout << "Initializing audio for car " << (unsigned)audioId << std::endl;
   }
 
+  auto info = car->getDebugInfo();
+  CarAudioData audioData;
+  audioData.audioId = car->getAudioId();
+  audioData.lastPosition = Vec2(info.position.x, info.position.y);
+  audioData.lastDistanceToListener = 0.0f;
+  m_carAudioData[car] = audioData;
+
   // Register the car's game object
   AKRESULT result = AK::SoundEngine::RegisterGameObj(audioId, "CarEngine");
   if (DEBUG_OUTPUT) {
@@ -277,16 +286,42 @@ void AudioEngine::initializeCarAudio(Car* car) {
     std::cout << "Successfully registered car audio object" << std::endl;
   }
 
+  // Generate random offsets for idle and rev sounds
+  float idleOffset = static_cast<float>(rand()) / RAND_MAX * 3.0f;  // 0 to 3 seconds
+  float revOffset = static_cast<float>(rand()) / RAND_MAX * 3.0f;   // 0 to 3 seconds
+
+  // Set random seek positions for both sounds
+  AkTimeMs idleSeekTime = static_cast<AkTimeMs>(idleOffset * 1000);  // Convert to milliseconds
+  AkTimeMs revSeekTime = static_cast<AkTimeMs>(revOffset * 1000);    // Convert to milliseconds
+
+  // Create playback position structures
+  AkSegmentInfo idleSegment;
+  idleSegment.iCurrentPosition = idleSeekTime;
+  AkSegmentInfo revSegment;
+  revSegment.iCurrentPosition = revSeekTime;
+
   // Start playing the idle sound (loops infinitely)
   AkPlayingID idleId = AK::SoundEngine::PostEvent(
     AK::EVENTS::PLAY_ENGINE_IDLE_SFX_1,
     audioId
   );
   if (DEBUG_OUTPUT) {
-    std::cout << "Posted idle sound event, ID: " << idleId << " Event ID: " << AK::EVENTS::PLAY_ENGINE_IDLE_SFX_1 << std::endl;
+    std::cout << "Posted idle sound event, ID: " << idleId
+      << " Event ID: " << AK::EVENTS::PLAY_ENGINE_IDLE_SFX_1
+      << " Offset: " << idleOffset << "s" << std::endl;
     if (idleId == AK_INVALID_PLAYING_ID) {
       std::cout << "ERROR: Failed to play idle sound!" << std::endl;
     }
+  }
+
+  // Set initial seek time for idle
+  if (idleId != AK_INVALID_PLAYING_ID) {
+    AK::SoundEngine::SeekOnEvent(
+      AK::EVENTS::PLAY_ENGINE_IDLE_SFX_1,
+      audioId,
+      idleSeekTime,
+      false  // seeking from beginning
+    );
   }
 
   // Start playing the rev sound (at 0 volume initially)
@@ -295,10 +330,22 @@ void AudioEngine::initializeCarAudio(Car* car) {
     audioId
   );
   if (DEBUG_OUTPUT) {
-    std::cout << "Posted rev sound event, ID: " << revId << " Event ID: " << AK::EVENTS::PLAY_ENGINE_REV_SFX_1 << std::endl;
+    std::cout << "Posted rev sound event, ID: " << revId
+      << " Event ID: " << AK::EVENTS::PLAY_ENGINE_REV_SFX_1
+      << " Offset: " << revOffset << "s" << std::endl;
     if (revId == AK_INVALID_PLAYING_ID) {
       std::cout << "ERROR: Failed to play rev sound!" << std::endl;
     }
+  }
+
+  // Set initial seek time for rev
+  if (revId != AK_INVALID_PLAYING_ID) {
+    AK::SoundEngine::SeekOnEvent(
+      AK::EVENTS::PLAY_ENGINE_REV_SFX_1,
+      audioId,
+      revSeekTime,
+      false  // seeking from beginning
+    );
   }
 
   // Store the audio ID
@@ -310,35 +357,72 @@ void AudioEngine::initializeCarAudio(Car* car) {
   // Set initial volumes
   AK::SoundEngine::SetRTPCValue("Engine_Idle_Volume", 100.0f, audioId);
   AK::SoundEngine::SetRTPCValue("Engine_Rev_Volume", 0.0f, audioId);
-  if (DEBUG_OUTPUT) {
-    std::cout << "Set initial volumes" << std::endl;
-  }
 
+  // Set initial pitch value for rev sound
+  AK::SoundEngine::SetRTPCValue("Engine_Rev_Pitch", 100.0f, audioId);  // Base pitch
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Set initial volumes and pitch" << std::endl;
+  }
 }
 
-void AudioEngine::updateCarAudio(Car* car) {
+void AudioEngine::updateCarAudio(Car* car, const Vec2& listenerPos) {
+  // Basic checks
   if (!m_audioEngine) return;
-  auto it = m_carAudioIds.find(car);
-  if (it == m_carAudioIds.end()) return;
 
-  AkGameObjectID audioId = it->second;
+  // Get audio data
+  auto audioIt = m_carAudioIds.find(car);
+  auto dataIt = m_carAudioData.find(car);
+  if (audioIt == m_carAudioIds.end() || dataIt == m_carAudioData.end()) return;
+
+  AkGameObjectID audioId = audioIt->second;
+  auto& audioData = dataIt->second;
   auto info = car->getDebugInfo();
+
+  // Get current car position
+  Vec2 currentPos(info.position.x, info.position.y);
+
+  // Calculate current distance to listener
+  float currentDistance = std::sqrt(
+    std::pow(currentPos.x - listenerPos.x, 2) +
+    std::pow(currentPos.y - listenerPos.y, 2)
+  );
+
+  // Calculate Doppler effect
+  float dopplerValue = 50.0f;  // No pitch shift by default
+  if (audioData.lastDistanceToListener > 0.0f) {
+    float distanceChange = currentDistance - audioData.lastDistanceToListener;
+    float relativeVelocity = -distanceChange * 60.0f;
+    relativeVelocity *= m_dopplerIntensity;
+    dopplerValue = 50.0f + (relativeVelocity * 50.0f);
+    dopplerValue = std::max<float>(0.0f, std::min<float>(100.0f, dopplerValue));
+  }
+
+  // Store current values for next update
+  audioData.lastPosition = currentPos;
+  audioData.lastDistanceToListener = currentDistance;
+
+  // Update Doppler RTPC
+  AK::SoundEngine::SetRTPCValue(
+    "Engine_Rev_Doppler_Effect",
+    dopplerValue,
+    audioId
+  );
 
   // Create sound position
   AkSoundPosition soundPos;
-
   float positionScale = 1.0f;
 
   // Position
   AkVector position;
   position.X = info.position.x * positionScale;
-  position.Y = info.position.y * positionScale;
+  position.Y = -info.position.y * positionScale;
   position.Z = 0.0f;
 
-  // Forward vector from car rotation 
+  // Forward vector
   AkVector forward;
-  forward.X = cos(info.angle);
-  forward.Y = sin(info.angle);
+  forward.X = cos(-info.angle);
+  forward.Y = sin(-info.angle);
   forward.Z = 0.0f;
 
   // Up vector (Z-up for 2D)
@@ -362,7 +446,7 @@ void AudioEngine::updateCarAudio(Car* car) {
   }
 
   // Continue with RTPC updates
-  float speedRatio = abs(info.forwardSpeed) / (car->getProperties().maxSpeed/5.0f);
+  float speedRatio = abs(info.forwardSpeed) / (500.0f);
   updateCarEngineState(car, speedRatio);
 }
 
@@ -372,9 +456,15 @@ void AudioEngine::updateCarEngineState(Car* car, float speedRatio) {
 
   AkGameObjectID audioId = it->second;
 
-  float idleVolume = 100.0f * (1.0f - speedRatio);
-  float revVolume = 100.0f * speedRatio;
+  // Clamp speedRatio
+  speedRatio = std::min<float>(1.0f, std::max<float>(0.0f, speedRatio));
 
+  float idleVolume = (100.0f * (1.0f - std::sqrt(speedRatio)));
+  idleVolume = std::min<float>(100.0f, idleVolume);
+  float revVolume = 100.0f * std::sqrt(speedRatio);
+  revVolume = std::min<float>(100.0f, revVolume);
+
+  // Set volumes
   AKRESULT idleResult = AK::SoundEngine::SetRTPCValue(
     "Engine_Idle_Volume",
     idleVolume,
@@ -387,12 +477,17 @@ void AudioEngine::updateCarEngineState(Car* car, float speedRatio) {
     audioId
   );
 
+  // Update pitch based on speed
+  float pitchValue = speedRatio * 100.0f;  // Full 0-100 range
+  AK::SoundEngine::SetRTPCValue("Engine_Rev_Pitch", pitchValue, audioId);
+
   if (DEBUG_OUTPUT) {
     std::cout << "Car " << audioId
       << " RTPC update - Result: Idle=" << idleResult
       << " Rev=" << revResult
       << " Values: Idle=" << idleVolume
-      << " Rev=" << revVolume << std::endl;
+      << " Rev=" << revVolume
+      << " Pitch=" << pitchValue << std::endl;
   }
 }
 
@@ -400,7 +495,20 @@ void AudioEngine::removeCarAudio(Car* car) {
   auto it = m_carAudioIds.find(car);
   if (it == m_carAudioIds.end()) return;
 
-  AK::SoundEngine::UnregisterGameObj(it->second);
+  AkGameObjectID audioId = it->second;
+
+  // Stop all sounds on this game object
+  AK::SoundEngine::StopAll(audioId);
+
+  // Wait for sounds to stop
+  AK::SoundEngine::RenderAudio();
+
+  // Then unregister
+  AK::SoundEngine::UnregisterGameObj(audioId);
 
   m_carAudioIds.erase(it);
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Removed audio for car " << audioId << std::endl;
+  }
 }

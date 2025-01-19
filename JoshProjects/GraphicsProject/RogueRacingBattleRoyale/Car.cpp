@@ -142,9 +142,9 @@ void Car::update(const InputState& input) {
   }
 
   // Update audio at the end of the update
-  if (m_audioEngine) {
-    m_audioEngine->updateCarAudio(this);
-  }
+  //if (m_audioEngine) {
+  //  m_audioEngine->updateCarAudio(this);
+  //}
 }
 
 void Car::updateStartLineCrossing(const SplineTrack* track) {

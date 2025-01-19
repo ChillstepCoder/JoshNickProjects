@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{701ECBBD-9C7B-4030-8CDB-749EE5D1C7B9}",
     "Language": "SFX",
-    "Hash": "{6210BAA0-FFE4-F9A5-A6C0-B34D2DFF539A}",
+    "Hash": "{51E28571-5455-848E-5D5D-91FB0135F983}",
     "ObjectPath": "Init",
     "ShortName": "Init",
     "Path": "Init.bnk",
@@ -80,6 +80,18 @@
       "GUID": "{63B3F29E-04F3-4887-BA1A-4D7694644B24}"
      },
      {
+      "Id": "3142076734",
+      "Name": "Engine_Rev_Pitch",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Rev_Pitch",
+      "GUID": "{F268C41F-7EA7-446C-B868-F933C206FDEB}"
+     },
+     {
+      "Id": "3478629116",
+      "Name": "Engine_Rev_Doppler_Effect",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Rev_Doppler_Effect",
+      "GUID": "{FA46F725-7324-462A-BBD9-25267FAC1815}"
+     },
+     {
       "Id": "3886434353",
       "Name": "Engine_Idle_Volume",
       "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Idle_Volume",
@@ -94,6 +106,6 @@
     ]
    }
   ],
-  "FileHash": "{BA939AAE-97BB-E32C-5D29-DF0743427093}"
+  "FileHash": "{CF1E4796-EBC6-A9F6-9C9E-C1B901CDF83F}"
  }
 }
