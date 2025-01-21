@@ -21,6 +21,7 @@ namespace Bengine {
         FpsLimiter limiter;
         limiter.setMaxFPS(60.0f);
 
+
         m_isRunning = true;
         while (m_isRunning) {
             limiter.begin();

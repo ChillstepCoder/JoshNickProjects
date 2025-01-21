@@ -58,6 +58,9 @@ void DebugDraw::drawWorld(b2WorldId* world, const glm::mat4& projectionMatrix) {
         // Draw the world
         b2World_Draw(*world, &debugDraw);
 
+
+
+
         // Upload to GPU
         glBindVertexArray(m_linesvaoId);
         glBindBuffer(GL_ARRAY_BUFFER, m_linesvboId);
@@ -97,7 +100,7 @@ void DebugDraw::drawSegment(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* contex
     float r = ((color >> 16) & 0xFF) / 255.0f;
     float g = ((color >> 8) & 0xFF) / 255.0f;
     float b = (color & 0xFF) / 255.0f;
-    float a = debugDraw->m_alpha;
+    float a = 0.5f;
 
     // Setup vertex data
     m_lineVertexData.push_back(DebugVertex(p1, r, g, b, a));
@@ -288,6 +291,42 @@ void DebugDraw::drawPoint(b2Vec2 p, float size, b2HexColor color, void* context)
     m_triangleVertexData.push_back(DebugVertex(topLeft, r, g, b, a));
     m_triangleVertexData.push_back(DebugVertex(bottomRight, r, g, b, a));
     m_triangleVertexData.push_back(DebugVertex(bottomLeft, r, g, b, a));
+}
+
+void DebugDraw::drawLineBetweenPoints(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* context) {
+    DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
+
+    // Convert hex color to float values (0-1 range)
+    float r = ((color >> 16) & 0xFF) / 255.0f;
+    float g = ((color >> 8) & 0xFF) / 255.0f;
+    float b = (color & 0xFF) / 255.0f;
+    float a = 0.5f;
+
+    // Push the line data into the vertex buffer
+    m_lineVertexData.push_back(DebugVertex(p1, r, g, b, a));
+    m_lineVertexData.push_back(DebugVertex(p2, r, g, b, a));
+}
+
+void DebugDraw::drawBoxAtPoint(b2Vec2 position, b2Vec2 size, b2HexColor color, void* context) {
+    DebugDraw* debugDraw = static_cast<DebugDraw*>(context);
+
+    // Convert hex color to float values (0-1 range)
+    float r = ((color >> 16) & 0xFF) / 255.0f;
+    float g = ((color >> 8) & 0xFF) / 255.0f;
+    float b = (color & 0xFF) / 255.0f;
+    float a = 0.5f;
+
+    // Define the four corners of the box
+    b2Vec2 topLeft = position;
+    b2Vec2 topRight = position + b2Vec2(size.x, 0);
+    b2Vec2 bottomRight = position + size;
+    b2Vec2 bottomLeft = position + b2Vec2(0, size.y);
+
+    // Push the four segments of the box (rectangular polygon)
+    drawSegment(topLeft, topRight, color, context);
+    drawSegment(topRight, bottomRight, color, context);
+    drawSegment(bottomRight, bottomLeft, color, context);
+    drawSegment(bottomLeft, topLeft, color, context);
 }
 
 void DebugDraw::setAttrib() {

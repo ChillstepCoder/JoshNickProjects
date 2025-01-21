@@ -24,15 +24,17 @@ public:
 
     void draw(Bengine::SpriteBatch& spriteBatch);
 
-    void update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager);
+    void update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled);
 
-    void movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager);
+    void movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled);
 
     void setPlayerImage();
 
-    bool checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager);
+    bool checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled);
 
     bool intersect(glm::vec2 playerPos1, glm::vec2 playerPos2, glm::vec2 blockPos1, glm::vec2 blockPos2);
+
+    void respawnPlayer();
 
     //b2BodyId getID() const { return m_bodyId; }
 
