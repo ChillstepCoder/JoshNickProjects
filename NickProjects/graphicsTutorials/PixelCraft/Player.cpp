@@ -3,6 +3,7 @@
 #include <SDL/SDL.h>
 #include "GameplayScreen.h"
 #include "DebugDraw.h"
+#include <cstdlib> 
 
 Player::Player() : m_camera(nullptr) {
     // Default constructor
@@ -171,6 +172,7 @@ bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockMan
         //glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - (m_dimensions.x * 0.5), (m_position.y - (m_dimensions.y * 0.5))); // incorrect for some reason
         glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - 0.25, (m_position.y - 0.95));
 
+
         if (intersect(correctedPlayerPosition, correctedPlayerPosition + m_dimensions, blockWorldPos, blockWorldPos + blockDimensions)) {
             // DEBUG
             if (debugRenderEnabled) {
@@ -181,7 +183,40 @@ bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockMan
                 DebugDraw::getInstance().drawLineBetweenPoints(b2Vec2(correctedPlayerPosition.x, correctedPlayerPosition.y), b2Vec2(blockWorldPos.x, blockWorldPos.y), b2HexColor(b2_colorHotPink), nullptr);
             }
 
+            float PenetrationDepthY = (((blockDimensions.y / 2) + (m_dimensions.y / 2)) - (abs(blockWorldPos.y - correctedPlayerPosition.y)));
+
+            float PenetrationDepthX = (((blockDimensions.x / 2) + (m_dimensions.x / 2)) - (abs(blockWorldPos.x - correctedPlayerPosition.x)));
+
+            if (PenetrationDepthY > 0.0f && PenetrationDepthX > 0.0f) {
+
+                if (PenetrationDepthY < PenetrationDepthX) { // collided with top or bottom of a block
+
+                    if (blockWorldPos.y < correctedPlayerPosition.y) { // collided with the top of the block
+                        m_position.y = correctedPlayerPosition.y + PenetrationDepthY;
+                        m_velocity.y = 0;
+                        m_isGrounded = true;
+
+                    } else { // collided with the bottom of the block
+                        m_position.y = correctedPlayerPosition.y - PenetrationDepthY;
+                        m_velocity.y = 0;
+                    }
+
+                } else { // collided with the side of a block
+                    if (blockWorldPos.x < correctedPlayerPosition.x) { // collided with the right side of a block
+                        m_position.x = correctedPlayerPosition.x + PenetrationDepthX;
+                        m_velocity.x = 0;
+
+                    } else { // collided with the left side of a block
+                        m_position.x = correctedPlayerPosition.x - PenetrationDepthX;
+                        m_velocity.x = 0;
+                    }
+                }
+            }
+
+
+
             // Handle bottom collision (falling through the block)
+            /*
             if ((blockWorldPos.y + blockDimensions.y) > correctedPlayerPosition.y) {
                 m_isGrounded = true;
                 m_velocity.y = 0;
@@ -201,6 +236,8 @@ bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockMan
                     m_velocity.x = 0; // Stop horizontal movement
                 }
             }
+            */
+
             return true;
         }
     }
