@@ -28,40 +28,32 @@ public:
 
     void movePlayer();
 
-    void setPlayerImage();
-
     bool updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled);
 
-    bool intersect(glm::vec2 playerPos1, glm::vec2 playerPos2, glm::vec2 blockPos1, glm::vec2 blockPos2);
-
     void respawnPlayer();
-
-    //b2BodyId getID() const { return m_bodyId; }
 
     float getJumpForce() const { return m_jumpForce; }
 
     void setJumpForce(float jumpForce) { m_jumpForce = jumpForce; }
 
-    //void setGroundShapeId(b2ShapeId groundShapeId) { m_groundShapeId = groundShapeId; }
-
 private:
-    //b2BodyId m_bodyId;
-    //b2BodyDef* m_body = nullptr;
     glm::vec2 m_position;
     glm::vec2 m_dimensions;
     glm::vec2 m_velocity = glm::vec2(0.0f);
+
+    float m_maxHorizontalSpeed = 0.4f;
+    float m_maxVerticalSpeed = 1.0f;
     float m_horizontalSpeed = 0.0f;
+    float m_jumpForce = 0.45f;
+    float m_gravity = -0.015f;
+
     Bengine::ColorRGBA8 m_color;
-    Bengine::GLTexture m_texture;
-    std::string m_direction;
-    std::string m_image;
+    Bengine::GLTexture m_texturePlayerRight;
+    Bengine::GLTexture m_texturePlayerLeft;
 
     bool m_isGrounded = false;
     bool m_touchingWater = false;
-    bool m_facingRight = true;
-    //b2ShapeId m_groundShapeId; // Store reference to ground shape
-    float m_jumpForce = 1.0f;
-    float m_gravity = -0.015f;
+    bool m_isGoingRight = true;
 
     Bengine::Camera2D* m_camera;
     BlockManager* m_blockManager;

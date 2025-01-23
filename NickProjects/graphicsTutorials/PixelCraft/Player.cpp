@@ -7,6 +7,12 @@
 
 #include <iostream>
 
+const float WATER_GRAVITY = -0.005f;
+const float WATER_JUMP_FORCE = 0.30f;
+const float WATER_MAX_HORIZONTAL_SPEED = 0.25f;
+const float WATER_MAX_VERTICAL_SPEED = 0.3f;
+
+
 Player::Player() : m_camera(nullptr) {
     // Default constructor
 }
@@ -25,22 +31,32 @@ glm::vec2 Player::getPosition() {
 
 
 void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color, Bengine::Camera2D* camera) {
-    Bengine::GLTexture texture = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
+    Bengine::GLTexture playerRight = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
+    Bengine::GLTexture playerLeft = Bengine::ResourceManager::getTexture("Textures/playerLeft.png");
     m_camera = camera;
     m_position = position;
     m_dimensions = dimensions;
     m_color = color;
-    m_texture = texture;
+    m_texturePlayerRight = playerRight;
+    m_texturePlayerLeft = playerLeft;
 
 }
 
 void Player::draw(Bengine::SpriteBatch& spriteBatch) {
     glm::vec4 destRect;
+
+    GLuint textureId;
+    if (m_isGoingRight) {
+        textureId = m_texturePlayerRight.id;
+    } else {
+        textureId = m_texturePlayerLeft.id;
+    }
+
     destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
     destRect.y = (getPosition().y - ((0.5) * getDimensions().y));
     destRect.z = getDimensions().x;
     destRect.w = getDimensions().y;
-    spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, m_color, 0.0f);
+    spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), textureId, 0.0f, m_color, 0.0f);
 }
 
 void Player::update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled) {
@@ -51,32 +67,20 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     }
 
     // Get the blocks in range around the player
-    std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 3);
+    std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);
 
     if (m_velocity.x > 0) {
-        m_facingRight = true;
+        m_isGoingRight = true;
     } else if (m_velocity.x < 0) {
-        m_facingRight = false;
+        m_isGoingRight = false;
     }
 
-    if (!m_facingRight) {
-        //m_velocity.x = -1 * m_horizontalSpeed;
-        m_direction = "Left";
-    }
-    else if (m_facingRight) {
-        //m_velocity.x = m_horizontalSpeed;
-        m_direction = "Right";
-    }
     if (m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) {
         m_velocity.y = m_jumpForce;
     }
 
     // Gravity
     m_velocity.y += m_gravity;
-    
-    // This makes the player string bigger and bigger by adding more text every frame... wtf is this for xD
-    //setPlayerImage();
-
 
     const float ACCELERATION = 0.02f;
     if (inputManager.isKeyDown(SDLK_a)) {
@@ -119,32 +123,25 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 
 void Player::movePlayer() {
 
-    float maxHorizontalSpeed = 0.5f;
+    m_velocity.x = glm::clamp(m_velocity.x, -m_maxHorizontalSpeed, m_maxHorizontalSpeed);
 
-    // Clamp is a handy and commonly used function that does what your comment did below :)
-    m_velocity = glm::clamp(m_velocity, -maxHorizontalSpeed, maxHorizontalSpeed);
-    // TODO: Delete this once you understand
-    //if (m_velocity.x > maxHorizontalSpeed) { // set speed to max if it is above
-    //    m_velocity.x = maxHorizontalSpeed;
-    //} else if (m_velocity.y < -maxHorizontalSpeed) {
-    //    m_velocity.y = -maxHorizontalSpeed;
-    //}
+    m_velocity.y = glm::clamp(m_velocity.y, -m_maxVerticalSpeed, m_maxVerticalSpeed);
 
     m_position += m_velocity;
 
-}
-
-
-void Player::setPlayerImage() {
-    m_image += m_direction;
 }
 
 bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled) {
 
     bool hadAnyCollision = false;
 
-    // Reset grounded so we can set it again below
+    // Reset variables so we can set them again below
+    m_gravity = -0.015f;
+    m_jumpForce = 0.45f;
+    m_maxHorizontalSpeed = 0.4f;
+    m_maxVerticalSpeed = 1.0f;
     m_isGrounded = false;
+
 
     for (int i = 0; i < blocksInRange.size(); i++) {
 
@@ -173,6 +170,16 @@ bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManag
         float PenetrationDepthX = (((blockDimensions.x / 2) + (m_dimensions.x / 2)) - (abs(blockWorldPos.x - m_position.x)));
 
         if (PenetrationDepthY > 0.0f && PenetrationDepthX > 0.0f) {
+
+            if (blockHandle.block->getBlockID() == BlockID::WATER) { // touching water
+                m_gravity = WATER_GRAVITY;
+                m_jumpForce = WATER_JUMP_FORCE;
+                m_maxHorizontalSpeed = WATER_MAX_HORIZONTAL_SPEED;
+                m_maxVerticalSpeed = WATER_MAX_VERTICAL_SPEED;
+                m_isGrounded = true;
+                continue;
+            }
+
 
             if (PenetrationDepthY < PenetrationDepthX) { // collided with top or bottom of a block
 
@@ -215,12 +222,10 @@ void Player::respawnPlayer()
 {
     m_position.x = 1024.0f;
     m_position.y = 400.0f;
-    m_image = "Player-Idle";
     m_velocity.x = 0;
     m_velocity.y = 0;
     m_isGrounded = false;
     m_gravity = -0.015f;
     m_jumpForce = 1.0f;
     m_horizontalSpeed = 0.0f;
-    m_direction = "-L";
 }
