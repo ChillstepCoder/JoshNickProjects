@@ -5,6 +5,8 @@
 #include "DebugDraw.h"
 #include <cstdlib> 
 
+#include <iostream>
+
 Player::Player() : m_camera(nullptr) {
     // Default constructor
 }
@@ -18,9 +20,7 @@ Player::~Player() {
 }
 
 glm::vec2 Player::getPosition() {
-
-    glm::vec2 position = m_position;
-    return position;
+    return m_position;
 }
 
 
@@ -51,9 +51,7 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     }
 
     // Get the blocks in range around the player
-    std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);  // Use a range of 2 chunks
-
-
+    std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 3);
 
     if (m_velocity.x > 0) {
         m_facingRight = true;
@@ -69,41 +67,30 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         //m_velocity.x = m_horizontalSpeed;
         m_direction = "Right";
     }
-
-    if (m_isGrounded) {
-        if (m_velocity.y < 0) {
-            m_isGrounded = false;
-        }
-        if (inputManager.isKeyPressed(SDLK_SPACE)) {
-            m_velocity.y = -1 * m_jumpForce;
-        }
+    if (m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) {
+        m_velocity.y = m_jumpForce;
     }
 
-    movePlayer(m_velocity.x, 0, blocksInRange, blockManager, debugRenderEnabled);
+    // Gravity
+    m_velocity.y += m_gravity;
+    
+    // This makes the player string bigger and bigger by adding more text every frame... wtf is this for xD
+    //setPlayerImage();
 
 
-    if (m_isGrounded == false) {
-        m_velocity.y += m_gravity;
-    }
-    movePlayer(0, m_velocity.y, blocksInRange, blockManager, debugRenderEnabled);
-    setPlayerImage();
-
-
+    const float ACCELERATION = 0.02f;
     if (inputManager.isKeyDown(SDLK_a)) {
-        m_velocity.x -= 0.02f;
+        m_velocity.x -= ACCELERATION;
     }
     else if (inputManager.isKeyDown(SDLK_d)) {
-        m_velocity.x += 0.02f;
+        m_velocity.x += ACCELERATION;
     }
     else {
         m_velocity.x = (m_velocity.x / 1.2); // slowdown
     }
 
-    if ((m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE))) {
-        m_velocity.y = 0.4f;
-        m_isGrounded = false;
-        movePlayer(0, m_velocity.y, blocksInRange, blockManager, debugRenderEnabled);
-    }
+    movePlayer();
+    updateCollision(blocksInRange, blockManager, debugRenderEnabled);
 
     // Handle block breaking
     if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
@@ -130,28 +117,21 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 }
 
 
-void Player::movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled) {
+void Player::movePlayer() {
 
     float maxHorizontalSpeed = 0.5f;
 
-    if (xVelocity > maxHorizontalSpeed) { // set speed to max if it is above
-        xVelocity = maxHorizontalSpeed;
-    } else if (xVelocity < -maxHorizontalSpeed) {
-        xVelocity = -maxHorizontalSpeed;
-    }
+    // Clamp is a handy and commonly used function that does what your comment did below :)
+    m_velocity = glm::clamp(m_velocity, -maxHorizontalSpeed, maxHorizontalSpeed);
+    // TODO: Delete this once you understand
+    //if (m_velocity.x > maxHorizontalSpeed) { // set speed to max if it is above
+    //    m_velocity.x = maxHorizontalSpeed;
+    //} else if (m_velocity.y < -maxHorizontalSpeed) {
+    //    m_velocity.y = -maxHorizontalSpeed;
+    //}
 
+    m_position += m_velocity;
 
-    m_position.y += yVelocity;
-    m_position.x += xVelocity;
-
-    bool intersect = checkIntersection(blocksInRange, blockManager, debugRenderEnabled);
-
-    if (!intersect) {
-        return;
-    }
-    if (xVelocity == 0) {
-        yVelocity = 0;
-    }
 }
 
 
@@ -159,98 +139,77 @@ void Player::setPlayerImage() {
     m_image += m_direction;
 }
 
-bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled) {
+bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled) {
+
+    bool hadAnyCollision = false;
+
+    // Reset grounded so we can set it again below
+    m_isGrounded = false;
 
     for (int i = 0; i < blocksInRange.size(); i++) {
 
         BlockHandle blockHandle = blocksInRange[i];
+        if (blockHandle.block->isEmpty()) {
+            continue;
+        }
 
+        // Get center of the block
         glm::vec2 blockWorldPos = blockHandle.getWorldPosition();
 
         glm::vec2 blockDimensions(1.0f, 1.0f);
 
-        //glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - (m_dimensions.x * 0.5), (m_position.y - (m_dimensions.y * 0.5))); // incorrect for some reason
-        glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - 0.25, (m_position.y - 0.95));
 
+        // DEBUG
+        if (debugRenderEnabled) {
+            DebugDraw::getInstance().drawBoxAtPoint(b2Vec2(m_position.x, m_position.y), b2Vec2(m_dimensions.x, m_dimensions.y), b2HexColor(b2_colorHotPink), nullptr);
 
-        if (intersect(correctedPlayerPosition, correctedPlayerPosition + m_dimensions, blockWorldPos, blockWorldPos + blockDimensions)) {
-            // DEBUG
-            if (debugRenderEnabled) {
-                DebugDraw::getInstance().drawBoxAtPoint(b2Vec2(correctedPlayerPosition.x, correctedPlayerPosition.y), b2Vec2(m_dimensions.x, m_dimensions.y), b2HexColor(b2_colorHotPink), nullptr);
+            DebugDraw::getInstance().drawBoxAtPoint(b2Vec2(blockWorldPos.x, blockWorldPos.y), b2Vec2(blockDimensions.x, blockDimensions.y), b2HexColor(b2_colorHotPink), nullptr);
 
-                DebugDraw::getInstance().drawBoxAtPoint(b2Vec2(blockWorldPos.x, blockWorldPos.y), b2Vec2(blockDimensions.x, blockDimensions.y), b2HexColor(b2_colorHotPink), nullptr);
+            DebugDraw::getInstance().drawLineBetweenPoints(b2Vec2(m_position.x, m_position.y), b2Vec2(blockWorldPos.x, blockWorldPos.y), b2HexColor(b2_colorHotPink), nullptr);
+        }
 
-                DebugDraw::getInstance().drawLineBetweenPoints(b2Vec2(correctedPlayerPosition.x, correctedPlayerPosition.y), b2Vec2(blockWorldPos.x, blockWorldPos.y), b2HexColor(b2_colorHotPink), nullptr);
-            }
+        float PenetrationDepthY = (((blockDimensions.y / 2) + (m_dimensions.y / 2)) - (abs(blockWorldPos.y - m_position.y)));
 
-            float PenetrationDepthY = (((blockDimensions.y / 2) + (m_dimensions.y / 2)) - (abs(blockWorldPos.y - correctedPlayerPosition.y)));
+        float PenetrationDepthX = (((blockDimensions.x / 2) + (m_dimensions.x / 2)) - (abs(blockWorldPos.x - m_position.x)));
 
-            float PenetrationDepthX = (((blockDimensions.x / 2) + (m_dimensions.x / 2)) - (abs(blockWorldPos.x - correctedPlayerPosition.x)));
+        if (PenetrationDepthY > 0.0f && PenetrationDepthX > 0.0f) {
 
-            if (PenetrationDepthY > 0.0f && PenetrationDepthX > 0.0f) {
+            if (PenetrationDepthY < PenetrationDepthX) { // collided with top or bottom of a block
 
-                if (PenetrationDepthY < PenetrationDepthX) { // collided with top or bottom of a block
-
-                    if (blockWorldPos.y < correctedPlayerPosition.y) { // collided with the top of the block
-                        m_position.y = correctedPlayerPosition.y + PenetrationDepthY;
-                        m_velocity.y = 0;
-                        m_isGrounded = true;
-
-                    } else { // collided with the bottom of the block
-                        m_position.y = correctedPlayerPosition.y - PenetrationDepthY;
+                if (blockWorldPos.y < m_position.y) { // collided with the top of the block
+                    m_position.y += PenetrationDepthY;
+                    m_isGrounded = true;
+                    if (m_velocity.y < 0.0f) {
                         m_velocity.y = 0;
                     }
 
-                } else { // collided with the side of a block
-                    if (blockWorldPos.x < correctedPlayerPosition.x) { // collided with the right side of a block
-                        m_position.x = correctedPlayerPosition.x + PenetrationDepthX;
-                        m_velocity.x = 0;
+                } else { // collided with the bottom of the block
+                    m_position.y -= PenetrationDepthY;
 
-                    } else { // collided with the left side of a block
-                        m_position.x = correctedPlayerPosition.x - PenetrationDepthX;
+                    if (m_velocity.y > 0.0f) {
+                        m_velocity.y = 0;
+                    }
+                }
+
+            } else { // collided with the side of a block
+                if (blockWorldPos.x < m_position.x) { // collided with the right side of a block
+                    m_position.x += PenetrationDepthX;
+                    if (m_velocity.x < 0.0f) {
+                        m_velocity.x = 0;
+                    }
+
+                } else { // collided with the left side of a block
+                    m_position.x -= PenetrationDepthX;
+                    if (m_velocity.x > 0.0f) {
                         m_velocity.x = 0;
                     }
                 }
             }
-
-
-
-            // Handle bottom collision (falling through the block)
-            /*
-            if ((blockWorldPos.y + blockDimensions.y) > correctedPlayerPosition.y) {
-                m_isGrounded = true;
-                m_velocity.y = 0;
-                m_position.y = (blockWorldPos.y + blockDimensions.y + (0.9f));
-            } else if ((blockWorldPos.x + blockDimensions.x > correctedPlayerPosition.x 
-                && blockWorldPos.y > correctedPlayerPosition.y 
-                && blockWorldPos.y < (correctedPlayerPosition.y + m_dimensions.y)) 
-                || (blockWorldPos.x < correctedPlayerPosition.x + m_dimensions.x 
-                && blockWorldPos.y > correctedPlayerPosition.y 
-                && blockWorldPos.y < (correctedPlayerPosition.y + m_dimensions.y))) {
-                if (m_velocity.x > 0) { // Moving right
-                    m_position.x = blockWorldPos.x - m_dimensions.x; // Move player out of block
-                    m_velocity.x = 0; // Stop horizontal movement
-                }
-                else if (m_velocity.x < 0) { // Moving left
-                    m_position.x = blockWorldPos.x + blockDimensions.x; // Move player out of block
-                    m_velocity.x = 0; // Stop horizontal movement
-                }
-            }
-            */
-
-            return true;
         }
     }
-    m_isGrounded = false;
-    return false;
+    return hadAnyCollision;
 
 }
-
-bool Player::intersect(glm::vec2 playerPos1, glm::vec2 playerPos2, glm::vec2 blockPos1, glm::vec2 blockPos2)
-{
-    return playerPos1.x < blockPos2.x && playerPos2.x > blockPos1.x && playerPos1.y < blockPos2.y && playerPos2.y > blockPos1.y;
-}
-
 
 void Player::respawnPlayer()
 {

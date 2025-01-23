@@ -26,11 +26,11 @@ public:
 
     void update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled);
 
-    void movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled);
+    void movePlayer();
 
     void setPlayerImage();
 
-    bool checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled);
+    bool updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled);
 
     bool intersect(glm::vec2 playerPos1, glm::vec2 playerPos2, glm::vec2 blockPos1, glm::vec2 blockPos2);
 
@@ -49,7 +49,7 @@ private:
     //b2BodyDef* m_body = nullptr;
     glm::vec2 m_position;
     glm::vec2 m_dimensions;
-    glm::vec2 m_velocity;
+    glm::vec2 m_velocity = glm::vec2(0.0f);
     float m_horizontalSpeed = 0.0f;
     Bengine::ColorRGBA8 m_color;
     Bengine::GLTexture m_texture;
