@@ -57,6 +57,8 @@ void GameplayScreen::onEntry() {
 
     DebugDraw::getInstance().init();
 
+    DebugDraw::getInstance().setAlpha(m_debugAlpha);
+
     m_spriteFont->init("Fonts/Chintzy.ttf", 32);
 
     // Shader.init
@@ -117,7 +119,7 @@ void GameplayScreen::update() {
     {
         PROFILE_SCOPE("player.update + camera.setPosition");
         const glm::vec2 playerPos = m_player.getPosition();
-        m_player.update(m_game->inputManager, playerPos, m_blockManager);
+        m_player.update(m_game->inputManager, playerPos, m_blockManager, m_debugRenderEnabled);
 
         {
             PROFILE_SCOPE("Unload far chunks");
@@ -198,7 +200,7 @@ void GameplayScreen::draw() {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // Set debug drawing alpha
-        DebugDraw::getInstance().setAlpha(m_debugAlpha);
+        DebugDraw::getInstance().setAlpha(m_debugAlpha); 
 
         // Draw debug info
         DebugDraw::getInstance().drawWorld(&m_world, m_camera.getCameraMatrix());
@@ -275,6 +277,7 @@ void GameplayScreen::drawImgui() {
     if (ImGui::Button("Reset Error Count")) {
         Bengine::DebugOpenGL::ResetErrorCount();
     }
+
 
     ImGui::End();
 }

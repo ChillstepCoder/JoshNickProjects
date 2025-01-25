@@ -2,12 +2,22 @@
 #include <Bengine/ResourceManager.h>
 #include <SDL/SDL.h>
 #include "GameplayScreen.h"
+#include "DebugDraw.h"
+#include <cstdlib> 
+
+#include <iostream>
+
+const float WATER_GRAVITY = -0.005f;
+const float WATER_JUMP_FORCE = 0.30f;
+const float WATER_MAX_HORIZONTAL_SPEED = 0.25f;
+const float WATER_MAX_VERTICAL_SPEED = 0.3f;
+
 
 Player::Player() : m_camera(nullptr) {
     // Default constructor
 }
 
-Player::Player(Bengine::Camera2D* camera, BlockManager* blockManager) : m_camera(camera), m_blockManager(blockManager) {
+Player::Player(Bengine::Camera2D* camera, BlockManager* blockManager) : m_camera(camera), m_blockManager(blockManager){
 
 }
 
@@ -16,187 +26,75 @@ Player::~Player() {
 }
 
 glm::vec2 Player::getPosition() {
-
-    glm::vec2 position = m_position;
-    //b2Vec2 position = b2Body_GetPosition(m_bodyId);
-    return position;
+    return m_position;
 }
 
 
 void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color, Bengine::Camera2D* camera) {
-    Bengine::GLTexture texture = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
+    Bengine::GLTexture playerRight = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
+    Bengine::GLTexture playerLeft = Bengine::ResourceManager::getTexture("Textures/playerLeft.png");
     m_camera = camera;
     m_position = position;
     m_dimensions = dimensions;
     m_color = color;
-    m_texture = texture;
-
-
-
-    /*
-    b2BodyDef bodyDef = b2DefaultBodyDef();
-    bodyDef.type = b2_dynamicBody;
-    bodyDef.position = b2Vec2(position.x, position.y);
-    bodyDef.fixedRotation = true;
-    m_bodyId = b2CreateBody(*world, &bodyDef);
-
-    float radius = dimensions.x / 2.0f; // Use half the width as the radius
-    float height = dimensions.y - radius * 2; // The height of the rectangle part
-
-    b2Capsule capsule;
-    capsule.radius = radius;
-    capsule.center1 = b2Vec2(0.0f, dimensions.y / 3.5f);
-    capsule.center2 = b2Vec2(0.0f, -dimensions.y / 3.5f);
-    b2ShapeDef capsuleShapeDef = b2DefaultShapeDef();
-    capsuleShapeDef.density = 1.0f;
-    capsuleShapeDef.friction = 0.1f;
-    capsuleShapeDef.restitution = 0.0f;
-    b2CreateCapsuleShape(m_bodyId, &capsuleShapeDef, &capsule);
-    */
-
+    m_texturePlayerRight = playerRight;
+    m_texturePlayerLeft = playerLeft;
 
 }
 
 void Player::draw(Bengine::SpriteBatch& spriteBatch) {
     glm::vec4 destRect;
+
+    GLuint textureId;
+    if (m_isGoingRight) {
+        textureId = m_texturePlayerRight.id;
+    } else {
+        textureId = m_texturePlayerLeft.id;
+    }
+
     destRect.x = (getPosition().x - ((0.5) * getDimensions().x));
     destRect.y = (getPosition().y - ((0.5) * getDimensions().y));
     destRect.z = getDimensions().x;
     destRect.w = getDimensions().y;
-    spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), m_texture.id, 0.0f, m_color, 0.0f);
+    spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), textureId, 0.0f, m_color, 0.0f);
 }
 
-void Player::update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager) {
+void Player::update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled) {
+
+    if (!(playerPos.x < WORLD_WIDTH_CHUNKS * CHUNK_WIDTH && 0 < playerPos.x && playerPos.y < WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH && 0 < playerPos.y)) {
+        respawnPlayer();
+        return;
+    }
+
     // Get the blocks in range around the player
-    std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);  // Use a range of 2 chunks
+    std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);
 
     if (m_velocity.x > 0) {
-        m_facingRight = true;
+        m_isGoingRight = true;
     } else if (m_velocity.x < 0) {
-        m_facingRight = false;
+        m_isGoingRight = false;
     }
 
-    if (!m_facingRight) {
-        //m_velocity.x = -1 * m_horizontalSpeed;
-        m_direction = "Left";
-    }
-    else if (m_facingRight) {
-        //m_velocity.x = m_horizontalSpeed;
-        m_direction = "Right";
+    if (m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) {
+        m_velocity.y = m_jumpForce;
     }
 
-    if (m_isGrounded) {
-        if (m_velocity.y < 0) {
-            m_isGrounded = false;
-        }
-        if (inputManager.isKeyPressed(SDLK_SPACE)) {
-            m_velocity.y = -1 * m_jumpForce;
-        }
-    }
+    // Gravity
+    m_velocity.y += m_gravity;
 
-    movePlayer(m_velocity.x, 0, blocksInRange, blockManager);
-
-
-    if (m_isGrounded == false) {
-        m_velocity.y += m_gravity;
-    }
-    movePlayer(0, m_velocity.y, blocksInRange, blockManager);
-    setPlayerImage();
-
-
+    const float ACCELERATION = 0.02f;
     if (inputManager.isKeyDown(SDLK_a)) {
-        m_velocity.x -= 0.02f;
+        m_velocity.x -= ACCELERATION;
     }
     else if (inputManager.isKeyDown(SDLK_d)) {
-        m_velocity.x += 0.02f;
+        m_velocity.x += ACCELERATION;
     }
     else {
         m_velocity.x = (m_velocity.x / 1.2); // slowdown
     }
 
-    if ((m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE))) {
-        m_velocity.y = 0.4f;
-        m_isGrounded = false;
-        movePlayer(0, m_velocity.y, blocksInRange, blockManager);
-    }
-
-    /* old movement code
-    // Check for ground and water contact
-    //m_touchingWater = false;
-    m_isGrounded = false;
-    // Check contact with each block
-    for (const auto& block : blocksInRange) {
-        
-        //b2ContactData contacts[8];
-        //int contactCount = b2Body_GetContactData(getID(), contacts, 8);
-        int contactCount = 0;
-        for (int i = 0; i < contactCount; ++i) {
-            //b2ShapeId shape1 = contacts[i].shapeIdA;
-            //b2ShapeId shape2 = contacts[i].shapeIdB;
-
-            // Check if the block's shape ID matches the player's shape ID
-            //if (B2_ID_EQUALS(shape1, block.getBodyID()) || B2_ID_EQUALS(shape2, block.getBodyID())) {
-                //m_isGrounded = true; // Player is grounded on this block
-                //break; // No need to check further
-            //}
-        }
-
-        if (m_isGrounded) break; // Exit if already grounded
-    }
-
-
-    // Handle movement input
-    float force = m_touchingWater ? 20.0f : 50.0f; // Define a base force for movement
-
-
-    if (inputManager.isKeyDown(SDLK_a)) {
-        //b2Body_ApplyForceToCenter(getID(), b2Vec2(-force, 0.0f), true);
-    }
-    else if (inputManager.isKeyDown(SDLK_d)) {
-        //b2Body_ApplyForceToCenter(getID(), b2Vec2(force, 0.0f), true);
-    }
-    else {
-        // Apply gradual slowdown
-        //b2Vec2 currentVelocity = b2Body_GetLinearVelocity(getID());
-        float slowdownFactor = m_isGrounded ? 0.84f : 0.88f; // Slower when grounded
-        //b2Body_SetLinearVelocity(getID(), b2Vec2(currentVelocity.x * slowdownFactor, currentVelocity.y));
-    }
-
-    // Enforce maximum speed
-    float MAX_SPEED = m_touchingWater ? 10.0f : 25.0f;
-    //b2Vec2 currentVelocity = b2Body_GetLinearVelocity(getID());
-    glm::vec2 currentVelocity = glm::vec2 (0.0f, 0.0f);
-    if (currentVelocity.x < -MAX_SPEED) {
-        //b2Body_SetLinearVelocity(getID(), b2Vec2(-MAX_SPEED, currentVelocity.y));
-    } else if (currentVelocity.x > MAX_SPEED) {
-        //b2Body_SetLinearVelocity(getID(), b2Vec2(MAX_SPEED, currentVelocity.y));
-    }
-    if (currentVelocity.y < -MAX_SPEED * 2) {
-        //b2Body_SetLinearVelocity(getID(), b2Vec2(currentVelocity.x, -MAX_SPEED * 2));
-    }
-    else if (currentVelocity.y > MAX_SPEED * 2) {
-        //b2Body_SetLinearVelocity(getID(), b2Vec2(currentVelocity.x, MAX_SPEED * 2));
-    }
-
-    float realJumpForce = m_touchingWater ? m_jumpForce * 0.05f  : m_jumpForce;
-    // Jump only when grounded or in water and space is pressed
-    if ((m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE))) {
-        //b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, realJumpForce), b2Body_GetPosition(getID()), false);
-    }
-
-    BlockHandle blockHandle = blockManager->getBlockAtPosition(playerPos);
-    if (blockHandle.block->getBlockID() == BlockID::WATER && inputManager.isKeyDown(SDLK_SPACE)) {
-        m_touchingWater = true;
-        //b2Body_SetGravityScale(getID(), 0.35f);
-        //b2Body_ApplyLinearImpulse(getID(), b2Vec2(0.0f, realJumpForce), b2Body_GetPosition(getID()), false);
-    } else if (blockHandle.block->getBlockID() == BlockID::WATER) {
-        m_touchingWater = true;
-        //b2Body_SetGravityScale(getID(), 0.35f);
-    } else {
-        m_touchingWater = false;
-        //b2Body_SetGravityScale(getID(), 1.00f);
-    }
-    */
+    movePlayer();
+    updateCollision(blocksInRange, blockManager, debugRenderEnabled);
 
     // Handle block breaking
     if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
@@ -223,86 +121,111 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
 }
 
 
-void Player::movePlayer(float xVelocity, float yVelocity, std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager) {
+void Player::movePlayer() {
 
-    m_position.y += yVelocity;
-    m_position.x += xVelocity;
+    m_velocity.x = glm::clamp(m_velocity.x, -m_maxHorizontalSpeed, m_maxHorizontalSpeed);
 
-    bool intersect = checkIntersection(blocksInRange, blockManager);
+    m_velocity.y = glm::clamp(m_velocity.y, -m_maxVerticalSpeed, m_maxVerticalSpeed);
 
-    if (!intersect) {
-        return;
-    }
-    if (xVelocity == 0) {
-        yVelocity = 0;
-    }
-    /*
-    int slope = 0;
-    int maxSlope = 17;
-    while (!(slope == maxSlope || !intersect)) {
-        m_position.y += 1.0f;
-        intersect = checkIntersection(blocksInRange, blockManager);
-        slope++;
-    }
-    if (!intersect) {
-        m_isGrounded = true;
-    }
-    if (slope == maxSlope) {
-        if (yVelocity == 0) {
-            m_position.y += 1.0f + 10.0f;
-            if (xVelocity > 0) {
-                m_position.x -= xVelocity + 2.0f;
-            }
-            else if (xVelocity < 0) {
-                m_position.x += xVelocity + 2.0f;
-            }
-        }
-        else if (yVelocity < 0.001f) {
-            m_position.y += 1.0f + 10.0f;
-            m_isGrounded = false;
-        }
-    }
-    */
+    m_position += m_velocity;
+
 }
 
+bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager, bool debugRenderEnabled) {
 
-void Player::setPlayerImage() {
-    m_image += m_direction;
-}
+    bool hadAnyCollision = false;
 
-bool Player::checkIntersection(std::vector<BlockHandle>& blocksInRange, BlockManager* blockManager) {
+    // Reset variables so we can set them again below
+    m_gravity = -0.015f;
+    m_jumpForce = 0.45f;
+    m_maxHorizontalSpeed = 0.4f;
+    m_maxVerticalSpeed = 1.0f;
+    m_isGrounded = false;
+
 
     for (int i = 0; i < blocksInRange.size(); i++) {
 
         BlockHandle blockHandle = blocksInRange[i];
+        if (blockHandle.block->isEmpty()) {
+            continue;
+        }
 
+        // Get center of the block
         glm::vec2 blockWorldPos = blockHandle.getWorldPosition();
 
-        glm::vec2 blockDimensions(1, 1);
+        glm::vec2 blockDimensions(1.0f, 1.0f);
 
-        //glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - (m_dimensions.x * 0.5), (m_position.y - (m_dimensions.y * 0.5))); // incorrect for some reason
-        glm::vec2 correctedPlayerPosition = glm::vec2(m_position.x - 0.25, (m_position.y - 0.95));
 
-        if (intersect(correctedPlayerPosition, correctedPlayerPosition + m_dimensions, blockWorldPos, blockWorldPos + blockDimensions)) {
-            if (blockWorldPos.y <= correctedPlayerPosition.y) {
+        // DEBUG
+        if (debugRenderEnabled) {
+            DebugDraw::getInstance().drawBoxAtPoint(b2Vec2(m_position.x, m_position.y), b2Vec2(m_dimensions.x, m_dimensions.y), b2HexColor(b2_colorHotPink), nullptr);
+
+            DebugDraw::getInstance().drawBoxAtPoint(b2Vec2(blockWorldPos.x, blockWorldPos.y), b2Vec2(blockDimensions.x, blockDimensions.y), b2HexColor(b2_colorHotPink), nullptr);
+
+            DebugDraw::getInstance().drawLineBetweenPoints(b2Vec2(m_position.x, m_position.y), b2Vec2(blockWorldPos.x, blockWorldPos.y), b2HexColor(b2_colorHotPink), nullptr);
+        }
+
+        float PenetrationDepthY = (((blockDimensions.y / 2) + (m_dimensions.y / 2)) - (abs(blockWorldPos.y - m_position.y)));
+
+        float PenetrationDepthX = (((blockDimensions.x / 2) + (m_dimensions.x / 2)) - (abs(blockWorldPos.x - m_position.x)));
+
+        if (PenetrationDepthY > 0.0f && PenetrationDepthX > 0.0f) {
+
+            if (blockHandle.block->getBlockID() == BlockID::WATER) { // touching water
+                m_gravity = WATER_GRAVITY;
+                m_jumpForce = WATER_JUMP_FORCE;
+                m_maxHorizontalSpeed = WATER_MAX_HORIZONTAL_SPEED;
+                m_maxVerticalSpeed = WATER_MAX_VERTICAL_SPEED;
                 m_isGrounded = true;
-                m_velocity.y = 0;
-
-            }
-            if (blockWorldPos.y > correctedPlayerPosition.y && blockWorldPos.y < correctedPlayerPosition.y + m_dimensions.y) {
-                m_velocity.x = 0;
+                continue;
             }
 
 
-            return true;
+            if (PenetrationDepthY < PenetrationDepthX) { // collided with top or bottom of a block
+
+                if (blockWorldPos.y < m_position.y) { // collided with the top of the block
+                    m_position.y += PenetrationDepthY;
+                    m_isGrounded = true;
+                    if (m_velocity.y < 0.0f) {
+                        m_velocity.y = 0;
+                    }
+
+                } else { // collided with the bottom of the block
+                    m_position.y -= PenetrationDepthY;
+
+                    if (m_velocity.y > 0.0f) {
+                        m_velocity.y = 0;
+                    }
+                }
+
+            } else { // collided with the side of a block
+                if (blockWorldPos.x < m_position.x) { // collided with the right side of a block
+                    m_position.x += PenetrationDepthX;
+                    if (m_velocity.x < 0.0f) {
+                        m_velocity.x = 0;
+                    }
+
+                } else { // collided with the left side of a block
+                    m_position.x -= PenetrationDepthX;
+                    if (m_velocity.x > 0.0f) {
+                        m_velocity.x = 0;
+                    }
+                }
+            }
         }
     }
-    m_isGrounded = false;
-    return false;
+    return hadAnyCollision;
 
 }
 
-bool Player::intersect(glm::vec2 playerPos1, glm::vec2 playerPos2, glm::vec2 blockPos1, glm::vec2 blockPos2)
+void Player::respawnPlayer()
 {
-    return playerPos1.x < blockPos2.x && playerPos2.x > blockPos1.x && playerPos1.y < blockPos2.y && playerPos2.y > blockPos1.y;
+    m_position.x = 1024.0f;
+    m_position.y = 400.0f;
+    m_velocity.x = 0;
+    m_velocity.y = 0;
+    m_isGrounded = false;
+    m_gravity = -0.015f;
+    m_jumpForce = 1.0f;
+    m_horizontalSpeed = 0.0f;
 }

@@ -50,6 +50,8 @@ public:
 
     void setGravity(float gravity) { m_gravity = gravity; }
 
+    bool m_debugRenderEnabled = false;
+
 private:
     void checkInput();
 
@@ -67,7 +69,6 @@ private:
     b2WorldId m_world = b2_nullWorldId;
     b2BodyId m_ground = b2_nullBodyId;
 
-    bool m_debugRenderEnabled = false;
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
     float m_gravity = -80.0f;
     int m_updateFrame = 0;

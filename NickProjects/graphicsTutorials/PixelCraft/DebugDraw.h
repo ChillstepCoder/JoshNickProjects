@@ -37,6 +37,9 @@ public:
 
     void setVertexDataChanged(bool changed) {m_vertexDataChanged = changed; }
 
+    void drawLineBetweenPoints(b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* context);
+    void drawBoxAtPoint(b2Vec2 position, b2Vec2 size, b2HexColor color, void* context);
+
 private:
     DebugDraw() = default;
     // Updated callback signatures to match Box2D 3.0
@@ -49,6 +52,7 @@ private:
     static void drawTransform(b2Transform xf, void* context);
     static void drawString(b2Vec2 p, const char* s, void* context);
     static void drawPoint(b2Vec2 p, float size, b2HexColor color, void* context);
+
     static void setAttrib();
 
     float m_alpha = 0.1f;
