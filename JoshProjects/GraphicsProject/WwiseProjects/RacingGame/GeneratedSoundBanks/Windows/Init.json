@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{701ECBBD-9C7B-4030-8CDB-749EE5D1C7B9}",
     "Language": "SFX",
-    "Hash": "{51E28571-5455-848E-5D5D-91FB0135F983}",
+    "Hash": "{FAEDC798-8A56-34DB-1368-87BBCABCB493}",
     "ObjectPath": "Init",
     "ShortName": "Init",
     "Path": "Init.bnk",
@@ -44,6 +44,12 @@
     ],
     "GameParameters": [
      {
+      "Id": "301156165",
+      "Name": "Tire_Grass_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Grass_Volume",
+      "GUID": "{88DC2B3F-06C9-4299-983C-C83B7DA981D4}"
+     },
+     {
       "Id": "1656280998",
       "Name": "RPM_FA_SSGrain",
       "ObjectPath": "\\Game Parameters\\Factory Soundseed Grain\\RPM_FA_SSGrain",
@@ -54,6 +60,12 @@
       "Name": "Proximity_FA_SSGrain",
       "ObjectPath": "\\Game Parameters\\Factory Soundseed Grain\\Proximity_FA_SSGrain",
       "GUID": "{05F1ABB4-7338-42BC-A378-B1E2B12EE3CB}"
+     },
+     {
+      "Id": "2131215788",
+      "Name": "Tire_Skid_Pitch",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Skid_Pitch",
+      "GUID": "{3CE70A6B-DF04-4257-81E6-86A431358D29}"
      },
      {
       "Id": "2317409760",
@@ -80,10 +92,34 @@
       "GUID": "{63B3F29E-04F3-4887-BA1A-4D7694644B24}"
      },
      {
+      "Id": "2736615605",
+      "Name": "Tire_Road_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Road_Volume",
+      "GUID": "{FFA8E915-BD6A-448F-8BD5-DF5C7FE3FB47}"
+     },
+     {
+      "Id": "2946140098",
+      "Name": "Engine_HighPass_Filter",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_HighPass_Filter",
+      "GUID": "{8075EF4C-DE72-4850-8319-E8962D67BE61}"
+     },
+     {
       "Id": "3142076734",
       "Name": "Engine_Rev_Pitch",
       "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Rev_Pitch",
       "GUID": "{F268C41F-7EA7-446C-B868-F933C206FDEB}"
+     },
+     {
+      "Id": "3180290342",
+      "Name": "Tire_Dirt_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Dirt_Volume",
+      "GUID": "{2A94874C-2BB3-42A9-B562-82D98642A521}"
+     },
+     {
+      "Id": "3332094968",
+      "Name": "Tire_Skid_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Skid_Volume",
+      "GUID": "{A008F52B-1849-4AE3-96AE-D369B0A61BED}"
      },
      {
       "Id": "3478629116",
@@ -106,6 +142,6 @@
     ]
    }
   ],
-  "FileHash": "{CF1E4796-EBC6-A9F6-9C9E-C1B901CDF83F}"
+  "FileHash": "{AFCB86B9-B2A1-3800-CA84-2CE4400B97DC}"
  }
 }

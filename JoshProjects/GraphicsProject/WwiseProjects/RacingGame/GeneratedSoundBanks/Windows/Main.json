@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
     "Language": "SFX",
-    "Hash": "{B46242C4-82CA-68BC-D3D6-6FB9C09DD9AE}",
+    "Hash": "{49BC917F-F245-6237-5B9D-31E2E5CC20ED}",
     "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
     "ShortName": "Main",
     "Path": "Main.bnk",
@@ -32,6 +32,14 @@
       "CachePath": "6E/{6E418767-4F42-13E8-5BEE-C819302BE4BB}.wem"
      },
      {
+      "Id": "555365400",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Dirt_Skid_1.wav",
+      "CachePath": "3A/{3AB132BA-C080-9A49-B963-C4B235824437}.wem"
+     },
+     {
       "Id": "685517915",
       "Language": "SFX",
       "Streaming": "false",
@@ -46,9 +54,44 @@
       "Location": "Memory",
       "ShortName": "Engine_Rev_SFX_1.wav",
       "CachePath": "51/{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem"
+     },
+     {
+      "Id": "1030427408",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Tire_Skid_1.wav",
+      "CachePath": "04/{0437DABC-4B9C-AB51-4F0D-29607855BB69}.wem"
+     },
+     {
+      "Id": "1069078306",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Grass_Skid_1.wav",
+      "CachePath": "E0/{E0A3E2B6-58A9-E1E0-5086-BA7DAD1479A5}.wem"
      }
     ],
     "Events": [
+     {
+      "Id": "2960744889",
+      "Name": "Play_Car_Tire_Skid_1",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Car_Tire_Skid_1",
+      "GUID": "{A8CE5BF1-FD2D-4C0B-B476-0280BB4777DB}",
+      "MaxAttenuation": "500",
+      "DurationType": "Infinite",
+      "MediaRefs": [
+       {
+        "Id": "555365400"
+       },
+       {
+        "Id": "1030427408"
+       },
+       {
+        "Id": "1069078306"
+       }
+      ]
+     },
      {
       "Id": "755225579",
       "Name": "Play_Countdown_SFX_1",
@@ -102,14 +145,60 @@
         "Id": "829908123"
        }
       ]
+     },
+     {
+      "Id": "2146366539",
+      "Name": "Stop_Car_Tire_Skid_1",
+      "ObjectPath": "\\Events\\Default Work Unit\\Stop_Car_Tire_Skid_1",
+      "GUID": "{68536866-D454-4108-8079-27E2109862B8}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
      }
     ],
     "GameParameters": [
+     {
+      "Id": "301156165",
+      "Name": "Tire_Grass_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Grass_Volume",
+      "GUID": "{88DC2B3F-06C9-4299-983C-C83B7DA981D4}"
+     },
+     {
+      "Id": "2131215788",
+      "Name": "Tire_Skid_Pitch",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Skid_Pitch",
+      "GUID": "{3CE70A6B-DF04-4257-81E6-86A431358D29}"
+     },
+     {
+      "Id": "2736615605",
+      "Name": "Tire_Road_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Road_Volume",
+      "GUID": "{FFA8E915-BD6A-448F-8BD5-DF5C7FE3FB47}"
+     },
+     {
+      "Id": "2946140098",
+      "Name": "Engine_HighPass_Filter",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_HighPass_Filter",
+      "GUID": "{8075EF4C-DE72-4850-8319-E8962D67BE61}"
+     },
      {
       "Id": "3142076734",
       "Name": "Engine_Rev_Pitch",
       "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Rev_Pitch",
       "GUID": "{F268C41F-7EA7-446C-B868-F933C206FDEB}"
+     },
+     {
+      "Id": "3180290342",
+      "Name": "Tire_Dirt_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Dirt_Volume",
+      "GUID": "{2A94874C-2BB3-42A9-B562-82D98642A521}"
+     },
+     {
+      "Id": "3332094968",
+      "Name": "Tire_Skid_Volume",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Skid_Volume",
+      "GUID": "{A008F52B-1849-4AE3-96AE-D369B0A61BED}"
      },
      {
       "Id": "3478629116",
@@ -132,6 +221,6 @@
     ]
    }
   ],
-  "FileHash": "{9CF56B27-4487-C654-10CF-8A807EA69CB3}"
+  "FileHash": "{626ADBA0-A71A-E863-F450-398814CB65CF}"
  }
 }

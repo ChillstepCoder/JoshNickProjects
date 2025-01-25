@@ -117,15 +117,15 @@ namespace JAGEngine {
   void IMainGame::onSDLEvent(SDL_Event& evnt) {
     switch (evnt.type) {
     case SDL_QUIT:
-      std::cout << "SDL_QUIT received\n";
+      //std::cout << "SDL_QUIT received\n";
       m_isRunning = false;
       break;
     case SDL_KEYDOWN:
-      std::cout << "SDL_KEYDOWN received: " << evnt.key.keysym.sym << "\n";
+      //std::cout << "SDL_KEYDOWN received: " << evnt.key.keysym.sym << "\n";
       m_inputManager.pressKey(evnt.key.keysym.sym);
       break;
     case SDL_KEYUP:
-      std::cout << "SDL_KEYUP received: " << evnt.key.keysym.sym << "\n";
+      //std::cout << "SDL_KEYUP received: " << evnt.key.keysym.sym << "\n";
       m_inputManager.releaseKey(evnt.key.keysym.sym);
       break;
     case SDL_MOUSEMOTION:

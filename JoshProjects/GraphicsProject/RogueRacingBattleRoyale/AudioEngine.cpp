@@ -168,6 +168,51 @@ void AudioEngine::setTireSurfaceType(int surfaceType) {
   m_currentSurfaceType = surfaceType;
 }
 
+void AudioEngine::updateTireSkidSound(Car* car, float speedRatio, float driftState) {
+  auto it = m_carAudioIds.find(car);
+  if (it == m_carAudioIds.end()) return;
+
+  AkGameObjectID audioId = it->second;
+  static std::unordered_map<Car*, bool> isSkidPlaying;
+
+  // Calculate surface ratios
+  std::array<int, 5> surfaceCounts = { 0, 0, 0, 0, 0 };
+  const auto& wheelStates = car->getWheelStates();
+  for (const auto& state : wheelStates) {
+    surfaceCounts[static_cast<int>(state.surface)]++;
+  }
+
+  float roadRatio = (surfaceCounts[0] + surfaceCounts[1] * 0.5f) / 4.0f;
+  float dirtRatio = (surfaceCounts[2] + surfaceCounts[1] * 0.5f + surfaceCounts[3] * 0.5f) / 4.0f;
+  float grassRatio = (surfaceCounts[4] + surfaceCounts[3] * 0.5f) / 4.0f;
+
+  if (dirtRatio > 0.0f || grassRatio > 0.0f || driftState > 0.0f) {
+    if (!isSkidPlaying[car]) {
+      AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_TIRE_SKID_1, audioId);
+      isSkidPlaying[car] = true;
+    }
+
+    // Road skid with master volume
+    float skidVolume = std::pow(driftState, 2.0f) * 100.0f;
+    float roadVolume = skidVolume * roadRatio;
+    AK::SoundEngine::SetRTPCValue("Tire_Road_Volume", roadVolume, audioId);
+    AK::SoundEngine::SetRTPCValue("Tire_Skid_Volume", skidVolume, audioId);
+
+    // Speed-based volume for dirt/grass (50% of max)
+    float speedVolume = 50.0f * std::sqrt(speedRatio);
+    // Additional volume when drifting (50% of max)
+    float addSkidVolume = 50.0f * std::pow(driftState, 2.0f);
+
+    AK::SoundEngine::SetRTPCValue("Tire_Dirt_Volume", (speedVolume + addSkidVolume) * dirtRatio, audioId);
+    AK::SoundEngine::SetRTPCValue("Tire_Grass_Volume", (speedVolume + addSkidVolume) * grassRatio, audioId);
+    AK::SoundEngine::SetRTPCValue("Tire_Skid_Pitch", speedRatio * 100.0f, audioId);
+  }
+  else if (isSkidPlaying[car]) {
+    AK::SoundEngine::PostEvent(AK::EVENTS::STOP_CAR_TIRE_SKID_1, audioId);
+    isSkidPlaying[car] = false;
+  }
+}
+
 void AudioEngine::setDefaultListener(const Vec2& position, float rotation) {
   AkListenerPosition listenerPos;
 
@@ -388,6 +433,15 @@ void AudioEngine::updateCarAudio(Car* car, const Vec2& listenerPos) {
     std::pow(currentPos.y - listenerPos.y, 2)
   );
 
+  // Calculate highpass filter value based on distance (0-1 range)
+  float highpassValue = std::min<float>(currentDistance / 500.0f, 1.0f) * 100.0f;
+  AK::SoundEngine::SetRTPCValue("Engine_Highpass_Filter", highpassValue, audioId);
+
+  if (DEBUG_OUTPUT) {
+    std::cout << "Distance: " << currentDistance
+      << " Highpass: " << highpassValue << std::endl;
+  }
+
   // Calculate Doppler effect
   float dopplerValue = 50.0f;  // No pitch shift by default
   if (audioData.lastDistanceToListener > 0.0f) {
@@ -453,18 +507,25 @@ void AudioEngine::updateCarAudio(Car* car, const Vec2& listenerPos) {
 void AudioEngine::updateCarEngineState(Car* car, float speedRatio) {
   auto it = m_carAudioIds.find(car);
   if (it == m_carAudioIds.end()) return;
-
   AkGameObjectID audioId = it->second;
 
-  // Clamp speedRatio
   speedRatio = std::min<float>(1.0f, std::max<float>(0.0f, speedRatio));
 
-  float idleVolume = (100.0f * (1.0f - std::sqrt(speedRatio)));
-  idleVolume = std::min<float>(100.0f, idleVolume);
-  float revVolume = 100.0f * std::sqrt(speedRatio);
+  // Start idle at 50%, surge up to 150% at low speeds, then drop to near 0 at high speeds 
+  float idleMultiplier;
+  if (speedRatio < 0.2f) {
+    idleMultiplier = 0.5f + (speedRatio * 5.0f); // 0.5 to 1.5
+  }
+  else {
+    idleMultiplier = 1.5f - std::pow(speedRatio, 0.7f) * 1.5f; // Steep drop
+  }
+  
+  // Only apply multiplier to idle volume
+  float idleVolume = (100.0f * (1.0f - std::sqrt(speedRatio))) * idleMultiplier;
+  idleVolume = std::min<float>(100.0f, std::max<float>(0.0f, idleVolume));
+  float revVolume = 100.0f * std::sqrt(speedRatio); // Rev unchanged
   revVolume = std::min<float>(100.0f, revVolume);
 
-  // Set volumes
   AKRESULT idleResult = AK::SoundEngine::SetRTPCValue(
     "Engine_Idle_Volume",
     idleVolume,
@@ -477,9 +538,10 @@ void AudioEngine::updateCarEngineState(Car* car, float speedRatio) {
     audioId
   );
 
-  // Update pitch based on speed
-  float pitchValue = speedRatio * 100.0f;  // Full 0-100 range
+  float pitchValue = speedRatio * 100.0f;
   AK::SoundEngine::SetRTPCValue("Engine_Rev_Pitch", pitchValue, audioId);
+
+  updateTireSkidSound(car, speedRatio, car->getProperties().driftState);
 
   if (DEBUG_OUTPUT) {
     std::cout << "Car " << audioId

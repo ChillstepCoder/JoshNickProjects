@@ -38,7 +38,7 @@ public:
     // Drift properties
     float wheelGrip = 0.49f;
     float driftState = 0.0f;
-    float driftDecayRate = 0.35f;
+    float driftDecayRate = 1.00f;
     float lastBackwardDistance = 0.0f;
     bool lastCrossedBackwards = false;
     bool raceStarted = false;

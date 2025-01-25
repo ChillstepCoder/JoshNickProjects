@@ -20,7 +20,7 @@ BoosterObject::BoosterObject(const BoosterObject& other)
 void BoosterObject::onCarCollision(Car* car) {
   if (!car || !m_boosterProps) return;
 
-  std::cout << "Booster collision begin with car" << std::endl;
+  //std::cout << "Booster collision begin with car" << std::endl;
 
   // Set the car's booster state
   auto props = car->getProperties();
@@ -32,7 +32,7 @@ void BoosterObject::onCarCollision(Car* car) {
 void BoosterObject::onEndCollision(Car* car) {
   if (!car) return;
 
-  std::cout << "Booster collision end with car" << std::endl;
+  //std::cout << "Booster collision end with car" << std::endl;
 
   auto props = car->getProperties();
   props.isOnBooster = false;
@@ -42,7 +42,7 @@ void BoosterObject::onEndCollision(Car* car) {
 }
 
 std::unique_ptr<PlaceableObject> BoosterObject::clone() const {
-  std::cout << "Booster clone called" << std::endl;
+  //std::cout << "Booster clone called" << std::endl;
   return std::make_unique<BoosterObject>(*this);
 }
 

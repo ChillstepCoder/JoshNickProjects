@@ -1699,7 +1699,7 @@ void LevelEditorScreen::handleCarSelection() {
         m_syncAllAICars = false;
       }
       m_selectedCarIndex = newSelectedIndex;
-      std::cout << "Selected car " << m_selectedCarIndex << std::endl;
+      //std::cout << "Selected car " << m_selectedCarIndex << std::endl;
     }
   }
 

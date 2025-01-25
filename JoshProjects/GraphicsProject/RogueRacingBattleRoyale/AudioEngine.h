@@ -5,8 +5,11 @@
 #include <AK/SoundEngine/Common/AkTypes.h>
 #include <unordered_map>
 #include "RacingAudioDefs.h"
+#include <array>
 
 class Car;
+
+static constexpr size_t NUM_SURFACES = 5;
 
 struct Vec2 {
   float x, y;
@@ -43,6 +46,7 @@ public:
   void setEngineRPM(float rpm);
   void setCarSpeed(float speed);
   void setTireSurfaceType(int surfaceType);
+  void updateTireSkidSound(Car* car, float speedRatio, float driftState);
 
   void setDefaultListener(const Vec2& position, float rotation); // not used ATM
   void setObjectPosition(AkGameObjectID id, const Vec2& position) const;
