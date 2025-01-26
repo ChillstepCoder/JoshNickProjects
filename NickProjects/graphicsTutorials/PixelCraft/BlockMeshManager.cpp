@@ -261,12 +261,26 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
             }
         }
 
+        Block& leftBlock = chunk.blocks[(blockHandle.blockOffset.x - 1)][blockHandle.blockOffset.y];
+        Block& rightBlock = chunk.blocks[(blockHandle.blockOffset.x + 1)][blockHandle.blockOffset.y];
+        Block& downBlock = chunk.blocks[(blockHandle.blockOffset.x)][(blockHandle.blockOffset.y - 1)];
+        Block& upBlock = chunk.blocks[(blockHandle.blockOffset.x)][(blockHandle.blockOffset.y + 1)];
 
-        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();  // Reset the block to a new instance (or nullptr if applicable)
 
+        if (leftBlock.getBlockID() == BlockID::DIRT || leftBlock.getBlockID() == BlockID::STONE || leftBlock.getBlockID() == BlockID::GRASS) {
+            leftBlock.
+        }
+        if (rightBlock.getBlockID() == BlockID::DIRT || rightBlock.getBlockID() == BlockID::STONE || rightBlock.getBlockID() == BlockID::GRASS) {
+            rightBlock.
+        }
+        if (downBlock.getBlockID() == BlockID::DIRT || downBlock.getBlockID() == BlockID::STONE || downBlock.getBlockID() == BlockID::GRASS) {
+            downBlock.
+        }
+        if (upBlock.getBlockID() == BlockID::DIRT || upBlock.getBlockID() == BlockID::STONE || upBlock.getBlockID() == BlockID::GRASS) {
+            upBlock.
+        }
 
-        //std::cout << "Block destroyed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
-
+        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block(); // Reset the broken block to Air
         chunk.m_isMeshDirty = true;
     }
 }
@@ -399,17 +413,20 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 
             if (worldY == height) {  // Surface block (grass)
                 Block surfaceBlock;
-                surfaceBlock.init(m_world, BlockID::GRASS, position);
+                int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::GRASS); // Get texture index for connected grass
+                surfaceBlock.init(m_world, BlockID::GRASS, position, grassTextures[textureIndex].uvRect());
                 chunk.blocks[x][y] = surfaceBlock;
             }
             else if (worldY < height && worldY > DIRT_BOTTOM) {  // Dirt blocks
                 Block dirtBlock;
-                dirtBlock.init(m_world, BlockID::DIRT, position);
+                int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::DIRT); // Get texture index for connected dirt
+                dirtBlock.init(m_world, BlockID::DIRT, position, dirtTextures[textureIndex].uvRect());
                 chunk.blocks[x][y] = dirtBlock;
             }
             else if (worldY <= DIRT_BOTTOM) {  // Stone blocks
                 Block stoneBlock;
-                stoneBlock.init(m_world, BlockID::STONE, position);
+                int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::STONE); // Get texture index for connected stone
+                stoneBlock.init(m_world, BlockID::STONE, position, stoneTextures[textureIndex].uvRect());
                 chunk.blocks[x][y] = stoneBlock;
             }
             else {  // Air blocks
@@ -455,6 +472,12 @@ bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
             Block& block = chunk.blocks[x][y];
             BlockID blockID = block.getBlockID(); 
             file.write(reinterpret_cast<char*>(&blockID), sizeof(BlockID));
+
+            if (blockID == BlockID::WATER) {
+                // Save water amount if the block is water
+                int waterAmount = block.getWaterAmount();
+                file.write(reinterpret_cast<char*>(&waterAmount), sizeof(int));
+            }
         }
     }
 
@@ -476,6 +499,16 @@ bool BlockManager::loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk) {
             BlockID blockID;
             file.read(reinterpret_cast<char*>(&blockID), sizeof(BlockID));
             chunk.blocks[x][y].init(m_world, blockID, glm::vec2(chunk.getWorldPosition().x + x, chunk.getWorldPosition().y + y));  // Reinitialize the block with the loaded BlockID
+
+            if (blockID == BlockID::WATER) {
+                // Load water amount if the block is water
+                int waterAmount;
+                file.read(reinterpret_cast<char*>(&waterAmount), sizeof(int));
+                chunk.blocks[x][y].setWaterAmount(waterAmount);
+
+                // Add to the water blocks vector
+                chunk.waterBlocks.push_back(glm::vec2(chunk.getWorldPosition().x + x, chunk.getWorldPosition().y + y));
+            }
         }
     }
 
@@ -564,4 +597,28 @@ std::vector<BlockHandle> BlockManager::getBlocksInRange(const glm::vec2& playerP
     }
 
     return blocksInRange;
+}
+
+
+int BlockManager::getConnectedTextureIndex(const Chunk& chunk, int x, int y, BlockID blockID) {
+    Block& leftBlock = chunk.blocks[x - 1][y];
+    Block& rightBlock = chunk.blocks[x + 1][y];
+    Block& downBlock = chunk.blocks[x][y - 1];
+    Block& upBlock = chunk.blocks[x][y + 1];
+
+    // Check for connection (1 means connected, 0 means disconnected)
+    bool leftConnected = (leftBlock.getBlockID() == blockID);
+    bool rightConnected = (rightBlock.getBlockID() == blockID);
+    bool downConnected = (downBlock.getBlockID() == blockID);
+    bool upConnected = (upBlock.getBlockID() == blockID);
+
+    // Use a 4-bit binary number to represent the connected state
+    int connectionMask = 0;
+    if (leftConnected)  connectionMask |= 1 << 0; // Bit 0 = Left
+    if (rightConnected) connectionMask |= 1 << 1; // Bit 1 = Right
+    if (downConnected)  connectionMask |= 1 << 2; // Bit 2 = Down
+    if (upConnected)    connectionMask |= 1 << 3; // Bit 3 = Up
+
+    // Return the texture index corresponding to the connection mask
+    return connectionMask;
 }

@@ -111,6 +111,8 @@ public:
 
     void unloadChunk(int x, int y);
 
+    int getConnectedTextureIndex(const Chunk& chunk, int x, int y, BlockID blockID);
+
     std::vector<BlockHandle> getBlocksInRange(const glm::vec2& playerPos, int range);
 
     std::vector<Chunk*> m_activeChunks;

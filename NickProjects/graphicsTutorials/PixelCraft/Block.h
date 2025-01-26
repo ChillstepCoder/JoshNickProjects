@@ -4,6 +4,7 @@
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLTexture.h>
 #include <fstream>
+#include <array>
 
 enum class BlockID {
     AIR = 0,
@@ -35,6 +36,10 @@ class BlockDefRepository {
 public:
     BlockDefRepository();
     ~BlockDefRepository();
+
+    std::array<Bengine::GLTexture, 16> dirtTextures;
+    std::array<Bengine::GLTexture, 16> stoneTextures;
+    std::array<Bengine::GLTexture, 16> grassTextures;
 
     static void initBlockDefs();
 
