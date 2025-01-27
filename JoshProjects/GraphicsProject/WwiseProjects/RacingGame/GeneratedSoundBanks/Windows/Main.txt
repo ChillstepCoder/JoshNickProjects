@@ -4,16 +4,19 @@ Event	ID	Name			Wwise Object Path	Notes
 	755225579	Play_Countdown_SFX_1			\Default Work Unit\Play_Countdown_SFX_1	
 	983973850	Play_Engine_Rev_SFX_1			\Default Work Unit\Play_Engine_Rev_SFX_1	
 	2146366539	Stop_Car_Tire_Skid_1			\Default Work Unit\Stop_Car_Tire_Skid_1	
+	2622523685	Play_Car_Collision			\Default Work Unit\Play_Car_Collision	
 	2960744889	Play_Car_Tire_Skid_1			\Default Work Unit\Play_Car_Tire_Skid_1	
 
 Game Parameter	ID	Name			Wwise Object Path	Notes
 	301156165	Tire_Grass_Volume			\Default Work Unit\Tire_Grass_Volume	
+	1951144523	Collision_Velocity			\Default Work Unit\Collision_Velocity	
 	2131215788	Tire_Skid_Pitch			\Default Work Unit\Tire_Skid_Pitch	
 	2736615605	Tire_Road_Volume			\Default Work Unit\Tire_Road_Volume	
 	2946140098	Engine_HighPass_Filter			\Default Work Unit\Engine_HighPass_Filter	
 	3142076734	Engine_Rev_Pitch			\Default Work Unit\Engine_Rev_Pitch	
 	3180290342	Tire_Dirt_Volume			\Default Work Unit\Tire_Dirt_Volume	
 	3332094968	Tire_Skid_Volume			\Default Work Unit\Tire_Skid_Volume	
+	3450640798	Collision_Mass			\Default Work Unit\Collision_Mass	
 	3478629116	Engine_Rev_Doppler_Effect			\Default Work Unit\Engine_Rev_Doppler_Effect	
 	3886434353	Engine_Idle_Volume			\Default Work Unit\Engine_Idle_Volume	
 	3966876546	Engine_Rev_Volume			\Default Work Unit\Engine_Rev_Volume	
@@ -21,9 +24,9 @@ Game Parameter	ID	Name			Wwise Object Path	Notes
 In Memory Audio	ID	Name	Audio source file		Wwise Object Path	Notes	Data Size
 	108366440	Countdown_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\77\{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_1		359376
 	536482941	Engine_Idle_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\6E\{6E418767-4F42-13E8-5BEE-C819302BE4BB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine_Idle_SFX_1		1355080
-	555365400	Car_Dirt_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\3A\{3AB132BA-C080-9A49-B963-C4B235824437}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Dirt_Skid_1		1308728
+	555365400	Car_Dirt_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0A\{0AA01B27-BC48-DA87-41D7-02D3FCFABE68}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Dirt_Skid_1		1308728
 	685517915	Countdown_SFX_2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0D\{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_2		359376
 	829908123	Engine_Rev_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\51\{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine_Rev_SFX_1		1355080
-	1030427408	Car_Tire_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\04\{0437DABC-4B9C-AB51-4F0D-29607855BB69}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Tire_Skid_1		875892
-	1069078306	Car_Grass_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\E0\{E0A3E2B6-58A9-E1E0-5086-BA7DAD1479A5}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Grass_Skid_1		734580
+	1030427408	Car_Tire_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\A4\{A4ACCE11-2EF3-E8DE-3FA0-504FF246F7AB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Tire_Skid_1		875892
+	1069078306	Car_Grass_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\D1\{D1925B4A-9795-51A5-E7D4-99281C03E004}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Grass_Skid_1		734580
 

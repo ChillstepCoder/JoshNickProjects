@@ -119,9 +119,8 @@ public:
 
   SplineTrack* getTrack() const { return m_track; }
 
-  AkGameObjectID getAudioId() const {
-    return static_cast<AkGameObjectID>(m_bodyId.index1);
-  }
+  AudioEngine* getAudioEngine() const { return m_audioEngine; }
+  AkGameObjectID getAudioId() const { return static_cast<AkGameObjectID>(m_bodyId.index1); }
 
   float getTotalRaceProgress() const;
 

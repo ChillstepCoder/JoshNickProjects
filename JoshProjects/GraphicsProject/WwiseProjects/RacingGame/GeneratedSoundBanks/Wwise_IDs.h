@@ -13,6 +13,7 @@ namespace AK
 {
     namespace EVENTS
     {
+        static const AkUniqueID PLAY_CAR_COLLISION = 2622523685U;
         static const AkUniqueID PLAY_CAR_TIRE_SKID_1 = 2960744889U;
         static const AkUniqueID PLAY_COUNTDOWN_SFX_1 = 755225579U;
         static const AkUniqueID PLAY_COUNTDOWN_SFX_2 = 755225576U;
@@ -23,6 +24,8 @@ namespace AK
 
     namespace GAME_PARAMETERS
     {
+        static const AkUniqueID COLLISION_MASS = 3450640798U;
+        static const AkUniqueID COLLISION_VELOCITY = 1951144523U;
         static const AkUniqueID DENSITY_FA_SSGRAIN = 2715217995U;
         static const AkUniqueID ENGINE_HIGHPASS_FILTER = 2946140098U;
         static const AkUniqueID ENGINE_IDLE_VOLUME = 3886434353U;

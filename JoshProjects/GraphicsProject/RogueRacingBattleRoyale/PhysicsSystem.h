@@ -10,9 +10,17 @@
 class Car;
 class PlaceableObject;
 class XPPickupObject;
+class AudioEngine;
 
 class PhysicsSystem {
 public:
+  struct CollisionInfo {
+    float speed;
+    float mass;
+    Car* carA;
+    Car* carB;
+  };
+
   PhysicsSystem();
   ~PhysicsSystem();
 
@@ -34,6 +42,9 @@ public:
     float density = 1.0f, float friction = 0.3f);
 
   void synchronizeTransforms();
+
+  // Setters
+  void setAudioEngine(AudioEngine* audioEngine) { m_audioEngine = audioEngine; }
 
   // Getters
   b2WorldId getWorld() const { return m_worldId; }
@@ -58,9 +69,13 @@ private:
   void* tryGetUserData(b2BodyId bodyId);
 
   void handleSensorEvents();
+  void handleCollisionEvents();
+
   static void* enqueueTask(b2TaskCallback* task, int32_t itemCount, int32_t minRange,
     void* taskContext, void* userContext);
   static void finishTask(void* taskPtr, void* userContext);
+
+  AudioEngine* m_audioEngine = nullptr;
 
 };
 

@@ -254,14 +254,14 @@
     <ClInclude Include="ScreenState.h">
       <Filter>Header Files\Managers</Filter>
     </ClInclude>
-    <ClInclude Include="GameplayScreen.h">
-      <Filter>Header Files\Gameplay</Filter>
-    </ClInclude>
     <ClInclude Include="AudioEngine.h">
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="RacingAudioDefs.h">
       <Filter>Header Files\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="GameplayScreen.h">
+      <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

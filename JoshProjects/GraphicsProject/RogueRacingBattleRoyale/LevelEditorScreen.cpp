@@ -1335,6 +1335,7 @@ void LevelEditorScreen::initTestMode() {
   // Initialize physics system
   m_physicsSystem = std::make_unique<PhysicsSystem>();
   m_physicsSystem->init(0.0f, 0.0f);
+  m_physicsSystem->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
 
   // Save object placement state before entering test mode
   m_savedObjectPlacementMode = m_objectPlacementMode;

@@ -1,4 +1,3 @@
-
 // AudioEngine.cpp
 
 #include "AudioEngine.h"
@@ -104,7 +103,13 @@ void AudioEngine::playTireSkidSound(float slipAmount) {
 }
 
 void AudioEngine::playCollisionSound(float impactForce) {
+  if (!m_audioEngine || !m_audioEngine->isInitialized()) return;
 
+  // Post the collision event
+  AK::SoundEngine::PostEvent(
+    AK::EVENTS::PLAY_CAR_COLLISION,
+    RacingAudio::GAME_OBJECT_IMPACTS
+  );
 }
 
 void AudioEngine::playBoostSound() {
@@ -153,6 +158,28 @@ void AudioEngine::playRaceFinishSound() {
 
 void AudioEngine::playCheckpointSound() {
 
+}
+
+void AudioEngine::handleCarCollision(const PhysicsSystem::CollisionInfo& collision) {
+  if (!m_audioEngine || !m_audioEngine->isInitialized()) return;
+
+  // Play collision sound on both cars
+  AkGameObjectID audioIdA = collision.carA->getAudioId();
+  AkGameObjectID audioIdB = collision.carB->getAudioId();
+
+  // Post collision event for both cars
+  AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISION, audioIdA);
+  AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISION, audioIdB);
+
+  // Set collision parameters for both cars
+  float scaledSpeed = collision.speed * 100.0f; // Scale as needed
+  float scaledMass = collision.mass * 10.0f;    // Scale as needed
+
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, scaledSpeed, audioIdA);
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, scaledMass, audioIdA);
+
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, scaledSpeed, audioIdB);
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, scaledMass, audioIdB);
 }
 
 

@@ -7,6 +7,12 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include "AudioEngine.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtx/vector_angle.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 PhysicsSystem::PhysicsSystem() : m_worldId(b2_nullWorldId) {
 }
@@ -40,10 +46,6 @@ void PhysicsSystem::update(float timeStep) {
     return;
   }
 
-  if (DEBUG_OUTPUT) {
-    std::cout << "Updating physics world ID: " << (unsigned)m_worldId.index1 << std::endl;
-  }
-
   // Physics step
   const float fixedTimeStep = 1.0f / 60.0f;
   const int subStepCount = static_cast<int>(std::ceil(timeStep / fixedTimeStep));
@@ -58,6 +60,7 @@ void PhysicsSystem::update(float timeStep) {
     }
 
     handleSensorEvents();
+    handleCollisionEvents();
     synchronizeTransforms();
   }
   catch (const std::exception& e) {
@@ -122,6 +125,11 @@ void PhysicsSystem::createPillShape(b2BodyId bodyId, float width, float height,
   if (!b2Body_IsValid(bodyId)) return;
 
   b2ShapeDef shapeDef = b2DefaultShapeDef();
+
+  if (collisionType != CollisionType::POWERUP) {
+    shapeDef.enableContactEvents = true;
+    shapeDef.enableHitEvents = true;
+  }
 
   switch (collisionType) {
   case CollisionType::HAZARD:
@@ -288,6 +296,7 @@ bool PhysicsSystem::isObjectBody(b2BodyId bodyId) const {
   return obj->getObjectType() != ObjectType::Default;
   
 }
+
 void PhysicsSystem::handleSensorEvents() {
   if (!b2World_IsValid(m_worldId)) return;
 
@@ -326,7 +335,7 @@ void PhysicsSystem::handleSensorEvents() {
     object->onCarCollision(car);
   }
 
-  // Handle end touch events - same validation
+  // Handle end touch events
   for (int i = 0; i < sensorEvents.endCount; ++i) {
     b2SensorEndTouchEvent* endTouch = sensorEvents.endEvents + i;
 
@@ -356,6 +365,61 @@ void PhysicsSystem::handleSensorEvents() {
     }
 
     object->onEndCollision(car);
+  }
+}
+
+void PhysicsSystem::handleCollisionEvents() {
+  if (!b2World_IsValid(m_worldId)) return;
+
+  b2ContactEvents contactEvents = b2World_GetContactEvents(m_worldId);
+  std::cout << "Contact events count: " << contactEvents.hitCount << std::endl;
+
+  // Handle car-to-car collisions
+  for (int i = 0; i < contactEvents.hitCount; ++i) {
+    b2ContactHitEvent* hit = contactEvents.hitEvents + i;
+
+    b2BodyId bodyA = b2Shape_GetBody(hit->shapeIdA);
+    b2BodyId bodyB = b2Shape_GetBody(hit->shapeIdB);
+
+    // Check if both bodies are cars
+    if (!isCarBody(bodyA) || !isCarBody(bodyB)) {
+      continue;
+    }
+
+    // Get the car instances
+    Car* carA = static_cast<Car*>(b2Body_GetUserData(bodyA));
+    Car* carB = static_cast<Car*>(b2Body_GetUserData(bodyB));
+
+    if (!carA || !carB) {
+      continue;
+    }
+
+    // Calculate collision velocity
+    b2Vec2 velA = b2Body_GetLinearVelocity(bodyA);
+    b2Vec2 velB = b2Body_GetLinearVelocity(bodyB);
+    b2Vec2 relativeVel = { velA.x - velB.x, velA.y - velB.y };
+    float collisionSpeed = glm::length(glm::vec2(relativeVel.x, relativeVel.y));
+
+    // Get masses
+    b2MassData massDataA = b2Body_GetMassData(bodyA);
+    b2MassData massDataB = b2Body_GetMassData(bodyB);
+    float avgMass = (massDataA.mass + massDataB.mass) * 0.5f;
+
+    // Notify audio engine if collision is significant
+    if (collisionSpeed > 1.0f && m_audioEngine) {
+      CollisionInfo info = {
+          collisionSpeed,
+          avgMass,
+          carA,
+          carB
+      };
+      m_audioEngine->handleCarCollision(info);
+
+      //if (DEBUG_OUTPUT) {
+        std::cout << "Car collision detected - Speed: " << collisionSpeed
+          << " Mass: " << avgMass << std::endl;
+      //}
+    }
   }
 }
 

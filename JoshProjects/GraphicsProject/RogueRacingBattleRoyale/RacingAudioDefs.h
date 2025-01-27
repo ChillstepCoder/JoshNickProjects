@@ -17,6 +17,9 @@ namespace RacingAudio {
   // RTPC IDs - direct use of the generated IDs
   static const AkRtpcID RTPC_ENGINE_IDLE_VOLUME = AK::GAME_PARAMETERS::ENGINE_IDLE_VOLUME;
   static const AkRtpcID RTPC_ENGINE_REV_VOLUME = AK::GAME_PARAMETERS::ENGINE_REV_VOLUME;
+
+  static const AkRtpcID RTPC_COLLISION_VELOCITY = AK::GAME_PARAMETERS::COLLISION_VELOCITY;
+  static const AkRtpcID RTPC_COLLISION_MASS = AK::GAME_PARAMETERS::COLLISION_MASS;
 }
 
 // Bank definitions

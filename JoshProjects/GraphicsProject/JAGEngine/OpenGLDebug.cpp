@@ -92,7 +92,7 @@ namespace JAGEngine {
 
     // Debug break crashes NSight
     if (!IsRunningUnderNsight()) {
-      __debugbreak();
+     // __debugbreak();
     }
   }
 

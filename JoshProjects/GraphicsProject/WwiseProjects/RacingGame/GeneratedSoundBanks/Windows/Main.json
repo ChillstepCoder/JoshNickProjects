@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
     "Language": "SFX",
-    "Hash": "{49BC917F-F245-6237-5B9D-31E2E5CC20ED}",
+    "Hash": "{941EFB4C-C80C-D582-4B48-78FB4C634383}",
     "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
     "ShortName": "Main",
     "Path": "Main.bnk",
@@ -37,7 +37,7 @@
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Car_Dirt_Skid_1.wav",
-      "CachePath": "3A/{3AB132BA-C080-9A49-B963-C4B235824437}.wem"
+      "CachePath": "0A/{0AA01B27-BC48-DA87-41D7-02D3FCFABE68}.wem"
      },
      {
       "Id": "685517915",
@@ -61,7 +61,7 @@
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Car_Tire_Skid_1.wav",
-      "CachePath": "04/{0437DABC-4B9C-AB51-4F0D-29607855BB69}.wem"
+      "CachePath": "A4/{A4ACCE11-2EF3-E8DE-3FA0-504FF246F7AB}.wem"
      },
      {
       "Id": "1069078306",
@@ -69,10 +69,18 @@
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Car_Grass_Skid_1.wav",
-      "CachePath": "E0/{E0A3E2B6-58A9-E1E0-5086-BA7DAD1479A5}.wem"
+      "CachePath": "D1/{D1925B4A-9795-51A5-E7D4-99281C03E004}.wem"
      }
     ],
     "Events": [
+     {
+      "Id": "2622523685",
+      "Name": "Play_Car_Collision",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Car_Collision",
+      "GUID": "{DEEA1078-1573-42AA-8F66-E33DF0201433}",
+      "MaxAttenuation": "500",
+      "DurationType": "Unknown"
+     },
      {
       "Id": "2960744889",
       "Name": "Play_Car_Tire_Skid_1",
@@ -165,6 +173,12 @@
       "GUID": "{88DC2B3F-06C9-4299-983C-C83B7DA981D4}"
      },
      {
+      "Id": "1951144523",
+      "Name": "Collision_Velocity",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Collision_Velocity",
+      "GUID": "{7B0DBD43-ED1C-4A34-9A7D-5537F92E4E52}"
+     },
+     {
       "Id": "2131215788",
       "Name": "Tire_Skid_Pitch",
       "ObjectPath": "\\Game Parameters\\Default Work Unit\\Tire_Skid_Pitch",
@@ -201,6 +215,12 @@
       "GUID": "{A008F52B-1849-4AE3-96AE-D369B0A61BED}"
      },
      {
+      "Id": "3450640798",
+      "Name": "Collision_Mass",
+      "ObjectPath": "\\Game Parameters\\Default Work Unit\\Collision_Mass",
+      "GUID": "{7E7C5B24-AB09-4CBE-8E53-18F95BD23A30}"
+     },
+     {
       "Id": "3478629116",
       "Name": "Engine_Rev_Doppler_Effect",
       "ObjectPath": "\\Game Parameters\\Default Work Unit\\Engine_Rev_Doppler_Effect",
@@ -221,6 +241,6 @@
     ]
    }
   ],
-  "FileHash": "{626ADBA0-A71A-E863-F450-398814CB65CF}"
+  "FileHash": "{B6C9213D-D0AF-CB98-A77E-B8A43B778218}"
  }
 }

@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "RacingAudioDefs.h"
 #include <array>
+#include "PhysicsSystem.h"
 
 class Car;
 
@@ -41,6 +42,9 @@ public:
   void playRaceStartSound();
   void playRaceFinishSound();
   void playCheckpointSound();
+
+  // AudioEngine.h
+  void handleCarCollision(const PhysicsSystem::CollisionInfo& collision);
 
   // Sound state control
   void setEngineRPM(float rpm);
