@@ -260,7 +260,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
                 }
             }
         }
-
+        /*
         Block& leftBlock = chunk.blocks[(blockHandle.blockOffset.x - 1)][blockHandle.blockOffset.y];
         Block& rightBlock = chunk.blocks[(blockHandle.blockOffset.x + 1)][blockHandle.blockOffset.y];
         Block& downBlock = chunk.blocks[(blockHandle.blockOffset.x)][(blockHandle.blockOffset.y - 1)];
@@ -279,7 +279,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
         if (upBlock.getBlockID() == BlockID::DIRT || upBlock.getBlockID() == BlockID::STONE || upBlock.getBlockID() == BlockID::GRASS) {
             upBlock.
         }
-
+        */
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block(); // Reset the broken block to Air
         chunk.m_isMeshDirty = true;
     }
@@ -413,20 +413,20 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 
             if (worldY == height) {  // Surface block (grass)
                 Block surfaceBlock;
-                int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::GRASS); // Get texture index for connected grass
-                surfaceBlock.init(m_world, BlockID::GRASS, position, grassTextures[textureIndex].uvRect());
+                //int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::GRASS); // Get texture index for connected grass
+                surfaceBlock.init(m_world, BlockID::GRASS, position);
                 chunk.blocks[x][y] = surfaceBlock;
             }
             else if (worldY < height && worldY > DIRT_BOTTOM) {  // Dirt blocks
                 Block dirtBlock;
-                int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::DIRT); // Get texture index for connected dirt
-                dirtBlock.init(m_world, BlockID::DIRT, position, dirtTextures[textureIndex].uvRect());
+                //int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::DIRT); // Get texture index for connected dirt
+                dirtBlock.init(m_world, BlockID::DIRT, position);
                 chunk.blocks[x][y] = dirtBlock;
             }
             else if (worldY <= DIRT_BOTTOM) {  // Stone blocks
                 Block stoneBlock;
-                int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::STONE); // Get texture index for connected stone
-                stoneBlock.init(m_world, BlockID::STONE, position, stoneTextures[textureIndex].uvRect());
+                //int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::STONE); // Get texture index for connected stone
+                stoneBlock.init(m_world, BlockID::STONE, position);
                 chunk.blocks[x][y] = stoneBlock;
             }
             else {  // Air blocks
@@ -599,7 +599,7 @@ std::vector<BlockHandle> BlockManager::getBlocksInRange(const glm::vec2& playerP
     return blocksInRange;
 }
 
-
+/*
 int BlockManager::getConnectedTextureIndex(const Chunk& chunk, int x, int y, BlockID blockID) {
     Block& leftBlock = chunk.blocks[x - 1][y];
     Block& rightBlock = chunk.blocks[x + 1][y];
@@ -622,3 +622,5 @@ int BlockManager::getConnectedTextureIndex(const Chunk& chunk, int x, int y, Blo
     // Return the texture index corresponding to the connection mask
     return connectionMask;
 }
+
+*/

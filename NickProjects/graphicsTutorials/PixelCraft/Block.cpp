@@ -11,11 +11,12 @@ BlockDef::~BlockDef() {
 }
 
 
-void BlockDef::init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLTexture texture, GLuint textureID) {
+void BlockDef::init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLTexture texture, GLuint textureID, bool isConnectedTexture) {
     m_uvRect = uvRect;
     m_color = color;
     m_texture = texture;
     m_textureID = textureID;
+    m_isConnectedTexture = isConnectedTexture;
 }
 
 
@@ -25,8 +26,6 @@ BlockDefRepository::BlockDefRepository() {
 BlockDefRepository::~BlockDefRepository() {
     //Empty
 }
-
-
 
 
 void BlockDefRepository::initBlockDefs() {
@@ -40,18 +39,23 @@ void BlockDefRepository::initBlockDefs() {
 
 
 
-    for (int i = 0; i < 16; ++i) {
-        dirtTextures[i] = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock" + std::to_string(i + 1) + ".png");
-        stoneTextures[i] = Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock" + std::to_string(i + 1) + ".png");
-        grassTextures[i] = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock" + std::to_string(i + 1) + ".png");
-    }
+    m_blockDefs[(int)BlockID::AIR].init(uvRect, Bengine::ColorRGBA8(0,0,0,0), Bengine::GLTexture(), 0, false);
+    m_blockDefs[(int)BlockID::GRASS].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Grass.png"), Bengine::ResourceManager::getTexture("Textures/Grass.png").id, true);
+    m_blockDefs[(int)BlockID::DIRT].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Dirt.png"), Bengine::ResourceManager::getTexture("Textures/Dirt.png").id, true);
+    m_blockDefs[(int)BlockID::STONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Stone.png"), Bengine::ResourceManager::getTexture("Textures/Stone.png").id, true);
+    m_blockDefs[(int)BlockID::DEEPSTONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/DeepStone.png"), Bengine::ResourceManager::getTexture("Textures/DeepStone.png").id, true);
+    m_blockDefs[(int)BlockID::DEEPERSTONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/DeeperStone.png"), Bengine::ResourceManager::getTexture("Textures/DeeperStone.png").id, true);
+    m_blockDefs[(int)BlockID::COPPER].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Copper.png"), Bengine::ResourceManager::getTexture("Textures/Copper.png").id, true);
+    m_blockDefs[(int)BlockID::IRON].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Iron.png"), Bengine::ResourceManager::getTexture("Textures/Iron.png").id, true);
+    m_blockDefs[(int)BlockID::GOLD].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Gold.png"), Bengine::ResourceManager::getTexture("Textures/Gold.png").id, true);
+    m_blockDefs[(int)BlockID::DIAMOND].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Diamond.png"), Bengine::ResourceManager::getTexture("Textures/Diamond.png").id, true);
+    m_blockDefs[(int)BlockID::COBALT].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Cobalt.png"), Bengine::ResourceManager::getTexture("Textures/Cobalt.png").id, true);
+    m_blockDefs[(int)BlockID::MYTHRIL].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Mythril.png"), Bengine::ResourceManager::getTexture("Textures/Mythril.png").id, true);
+    m_blockDefs[(int)BlockID::ADAMANTITE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Adamantite.png"), Bengine::ResourceManager::getTexture("Textures/Adamantite.png").id, true);
+    m_blockDefs[(int)BlockID::COSMILITE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Cosmilite.png"), Bengine::ResourceManager::getTexture("Textures/Cosmilite.png").id, true);
+    m_blockDefs[(int)BlockID::PRIMORDIAL].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Primordial.png"), Bengine::ResourceManager::getTexture("Textures/Primordial.png").id, true);
+    m_blockDefs[(int)BlockID::WATER].init(uvRect, waterColor, Bengine::ResourceManager::getTexture("Textures/waterBlock.png"), Bengine::ResourceManager::getTexture("Textures/waterBlock.png").id, false);
 
-
-    m_blockDefs[(int)BlockID::AIR].init(uvRect, Bengine::ColorRGBA8(0,0,0,0), Bengine::GLTexture(), 0);
-    m_blockDefs[(int)BlockID::GRASS].init(uvRect, textureColor, grassTextures[0], grassTextures[0].id);
-    m_blockDefs[(int)BlockID::DIRT].init(uvRect, textureColor, dirtTextures[0], dirtTextures[0].id);
-    m_blockDefs[(int)BlockID::STONE].init(uvRect, textureColor, stoneTextures[0], stoneTextures[0].id);
-    m_blockDefs[(int)BlockID::WATER].init(uvRect, waterColor, Bengine::ResourceManager::getTexture("Textures/waterBlock.png"), Bengine::ResourceManager::getTexture("Textures/waterBlock.png").id);
 
     assert(m_blockDefs[(int)BlockID::STONE].m_color == textureColor);
 
