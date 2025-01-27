@@ -2,6 +2,7 @@
 #include <Bengine/ResourceManager.h>
 #include <iostream>
 
+
 BlockDef::BlockDef() {
     //Empty
 }
@@ -27,6 +28,7 @@ BlockDefRepository::~BlockDefRepository() {
 
 
 
+
 void BlockDefRepository::initBlockDefs() {
     m_blockDefs.resize((int)BlockID::COUNT);
 
@@ -38,11 +40,17 @@ void BlockDefRepository::initBlockDefs() {
 
 
 
+    for (int i = 0; i < 16; ++i) {
+        dirtTextures[i] = Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock" + std::to_string(i + 1) + ".png");
+        stoneTextures[i] = Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock" + std::to_string(i + 1) + ".png");
+        grassTextures[i] = Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock" + std::to_string(i + 1) + ".png");
+    }
+
 
     m_blockDefs[(int)BlockID::AIR].init(uvRect, Bengine::ColorRGBA8(0,0,0,0), Bengine::GLTexture(), 0);
-    m_blockDefs[(int)BlockID::GRASS].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png"), Bengine::ResourceManager::getTexture("Textures/connectedGrassBlock.png").id);
-    m_blockDefs[(int)BlockID::DIRT].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png"), Bengine::ResourceManager::getTexture("Textures/connectedDirtBlock.png").id);
-    m_blockDefs[(int)BlockID::STONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png"), Bengine::ResourceManager::getTexture("Textures/connectedStoneBlock.png").id);
+    m_blockDefs[(int)BlockID::GRASS].init(uvRect, textureColor, grassTextures[0], grassTextures[0].id);
+    m_blockDefs[(int)BlockID::DIRT].init(uvRect, textureColor, dirtTextures[0], dirtTextures[0].id);
+    m_blockDefs[(int)BlockID::STONE].init(uvRect, textureColor, stoneTextures[0], stoneTextures[0].id);
     m_blockDefs[(int)BlockID::WATER].init(uvRect, waterColor, Bengine::ResourceManager::getTexture("Textures/waterBlock.png"), Bengine::ResourceManager::getTexture("Textures/waterBlock.png").id);
 
     assert(m_blockDefs[(int)BlockID::STONE].m_color == textureColor);
