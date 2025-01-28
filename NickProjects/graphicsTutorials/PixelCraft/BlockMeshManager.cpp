@@ -24,6 +24,7 @@ void Chunk::buildChunkMesh() {
             if (!block.isEmpty()) {
                 BlockDefRepository repository;
                 BlockID id = block.getBlockID();
+                BlockDef blockDef = repository.getDef(id);
 
                 if (id == BlockID::WATER) {
 
@@ -41,13 +42,18 @@ void Chunk::buildChunkMesh() {
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                     m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
                 } else {
+                    float pixelWidth = 0.00694f;
+                    float pixelHeight = 0.00740f;
 
                     glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
+                    glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(2, 13), TILE_ATLAS_DIMS_CELLS);
 
-                    glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
+                    glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight);
+
+
                     GLuint textureID = BlockDefRepository::getTextureID(id);
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
-                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+                    m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, color, 0.0f);
                 }
 
                 //BlockRenderer::renderBlock(m_spriteBatch, repository.getDef(id),glm::vec2(x,y));

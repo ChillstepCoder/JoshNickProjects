@@ -3,6 +3,7 @@
 #include <iostream>
 
 
+
 BlockDef::BlockDef() {
     //Empty
 }
@@ -18,6 +19,17 @@ void BlockDef::init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLText
     m_textureID = textureID;
     m_isConnectedTexture = isConnectedTexture;
 }
+
+glm::vec4 BlockDef::getSubUVRect(glm::ivec2 cellPos, glm::ivec2 dimsCells) {
+    float uMin = float(cellPos.x) / dimsCells.x;  // Left edge of the tile
+    float vMin = float(cellPos.y / dimsCells.y);  // Bottom edge of the tile
+
+    float width = 1.0f / dimsCells.x;
+    float height = 1.0f / dimsCells.y;
+
+    return glm::vec4(uMin, vMin, width, height);  // UV Rect: {uMin, vMin, width, height}
+}
+
 
 
 BlockDefRepository::BlockDefRepository() {

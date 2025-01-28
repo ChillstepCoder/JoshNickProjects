@@ -5,6 +5,8 @@
 #include <Bengine/GLTexture.h>
 #include <fstream>
 
+const glm::ivec2 TILE_ATLAS_DIMS_CELLS = glm::ivec2(16, 15);
+
 enum class BlockID {
     AIR = 0,
     GRASS = 1,
@@ -28,6 +30,7 @@ enum class BlockID {
 struct SubTexture {
     SubTexture(unsigned int textureID, glm::vec4 uvRect) : m_textureID(textureID), m_uvRect(uvRect) {}
 
+
     unsigned int m_textureID;   
     glm::vec4 m_uvRect;
 };
@@ -39,6 +42,7 @@ public:
 
     void init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLTexture texture, GLuint m_textureID, bool isConnectedTexture);
 
+    glm::vec4 getSubUVRect(glm::ivec2 cellPos, glm::ivec2 dimsCells);
 
     glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
     Bengine::ColorRGBA8 m_color;
