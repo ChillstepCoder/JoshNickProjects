@@ -2,6 +2,7 @@
 
 #include <Bengine/IMainGame.h>
 #include "GameplayScreen.h"
+#include "MainMenuScreen.h"
 #include <Box2D/box2d.h>
 
 class App : public Bengine::IMainGame {
@@ -17,4 +18,5 @@ public:
     virtual void onExit() override;
 private:
     std::unique_ptr<GameplayScreen> m_gameplayScreen = nullptr;
+    std::unique_ptr<MainMenuScreen> m_mainMenuScreen = nullptr;
 };

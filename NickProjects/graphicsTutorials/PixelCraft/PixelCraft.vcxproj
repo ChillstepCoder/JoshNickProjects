@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="Background.cpp" />
     <ClCompile Include="Block.cpp" />
     <ClCompile Include="BlockMeshManager.cpp">
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ProgramDatabase</DebugInformationFormat>
@@ -153,15 +154,18 @@
     <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Player.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
+    <ClInclude Include="Background.h" />
     <ClInclude Include="Block.h" />
     <ClInclude Include="BlockMeshManager.h" />
     <ClInclude Include="CellularAutomataManager.h" />
     <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="GameplayScreen.h" />
+    <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Profiler.h" />
     <ClInclude Include="Timer.h" />

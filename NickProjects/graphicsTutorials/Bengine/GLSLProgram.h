@@ -19,6 +19,13 @@ namespace Bengine {
 
         GLint getUniformLocation(const std::string& uniformName);
 
+        void cleanup() {
+            if (m_programID != 0) {
+                glDeleteProgram(m_programID);
+                m_programID = 0;
+            }
+        }
+
         void use();
         void unuse();
     private:

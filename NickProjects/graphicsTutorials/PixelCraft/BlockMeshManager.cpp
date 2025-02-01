@@ -46,7 +46,7 @@ void Chunk::buildChunkMesh() {
                     float pixelHeight = 0.00740f;
 
                     glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
-                    glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(2, 13), TILE_ATLAS_DIMS_CELLS);
+                    glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(3, 3), TILE_ATLAS_DIMS_CELLS);
 
                     glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight);
 
