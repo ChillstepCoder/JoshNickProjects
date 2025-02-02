@@ -64,6 +64,7 @@ private:
     Bengine::GLTexture m_texture;
     Bengine::Window* m_window;
     std::unique_ptr<Bengine::SpriteFont> m_spriteFont; ///< For font rendering
+    int m_screenIndex = 1;
 
     Player m_player;
     b2WorldId m_world = b2_nullWorldId;

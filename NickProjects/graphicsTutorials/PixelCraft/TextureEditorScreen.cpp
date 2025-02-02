@@ -1,4 +1,4 @@
-#include "MainMenuScreen.h"
+#include "TextureEditorScreen.h"
 #include <iostream>
 #include <SDL/SDL.h>
 #include <Bengine/IMainGame.h>
@@ -6,32 +6,31 @@
 #include "Bengine/ImGuiManager.h"
 
 
-MainMenuScreen::MainMenuScreen(Bengine::Window* window) : m_window(window) {
+TextureEditorScreen::TextureEditorScreen(Bengine::Window* window) : m_window(window) {
 
 }
-MainMenuScreen::~MainMenuScreen() {
+TextureEditorScreen::~TextureEditorScreen() {
 
 }
 
-int MainMenuScreen::getNextScreenIndex() const {
+int TextureEditorScreen::getNextScreenIndex() const {
     return m_screenIndex + 1;
 }
 
-int MainMenuScreen::getPreviousScreenIndex() const {
+int TextureEditorScreen::getPreviousScreenIndex() const {
     return m_screenIndex - 1;
 }
 
-void MainMenuScreen::build() {
+void TextureEditorScreen::build() {
 
 }
 
-void MainMenuScreen::destroy() {
+void TextureEditorScreen::destroy() {
 
 }
 
-void MainMenuScreen::onEntry() {
+void TextureEditorScreen::onEntry() {
     std::cout << "OnEntry\n";
-    m_screenIndex = 0;
 
     m_spriteBatch.init();
 
@@ -50,18 +49,18 @@ void MainMenuScreen::onEntry() {
 
 }
 
-void MainMenuScreen::onExit() {
+void TextureEditorScreen::onExit() {
 
 
 
 }
 
-void MainMenuScreen::update() {
+void TextureEditorScreen::update() {
     std::cout << "Update\n";
     checkInput();
 }
 
-void MainMenuScreen::draw() {
+void TextureEditorScreen::draw() {
 
     if (m_screenIndex != 0) {
         onExit();
@@ -90,7 +89,7 @@ void MainMenuScreen::draw() {
 
 }
 
-void MainMenuScreen::checkInput() {
+void TextureEditorScreen::checkInput() {
     SDL_Event evnt;
     while (SDL_PollEvent(&evnt)) {
         Bengine::ImGuiManager::processEvent(evnt);
@@ -98,7 +97,7 @@ void MainMenuScreen::checkInput() {
     }
 }
 
-void MainMenuScreen::drawBackground() {
+void TextureEditorScreen::drawBackground() {
     m_spriteBatch.begin();
 
 
@@ -109,27 +108,33 @@ void MainMenuScreen::drawBackground() {
 }
 
 
-void MainMenuScreen::drawImgui() {
-    ImGui::Begin("Main Menu");
+void TextureEditorScreen::drawImgui() {
+    ImGui::Begin("Texture Editor");
 
-    int play = 0;
-    if (ImGui::Button("Play"))
-        play++;
+    static int edit = 0;
+    if (ImGui::Button("Edit Textures"))
+        edit++;
 
-    if (play & 1)
+    if (edit & 1)
     {
-
-        m_game->getCurrentScreen()->setState(Bengine::ScreenState::CHANGE_NEXT);
-
+        ImGui::SameLine();
+        ImGui::Text("Editing!!!!");
     }
-    int texture = 0;
-    if (ImGui::Button("Texture Editor"))
+    static int texture = 0;
+    if (ImGui::Button("Texture stuff"))
         texture++;
     if (texture & 1)
     {
+        ImGui::SameLine();
+        ImGui::Text("TEXTURINGGGGG!!!");
+    }
+    int menu = 0;
+    if (ImGui::Button("Return to Menu"))
+        menu++;
+    if (menu & 1)
+    {
         m_screenIndex = 1;
-        m_game->getCurrentScreen()->setState(Bengine::ScreenState::CHANGE_NEXT);
-
+        m_game->getCurrentScreen()->setState(Bengine::ScreenState::CHANGE_PREVIOUS);
     }
 
     ImGui::End();

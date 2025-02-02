@@ -13,10 +13,10 @@
 #include "ImGui/backends/imgui_impl_sdl2.h"
 #include "ImGui/backends/imgui_impl_opengl3.h"
 
-class MainMenuScreen : public Bengine::IGameScreen {
+class TextureEditorScreen : public Bengine::IGameScreen {
 public:
-    MainMenuScreen(Bengine::Window* window);
-    ~MainMenuScreen();
+    TextureEditorScreen(Bengine::Window* window);
+    ~TextureEditorScreen();
 
     virtual int getNextScreenIndex() const override;
 
@@ -48,7 +48,7 @@ private:
     Bengine::GLSLProgram m_textureProgram;
     GLuint m_background;
     Bengine::Window* m_window;
-    
-    int m_screenIndex = 0;
+
+    int m_screenIndex = 2;
 };
 

@@ -118,6 +118,40 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         // Check if the mouse position is over a block and break it
         m_blockManager->placeBlockAtPosition(mouseWorldPos, playerPos);
     }
+
+    if (inputManager.isKeyPressed(SDLK_ESCAPE)) {
+        ImGui::Begin("Options");
+
+        ImGui::NewFrame();
+
+        static int volume = 0;
+        if (ImGui::Button("Volume"))
+            volume++;
+
+        if (volume & 1)
+        {
+            ImGui::SameLine();
+            ImGui::Text("volume things happening!!!!");
+        }
+        static int graphics = 0;
+        if (ImGui::Button("Graphics"))
+            graphics++;
+        if (graphics & 1)
+        {
+            ImGui::SameLine();
+            ImGui::Text("graphics have been changed. JK LOL!");
+        }
+        int menu = 0;
+        if (ImGui::Button("Return to Menu"))
+            menu++;
+        if (menu & 1)
+        {
+            setScreenIndex(0);
+        }
+
+        ImGui::End();
+    }
+
 }
 
 

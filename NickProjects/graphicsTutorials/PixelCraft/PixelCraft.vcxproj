@@ -156,6 +156,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="TextureEditorScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Profiler.h" />
+    <ClInclude Include="TextureEditorScreen.h" />
     <ClInclude Include="Timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
