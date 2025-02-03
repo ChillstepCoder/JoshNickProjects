@@ -4,15 +4,35 @@
 #include <Bengine/SpriteBatch.h>
 #include <Bengine/GLTexture.h>
 #include <fstream>
-#include <array>
+
+const glm::ivec2 TILE_ATLAS_DIMS_CELLS = glm::ivec2(16, 15);
 
 enum class BlockID {
     AIR = 0,
     GRASS = 1,
     DIRT = 2,
     STONE = 3,
-    WATER = 4,
-    COUNT = 5
+    DEEPSTONE = 4,
+    DEEPERSTONE = 5,
+    COPPER = 6,
+    IRON = 7,
+    GOLD = 8,
+    DIAMOND = 9,
+    COBALT = 10,
+    MYTHRIL = 11,
+    ADAMANTITE = 12,
+    COSMILITE = 13,
+    PRIMORDIAL = 14,
+    WATER = 15,
+    COUNT = 16
+};
+
+struct SubTexture {
+    SubTexture(unsigned int textureID, glm::vec4 uvRect) : m_textureID(textureID), m_uvRect(uvRect) {}
+
+
+    unsigned int m_textureID;   
+    glm::vec4 m_uvRect;
 };
 
 class BlockDef {
@@ -20,11 +40,13 @@ public:
     BlockDef();
     ~BlockDef();
 
-    void init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLTexture texture, GLuint m_textureID);
+    void init(glm::vec4 uvRect, Bengine::ColorRGBA8 color, Bengine::GLTexture texture, GLuint m_textureID, bool isConnectedTexture);
 
+    glm::vec4 getSubUVRect(glm::ivec2 cellPos, glm::ivec2 dimsCells);
 
     glm::vec4 m_uvRect = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
     Bengine::ColorRGBA8 m_color;
+    bool m_isConnectedTexture;
     Bengine::GLTexture m_texture;
     GLuint m_textureID;
 private:
@@ -36,10 +58,6 @@ class BlockDefRepository {
 public:
     BlockDefRepository();
     ~BlockDefRepository();
-
-    std::array<Bengine::GLTexture, 16> dirtTextures;
-    std::array<Bengine::GLTexture, 16> stoneTextures;
-    std::array<Bengine::GLTexture, 16> grassTextures;
 
     static void initBlockDefs();
 

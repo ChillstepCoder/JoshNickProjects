@@ -34,7 +34,11 @@ public:
 
     float getJumpForce() const { return m_jumpForce; }
 
+    int getScreenIndex() const { return m_screenIndex; }
+
     void setJumpForce(float jumpForce) { m_jumpForce = jumpForce; }
+
+    void setScreenIndex(int screenIndex) { m_screenIndex = screenIndex; }
 
 private:
     glm::vec2 m_position;
@@ -46,6 +50,8 @@ private:
     float m_horizontalSpeed = 0.0f;
     float m_jumpForce = 0.45f;
     float m_gravity = -0.015f;
+
+    int m_screenIndex = 1;
 
     Bengine::ColorRGBA8 m_color;
     Bengine::GLTexture m_texturePlayerRight;

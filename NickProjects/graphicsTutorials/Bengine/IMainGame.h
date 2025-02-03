@@ -31,6 +31,10 @@ namespace Bengine {
 
         void onSDLEvent(SDL_Event& evnt);
 
+        IGameScreen* getCurrentScreen() {
+            return m_currentScreen;
+        }
+
         const float getFps() const {
             return m_fps;
         }

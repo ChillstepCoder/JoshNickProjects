@@ -50,6 +50,10 @@ namespace Bengine {
             m_currentState = ScreenState::RUNNING;
         }
 
+        void setState(ScreenState newState) {
+            m_currentState = newState;
+        }
+
         ScreenState getState() const { return m_currentState; }
 
         void setParentGame(IMainGame* game) { m_game = game; }
