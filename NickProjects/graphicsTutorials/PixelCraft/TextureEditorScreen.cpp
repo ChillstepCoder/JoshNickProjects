@@ -4,7 +4,8 @@
 #include <Bengine/IMainGame.h>
 #include <Bengine/ScreenList.h>
 #include "Bengine/ImGuiManager.h"
-
+#include <Bengine/ResourceManager.h>
+#include "Block.h"
 
 TextureEditorScreen::TextureEditorScreen(Bengine::Window* window) : m_window(window) {
 
@@ -22,7 +23,13 @@ int TextureEditorScreen::getPreviousScreenIndex() const {
 }
 
 void TextureEditorScreen::build() {
-
+    // Shader.init
+    // Compile our color shader
+    m_textureProgram.compileShaders("Shaders/textureShadingVert.txt", "Shaders/textureShadingFrag.txt");
+    m_textureProgram.addAttribute("vertexPosition");
+    m_textureProgram.addAttribute("vertexColor");
+    m_textureProgram.addAttribute("vertexUV");
+    m_textureProgram.linkShaders();
 }
 
 void TextureEditorScreen::destroy() {
@@ -33,16 +40,6 @@ void TextureEditorScreen::onEntry() {
     std::cout << "OnEntry\n";
 
     m_spriteBatch.init();
-
-    Bengine::ImGuiManager::init(m_window);
-
-    // Shader.init
-    // Compile our color shader
-    m_textureProgram.compileShaders("Shaders/textureShadingVert.txt", "Shaders/textureShadingFrag.txt");
-    m_textureProgram.addAttribute("vertexPosition");
-    m_textureProgram.addAttribute("vertexColor");
-    m_textureProgram.addAttribute("vertexUV");
-    m_textureProgram.linkShaders();
 
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
     m_camera.setScale(20.0f); // 20.0f
@@ -109,34 +106,49 @@ void TextureEditorScreen::drawBackground() {
 
 
 void TextureEditorScreen::drawImgui() {
+    ImGui::SetNextWindowPos(ImVec2(520, 510), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
+
     ImGui::Begin("Texture Editor");
+    GLuint textureID = Bengine::ResourceManager::getTexture("Textures/Stone.png").id;
+    BlockDefRepository repository;
+    BlockID id = BlockID::STONE;
 
-    static int edit = 0;
-    if (ImGui::Button("Edit Textures"))
-        edit++;
+    ImVec2 display_min = ImVec2(0.0f, 0.0f);
+    ImVec2 display_size = ImVec2(450.0f, 450.0f);
+    ImVec2 texture_size = ImVec2(288.0f, 270.0f);
 
-    if (edit & 1)
-    {
-        ImGui::SameLine();
-        ImGui::Text("Editing!!!!");
+    ImVec2 uv0 = ImVec2(display_min.x / texture_size.x, display_min.y / texture_size.y);
+
+    ImVec2 uv1 = ImVec2((display_min.x + display_size.x) / texture_size.x, (display_min.y + display_size.y) / texture_size.y);
+
+    ImGui::Text("uv0 = (%f, %f)", uv0.x, uv0.y);
+    ImGui::Text("uv1 = (%f, %f)", uv1.x, uv1.y);
+
+    //glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(3, 3), TILE_ATLAS_DIMS_CELLS);
+
+    //glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight);
+
+
+    if (ImGui::Button("Previous")) {
+
     }
-    static int texture = 0;
-    if (ImGui::Button("Texture stuff"))
-        texture++;
-    if (texture & 1)
-    {
-        ImGui::SameLine();
-        ImGui::Text("TEXTURINGGGGG!!!");
+    ImGui::SameLine();
+    if (ImGui::Button("Next")) {
+
     }
-    int menu = 0;
-    if (ImGui::Button("Return to Menu"))
-        menu++;
-    if (menu & 1)
-    {
+    if (ImGui::Button("Return to Menu")) {
         m_screenIndex = 1;
-        m_game->getCurrentScreen()->setState(Bengine::ScreenState::CHANGE_PREVIOUS);
+        setState(Bengine::ScreenState::CHANGE_PREVIOUS);
     }
 
     ImGui::End();
 
+    ImGui::SetNextWindowPos(ImVec2(520, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Texture", nullptr, ImGuiWindowFlags_NoCollapse);
+
+    ImGui::Image((ImTextureID)std::uintptr_t(textureID), ImVec2(display_size.x, display_size.y), uv0, uv1);
+
+    ImGui::End();
 }

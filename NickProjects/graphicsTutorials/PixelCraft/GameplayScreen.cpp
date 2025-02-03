@@ -52,9 +52,6 @@ void GameplayScreen::onEntry() {
 
     m_blockManager->initializeChunks(playerPos);
 
-    // Init Imgui
-    Bengine::ImGuiManager::init(m_window);
-
     DebugDraw::getInstance().init();
 
     DebugDraw::getInstance().setAlpha(m_debugAlpha);
