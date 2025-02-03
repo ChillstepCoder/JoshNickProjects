@@ -2472,7 +2472,7 @@ void LevelEditorScreen::updateTestMode() {
         m_showLevelUpUI = true;
         props.level += 1;
         props.totalXP -= props.xpLevelUpAmount;
-        props.xpLevelUpAmount = round(props.xpLevelUpAmount * 1.2f);
+        props.xpLevelUpAmount = round(props.xpLevelUpAmount * 1.1f);
         m_testCars[0]->setProperties(props);
         return; // Exit early to prevent further updates this frame
       }
@@ -2870,71 +2870,65 @@ const char* LevelEditorScreen::getStatName(StatType type) {
 
 void LevelEditorScreen::applyUpgrade(const StatUpgrade& upgrade) {
   if (!m_testCars.empty()) {
-    auto props = m_testCars[0]->getProperties();
-
+    auto& props = m_testCars[0]->getProperties();  // Get reference
     if (upgrade.isSpecial) {
-      // Special upgrades will be applied when crossing the finish line
+      // Just increase the level - bonuses will be applied on next lap completion
       switch (upgrade.type) {
       case StatType::TopSpeed:
-        props.specialStats.topSpeedBonus += 0.01f;
+        props.specialStats.topSpeed.level++;
         break;
       case StatType::Acceleration:
-        props.specialStats.accelerationBonus += 0.01f;
+        props.specialStats.acceleration.level++;
         break;
       case StatType::WheelGrip:
-        props.specialStats.wheelGripBonus += 0.01f;
+        props.specialStats.wheelGrip.level++;
         break;
       case StatType::Handling:
-        props.specialStats.handlingBonus += 0.01f;
+        props.specialStats.handling.level++;
         break;
       case StatType::Booster:
-        props.specialStats.boosterBonus += 0.01f;
+        props.specialStats.booster.level++;
         break;
       case StatType::SurfaceResistance:
-        props.specialStats.surfaceResistanceBonus += 0.01f;
+        props.specialStats.surfaceResistance.level++;
         break;
       case StatType::Braking:
-        props.specialStats.brakingBonus += 0.01f;
+        props.specialStats.braking.level++;
         break;
       }
     }
     else {
-      // Regular level ups are applied immediately
+      // Regular stat level up - apply the multiplier immediately to just this stat
       switch (upgrade.type) {
       case StatType::TopSpeed:
         props.statLevels.topSpeed++;
+        props.maxSpeed *= 1.1f;
         break;
       case StatType::Acceleration:
         props.statLevels.acceleration++;
-        break;
-      case StatType::Weight:
-        props.statLevels.weight++;
+        props.acceleration *= 1.1f;
         break;
       case StatType::WheelGrip:
         props.statLevels.wheelGrip++;
+        props.wheelGrip *= 1.1f;
         break;
       case StatType::Handling:
         props.statLevels.handling++;
+        props.turnSpeed *= 1.1f;
         break;
       case StatType::Booster:
         props.statLevels.booster++;
+        props.boosterMultiplier *= 1.1f;
         break;
       case StatType::SurfaceResistance:
         props.statLevels.surfaceResistance++;
-        break;
-      case StatType::DamageResistance:
-        props.statLevels.damageResistance++;
-        break;
-      case StatType::XPGain:
-        props.statLevels.xpGain++;
+        props.surfaceDragSensitivity *= 0.9f;
         break;
       case StatType::Braking:
         props.statLevels.braking++;
+        props.brakingForce *= 1.1f;
         break;
       }
     }
-
-    m_testCars[0]->setProperties(props);
-    m_testCars[0]->updateStatsFromLevels();
   }
 }

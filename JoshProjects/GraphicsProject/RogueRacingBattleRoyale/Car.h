@@ -21,6 +21,14 @@ class Car {
 public:
 
   struct CarProperties {
+    int highestLapCompleted = 0;
+
+    struct LapBonus {
+      float value = 0.0f;      // Current bonus value
+      int level = 0;           // Level of this bonus
+      bool isDiminishing = false; // Whether this approaches 0 or not
+    };
+
     // Base stat levels
     struct StatLevels {
       int topSpeed = 1;
@@ -37,15 +45,15 @@ public:
 
     // Per-lap bonuses and special stats
     struct SpecialStats {
-      float topSpeedBonus = 0.0f;
-      float accelerationBonus = 0.0f;
-      float wheelGripBonus = 0.0f;
-      float handlingBonus = 0.0f;
-      float boosterBonus = 0.0f;
-      float surfaceResistanceBonus = 0.0f;
-      float damageResistanceBonus = 0.0f;
-      float xpGainBonus = 0.0f;
-      float brakingBonus = 0.0f;
+      LapBonus topSpeed;
+      LapBonus acceleration;
+      LapBonus wheelGrip;
+      LapBonus handling;
+      LapBonus booster;
+      LapBonus surfaceResistance;
+      LapBonus damageResistance;
+      LapBonus xpGain;
+      LapBonus braking;
     };
 
     // Movement properties
@@ -117,7 +125,6 @@ public:
   ~Car() = default;
 
   void update(const InputState& input);
-  void updateStatsFromLevels();
   void updateStartLineCrossing(const SplineTrack* track);
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
 
@@ -168,6 +175,7 @@ private:
   ObjectManager* m_objectManager = nullptr;
 
   b2Vec2 getForwardVector() const;
+  void applyLapBonuses();
   float calculateLapProgress(const SplineTrack* track);
   void updateMovement(const InputState& input);
   void updateBoostEffects();

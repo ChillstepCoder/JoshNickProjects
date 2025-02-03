@@ -18,7 +18,11 @@ namespace {
 
 Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
   initializeWheelColliders();
+
+  // Create and initialize car properties
   CarProperties props;
+
+  // Initialize basic properties
   props.totalXP = 0;
   props.xpLevelUpAmount = 10;
   props.level = 1;
@@ -26,9 +30,17 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
   props.currentLap = 0;
   props.lastStartLineSide = false;
   props.lastPosition = glm::vec2(0.0f);
+  props.highestLapCompleted = 0;  // Initialize highest lap
+
+  // Initialize all stat levels to 1
+  props.statLevels = CarProperties::StatLevels();
+
+  // Initialize special stats (lap bonuses) to 0
+  props.specialStats = CarProperties::SpecialStats();
+  // No need to explicitly set levels to 0 as the LapBonus constructor handles this
+
   m_properties = props;
 
-  // Debug output for car physics setup
   if (DEBUG_OUTPUT) {
     std::cout << "Creating car physics body..." << std::endl;
     if (b2Body_IsValid(bodyId)) {
@@ -36,9 +48,6 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
     }
   }
 
-  if (DEBUG_OUTPUT) {
-    std::cout << "SETTING CAR USER DATA FOR " << (unsigned)bodyId.index1 << std::endl;
-  }
   b2Body_SetUserData(m_bodyId, static_cast<void*>(this));
 }
 
@@ -140,47 +149,9 @@ void Car::update(const InputState& input) {
 
   // Update lap progress
   if (m_track) {
-    m_properties.lapProgress = calculateLapProgress(m_track);
+    m_properties.lapProgress = calculateLapProgress(m_track);  // Update progress percentage
   }
 
-}
-
-void Car::updateStatsFromLevels() {
-  // Base values
-  const float BASE_SPEED = 1000.0f;
-  const float BASE_ACCELERATION = 10000.0f;
-  const float BASE_WHEEL_GRIP = 0.49f;
-  const float BASE_TURN_SPEED = 30.0f;
-  const float BASE_BOOST_MULTIPLIER = 1.0f;
-  const float BASE_SURFACE_SENSITIVITY = 0.8f;
-  const float BASE_BRAKING = 0.1f;
-
-  // Level multipliers (each level adds 10% to base)
-  float speedMult = 1.0f + (m_properties.statLevels.topSpeed - 1) * 0.1f;
-  float accelMult = 1.0f + (m_properties.statLevels.acceleration - 1) * 0.1f;
-  float gripMult = 1.0f + (m_properties.statLevels.wheelGrip - 1) * 0.1f;
-  float handleMult = 1.0f + (m_properties.statLevels.handling - 1) * 0.1f;
-  float boostMult = 1.0f + (m_properties.statLevels.booster - 1) * 0.1f;
-  float surfaceMult = 1.0f - (m_properties.statLevels.surfaceResistance - 1) * 0.1f;
-  float brakeMult = 1.0f + (m_properties.statLevels.braking - 1) * 0.1f;
-
-  // Add bonuses from special stats
-  speedMult += m_properties.specialStats.topSpeedBonus;
-  accelMult += m_properties.specialStats.accelerationBonus;
-  gripMult += m_properties.specialStats.wheelGripBonus;
-  handleMult += m_properties.specialStats.handlingBonus;
-  boostMult += m_properties.specialStats.boosterBonus;
-  surfaceMult -= m_properties.specialStats.surfaceResistanceBonus;
-  brakeMult += m_properties.specialStats.brakingBonus;
-
-  // Apply multipliers to actual car properties
-  m_properties.maxSpeed = BASE_SPEED * speedMult;
-  m_properties.acceleration = BASE_ACCELERATION * accelMult;
-  m_properties.wheelGrip = BASE_WHEEL_GRIP * gripMult;
-  m_properties.turnSpeed = BASE_TURN_SPEED * handleMult;
-  m_properties.boosterMultiplier = BASE_BOOST_MULTIPLIER * boostMult;
-  m_properties.surfaceDragSensitivity = BASE_SURFACE_SENSITIVITY * surfaceMult;
-  m_properties.brakingForce = BASE_BRAKING * brakeMult;
 }
 
 void Car::updateStartLineCrossing(const SplineTrack* track) {
@@ -225,6 +196,7 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
     if (speed > MIN_CROSSING_SPEED) {
       if (correctDirection) {
         m_properties.currentLap++;
+        applyLapBonuses();
         m_properties.lapProgress = 0.0f;
       }
       else if (m_properties.currentLap > 0) {
@@ -322,6 +294,40 @@ float Car::getTotalRaceProgress() const {
   return (currentLap <= 1) ? lapProgress : static_cast<float>(currentLap - 1) + lapProgress;
 }
 
+void Car::applyLapBonuses() {
+  // Only apply bonuses if this is a new highest lap
+  if (m_properties.currentLap <= m_properties.highestLapCompleted) {
+    return;
+  }
+
+  m_properties.highestLapCompleted = m_properties.currentLap;
+
+  // Apply each per-lap bonus based on its current level
+  auto& stats = m_properties.specialStats;
+
+  if (stats.topSpeed.level > 0) {
+    m_properties.maxSpeed *= (1.0f + (stats.topSpeed.level * 0.01f));
+  }
+  if (stats.acceleration.level > 0) {
+    m_properties.acceleration *= (1.0f + (stats.acceleration.level * 0.01f));
+  }
+  if (stats.wheelGrip.level > 0) {
+    m_properties.wheelGrip *= (1.0f + (stats.wheelGrip.level * 0.01f));
+  }
+  if (stats.handling.level > 0) {
+    m_properties.turnSpeed *= (1.0f + (stats.handling.level * 0.01f));
+  }
+  if (stats.booster.level > 0) {
+    m_properties.boosterMultiplier *= (1.0f + (stats.booster.level * 0.01f));
+  }
+  if (stats.surfaceResistance.level > 0) {
+    m_properties.surfaceDragSensitivity *= (1.0f - (stats.surfaceResistance.level * 0.01f));
+  }
+  if (stats.braking.level > 0) {
+    m_properties.brakingForce *= (1.0f + (stats.braking.level * 0.01f));
+  }
+}
+
 float Car::calculateLapProgress(const SplineTrack* track) {
   if (!track) return 0.0f;
   auto splinePoints = track->getSplinePoints(200);
@@ -342,9 +348,11 @@ float Car::calculateLapProgress(const SplineTrack* track) {
     }
   }
 
-  // Find car's closest point
+  // Get car's current position
   auto debugInfo = getDebugInfo();
   glm::vec2 carPos(debugInfo.position);
+
+  // Find closest point
   size_t closestIndex = 0;
   float minDist = std::numeric_limits<float>::max();
 
@@ -367,7 +375,6 @@ float Car::calculateLapProgress(const SplineTrack* track) {
 
   return progress;
 }
-
 
 void Car::updateMovement(const InputState& input) {
   b2Vec2 currentVel = b2Body_GetLinearVelocity(m_bodyId);
