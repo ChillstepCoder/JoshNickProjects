@@ -52,6 +52,26 @@ public:
     bool showDebugPoint;
   };
 
+  enum class StatType {
+    TopSpeed,
+    Acceleration,
+    Weight,
+    WheelGrip,
+    Handling,
+    Booster,
+    SurfaceResistance,
+    DamageResistance,
+    XPGain,
+    Braking
+  };
+
+  struct StatUpgrade {
+    StatType type;
+    bool isSpecial;
+    std::string name;
+    std::string description;
+  };
+
   // Constructor/Destructor
   LevelEditorScreen();
   ~LevelEditorScreen();
@@ -161,6 +181,7 @@ private:
   int m_selectedLevelIndex = -1;
   std::string m_loadedFilename;
   int m_totalLaps = 3;
+  int m_currentMusicTrackId = 0;
 
   // AI Drivers
   std::vector<std::unique_ptr<AIDriver>> m_aiDrivers;
@@ -190,6 +211,13 @@ private:
   //HUD
   JAGEngine::Camera2D m_hudCamera;
   JAGEngine::SpriteBatch m_hudSpriteBatch;
+
+  //Pausing
+  bool m_isLevelUpPaused = false;
+  bool m_showLevelUpUI = false;
+
+  //Leveling
+  std::vector<StatUpgrade> m_availableUpgrades;
 
   // Helper functions - grouped by functionality
 
@@ -261,6 +289,11 @@ private:
   // Performance debug
   bool m_showPerformanceWindow = false;
   void drawPerformanceWindow();
+
+  // Leveling
+  void generateUpgradeChoices();
+  const char* getStatName(StatType type);
+  void applyUpgrade(const StatUpgrade& upgrade);
 
   using IGameScreen::m_game;
 };

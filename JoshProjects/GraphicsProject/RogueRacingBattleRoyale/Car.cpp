@@ -20,6 +20,8 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
   initializeWheelColliders();
   CarProperties props;
   props.totalXP = 0;
+  props.xpLevelUpAmount = 10;
+  props.level = 1;
   props.racePosition = 0;
   props.currentLap = 0;
   props.lastStartLineSide = false;
@@ -141,10 +143,44 @@ void Car::update(const InputState& input) {
     m_properties.lapProgress = calculateLapProgress(m_track);
   }
 
-  // Update audio at the end of the update
-  //if (m_audioEngine) {
-  //  m_audioEngine->updateCarAudio(this);
-  //}
+}
+
+void Car::updateStatsFromLevels() {
+  // Base values
+  const float BASE_SPEED = 1000.0f;
+  const float BASE_ACCELERATION = 10000.0f;
+  const float BASE_WHEEL_GRIP = 0.49f;
+  const float BASE_TURN_SPEED = 30.0f;
+  const float BASE_BOOST_MULTIPLIER = 1.0f;
+  const float BASE_SURFACE_SENSITIVITY = 0.8f;
+  const float BASE_BRAKING = 0.1f;
+
+  // Level multipliers (each level adds 10% to base)
+  float speedMult = 1.0f + (m_properties.statLevels.topSpeed - 1) * 0.1f;
+  float accelMult = 1.0f + (m_properties.statLevels.acceleration - 1) * 0.1f;
+  float gripMult = 1.0f + (m_properties.statLevels.wheelGrip - 1) * 0.1f;
+  float handleMult = 1.0f + (m_properties.statLevels.handling - 1) * 0.1f;
+  float boostMult = 1.0f + (m_properties.statLevels.booster - 1) * 0.1f;
+  float surfaceMult = 1.0f - (m_properties.statLevels.surfaceResistance - 1) * 0.1f;
+  float brakeMult = 1.0f + (m_properties.statLevels.braking - 1) * 0.1f;
+
+  // Add bonuses from special stats
+  speedMult += m_properties.specialStats.topSpeedBonus;
+  accelMult += m_properties.specialStats.accelerationBonus;
+  gripMult += m_properties.specialStats.wheelGripBonus;
+  handleMult += m_properties.specialStats.handlingBonus;
+  boostMult += m_properties.specialStats.boosterBonus;
+  surfaceMult -= m_properties.specialStats.surfaceResistanceBonus;
+  brakeMult += m_properties.specialStats.brakingBonus;
+
+  // Apply multipliers to actual car properties
+  m_properties.maxSpeed = BASE_SPEED * speedMult;
+  m_properties.acceleration = BASE_ACCELERATION * accelMult;
+  m_properties.wheelGrip = BASE_WHEEL_GRIP * gripMult;
+  m_properties.turnSpeed = BASE_TURN_SPEED * handleMult;
+  m_properties.boosterMultiplier = BASE_BOOST_MULTIPLIER * boostMult;
+  m_properties.surfaceDragSensitivity = BASE_SURFACE_SENSITIVITY * surfaceMult;
+  m_properties.brakingForce = BASE_BRAKING * brakeMult;
 }
 
 void Car::updateStartLineCrossing(const SplineTrack* track) {

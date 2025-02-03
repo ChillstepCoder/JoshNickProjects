@@ -372,7 +372,6 @@ void PhysicsSystem::handleCollisionEvents() {
   if (!b2World_IsValid(m_worldId)) return;
 
   b2ContactEvents contactEvents = b2World_GetContactEvents(m_worldId);
-  std::cout << "Contact events count: " << contactEvents.hitCount << std::endl;
 
   // Handle car-to-car collisions
   for (int i = 0; i < contactEvents.hitCount; ++i) {
@@ -394,31 +393,38 @@ void PhysicsSystem::handleCollisionEvents() {
       continue;
     }
 
-    // Calculate collision velocity
-    b2Vec2 velA = b2Body_GetLinearVelocity(bodyA);
-    b2Vec2 velB = b2Body_GetLinearVelocity(bodyB);
-    b2Vec2 relativeVel = { velA.x - velB.x, velA.y - velB.y };
-    float collisionSpeed = glm::length(glm::vec2(relativeVel.x, relativeVel.y));
-
     // Get masses
     b2MassData massDataA = b2Body_GetMassData(bodyA);
     b2MassData massDataB = b2Body_GetMassData(bodyB);
-    float avgMass = (massDataA.mass + massDataB.mass) * 0.5f;
 
-    // Notify audio engine if collision is significant
-    if (collisionSpeed > 1.0f && m_audioEngine) {
+    // Constants for normalization
+    const float MAX_APPROACH_SPEED = 600.0f;  // Max observed head-on collision speed
+    const float MAX_COMBINED_MASS = 500.0f;   // Target mass for max RTPC value
+
+    float combinedMass = massDataA.mass + massDataB.mass;
+    float impactForce = combinedMass * hit->approachSpeed;
+
+    // Normalize the values to 0-1 range
+    float normalizedSpeed = glm::clamp(hit->approachSpeed / MAX_APPROACH_SPEED, 0.0f, 1.0f);
+    float normalizedMass = glm::clamp(combinedMass / MAX_COMBINED_MASS, 0.0f, 1.0f);
+
+    // Notify audio engine if impact is significant
+    if (normalizedSpeed > 0.02f && m_audioEngine) {  // Small threshold to avoid tiny collisions
       CollisionInfo info = {
-          collisionSpeed,
-          avgMass,
+          normalizedSpeed,  // Now sends 0-1 value
+          normalizedMass,   // Now sends 0-1 value
           carA,
           carB
       };
       m_audioEngine->handleCarCollision(info);
 
-      //if (DEBUG_OUTPUT) {
-        std::cout << "Car collision detected - Speed: " << collisionSpeed
-          << " Mass: " << avgMass << std::endl;
-      //}
+      if (DEBUG_OUTPUT) {
+        std::cout << "Car collision detected - "
+          << "Raw Speed: " << hit->approachSpeed
+          << " Normalized Speed: " << normalizedSpeed
+          << " Raw Mass: " << combinedMass
+          << " Normalized Mass: " << normalizedMass << std::endl;
+      }
     }
   }
 }

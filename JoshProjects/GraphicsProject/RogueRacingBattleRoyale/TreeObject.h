@@ -16,13 +16,13 @@ public:
   }
 
   std::unique_ptr<PlaceableObject> clone() const override {
-    std::cout << "Tree clone called" << std::endl;
+    //std::cout << "Tree clone called" << std::endl;
     return std::make_unique<TreeObject>(*this);
   }
 
   void createCollisionShape(b2BodyId bodyId, PhysicsSystem* physics) override {
     float radius = 10.0f;
-    std::cout << "Creating TREE collision shape with radius: " << radius << std::endl;
+    //std::cout << "Creating TREE collision shape with radius: " << radius << std::endl;
     physics->createCircleShape(bodyId, radius,
       CATEGORY_SOLID,
       CATEGORY_CAR | CATEGORY_PUSHABLE,

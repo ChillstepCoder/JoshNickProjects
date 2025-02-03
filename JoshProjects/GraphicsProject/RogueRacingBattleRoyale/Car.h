@@ -19,7 +19,35 @@ class ObjectManager;
 
 class Car {
 public:
+
   struct CarProperties {
+    // Base stat levels
+    struct StatLevels {
+      int topSpeed = 1;
+      int acceleration = 1;
+      int weight = 1;
+      int wheelGrip = 1;
+      int handling = 1;
+      int booster = 1;
+      int surfaceResistance = 1;
+      int damageResistance = 1;
+      int xpGain = 1;
+      int braking = 1;
+    };
+
+    // Per-lap bonuses and special stats
+    struct SpecialStats {
+      float topSpeedBonus = 0.0f;
+      float accelerationBonus = 0.0f;
+      float wheelGripBonus = 0.0f;
+      float handlingBonus = 0.0f;
+      float boosterBonus = 0.0f;
+      float surfaceResistanceBonus = 0.0f;
+      float damageResistanceBonus = 0.0f;
+      float xpGainBonus = 0.0f;
+      float brakingBonus = 0.0f;
+    };
+
     // Movement properties
     float maxSpeed = 1000.0f;
     float acceleration = 10000.0f;
@@ -56,10 +84,16 @@ public:
     float boosterMultiplier = 1.0f;
     // Leveling
     int totalXP = 0;
+    int xpLevelUpAmount = 10;
+    int level = 1;
+
+    StatLevels statLevels;
+    SpecialStats specialStats;
 
     void reset() {
       totalXP = 0;
     }
+
   };
 
   struct DebugInfo {
@@ -83,21 +117,13 @@ public:
   ~Car() = default;
 
   void update(const InputState& input);
-  //void updateAudio(const AudioEngine& audioEngine);
+  void updateStatsFromLevels();
   void updateStartLineCrossing(const SplineTrack* track);
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
 
   CarProperties& getProperties() { return m_properties; }
   void setProperties(const CarProperties& props) {
-    // Ensure XP from previous state is preserved and only incremented
-    int previousXP = m_properties.totalXP;
     m_properties = props;
-    if (props.totalXP > previousXP) {
-      m_properties.totalXP = props.totalXP; // Keep new XP if it's higher
-    }
-    else {
-      m_properties.totalXP = previousXP; // Keep old XP if new is lower/same
-    }
   }
   DebugInfo getDebugInfo() const;
   void setColor(const JAGEngine::ColorRGBA8& color) { m_color = color; }

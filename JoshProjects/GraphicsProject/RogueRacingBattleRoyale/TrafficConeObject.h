@@ -16,14 +16,14 @@ public:
   }
 
   std::unique_ptr<PlaceableObject> clone() const override {
-    std::cout << "TrafficCone clone called" << std::endl;
+    //std::cout << "TrafficCone clone called" << std::endl;
     return std::make_unique<TrafficConeObject>(*this);
   }
 
   void createCollisionShape(b2BodyId bodyId, PhysicsSystem* physics) override {
-    std::cout << "\n=== TrafficCone createCollisionShape Called ===\n";
-    std::cout << "Cone scale: " << m_scale.x << ", " << m_scale.y << std::endl;
-    std::cout << "Cone collision type: " << static_cast<int>(m_collisionType) << std::endl;
+    //std::cout << "\n=== TrafficCone createCollisionShape Called ===\n";
+    //std::cout << "Cone scale: " << m_scale.x << ", " << m_scale.y << std::endl;
+    //std::cout << "Cone collision type: " << static_cast<int>(m_collisionType) << std::endl;
     float radius = 5.0f;
     physics->createCircleShape(bodyId, radius,
       CATEGORY_PUSHABLE,
@@ -31,7 +31,7 @@ public:
       CollisionType::PUSHABLE,
       0.2f,
       0.4f);
-    std::cout << "=== End TrafficCone Shape Creation ===\n";
+    //std::cout << "=== End TrafficCone Shape Creation ===\n";
   }
   ObjectType getObjectType() const override { return ObjectType::TrafficCone; }
 };

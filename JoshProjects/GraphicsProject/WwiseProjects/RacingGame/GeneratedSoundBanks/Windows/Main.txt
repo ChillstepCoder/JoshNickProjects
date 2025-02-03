@@ -1,9 +1,13 @@
 Event	ID	Name			Wwise Object Path	Notes
 	184892105	Play_Engine_Idle_SFX_1			\Default Work Unit\Play_Engine_Idle_SFX_1	
+	569543538	Play_HyperLoop			\Default Work Unit\Play_HyperLoop	
 	755225576	Play_Countdown_SFX_2			\Default Work Unit\Play_Countdown_SFX_2	
 	755225579	Play_Countdown_SFX_1			\Default Work Unit\Play_Countdown_SFX_1	
+	783352168	Stop_HyperLoop			\Default Work Unit\Stop_HyperLoop	
 	983973850	Play_Engine_Rev_SFX_1			\Default Work Unit\Play_Engine_Rev_SFX_1	
 	2146366539	Stop_Car_Tire_Skid_1			\Default Work Unit\Stop_Car_Tire_Skid_1	
+	2441111417	Play_CyberChase			\Default Work Unit\Play_CyberChase	
+	2443478315	Stop_CyberChase			\Default Work Unit\Stop_CyberChase	
 	2622523685	Play_Car_Collision			\Default Work Unit\Play_Car_Collision	
 	2960744889	Play_Car_Tire_Skid_1			\Default Work Unit\Play_Car_Tire_Skid_1	
 
@@ -22,10 +26,14 @@ Game Parameter	ID	Name			Wwise Object Path	Notes
 	3966876546	Engine_Rev_Volume			\Default Work Unit\Engine_Rev_Volume	
 
 In Memory Audio	ID	Name	Audio source file		Wwise Object Path	Notes	Data Size
+	78980995	Music_HyperLoop	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\93\{9337DD9A-B583-6470-B7ED-039EAB287A6E}.wem		\Interactive Music Hierarchy\Music\Music_HyperLoop\Music_HyperLoop		25907596
 	108366440	Countdown_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\77\{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_1		359376
+	210215047	Car_Crash_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\B1\{B13B2A01-5685-1F1F-0264-4EAF9A416B89}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Crash_SFX_1		218940
+	219920735	Music_CyberChase	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\26\{26CFA13C-EE2B-5F0B-C196-C2BA2178F782}.wem		\Interactive Music Hierarchy\Music\Music_CyberChase\Music_CyberChase		17696916
 	536482941	Engine_Idle_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\6E\{6E418767-4F42-13E8-5BEE-C819302BE4BB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine_Idle_SFX_1		1355080
 	555365400	Car_Dirt_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0A\{0AA01B27-BC48-DA87-41D7-02D3FCFABE68}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Dirt_Skid_1		1308728
 	685517915	Countdown_SFX_2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0D\{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_2		359376
+	816917652	Music_CyberChase2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\80\{80714935-0273-F94A-3666-3F2D911A442A}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Music_CyberChase2		16190508
 	829908123	Engine_Rev_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\51\{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine_Rev_SFX_1		1355080
 	1030427408	Car_Tire_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\A4\{A4ACCE11-2EF3-E8DE-3FA0-504FF246F7AB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Tire_Skid_1		875892
 	1069078306	Car_Grass_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\D1\{D1925B4A-9795-51A5-E7D4-99281C03E004}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Grass_Skid_1		734580

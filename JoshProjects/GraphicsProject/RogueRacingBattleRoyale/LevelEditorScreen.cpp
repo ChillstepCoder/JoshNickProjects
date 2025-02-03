@@ -168,6 +168,15 @@ void LevelEditorScreen::onEntry() {
       m_enableAI = true;
       m_inputEnabled = true;
       m_raceTimer->start();
+
+      // Play selected music track
+      std::cout << "Countdown complete, attempting to play music ID: " << m_currentMusicTrackId << std::endl;
+      if (m_currentMusicTrackId != 0) {
+        m_game->getGameAs<App>()->getAudioEngine().playMusicTrack(m_currentMusicTrackId);
+      }
+      else {
+        std::cout << "No music track selected" << std::endl;
+      }
       });
 
   }
@@ -217,9 +226,9 @@ void LevelEditorScreen::update() {
     handleInput();
   }
 
-  if (m_raceTimer) {
-    m_raceTimer->update(1.0f / 60.0f);
-  }
+  //if (m_raceTimer && !m_isLevelUpPaused) {
+  //  m_raceTimer->update(1.0f / 60.0f);
+  //}
 }
 
 
@@ -388,6 +397,32 @@ void LevelEditorScreen::drawDebugWindow() {
     m_selectedNode = nullptr;
     m_isDragging = false;
     initDefaultTrack();
+  }
+
+  if (ImGui::CollapsingHeader("Music Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+    const auto& tracks = m_game->getGameAs<App>()->getAudioEngine().getAvailableTracks();
+
+    // Find current track name
+    std::string currentTrack = "None";
+    for (const auto& track : tracks) {
+      if (track.playEventId == m_currentMusicTrackId) {
+        currentTrack = track.name;
+        break;
+      }
+    }
+
+    if (ImGui::BeginCombo("Race Music", currentTrack.c_str())) {
+      for (const auto& track : tracks) {
+        bool isSelected = (track.playEventId == m_currentMusicTrackId);
+        if (ImGui::Selectable(track.name, isSelected)) {
+          m_currentMusicTrackId = track.playEventId;
+        }
+        if (isSelected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
   }
 
   // Add null check before accessing track
@@ -809,6 +844,7 @@ void LevelEditorScreen::saveLevelToFile() {
   level.barrierPrimaryColor = m_barrierPrimaryColor;
   level.barrierSecondaryColor = m_barrierSecondaryColor;
   level.barrierPatternScale = m_barrierPatternScale;
+  level.musicTrackId = m_currentMusicTrackId;
 
   if (LevelSaveLoad::saveLevel(level)) {
     m_loadedFilename = LevelSaveLoad::constructFilename(m_levelDifficulty, m_levelNameBuffer);
@@ -846,6 +882,7 @@ void LevelEditorScreen::loadLevelFromFile(const std::string& filename) {
     m_barrierPrimaryColor = loadedLevel.barrierPrimaryColor;
     m_barrierSecondaryColor = loadedLevel.barrierSecondaryColor;
     m_barrierPatternScale = loadedLevel.barrierPatternScale;
+    m_currentMusicTrackId = loadedLevel.musicTrackId;
 
     // Update difficulty
     m_levelDifficulty = loadedLevel.difficulty;
@@ -1415,6 +1452,14 @@ void LevelEditorScreen::initTestMode() {
       m_raceTimer->start();
       std::cout << "Race timer started!" << std::endl;
     }
+    // Play selected music track
+    std::cout << "Countdown complete, attempting to play music ID: " << m_currentMusicTrackId << std::endl;
+    if (m_currentMusicTrackId != 0) {
+      m_game->getGameAs<App>()->getAudioEngine().playMusicTrack(m_currentMusicTrackId);
+    }
+    else {
+      std::cout << "No music track selected" << std::endl;
+    }
     });
 
   // Load car texture
@@ -1855,7 +1900,8 @@ void LevelEditorScreen::drawCarPropertiesUI() {
         const auto& props = m_testCars[m_selectedCarIndex]->getProperties();
 
         // Display total XP
-        ImGui::Text("Total XP: %d", props.totalXP);
+        ImGui::Text("LEVEL: %d", props.level);
+        ImGui::Text("Total XP: %d / %d", props.totalXP, props.xpLevelUpAmount);
 
         // Show car type (player or AI)
         ImGui::Text("Car Type: %s", m_selectedCarIndex == 0 ? "Player" : "AI");
@@ -2124,6 +2170,94 @@ void LevelEditorScreen::drawTestModeUI() {
   // Car controls window and AI settings
   drawCarPropertiesUI();
   drawAIDebugUI();
+
+  // Level up window
+  if (m_showLevelUpUI) {
+    ImGui::SetNextWindowPos(
+      ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f),
+      ImGuiCond_Always,
+      ImVec2(0.5f, 0.5f)
+    );
+    ImGui::SetNextWindowSize(ImVec2(300, 200));
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse |
+      ImGuiWindowFlags_NoResize |
+      ImGuiWindowFlags_NoMove |
+      ImGuiWindowFlags_NoSavedSettings |
+      ImGuiWindowFlags_AlwaysAutoResize;
+
+    if (ImGui::Begin("Level Up!", nullptr, flags)) {
+      ImGui::TextColored(ImVec4(1, 1, 0, 1), "Congratulations!");
+      ImGui::Text("Your car has reached level %d!", m_testCars[0]->getProperties().level);
+      ImGui::Spacing();
+      ImGui::Text("Choose an upgrade:");
+      ImGui::Spacing();
+
+      // Generate choices when UI first appears
+      if (m_availableUpgrades.empty()) {
+        generateUpgradeChoices();
+      }
+
+      // Draw each upgrade choice
+      for (const auto& upgrade : m_availableUpgrades) {
+        const auto& props = m_testCars[0]->getProperties();
+
+        // Create the button label with current -> next level
+        std::string buttonText;
+        if (upgrade.isSpecial) {
+          buttonText = upgrade.name;
+        }
+        else {
+          int currentLevel = 1;  // Default level
+
+          // Get current level based on stat type
+          switch (upgrade.type) {
+          case StatType::TopSpeed: currentLevel = props.statLevels.topSpeed; break;
+          case StatType::Acceleration: currentLevel = props.statLevels.acceleration; break;
+          case StatType::Weight: currentLevel = props.statLevels.weight; break;
+          case StatType::WheelGrip: currentLevel = props.statLevels.wheelGrip; break;
+          case StatType::Handling: currentLevel = props.statLevels.handling; break;
+          case StatType::Booster: currentLevel = props.statLevels.booster; break;
+          case StatType::SurfaceResistance: currentLevel = props.statLevels.surfaceResistance; break;
+          case StatType::DamageResistance: currentLevel = props.statLevels.damageResistance; break;
+          case StatType::XPGain: currentLevel = props.statLevels.xpGain; break;
+          case StatType::Braking: currentLevel = props.statLevels.braking; break;
+          }
+
+          buttonText = upgrade.name + " " + std::to_string(currentLevel) + " -> " + std::to_string(currentLevel + 1);
+        }
+
+        // Style special upgrades differently
+        if (upgrade.isSpecial) {
+          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.3f, 0.9f, 1.0f));
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.4f, 1.0f, 1.0f));
+          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.2f, 0.8f, 1.0f));
+        }
+
+        // Create the button
+        if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetWindowWidth() - 30, 50))) {
+          applyUpgrade(upgrade);
+          m_showLevelUpUI = false;
+          m_isLevelUpPaused = false;
+          m_availableUpgrades.clear();
+        }
+
+        if (upgrade.isSpecial) {
+          ImGui::PopStyleColor(3);
+        }
+
+        // Show description on hover
+        if (ImGui::IsItemHovered()) {
+          ImGui::BeginTooltip();
+          ImGui::Text("%s", upgrade.description.c_str());
+          ImGui::EndTooltip();
+        }
+
+        ImGui::Spacing();
+      }
+    }
+    ImGui::End();
+  }
 }
 
 void LevelEditorScreen::cleanupTestMode() {
@@ -2189,7 +2323,28 @@ void LevelEditorScreen::cleanupTestMode() {
       m_enableAI = true;
       m_inputEnabled = true;
       m_raceTimer->start();
+
+      // Play selected music track
+      std::cout << "Countdown complete, attempting to play music ID: " << m_currentMusicTrackId << std::endl;
+      if (m_currentMusicTrackId != 0) {
+        m_game->getGameAs<App>()->getAudioEngine().playMusicTrack(m_currentMusicTrackId);
+      }
+      else {
+        std::cout << "No music track selected" << std::endl;
+      }
       });
+  }
+
+  // Stop current music track
+  if (m_currentMusicTrackId != 0 && m_game) {
+    // Since we need the corresponding stop event, find it from available tracks
+    const auto& tracks = m_game->getGameAs<App>()->getAudioEngine().getAvailableTracks();
+    for (const auto& track : tracks) {
+      if (track.playEventId == m_currentMusicTrackId) {
+        m_game->getGameAs<App>()->getAudioEngine().stopMusicTrack(track.stopEventId);
+        break;
+      }
+    }
   }
 }
 
@@ -2289,90 +2444,103 @@ void LevelEditorScreen::updateTestMode() {
   if (!m_testMode || m_testCars.empty()) return;
 
   TIME_SCOPE("Total Frame");
-
   const float fixedTimeStep = 1.0f / 60.0f;
 
+  // Always update countdown regardless of pause state
   if (m_raceCountdown) {
     m_raceCountdown->update(fixedTimeStep);
   }
 
-  if (m_testMode && m_raceTimer && m_raceTimer->isRunning()) {
-    for (auto& car : m_testCars) {
-      car->updateStartLineCrossing(m_track.get());
+  // Update race timer only if not paused
+  if (m_raceTimer && m_raceTimer->isRunning() && !m_isLevelUpPaused) {
+    m_raceTimer->update(fixedTimeStep);
+  }
+
+  // Only update game logic if not paused for level up
+  if (!m_isLevelUpPaused) {
+    if (m_testMode && m_raceTimer && m_raceTimer->isRunning()) {
+      for (auto& car : m_testCars) {
+        car->updateStartLineCrossing(m_track.get());
+      }
+    }
+
+    // Check for level up on player car
+    if (!m_testCars.empty()) {
+      auto& props = m_testCars[0]->getProperties();
+      if (props.totalXP >= props.xpLevelUpAmount) {
+        m_isLevelUpPaused = true;
+        m_showLevelUpUI = true;
+        props.level += 1;
+        props.totalXP -= props.xpLevelUpAmount;
+        props.xpLevelUpAmount = round(props.xpLevelUpAmount * 1.2f);
+        m_testCars[0]->setProperties(props);
+        return; // Exit early to prevent further updates this frame
+      }
+    }
+
+    // Safety check
+    if (!m_physicsSystem || !m_testCars[0]) {
+      cleanupTestMode();
+      return;
+    }
+
+    // Handle car selection before any other input
+    handleCarSelection();
+
+    // Update physics
+    {
+      TIME_SCOPE("Physics Update");
+      if (!m_testCars.empty() && m_inputEnabled) {
+        InputState input;
+        JAGEngine::InputManager& inputManager = m_game->getInputManager();
+        input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) ||
+          inputManager.isKeyDown(SDLK_w);
+        input.braking = inputManager.isKeyDown(SDL_BUTTON_RIGHT) ||
+          inputManager.isKeyDown(SDLK_s);
+        input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) ||
+          inputManager.isKeyDown(SDLK_a);
+        input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) ||
+          inputManager.isKeyDown(SDLK_d);
+        m_testCars[0]->update(input);
+      }
+
+      if (m_physicsSystem) {
+        m_physicsSystem->update(fixedTimeStep);
+      }
+    }
+
+    // Update AI
+    {
+      TIME_SCOPE("AI Update");
+      if (m_enableAI) {
+        updateAIDrivers();
+      }
+    }
+
+    // Update race positions and objects
+    if (m_testCars.size() > 1) {
+      m_raceManager.updateRacePositions(m_testCars);
+    }
+
+    if (m_objectManager) {
+      m_objectManager->update();
+    }
+
+    // Update audio
+    if (!m_testCars.empty() && m_testCars[0]) {
+      auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
+      auto playerInfo = m_testCars[0]->getDebugInfo();
+      Vec2 listenerPos(playerInfo.position.x, playerInfo.position.y);
+
+      audioEngine.setDefaultListener(listenerPos, playerInfo.angle);
+
+      for (const auto& car : m_testCars) {
+        audioEngine.updateCarAudio(car.get(), listenerPos);
+      }
     }
   }
 
-  // Add safety check
-  if (!m_physicsSystem || !m_testCars[0]) {
-    cleanupTestMode();
-    return;
-  }
-
-  // Handle car selection before any other input
-  handleCarSelection();
-
-  // Update physics
-  {
-    TIME_SCOPE("Physics Update");
-
-    // Update player car with input
-    if (!m_testCars.empty() && m_inputEnabled) {
-      InputState input;
-      JAGEngine::InputManager& inputManager = m_game->getInputManager();
-      input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) ||
-        inputManager.isKeyDown(SDLK_w);
-      input.braking = inputManager.isKeyDown(SDL_BUTTON_RIGHT) ||
-        inputManager.isKeyDown(SDLK_s);
-      input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) ||
-        inputManager.isKeyDown(SDLK_a);
-      input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) ||
-        inputManager.isKeyDown(SDLK_d);
-      m_testCars[0]->update(input);
-    }
-
-    // Update physics and object positions
-    if (m_physicsSystem) {
-      m_physicsSystem->update(fixedTimeStep);
-    }
-  }
-
-  // Update AI drivers
-  {
-    TIME_SCOPE("AI Update");
-    if (m_enableAI) {
-      updateAIDrivers();
-    }
-  }
-
-  if (m_testCars.size() > 1) {
-    m_raceManager.updateRacePositions(m_testCars);
-  }
-
-  if (m_objectManager) {
-    m_objectManager->update();
-  }
-
-  auto playerPos = m_testCars[0]->getDebugInfo().position;
-  Vec2 listenerPos(playerPos.x, playerPos.y);
-
-  // Update audio for all cars
-  if (!m_testCars.empty() && m_testCars[0]) {
-    auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
-
-    // Get listener position from player car
-    auto playerInfo = m_testCars[0]->getDebugInfo();
-    Vec2 listenerPos(playerInfo.position.x, playerInfo.position.y);
-
-    // Update listener position
-    audioEngine.setDefaultListener(listenerPos, playerInfo.angle);
-
-    // Update each car's audio
-    for (const auto& car : m_testCars) {
-      audioEngine.updateCarAudio(car.get(), listenerPos);
-    }
-  }
-
-  // Update camera
+  // Always update camera, even when paused
   {
     TIME_SCOPE("Camera Update");
     updateCarTrackingInfo();
@@ -2644,4 +2812,129 @@ void LevelEditorScreen::drawPerformanceWindow() {
     }
   }
   ImGui::End();
+}
+
+void LevelEditorScreen::generateUpgradeChoices() {
+  m_availableUpgrades.clear();
+
+  std::vector<StatType> allStats = {
+      StatType::TopSpeed,
+      StatType::Acceleration,
+      StatType::Weight,
+      StatType::WheelGrip,
+      StatType::Handling,
+      StatType::Booster,
+      StatType::SurfaceResistance,
+      StatType::DamageResistance,
+      StatType::XPGain,
+      StatType::Braking
+  };
+
+  std::random_shuffle(allStats.begin(), allStats.end());
+
+  for (int i = 0; i < 3 && i < allStats.size(); i++) {
+    StatUpgrade upgrade;
+    upgrade.type = allStats[i];
+
+    // 20% chance for special bonus
+    upgrade.isSpecial = (rand() % 5 == 0);
+
+    if (upgrade.isSpecial) {
+      upgrade.name = std::string(getStatName(upgrade.type)) + " Lap Bonus";
+      upgrade.description = "Gain permanent +" + std::string(getStatName(upgrade.type)) + " bonus each lap";
+    }
+    else {
+      upgrade.name = getStatName(upgrade.type);
+      upgrade.description = "Increase " + std::string(getStatName(upgrade.type)) + " by 10%";
+    }
+
+    m_availableUpgrades.push_back(upgrade);
+  }
+}
+
+const char* LevelEditorScreen::getStatName(StatType type) {
+  switch (type) {
+  case StatType::TopSpeed: return "Top Speed";
+  case StatType::Acceleration: return "Acceleration";
+  case StatType::Weight: return "Weight";
+  case StatType::WheelGrip: return "Wheel Grip";
+  case StatType::Handling: return "Handling";
+  case StatType::Booster: return "Booster";
+  case StatType::SurfaceResistance: return "Surface Resistance";
+  case StatType::DamageResistance: return "Damage Resistance";
+  case StatType::XPGain: return "XP Gain";
+  case StatType::Braking: return "Braking";
+  default: return "Unknown";
+  }
+}
+
+void LevelEditorScreen::applyUpgrade(const StatUpgrade& upgrade) {
+  if (!m_testCars.empty()) {
+    auto props = m_testCars[0]->getProperties();
+
+    if (upgrade.isSpecial) {
+      // Special upgrades will be applied when crossing the finish line
+      switch (upgrade.type) {
+      case StatType::TopSpeed:
+        props.specialStats.topSpeedBonus += 0.01f;
+        break;
+      case StatType::Acceleration:
+        props.specialStats.accelerationBonus += 0.01f;
+        break;
+      case StatType::WheelGrip:
+        props.specialStats.wheelGripBonus += 0.01f;
+        break;
+      case StatType::Handling:
+        props.specialStats.handlingBonus += 0.01f;
+        break;
+      case StatType::Booster:
+        props.specialStats.boosterBonus += 0.01f;
+        break;
+      case StatType::SurfaceResistance:
+        props.specialStats.surfaceResistanceBonus += 0.01f;
+        break;
+      case StatType::Braking:
+        props.specialStats.brakingBonus += 0.01f;
+        break;
+      }
+    }
+    else {
+      // Regular level ups are applied immediately
+      switch (upgrade.type) {
+      case StatType::TopSpeed:
+        props.statLevels.topSpeed++;
+        break;
+      case StatType::Acceleration:
+        props.statLevels.acceleration++;
+        break;
+      case StatType::Weight:
+        props.statLevels.weight++;
+        break;
+      case StatType::WheelGrip:
+        props.statLevels.wheelGrip++;
+        break;
+      case StatType::Handling:
+        props.statLevels.handling++;
+        break;
+      case StatType::Booster:
+        props.statLevels.booster++;
+        break;
+      case StatType::SurfaceResistance:
+        props.statLevels.surfaceResistance++;
+        break;
+      case StatType::DamageResistance:
+        props.statLevels.damageResistance++;
+        break;
+      case StatType::XPGain:
+        props.statLevels.xpGain++;
+        break;
+      case StatType::Braking:
+        props.statLevels.braking++;
+        break;
+      }
+    }
+
+    m_testCars[0]->setProperties(props);
+    m_testCars[0]->updateStatsFromLevels();
+  }
 }

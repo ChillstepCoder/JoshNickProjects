@@ -10,11 +10,19 @@
     "Type": "User",
     "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
     "Language": "SFX",
-    "Hash": "{941EFB4C-C80C-D582-4B48-78FB4C634383}",
+    "Hash": "{B67C428C-F3B2-79F6-46DA-8A8090ED2B17}",
     "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
     "ShortName": "Main",
     "Path": "Main.bnk",
     "Media": [
+     {
+      "Id": "78980995",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Music_HyperLoop.wav",
+      "CachePath": "93/{9337DD9A-B583-6470-B7ED-039EAB287A6E}.wem"
+     },
      {
       "Id": "108366440",
       "Language": "SFX",
@@ -22,6 +30,22 @@
       "Location": "Memory",
       "ShortName": "Countdown_SFX_1.wav",
       "CachePath": "77/{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem"
+     },
+     {
+      "Id": "210215047",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_1.wav",
+      "CachePath": "B1/{B13B2A01-5685-1F1F-0264-4EAF9A416B89}.wem"
+     },
+     {
+      "Id": "219920735",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Music_CyberChase.wav",
+      "CachePath": "26/{26CFA13C-EE2B-5F0B-C196-C2BA2178F782}.wem"
      },
      {
       "Id": "536482941",
@@ -46,6 +70,14 @@
       "Location": "Memory",
       "ShortName": "Countdown_SFX_2.wav",
       "CachePath": "0D/{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem"
+     },
+     {
+      "Id": "816917652",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Music_CyberChase.wav",
+      "CachePath": "80/{80714935-0273-F94A-3666-3F2D911A442A}.wem"
      },
      {
       "Id": "829908123",
@@ -79,7 +111,12 @@
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Car_Collision",
       "GUID": "{DEEA1078-1573-42AA-8F66-E33DF0201433}",
       "MaxAttenuation": "500",
-      "DurationType": "Unknown"
+      "DurationType": "Unknown",
+      "MediaRefs": [
+       {
+        "Id": "210215047"
+       }
+      ]
      },
      {
       "Id": "2960744889",
@@ -129,6 +166,21 @@
       ]
      },
      {
+      "Id": "2441111417",
+      "Name": "Play_CyberChase",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_CyberChase",
+      "GUID": "{8EB181F3-A646-4ADD-A33C-C2EE6F0D3040}",
+      "DurationType": "Infinite",
+      "MediaRefs": [
+       {
+        "Id": "219920735"
+       },
+       {
+        "Id": "816917652"
+       }
+      ]
+     },
+     {
       "Id": "184892105",
       "Name": "Play_Engine_Idle_SFX_1",
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Engine_Idle_SFX_1",
@@ -155,10 +207,42 @@
       ]
      },
      {
+      "Id": "569543538",
+      "Name": "Play_HyperLoop",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_HyperLoop",
+      "GUID": "{8225789B-F5B0-4CDD-9005-0EDAF4DF023A}",
+      "DurationType": "Infinite",
+      "MediaRefs": [
+       {
+        "Id": "78980995"
+       }
+      ]
+     },
+     {
       "Id": "2146366539",
       "Name": "Stop_Car_Tire_Skid_1",
       "ObjectPath": "\\Events\\Default Work Unit\\Stop_Car_Tire_Skid_1",
       "GUID": "{68536866-D454-4108-8079-27E2109862B8}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "2443478315",
+      "Name": "Stop_CyberChase",
+      "ObjectPath": "\\Events\\Default Work Unit\\Stop_CyberChase",
+      "GUID": "{B3206C9E-D7A9-4C19-8C54-EDCCB396EF98}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "783352168",
+      "Name": "Stop_HyperLoop",
+      "ObjectPath": "\\Events\\Default Work Unit\\Stop_HyperLoop",
+      "GUID": "{CF20B0B6-4964-4417-8B58-46DB17D3D950}",
       "MaxAttenuation": "0",
       "DurationType": "OneShot",
       "DurationMin": "0",
@@ -241,6 +325,6 @@
     ]
    }
   ],
-  "FileHash": "{B6C9213D-D0AF-CB98-A77E-B8A43B778218}"
+  "FileHash": "{B2C000DD-C4B2-8337-7B45-D7A32A7560F9}"
  }
 }

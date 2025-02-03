@@ -19,37 +19,24 @@ XPPickupObject::XPPickupObject(const XPPickupObject& other)
 }
 
 void XPPickupObject::onCarCollision(Car* car) {
-  //std::cout << "XP Pickup onCarCollision called" << std::endl;
-
-  // Add an early exit check using atomic bool
   static std::atomic<bool> isProcessingCollision{ false };
 
-  // If we're already processing a collision, exit early
   if (isProcessingCollision.exchange(true)) {
-   // std::cout << "Collision already being processed, skipping" << std::endl;
     return;
   }
 
   if (!car || !m_xpProps || !m_xpProps->isActive) {
-   // std::cout << "XP Pickup collision skipped - car: " << (car ? "valid" : "null")
-   //   << " props: " << (m_xpProps ? "valid" : "null")
-   //   << " active: " << (m_xpProps && m_xpProps->isActive ? "yes" : "no")
-    //  << std::endl;
     isProcessingCollision = false;
     return;
   }
 
-  //std::cout << "XP Pickup collision processing - adding " << m_xpProps->xpAmount << " XP" << std::endl;
-
   auto props = car->getProperties();
   int oldXP = props.totalXP;
   props.totalXP += m_xpProps->xpAmount;
+
   car->setProperties(props);
   setActive(false);
 
-  //std::cout << "XP Pickup complete - XP changed from " << oldXP << " to " << props.totalXP << std::endl;
-
-  // Reset the processing flag
   isProcessingCollision = false;
 }
 
