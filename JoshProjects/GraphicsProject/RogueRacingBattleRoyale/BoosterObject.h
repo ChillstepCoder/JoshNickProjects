@@ -23,7 +23,7 @@ public:
   void createCollisionShape(b2BodyId bodyId, PhysicsSystem* physics) override {
     float width = 48.0f;
     float height = 30.0f;
-    std::cout << "Creating booster collision shape with raw dimensions: " << width << "x" << height << std::endl;
+    //std::cout << "Creating booster collision shape with raw dimensions: " << width << "x" << height << std::endl;
     physics->createPillShape(bodyId, width, height,
       CATEGORY_POWERUP,
       CATEGORY_CAR,

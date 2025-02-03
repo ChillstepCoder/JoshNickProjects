@@ -21,8 +21,20 @@ namespace JAGEngine {
   class WWiseAudioEngine;
 }
 
+struct MusicTrack {
+  const char* name;
+  AkUniqueID playEventId;
+  AkUniqueID stopEventId;
+};
+
+static const std::vector<MusicTrack> AVAILABLE_MUSIC = {
+    {"Cyber Chase", AK::EVENTS::PLAY_CYBERCHASE, AK::EVENTS::STOP_CYBERCHASE},
+    {"Hyper Loop", AK::EVENTS::PLAY_HYPERLOOP, AK::EVENTS::STOP_HYPERLOOP}
+};
+
 class AudioEngine {
 public:
+
   AudioEngine();
   ~AudioEngine();
 
@@ -42,6 +54,8 @@ public:
   void playRaceStartSound();
   void playRaceFinishSound();
   void playCheckpointSound();
+  void playMusicTrack(AkUniqueID trackId);
+  void stopMusicTrack(AkUniqueID trackId);
 
   // AudioEngine.h
   void handleCarCollision(const PhysicsSystem::CollisionInfo& collision);
@@ -68,6 +82,7 @@ public:
   float getMasterVolume() { return m_masterVolume; }
   float getEffectsVolume() { return m_effectsVolume; }
   float getMusicVolume() { return m_musicVolume; }
+  const std::vector<MusicTrack>& getAvailableTracks() const { return AVAILABLE_MUSIC; }
 
   JAGEngine::WWiseAudioEngine* getWWiseEngine() { return m_audioEngine.get(); }
 

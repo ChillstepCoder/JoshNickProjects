@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include "SplineTrack.h"
 #include "ObjectManager.h"
+#include <AK/SoundEngine/Common/AkTypes.h>
 
 class LevelSaveLoad {
 public:
@@ -32,6 +33,7 @@ public:
     glm::vec3 barrierPrimaryColor;
     glm::vec3 barrierSecondaryColor;
     float barrierPatternScale;
+    AkUniqueID musicTrackId = 0;
   };
 
   static bool saveLevel(const SavedLevel& level);

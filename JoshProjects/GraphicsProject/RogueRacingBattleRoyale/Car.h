@@ -19,7 +19,43 @@ class ObjectManager;
 
 class Car {
 public:
+
   struct CarProperties {
+    int highestLapCompleted = 0;
+
+    struct LapBonus {
+      float value = 0.0f;      // Current bonus value
+      int level = 0;           // Level of this bonus
+      bool isDiminishing = false; // Whether this approaches 0 or not
+    };
+
+    // Base stat levels
+    struct StatLevels {
+      int topSpeed = 1;
+      int acceleration = 1;
+      int weight = 1;
+      int wheelGrip = 1;
+      int handling = 1;
+      int booster = 1;
+      int surfaceResistance = 1;
+      int damageResistance = 1;
+      int xpGain = 1;
+      int braking = 1;
+    };
+
+    // Per-lap bonuses and special stats
+    struct SpecialStats {
+      LapBonus topSpeed;
+      LapBonus acceleration;
+      LapBonus wheelGrip;
+      LapBonus handling;
+      LapBonus booster;
+      LapBonus surfaceResistance;
+      LapBonus damageResistance;
+      LapBonus xpGain;
+      LapBonus braking;
+    };
+
     // Movement properties
     float maxSpeed = 1000.0f;
     float acceleration = 10000.0f;
@@ -56,10 +92,16 @@ public:
     float boosterMultiplier = 1.0f;
     // Leveling
     int totalXP = 0;
+    int xpLevelUpAmount = 10;
+    int level = 1;
+
+    StatLevels statLevels;
+    SpecialStats specialStats;
 
     void reset() {
       totalXP = 0;
     }
+
   };
 
   struct DebugInfo {
@@ -83,21 +125,12 @@ public:
   ~Car() = default;
 
   void update(const InputState& input);
-  //void updateAudio(const AudioEngine& audioEngine);
   void updateStartLineCrossing(const SplineTrack* track);
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
 
   CarProperties& getProperties() { return m_properties; }
   void setProperties(const CarProperties& props) {
-    // Ensure XP from previous state is preserved and only incremented
-    int previousXP = m_properties.totalXP;
     m_properties = props;
-    if (props.totalXP > previousXP) {
-      m_properties.totalXP = props.totalXP; // Keep new XP if it's higher
-    }
-    else {
-      m_properties.totalXP = previousXP; // Keep old XP if new is lower/same
-    }
   }
   DebugInfo getDebugInfo() const;
   void setColor(const JAGEngine::ColorRGBA8& color) { m_color = color; }
@@ -142,6 +175,7 @@ private:
   ObjectManager* m_objectManager = nullptr;
 
   b2Vec2 getForwardVector() const;
+  void applyLapBonuses();
   float calculateLapProgress(const SplineTrack* track);
   void updateMovement(const InputState& input);
   void updateBoostEffects();

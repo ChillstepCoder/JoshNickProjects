@@ -30,12 +30,17 @@ bool AudioEngine::init() {
 
   // Initialize racing-specific audio settings
   // 
-  // Set up RTPC parameters
   std::cout << "Registering audio game objects...\n";
   AkGameObjectID countdownID = RacingAudio::GAME_OBJECT_COUNTDOWN;
   AKRESULT result = AK::SoundEngine::RegisterGameObj(countdownID, "Countdown");
   if (result != AK_Success) {
     std::cout << "Failed to register countdown game object. Result: " << result << std::endl;
+    return false;
+  }
+  AkGameObjectID musicId = RacingAudio::GAME_OBJECT_MUSIC;
+  result = AK::SoundEngine::RegisterGameObj(musicId, "Music");
+  if (result != AK_Success) {
+    std::cout << "Failed to register music game object. Result: " << result << std::endl;
     return false;
   }
   std::cout << "Game objects registered successfully\n";
@@ -44,6 +49,8 @@ bool AudioEngine::init() {
   m_masterVolume = 1.0f;
   m_effectsVolume = 1.0f;
   m_musicVolume = 1.0f;
+
+  // Set up RTPC parameters
 
   // Apply volumes to WWise
   AK::SoundEngine::SetRTPCValue("Master_Volume", m_masterVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
@@ -158,6 +165,30 @@ void AudioEngine::playRaceFinishSound() {
 
 void AudioEngine::playCheckpointSound() {
 
+}
+
+void AudioEngine::playMusicTrack(AkUniqueID trackId) {
+  if (!m_audioEngine || !m_audioEngine->isInitialized()) {
+    std::cout << "Audio engine not initialized for music playback" << std::endl;
+    return;
+  }
+
+  AkPlayingID playingId = AK::SoundEngine::PostEvent(
+    trackId,
+    RacingAudio::GAME_OBJECT_MUSIC
+  );
+
+  if (playingId == AK_INVALID_PLAYING_ID) {
+    std::cout << "Failed to play music track ID: " << trackId << std::endl;
+  }
+  else {
+    std::cout << "Started playing music track ID: " << trackId << std::endl;
+  }
+}
+
+void AudioEngine::stopMusicTrack(AkUniqueID trackId) {
+  if (!m_audioEngine || !m_audioEngine->isInitialized()) return;
+  AK::SoundEngine::PostEvent(trackId, RacingAudio::GAME_OBJECT_MUSIC);
 }
 
 void AudioEngine::handleCarCollision(const PhysicsSystem::CollisionInfo& collision) {

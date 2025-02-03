@@ -20,7 +20,7 @@ public:
   XPPickupObject(const XPPickupObject& other);
 
   void createCollisionShape(b2BodyId bodyId, PhysicsSystem* physics) override {
-    std::cout << "Creating XP pickup collision shape" << std::endl;
+    //std::cout << "Creating XP pickup collision shape" << std::endl;
     float radius = 10.0f;
     auto shapeId = physics->createCircleShape(bodyId, radius,
       CATEGORY_POWERUP,
