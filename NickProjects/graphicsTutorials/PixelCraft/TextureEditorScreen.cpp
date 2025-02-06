@@ -39,6 +39,8 @@ void TextureEditorScreen::destroy() {
 void TextureEditorScreen::onEntry() {
     std::cout << "OnEntry\n";
 
+    BlockDefRepository::initBlockDefs();
+
     m_spriteBatch.init();
 
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
@@ -113,28 +115,40 @@ void TextureEditorScreen::drawImgui() {
     GLuint textureID = Bengine::ResourceManager::getTexture("Textures/Stone.png").id;
     BlockDefRepository repository;
     BlockID id = BlockID::STONE;
+    BlockDef blockDef = repository.getDef(id);
 
-    ImVec2 display_min = ImVec2(0.0f, 0.0f);
-    ImVec2 display_size = ImVec2(450.0f, 450.0f);
-    ImVec2 texture_size = ImVec2(288.0f, 270.0f);
+    ImVec2 display_size = ImVec2(300.0f, 300.0f);
 
-    ImVec2 uv0 = ImVec2(display_min.x / texture_size.x, display_min.y / texture_size.y);
+    static int subUV_X = 1;
+    static int subUV_Y = 1;
 
-    ImVec2 uv1 = ImVec2((display_min.x + display_size.x) / texture_size.x, (display_min.y + display_size.y) / texture_size.y);
+    glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(subUV_X, subUV_Y), TILE_ATLAS_DIMS_CELLS);
 
-    ImGui::Text("uv0 = (%f, %f)", uv0.x, uv0.y);
-    ImGui::Text("uv1 = (%f, %f)", uv1.x, uv1.y);
+    float pixelWidth = 0.00694f;
+    float pixelHeight = 0.00740f;
 
-    //glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(3, 3), TILE_ATLAS_DIMS_CELLS);
-
-    //glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight);
+    glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight); // need this because the .png is slightly incorrect
 
 
     if (ImGui::Button("Previous")) {
+        if (subUV_X > 1) {
+            subUV_X--;
+        }
+        else if (subUV_Y > 1) {
+            subUV_Y--;
+            subUV_X = TILE_ATLAS_DIMS_CELLS.x;
+        }
 
     }
     ImGui::SameLine();
     if (ImGui::Button("Next")) {
+        if (subUV_X < TILE_ATLAS_DIMS_CELLS.x) {
+            subUV_X++;
+        }
+        else if (subUV_Y < TILE_ATLAS_DIMS_CELLS.y) {
+            subUV_Y++;
+            subUV_X = 1;
+        }
 
     }
     if (ImGui::Button("Return to Menu")) {
@@ -142,13 +156,18 @@ void TextureEditorScreen::drawImgui() {
         setState(Bengine::ScreenState::CHANGE_PREVIOUS);
     }
 
+
+    ImGui::Text("SubUV (x,y) = (%d, %d)", subUV_X, subUV_Y);
+    ImGui::Text("uv0 = (%f, %f)", uvRectFixed.x, uvRectFixed.y);
+    ImGui::Text("uv1 = (%f, %f)", uvRectFixed.x + uvRectFixed.z, uvRectFixed.y + uvRectFixed.w);
+
     ImGui::End();
 
     ImGui::SetNextWindowPos(ImVec2(520, 10), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
     ImGui::Begin("Texture", nullptr, ImGuiWindowFlags_NoCollapse);
 
-    ImGui::Image((ImTextureID)std::uintptr_t(textureID), ImVec2(display_size.x, display_size.y), uv0, uv1);
+    ImGui::Image((ImTextureID)std::uintptr_t(textureID), ImVec2(display_size.x, display_size.y), ImVec2(uvRectFixed.x, uvRectFixed.y), ImVec2(uvRectFixed.x + uvRectFixed.z, uvRectFixed.y + uvRectFixed.w));
 
     ImGui::End();
 }
