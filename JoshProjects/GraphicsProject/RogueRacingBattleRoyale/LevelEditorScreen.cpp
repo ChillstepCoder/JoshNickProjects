@@ -2236,7 +2236,7 @@ void LevelEditorScreen::drawTestModeUI() {
 
         // Create the button
         if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetWindowWidth() - 30, 50))) {
-          applyUpgrade(upgrade);
+          applyUpgrade(upgrade, m_testCars[0].get());  // Pass the player car
           m_showLevelUpUI = false;
           m_isLevelUpPaused = false;
           m_availableUpgrades.clear();
@@ -2459,22 +2459,23 @@ void LevelEditorScreen::updateTestMode() {
   // Only update game logic if not paused for level up
   if (!m_isLevelUpPaused) {
     if (m_testMode && m_raceTimer && m_raceTimer->isRunning()) {
+      // Update race positions BEFORE checking start line crossing
+      if (m_testCars.size() > 1) {
+        m_raceManager.updateRacePositions(m_testCars);
+      }
+
+      // Now update start line crossing with correct positions
       for (auto& car : m_testCars) {
         car->updateStartLineCrossing(m_track.get());
       }
     }
 
-    // Check for level up on player car
-    if (!m_testCars.empty()) {
-      auto& props = m_testCars[0]->getProperties();
+    // Check all cars for level ups
+    for (size_t i = 0; i < m_testCars.size(); i++) {
+      auto& props = m_testCars[i]->getProperties();
       if (props.totalXP >= props.xpLevelUpAmount) {
-        m_isLevelUpPaused = true;
-        m_showLevelUpUI = true;
-        props.level += 1;
-        props.totalXP -= props.xpLevelUpAmount;
-        props.xpLevelUpAmount = round(props.xpLevelUpAmount * 1.1f);
-        m_testCars[0]->setProperties(props);
-        return; // Exit early to prevent further updates this frame
+        handleCarLevelUp(i);
+        if (i == 0) return;  // Return only for player car (to pause game)
       }
     }
 
@@ -2517,11 +2518,7 @@ void LevelEditorScreen::updateTestMode() {
       }
     }
 
-    // Update race positions and objects
-    if (m_testCars.size() > 1) {
-      m_raceManager.updateRacePositions(m_testCars);
-    }
-
+    //update objects
     if (m_objectManager) {
       m_objectManager->update();
     }
@@ -2868,9 +2865,12 @@ const char* LevelEditorScreen::getStatName(StatType type) {
   }
 }
 
-void LevelEditorScreen::applyUpgrade(const StatUpgrade& upgrade) {
+void LevelEditorScreen::applyUpgrade(const StatUpgrade& upgrade, Car* car) {
+  if (!car) return;
+
+  auto& props = car->getProperties();
+
   if (!m_testCars.empty()) {
-    auto& props = m_testCars[0]->getProperties();  // Get reference
     if (upgrade.isSpecial) {
       // Just increase the level - bonuses will be applied on next lap completion
       switch (upgrade.type) {
@@ -2931,4 +2931,62 @@ void LevelEditorScreen::applyUpgrade(const StatUpgrade& upgrade) {
       }
     }
   }
+}
+
+void LevelEditorScreen::handleCarLevelUp(size_t carIndex) {
+  if (carIndex >= m_testCars.size()) return;
+
+  auto& car = m_testCars[carIndex];
+  auto& props = car->getProperties();
+
+  props.level += 1;
+  props.totalXP -= props.xpLevelUpAmount;
+  props.xpLevelUpAmount = round(props.xpLevelUpAmount * 1.1f);
+
+  if (carIndex == 0) {
+    // Player car - show UI
+    m_isLevelUpPaused = true;
+    m_showLevelUpUI = true;
+    m_availableUpgrades.clear();  // Will be generated when UI is shown
+  }
+  else {
+    // AI car - apply random upgrade immediately
+    StatUpgrade upgrade = generateRandomUpgrade();
+    applyUpgrade(upgrade, car.get());
+  }
+}
+
+LevelEditorScreen::StatUpgrade LevelEditorScreen::generateRandomUpgrade() {
+  std::vector<StatType> allStats = {
+      StatType::TopSpeed,
+      StatType::Acceleration,
+      StatType::Weight,
+      StatType::WheelGrip,
+      StatType::Handling,
+      StatType::Booster,
+      StatType::SurfaceResistance,
+      StatType::DamageResistance,
+      StatType::XPGain,
+      StatType::Braking
+  };
+
+  // Randomly shuffle the stats
+  std::random_shuffle(allStats.begin(), allStats.end());
+
+  StatUpgrade upgrade;
+  upgrade.type = allStats[0];  // Take the first one after shuffling
+
+  // 20% chance for special per-lap bonus
+  upgrade.isSpecial = (rand() % 5 == 0);
+
+  if (upgrade.isSpecial) {
+    upgrade.name = std::string(getStatName(upgrade.type)) + " Per Lap";
+    upgrade.description = "Gain +1% " + std::string(getStatName(upgrade.type)) + " each lap";
+  }
+  else {
+    upgrade.name = getStatName(upgrade.type);
+    upgrade.description = "Increase " + std::string(getStatName(upgrade.type)) + " by 10%";
+  }
+
+  return upgrade;
 }

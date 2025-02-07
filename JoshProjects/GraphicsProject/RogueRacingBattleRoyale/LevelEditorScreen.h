@@ -293,7 +293,9 @@ private:
   // Leveling
   void generateUpgradeChoices();
   const char* getStatName(StatType type);
-  void applyUpgrade(const StatUpgrade& upgrade);
+  void applyUpgrade(const StatUpgrade& upgrade, Car* car);
+  void handleCarLevelUp(size_t carIndex);
+  StatUpgrade generateRandomUpgrade();
 
   using IGameScreen::m_game;
 };

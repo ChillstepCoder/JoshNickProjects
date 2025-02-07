@@ -167,7 +167,6 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
   glm::vec2 velocity(debugInfo.velocity);
   glm::vec2 startPos = startNode->getPosition();
 
-  // First check if close enough to the start line to consider crossing
   float distToStart = glm::distance(currentPos, startPos);
   float lastDistToStart = glm::distance(lastPos, startPos);
   const float LINE_DETECTION_RADIUS = startNode->getRoadWidth() * 1.5f;
@@ -177,14 +176,10 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
     return;
   }
 
-  // Get track direction at start line
   glm::vec2 startNormal = track->getTrackDirectionAtNode(startNode);
-
-  // Calculate position relative to line
   float currentDot = glm::dot(currentPos - startPos, startNormal);
   float lastDot = glm::dot(lastPos - startPos, startNormal);
 
-  // Only count crossing if we moved from one side to the other and we're close enough
   if ((lastDot <= 0 && currentDot > 0) || (lastDot >= 0 && currentDot < 0)) {
     float movementDirection = glm::dot(velocity, startNormal);
     bool correctDirection = track->isDefaultDirection() ?
@@ -196,7 +191,35 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
     if (speed > MIN_CROSSING_SPEED) {
       if (correctDirection) {
         m_properties.currentLap++;
-        applyLapBonuses();
+        
+
+        // Only apply bonuses and XP rewards on new highest lap
+        if (m_properties.currentLap > m_properties.highestLapCompleted && m_properties.currentLap > 1) {
+          // Apply lap bonuses
+          applyLapBonuses();
+
+          // Apply position-based XP reward
+          int xpReward;
+          switch (m_properties.racePosition) {
+          case 1: xpReward = 10; break;
+          case 2: xpReward = 8; break;
+          case 3: xpReward = 6; break;
+          case 4: xpReward = 5; break;
+          case 5: xpReward = 4; break;
+          case 6: xpReward = 3; break;
+          case 7: xpReward = 2; break;
+          default: xpReward = 1; break;
+          }
+
+          // Apply XP multiplier if one exists
+          if (m_properties.specialStats.xpGain.level > 0) {
+            float xpMultiplier = 1.0f + (m_properties.specialStats.xpGain.level * 0.01f);
+            xpReward = static_cast<int>(xpReward * xpMultiplier);
+          }
+
+          m_properties.totalXP += xpReward;
+        }
+
         m_properties.lapProgress = 0.0f;
       }
       else if (m_properties.currentLap > 0) {
@@ -281,17 +304,23 @@ b2Vec2 Car::getForwardVector() const {
 }
 
 float Car::getTotalRaceProgress() const {
-  // Get the raw lap count and progress
   int currentLap = m_properties.currentLap;
   float lapProgress = m_properties.lapProgress;
 
+  // Special case for start of race
   if (currentLap == 0 && lapProgress > 0.9f) {
     return -0.1f;  // Start slightly behind the line
   }
 
-  // For the first lap (currentLap = 1), just return lap progress
-  // For subsequent laps, add completed laps to progress
-  return (currentLap <= 1) ? lapProgress : static_cast<float>(currentLap - 1) + lapProgress;
+  // Special case for crossing finish line
+  if (currentLap > 0 && lapProgress < 0.1f && currentLap > 1) {
+    return static_cast<float>(currentLap - 1);  // Count as completing previous lap
+  }
+
+  // Normal progress calculation
+  return (currentLap <= 1) ?
+    lapProgress :
+    static_cast<float>(currentLap - 1) + lapProgress;
 }
 
 void Car::applyLapBonuses() {
