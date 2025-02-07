@@ -109,18 +109,18 @@ void TextureEditorScreen::drawBackground() {
 
 void TextureEditorScreen::drawImgui() {
     ImGui::SetNextWindowPos(ImVec2(520, 510), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Texture Editor");
-    GLuint textureID = Bengine::ResourceManager::getTexture("Textures/Stone.png").id;
+    GLuint textureID = Bengine::ResourceManager::getTexture("Textures/Stone.png", Bengine::TextureFilterMode::Nearest).id;
     BlockDefRepository repository;
     BlockID id = BlockID::STONE;
     BlockDef blockDef = repository.getDef(id);
 
-    ImVec2 display_size = ImVec2(300.0f, 300.0f);
+    ImVec2 display_size = ImVec2(600.0f, 600.0f);
 
-    static int subUV_X = 1;
-    static int subUV_Y = 1;
+    static int subUV_X = 0;
+    static int subUV_Y = 0;
 
     glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(subUV_X, subUV_Y), TILE_ATLAS_DIMS_CELLS);
 
@@ -131,10 +131,10 @@ void TextureEditorScreen::drawImgui() {
 
 
     if (ImGui::Button("Previous")) {
-        if (subUV_X > 1) {
+        if (subUV_X > 0) {
             subUV_X--;
         }
-        else if (subUV_Y > 1) {
+        else if (subUV_Y > 0) {
             subUV_Y--;
             subUV_X = TILE_ATLAS_DIMS_CELLS.x;
         }
@@ -163,11 +163,15 @@ void TextureEditorScreen::drawImgui() {
 
     ImGui::End();
 
-    ImGui::SetNextWindowPos(ImVec2(520, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(200, 150), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(520, 0), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(display_size.x * 2, display_size.y), ImGuiCond_Appearing);
     ImGui::Begin("Texture", nullptr, ImGuiWindowFlags_NoCollapse);
 
     ImGui::Image((ImTextureID)std::uintptr_t(textureID), ImVec2(display_size.x, display_size.y), ImVec2(uvRectFixed.x, uvRectFixed.y), ImVec2(uvRectFixed.x + uvRectFixed.z, uvRectFixed.y + uvRectFixed.w));
+
+    // Full texture for reference
+    ImGui::SameLine();
+    ImGui::Image((ImTextureID)std::uintptr_t(textureID), ImVec2(display_size.x, display_size.y), ImVec2(0, 0), ImVec2(1, 1));
 
     ImGui::End();
 }
