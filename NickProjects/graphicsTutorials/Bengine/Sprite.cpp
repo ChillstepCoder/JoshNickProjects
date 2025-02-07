@@ -21,7 +21,8 @@ namespace Bengine {
         m_width = width;
         m_height = height;
 
-        m_texture = ResourceManager::getTexture(texturePath);
+        // TODO: allow passing the texture filter mode as a parameter if you want anything else than nearest
+        m_texture = ResourceManager::getTexture(texturePath, Bengine::TextureFilterMode::Nearest);
 
         if (m_vboID == 0) {
             glGenBuffers(1, &m_vboID);

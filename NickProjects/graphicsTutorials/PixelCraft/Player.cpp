@@ -31,8 +31,8 @@ glm::vec2 Player::getPosition() {
 
 
 void Player::init(b2WorldId* world, const glm::vec2& position, const glm::vec2& dimensions, Bengine::ColorRGBA8 color, Bengine::Camera2D* camera) {
-    Bengine::GLTexture playerRight = Bengine::ResourceManager::getTexture("Textures/playerRight.png");
-    Bengine::GLTexture playerLeft = Bengine::ResourceManager::getTexture("Textures/playerLeft.png");
+    Bengine::GLTexture playerRight = Bengine::ResourceManager::getTexture("Textures/playerRight.png", Bengine::TextureFilterMode::Nearest);
+    Bengine::GLTexture playerLeft = Bengine::ResourceManager::getTexture("Textures/playerLeft.png", Bengine::TextureFilterMode::Nearest);
     m_camera = camera;
     m_position = position;
     m_dimensions = dimensions;

@@ -8,7 +8,7 @@ namespace Bengine {
     class ImageLoader
     {
     public:
-        static GLTexture loadPNG(std::string filePath);
+        static GLTexture loadPNG(std::string filePath, TextureFilterMode filterMode);
     };
 
 }

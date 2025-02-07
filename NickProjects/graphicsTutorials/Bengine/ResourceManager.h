@@ -7,7 +7,7 @@ namespace Bengine {
     class ResourceManager
     {
     public:
-        static GLTexture getTexture(std::string texturePath);
+        static GLTexture getTexture(std::string texturePath, Bengine::TextureFilterMode filterMode);
 
 
     private:

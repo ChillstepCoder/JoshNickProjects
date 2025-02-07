@@ -22,7 +22,15 @@ int MainMenuScreen::getPreviousScreenIndex() const {
 }
 
 void MainMenuScreen::build() {
+    Bengine::ImGuiManager::init(m_window);
 
+    // Shader.init
+    // Compile our color shader
+    m_textureProgram.compileShaders("Shaders/textureShadingVert.txt", "Shaders/textureShadingFrag.txt");
+    m_textureProgram.addAttribute("vertexPosition");
+    m_textureProgram.addAttribute("vertexColor");
+    m_textureProgram.addAttribute("vertexUV");
+    m_textureProgram.linkShaders();
 }
 
 void MainMenuScreen::destroy() {
@@ -34,16 +42,6 @@ void MainMenuScreen::onEntry() {
     m_screenIndex = 0;
 
     m_spriteBatch.init();
-
-    Bengine::ImGuiManager::init(m_window);
-
-    // Shader.init
-    // Compile our color shader
-    m_textureProgram.compileShaders("Shaders/textureShadingVert.txt", "Shaders/textureShadingFrag.txt");
-    m_textureProgram.addAttribute("vertexPosition");
-    m_textureProgram.addAttribute("vertexColor");
-    m_textureProgram.addAttribute("vertexUV");
-    m_textureProgram.linkShaders();
 
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
     m_camera.setScale(20.0f); // 20.0f
@@ -112,24 +110,13 @@ void MainMenuScreen::drawBackground() {
 void MainMenuScreen::drawImgui() {
     ImGui::Begin("Main Menu");
 
-    int play = 0;
-    if (ImGui::Button("Play"))
-        play++;
-
-    if (play & 1)
-    {
-
-        m_game->getCurrentScreen()->setState(Bengine::ScreenState::CHANGE_NEXT);
-
+    if (ImGui::Button("Play")) {
+        setState(Bengine::ScreenState::CHANGE_NEXT);
     }
-    int texture = 0;
-    if (ImGui::Button("Texture Editor"))
-        texture++;
-    if (texture & 1)
-    {
-        m_screenIndex = 1;
-        m_game->getCurrentScreen()->setState(Bengine::ScreenState::CHANGE_NEXT);
 
+    if (ImGui::Button("Texture Editor")) {
+        m_screenIndex = 1;
+        setState(Bengine::ScreenState::CHANGE_NEXT);
     }
 
     ImGui::End();

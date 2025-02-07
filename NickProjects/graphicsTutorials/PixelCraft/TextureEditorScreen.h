@@ -13,6 +13,7 @@
 #include "ImGui/backends/imgui_impl_sdl2.h"
 #include "ImGui/backends/imgui_impl_opengl3.h"
 
+
 class TextureEditorScreen : public Bengine::IGameScreen {
 public:
     TextureEditorScreen(Bengine::Window* window);
