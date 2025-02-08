@@ -6,9 +6,10 @@
 #include "Bengine/ImGuiManager.h"
 #include <Bengine/ResourceManager.h>
 #include "Block.h"
+#include "ConnectedTextureSet.h"
 
-TextureEditorScreen::TextureEditorScreen(Bengine::Window* window) : m_window(window) {
-
+TextureEditorScreen::TextureEditorScreen(Bengine::Window* window) : m_window(window), m_connectedTextureSet(ConnectedTextureSet::getInstance()){
+    m_connectedTextureSet.LoadRules();
 }
 TextureEditorScreen::~TextureEditorScreen() {
 
@@ -96,6 +97,53 @@ void TextureEditorScreen::checkInput() {
     }
 }
 
+void TextureEditorScreen::updateCurrentSubtexture()
+{
+    renderRuleDropDown(5);
+    ImGui::SameLine();
+    renderRuleDropDown(6);
+    ImGui::SameLine();
+    renderRuleDropDown(7);
+    renderRuleDropDown(3);
+    for (int i = 0; i < 10; i++) {
+        ImGui::SameLine();
+        ImGui::Spacing();
+    }
+    ImGui::SameLine();
+    renderRuleDropDown(4);
+    renderRuleDropDown(0);
+    ImGui::SameLine();
+    renderRuleDropDown(1);
+    ImGui::SameLine();
+    renderRuleDropDown(2);
+}
+// Direction represents
+// the nearby cells
+// 5 6 7
+// 3   4
+// 0 1 2
+void TextureEditorScreen::renderRuleDropDown(int direction)
+{
+    BlockAdjacencyRules& rules = m_connectedTextureSet.SubTextureRules[subUV_X][subUV_Y];
+
+    AdjacencyRule& rule = rules.Rules[direction];
+    const char* strings[] = {
+        "AIR",
+        "BLOCK",
+        "DIRT",
+        "ANY"
+    };
+    int comboVal = (int)rule;
+    std::string label = std::to_string(direction);
+    ImGui::SetNextItemWidth(64);
+    if (ImGui::Combo(label.c_str(), &comboVal, strings, 4)) {
+        rule = (AdjacencyRule)comboVal;
+        m_connectedTextureSet.SaveRules();
+        
+    }
+
+}
+
 void TextureEditorScreen::drawBackground() {
     m_spriteBatch.begin();
 
@@ -119,38 +167,38 @@ void TextureEditorScreen::drawImgui() {
 
     ImVec2 display_size = ImVec2(600.0f, 600.0f);
 
-    static int subUV_X = 0;
-    static int subUV_Y = 0;
+    glm::vec4 uvRect = SubTexture::getSubUVRect(glm::ivec2(subUV_X, subUV_Y), TILE_ATLAS_DIMS_CELLS);
 
-    glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(subUV_X, subUV_Y), TILE_ATLAS_DIMS_CELLS);
+    float pixelWidth = 0.00690f;
+    float pixelHeight = 0.00736f;
 
-    float pixelWidth = 0.00694f;
-    float pixelHeight = 0.00740f;
+    glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight); // need this because the .png is slightly incorrect
 
-    glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight); // need this because the .png is slightly incorrect
-
-
+    Bengine::setTextureFilterMode(textureID, Bengine::TextureFilterMode::Nearest);
     if (ImGui::Button("Previous")) {
         if (subUV_X > 0) {
             subUV_X--;
         }
         else if (subUV_Y > 0) {
             subUV_Y--;
-            subUV_X = TILE_ATLAS_DIMS_CELLS.x;
+            subUV_X = (TILE_ATLAS_DIMS_CELLS.x - 1);
         }
 
     }
     ImGui::SameLine();
     if (ImGui::Button("Next")) {
-        if (subUV_X < TILE_ATLAS_DIMS_CELLS.x) {
+        if (subUV_X < TILE_ATLAS_DIMS_CELLS.x - 1) {
             subUV_X++;
         }
-        else if (subUV_Y < TILE_ATLAS_DIMS_CELLS.y) {
+        else if (subUV_Y < TILE_ATLAS_DIMS_CELLS.y - 1) {
             subUV_Y++;
-            subUV_X = 1;
+            subUV_X = 0;
         }
 
     }
+
+    updateCurrentSubtexture();
+
     if (ImGui::Button("Return to Menu")) {
         m_screenIndex = 1;
         setState(Bengine::ScreenState::CHANGE_PREVIOUS);
