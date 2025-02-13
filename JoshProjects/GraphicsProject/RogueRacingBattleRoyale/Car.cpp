@@ -47,6 +47,7 @@ Car::Car(b2BodyId bodyId) : m_bodyId(bodyId) {
       std::cout << "Car body is valid" << std::endl;
     }
   }
+  updatePhysicsWeight();
 
   b2Body_SetUserData(m_bodyId, static_cast<void*>(this));
 }
@@ -232,6 +233,13 @@ void Car::updateStartLineCrossing(const SplineTrack* track) {
   m_properties.lastPosition = currentPos;
 }
 
+void Car::updatePhysicsWeight() {
+  if (!b2Body_IsValid(m_bodyId)) return;
+
+  b2MassData massData = b2Body_GetMassData(m_bodyId);
+  massData.mass = m_properties.weight;  // Set mass directly from weight property
+  b2Body_SetMassData(m_bodyId, massData);
+}
 
 void Car::updateBoostEffects() {
   if (m_properties.isOnBooster && m_properties.currentBooster) {
@@ -285,14 +293,14 @@ void Car::updateBoostEffects() {
 }
 
 void Car::applyFriction(const b2Vec2& currentVel) {
+  // Surface friction (from wheels touching ground)
   float averageWheelFriction = calculateAverageWheelFriction();
-  float effectiveFriction = m_properties.wheelFriction * m_properties.baseFriction * averageWheelFriction;
+  float surfaceFriction = (1.0f - averageWheelFriction) * m_properties.surfaceDragSensitivity * 2.0f;  // Increase effect
 
-  // Apply friction as a force opposing current velocity
   if (b2Vec2Length(currentVel) > 0.1f) {
     b2Vec2 frictionForce = {
-        -currentVel.x * effectiveFriction,
-        -currentVel.y * effectiveFriction
+        -currentVel.x * surfaceFriction,
+        -currentVel.y * surfaceFriction
     };
     b2Body_ApplyForceToCenter(m_bodyId, frictionForce, true);
   }
@@ -354,6 +362,10 @@ void Car::applyLapBonuses() {
   }
   if (stats.braking.level > 0) {
     m_properties.brakingForce *= (1.0f + (stats.braking.level * 0.01f));
+  }
+  if (stats.weight.level > 0) {
+    m_properties.weight *= (1.0f + (stats.weight.level * 0.01f));
+    updatePhysicsWeight();  // Update physics when weight changes
   }
 }
 
@@ -418,8 +430,12 @@ void Car::updateMovement(const InputState& input) {
   float effectiveFriction = 1.0f - ((1.0f - averageFriction) * m_properties.surfaceDragSensitivity);
 
   // Scale acceleration and max speed based on effective friction
-  float effectiveMaxSpeed = m_properties.maxSpeed * effectiveFriction;
-  float effectiveAcceleration = m_properties.acceleration * effectiveFriction;
+  float effectiveMaxSpeed = (m_properties.maxSpeed * effectiveFriction)/10.0f;
+  float effectiveAcceleration = m_properties.acceleration * effectiveFriction * (m_properties.weight/100.0f);
+
+  std::cout << "Speed: " << currentSpeed << " / MaxSpeed: " << effectiveMaxSpeed
+    << " (Raw MaxSpeed: " << m_properties.maxSpeed
+    << ", Friction Mult: " << effectiveFriction << ")\r";
 
   // Reset forces if no input
   if (!input.accelerating && !input.braking) {
@@ -554,24 +570,36 @@ void Car::applyDrag(const b2Vec2& currentVel, float forwardSpeed) {
       forwardDir.x * forwardSpeed,
       forwardDir.y * forwardSpeed
   };
-
   b2Vec2 lateralVel = {
       currentVel.x - forwardVel.x,
       currentVel.y - forwardVel.y
   };
-
   float lateralSpeed = b2Vec2Length(lateralVel);
 
-  // Stabilize lateral velocity to reduce bouncing
+  // Calculate speed-based resistance reduction
+  float currentSpeed = b2Vec2Length(currentVel);
+  float effectiveMaxSpeed = (m_properties.maxSpeed * (1.0f - ((1.0f - calculateAverageWheelFriction()) * m_properties.surfaceDragSensitivity))) / 10.0f;
+  float speedRatio = currentSpeed / effectiveMaxSpeed;
+
+  // Exponentially reduce resistance as speed increases
+  float resistanceReduction = pow(1.0f - speedRatio, 2.0f);  // Quadratic reduction
+  resistanceReduction = std::max(0.01f, resistanceReduction); // Only 1% resistance at max speed
+
+  // Stabilize lateral velocity more aggressively at high speeds
   if (lateralSpeed > m_properties.maxSpeed * 0.1f) {
-    lateralVel.x *= 0.7f;
-    lateralVel.y *= 0.7f;
+    float lateralDampingFactor = 0.7f * (1.0f + speedRatio);  // More damping at high speeds
+    lateralVel.x *= lateralDampingFactor;
+    lateralVel.y *= lateralDampingFactor;
   }
 
-  // Apply damping to avoid sticking to the barrier
+  // Apply speed-based drag (inverted from dragFactor)
+  float dragStrength = (1.0f - m_properties.dragFactor) * resistanceReduction;
+  float retentionFactor = 1.0f - dragStrength;
+
+  // Apply final velocity
   b2Vec2 newVel = {
-      (forwardVel.x + lateralVel.x * m_properties.lateralDamping) * m_properties.dragFactor,
-      (forwardVel.y + lateralVel.y * m_properties.lateralDamping) * m_properties.dragFactor
+      (forwardVel.x + lateralVel.x * m_properties.lateralDamping) * retentionFactor,
+      (forwardVel.y + lateralVel.y * m_properties.lateralDamping) * retentionFactor
   };
 
   // Apply small impulse if near-zero velocity

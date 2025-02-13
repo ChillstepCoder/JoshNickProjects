@@ -203,6 +203,8 @@ private:
   std::unique_ptr<RaceCountdown> m_raceCountdown;
   bool m_readyToStart = false;
   std::unique_ptr<RaceTimer> m_raceTimer;
+  std::vector<float> m_aiStartDelays;  // Delay time for each AI car
+  float m_maxAIStartDelay = 1.0f;
 
   // Text Rendering
   std::unique_ptr<JAGEngine::SpriteFont> m_countdownFont;

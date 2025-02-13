@@ -54,6 +54,7 @@ public:
       LapBonus damageResistance;
       LapBonus xpGain;
       LapBonus braking;
+      LapBonus weight;
     };
 
     // Movement properties
@@ -71,6 +72,7 @@ public:
     float baseFriction = 0.5f;
     float frictionImbalanceSensitivity = 7.5f;
     float surfaceDragSensitivity = 0.8f;
+    float weight = 100.0f;
     // Drift properties
     float wheelGrip = 0.49f;
     float driftState = 0.0f;
@@ -126,6 +128,7 @@ public:
 
   void update(const InputState& input);
   void updateStartLineCrossing(const SplineTrack* track);
+  void updatePhysicsWeight();
   void resetPosition(const b2Vec2& position = { -100.0f, -100.0f }, float angle = 0.0f);
 
   CarProperties& getProperties() { return m_properties; }

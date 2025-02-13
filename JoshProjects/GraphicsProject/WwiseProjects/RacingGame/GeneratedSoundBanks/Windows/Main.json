@@ -10,7 +10,7 @@
     "Type": "User",
     "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
     "Language": "SFX",
-    "Hash": "{B67C428C-F3B2-79F6-46DA-8A8090ED2B17}",
+    "Hash": "{05C47F53-41EF-23C5-2151-4077E42087D9}",
     "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
     "ShortName": "Main",
     "Path": "Main.bnk",
@@ -21,7 +21,15 @@
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Music_HyperLoop.wav",
-      "CachePath": "93/{9337DD9A-B583-6470-B7ED-039EAB287A6E}.wem"
+      "CachePath": "B0/{B01536C5-B553-23EE-7B35-093F9B5AC15B}.wem"
+     },
+     {
+      "Id": "88325721",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_Glass_1.wav",
+      "CachePath": "B2/{B2640466-65FB-CE05-DDA3-680E79C2DB7C}.wem"
      },
      {
       "Id": "108366440",
@@ -32,12 +40,20 @@
       "CachePath": "77/{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem"
      },
      {
-      "Id": "210215047",
+      "Id": "133719341",
       "Language": "SFX",
       "Streaming": "false",
       "Location": "Memory",
-      "ShortName": "Car_Crash_SFX_1.wav",
-      "CachePath": "B1/{B13B2A01-5685-1F1F-0264-4EAF9A416B89}.wem"
+      "ShortName": "Car_Crash_SFX_Glass_2.wav",
+      "CachePath": "6F/{6F6ACC91-0DC6-4918-665E-148266B8A729}.wem"
+     },
+     {
+      "Id": "147692168",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_4.wav",
+      "CachePath": "DC/{DC350E02-CD89-27CB-2FA0-8EC10F04E237}.wem"
      },
      {
       "Id": "219920735",
@@ -46,6 +62,22 @@
       "Location": "Memory",
       "ShortName": "Music_CyberChase.wav",
       "CachePath": "26/{26CFA13C-EE2B-5F0B-C196-C2BA2178F782}.wem"
+     },
+     {
+      "Id": "349054807",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_1.wav",
+      "CachePath": "36/{3660CCC8-5FA8-DF49-44AF-16D707E6C9FD}.wem"
+     },
+     {
+      "Id": "433551775",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_2.wav",
+      "CachePath": "BC/{BC281365-2C87-AEBE-EC55-A16E317A8C59}.wem"
      },
      {
       "Id": "536482941",
@@ -77,7 +109,7 @@
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Music_CyberChase.wav",
-      "CachePath": "80/{80714935-0273-F94A-3666-3F2D911A442A}.wem"
+      "CachePath": "5B/{5B767F30-F5AA-ECE9-B4AF-CC5E00ADAD67}.wem"
      },
      {
       "Id": "829908123",
@@ -86,6 +118,14 @@
       "Location": "Memory",
       "ShortName": "Engine_Rev_SFX_1.wav",
       "CachePath": "51/{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem"
+     },
+     {
+      "Id": "849129411",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_3.wav",
+      "CachePath": "0B/{0B151883-B6A4-FAB0-5490-C9747AE650D4}.wem"
      },
      {
       "Id": "1030427408",
@@ -102,8 +142,48 @@
       "Location": "Memory",
       "ShortName": "Car_Grass_Skid_1.wav",
       "CachePath": "D1/{D1925B4A-9795-51A5-E7D4-99281C03E004}.wem"
+     },
+     {
+      "Id": "1070648498",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Music_HyperLoop.wav",
+      "CachePath": "93/{9337DD9A-B583-6470-B7ED-039EAB287A6E}.wem"
      }
     ],
+    "Plugins": {
+     "Custom": [
+      {
+       "Id": "973345395",
+       "Name": "Impacter",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Default Work Unit\\CarCrash_SFX\\Impacter",
+       "GUID": "{D0D3242E-B103-4D14-962E-17A8C65B749A}",
+       "LibName": "Impacter",
+       "LibId": "12058626",
+       "MediaRefs": [
+        {
+         "Id": "88325721"
+        },
+        {
+         "Id": "133719341"
+        },
+        {
+         "Id": "147692168"
+        },
+        {
+         "Id": "349054807"
+        },
+        {
+         "Id": "433551775"
+        },
+        {
+         "Id": "849129411"
+        }
+       ]
+      }
+     ]
+    },
     "Events": [
      {
       "Id": "2622523685",
@@ -112,11 +192,13 @@
       "GUID": "{DEEA1078-1573-42AA-8F66-E33DF0201433}",
       "MaxAttenuation": "500",
       "DurationType": "Unknown",
-      "MediaRefs": [
-       {
-        "Id": "210215047"
-       }
-      ]
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "973345395"
+        }
+       ]
+      }
      },
      {
       "Id": "2960744889",
@@ -215,6 +297,9 @@
       "MediaRefs": [
        {
         "Id": "78980995"
+       },
+       {
+        "Id": "1070648498"
        }
       ]
      },
@@ -325,6 +410,6 @@
     ]
    }
   ],
-  "FileHash": "{B2C000DD-C4B2-8337-7B45-D7A32A7560F9}"
+  "FileHash": "{5959BCA8-2302-3BD0-C198-62058EDEDDCD}"
  }
 }

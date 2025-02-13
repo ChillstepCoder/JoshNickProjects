@@ -1415,6 +1415,13 @@ void LevelEditorScreen::initTestMode() {
     m_objectManager = std::move(newManager);
   }
 
+  // Initialize AI start delays
+  m_aiStartDelays.clear();
+  for (size_t i = 1; i < m_testCars.size(); i++) {  // Start from 1 to skip player
+    float delay = (rand() / static_cast<float>(RAND_MAX)) * m_maxAIStartDelay;
+    m_aiStartDelays.push_back(delay);
+  }
+
   // Initialize race timer and countdown
   if (!m_raceTimer) {
     m_raceTimer = std::make_unique<RaceTimer>();
@@ -1835,6 +1842,9 @@ void LevelEditorScreen::drawCarPropertiesUI() {
       ImGui::SliderFloat("Max Angular Velocity", &props.maxAngularVelocity, 1.0f, 5.0f, "%.1f");
       ImGui::SliderFloat("Braking Force", &props.brakingForce, 0.1f, 2.0f, "%.2f");
       ImGui::SliderFloat("Min Speed For Turn", &props.minSpeedForTurn, 0.1f, 5.0f, "%.1f");
+      if (ImGui::SliderFloat("Weight", &props.weight, 0.0f, 1000.0f, "%.1f")) {
+        m_testCars[m_selectedCarIndex]->updatePhysicsWeight();
+      }
 
       // Surface Effects section
       ImGui::Separator();
@@ -2895,6 +2905,9 @@ void LevelEditorScreen::applyUpgrade(const StatUpgrade& upgrade, Car* car) {
       case StatType::Braking:
         props.specialStats.braking.level++;
         break;
+      case StatType::Weight:
+        props.specialStats.weight.level++;
+        break;
       }
     }
     else {
@@ -2927,6 +2940,11 @@ void LevelEditorScreen::applyUpgrade(const StatUpgrade& upgrade, Car* car) {
       case StatType::Braking:
         props.statLevels.braking++;
         props.brakingForce *= 1.1f;
+        break;
+      case StatType::Weight:
+        props.statLevels.weight++;
+        props.brakingForce *= 1.1f;
+        car->updatePhysicsWeight();
         break;
       }
     }

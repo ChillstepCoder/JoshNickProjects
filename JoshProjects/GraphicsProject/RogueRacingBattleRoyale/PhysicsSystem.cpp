@@ -368,8 +368,10 @@ void PhysicsSystem::handleSensorEvents() {
   }
 }
 
+// PhysicsSystem.cpp
 void PhysicsSystem::handleCollisionEvents() {
-  if (!b2World_IsValid(m_worldId)) return;
+  if (!b2World_IsValid(m_worldId))
+    return;
 
   b2ContactEvents contactEvents = b2World_GetContactEvents(m_worldId);
 
@@ -381,50 +383,40 @@ void PhysicsSystem::handleCollisionEvents() {
     b2BodyId bodyB = b2Shape_GetBody(hit->shapeIdB);
 
     // Check if both bodies are cars
-    if (!isCarBody(bodyA) || !isCarBody(bodyB)) {
+    if (!isCarBody(bodyA) || !isCarBody(bodyB))
       continue;
-    }
 
     // Get the car instances
     Car* carA = static_cast<Car*>(b2Body_GetUserData(bodyA));
     Car* carB = static_cast<Car*>(b2Body_GetUserData(bodyB));
-
-    if (!carA || !carB) {
+    if (!carA || !carB)
       continue;
-    }
 
-    // Get masses
+    // Get masses from both bodies
     b2MassData massDataA = b2Body_GetMassData(bodyA);
     b2MassData massDataB = b2Body_GetMassData(bodyB);
 
     // Constants for normalization
-    const float MAX_APPROACH_SPEED = 600.0f;  // Max observed head-on collision speed
-    const float MAX_COMBINED_MASS = 500.0f;   // Target mass for max RTPC value
+    const float MAX_APPROACH_SPEED = 600.0f;  // raw speed that maps to 1.0
+    const float MAX_COMBINED_MASS = 500.0f;    // raw combined mass that maps to 1.0
 
     float combinedMass = massDataA.mass + massDataB.mass;
-    float impactForce = combinedMass * hit->approachSpeed;
-
-    // Normalize the values to 0-1 range
+    // Normalize the values to a 0–1 range
     float normalizedSpeed = glm::clamp(hit->approachSpeed / MAX_APPROACH_SPEED, 0.0f, 1.0f);
     float normalizedMass = glm::clamp(combinedMass / MAX_COMBINED_MASS, 0.0f, 1.0f);
 
-    // Notify audio engine if impact is significant
-    if (normalizedSpeed > 0.02f && m_audioEngine) {  // Small threshold to avoid tiny collisions
-      CollisionInfo info = {
-          normalizedSpeed,  // Now sends 0-1 value
-          normalizedMass,   // Now sends 0-1 value
-          carA,
-          carB
-      };
+    // Only trigger the collision event for significant collisions (normalized speed > 0.2)
+    if (normalizedSpeed > 0.2f && m_audioEngine) {
+      CollisionInfo info = { normalizedSpeed, normalizedMass, carA, carB };
       m_audioEngine->handleCarCollision(info);
 
-      if (DEBUG_OUTPUT) {
-        std::cout << "Car collision detected - "
-          << "Raw Speed: " << hit->approachSpeed
-          << " Normalized Speed: " << normalizedSpeed
-          << " Raw Mass: " << combinedMass
-          << " Normalized Mass: " << normalizedMass << std::endl;
-      }
+      std::cout << "Car collision detected:" << std::endl;
+      std::cout << "  Car A Mass: " << massDataA.mass
+        << ", Car B Mass: " << massDataB.mass << std::endl;
+      std::cout << "  Combined Mass: " << combinedMass << std::endl;
+      std::cout << "  Approach Speed: " << hit->approachSpeed << std::endl;
+      std::cout << "  Normalized Speed (approachSpeed/600): " << normalizedSpeed << std::endl;
+      std::cout << "  Normalized Mass (combinedMass/500): " << normalizedMass << std::endl;
     }
   }
 }

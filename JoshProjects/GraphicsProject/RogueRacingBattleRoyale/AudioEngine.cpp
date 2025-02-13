@@ -3,6 +3,7 @@
 #include "AudioEngine.h"
 #include "Car.h"
 #include <JAGEngine/WWiseAudioEngine.h>
+#include <AK/Plugin/AkImpacterSourceFactory.h>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -29,20 +30,32 @@ bool AudioEngine::init() {
   }
 
   // Initialize racing-specific audio settings
-  // 
   std::cout << "Registering audio game objects...\n";
+
+  // Register Countdown game object
   AkGameObjectID countdownID = RacingAudio::GAME_OBJECT_COUNTDOWN;
   AKRESULT result = AK::SoundEngine::RegisterGameObj(countdownID, "Countdown");
   if (result != AK_Success) {
     std::cout << "Failed to register countdown game object. Result: " << result << std::endl;
     return false;
   }
+
+  // Register Music game object
   AkGameObjectID musicId = RacingAudio::GAME_OBJECT_MUSIC;
   result = AK::SoundEngine::RegisterGameObj(musicId, "Music");
   if (result != AK_Success) {
     std::cout << "Failed to register music game object. Result: " << result << std::endl;
     return false;
   }
+
+  // Register Impacts game object
+  AkGameObjectID impactsId = RacingAudio::GAME_OBJECT_IMPACTS;
+  result = AK::SoundEngine::RegisterGameObj(impactsId, "Impacts");
+  if (result != AK_Success) {
+    std::cout << "Failed to register impacts game object. Result: " << result << std::endl;
+    return false;
+  }
+
   std::cout << "Game objects registered successfully\n";
 
   // Set initial volumes
@@ -50,14 +63,6 @@ bool AudioEngine::init() {
   m_effectsVolume = 1.0f;
   m_musicVolume = 1.0f;
 
-  // Set up RTPC parameters
-
-  // Apply volumes to WWise
-  AK::SoundEngine::SetRTPCValue("Master_Volume", m_masterVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
-  AK::SoundEngine::SetRTPCValue("Effects_Volume", m_effectsVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
-  AK::SoundEngine::SetRTPCValue("Music_Volume", m_musicVolume * 100.0f, RacingAudio::GAME_OBJECT_COUNTDOWN);
-
-  // Print current volume settings
   std::cout << "Volume settings - Master: " << m_masterVolume
     << " Effects: " << m_effectsVolume
     << " Music: " << m_musicVolume << std::endl;
@@ -74,7 +79,6 @@ bool AudioEngine::init() {
     std::cout << "Failed to register default listener" << std::endl;
     return false;
   }
-
   AKRESULT outputResult = AK::SoundEngine::SetDefaultListeners(&DEFAULT_LISTENER_ID, 1);
   if (outputResult != AK_Success) {
     std::cout << "Failed to set default listener" << std::endl;
@@ -82,10 +86,10 @@ bool AudioEngine::init() {
   }
 
   std::cout << "Default listener registered and set" << std::endl;
-
   std::cout << "Racing Audio Engine initialized successfully!\n";
   return true;
 }
+
 
 void AudioEngine::update() {
   if (m_audioEngine) {
@@ -191,26 +195,30 @@ void AudioEngine::stopMusicTrack(AkUniqueID trackId) {
   AK::SoundEngine::PostEvent(trackId, RacingAudio::GAME_OBJECT_MUSIC);
 }
 
+// AudioEngine.cpp
 void AudioEngine::handleCarCollision(const PhysicsSystem::CollisionInfo& collision) {
-  if (!m_audioEngine || !m_audioEngine->isInitialized()) return;
+  if (!m_audioEngine || !m_audioEngine->isInitialized())
+    return;
 
-  // Play collision sound on both cars
+  // Retrieve the audio game object IDs for the two cars
   AkGameObjectID audioIdA = collision.carA->getAudioId();
   AkGameObjectID audioIdB = collision.carB->getAudioId();
 
-  // Post collision event for both cars
+  // Use the normalized values from collision info directly.
+  // (collision.speed and collision.mass are assumed to be normalized between 0 and 1.)
+  float rtpcSpeed = collision.speed * 100; // e.g., 1.0 means 600 units raw speed
+  float rtpcMass = collision.mass * 100;  // e.g., 0.4 means a combined mass of 200 when 500 is full
+
+  // Set RTPC values for collision velocity and mass on both car audio objects
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, rtpcSpeed, audioIdA);
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, rtpcMass, audioIdA);
+
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, rtpcSpeed, audioIdB);
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, rtpcMass, audioIdB);
+
+  // Post the collision event for both car audio objects
   AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISION, audioIdA);
   AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISION, audioIdB);
-
-  // Set collision parameters for both cars
-  float scaledSpeed = collision.speed * 100.0f; // Scale as needed
-  float scaledMass = collision.mass * 10.0f;    // Scale as needed
-
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, scaledSpeed, audioIdA);
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, scaledMass, audioIdA);
-
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, scaledSpeed, audioIdB);
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, scaledMass, audioIdB);
 }
 
 
