@@ -30,20 +30,14 @@ namespace Bengine {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        switch (filterMode) {
-            case TextureFilterMode::Nearest:
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-                break;
-            case TextureFilterMode::Linear:
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                break;
-            default:
-                break;
+        setTextureFilterMode(texture.id, filterMode); 
 
-        }
         static_assert((int)TextureFilterMode::COUNT == 2, "Update the switch with new filter mode");
+        GLfloat value, max_anisotropy = 8.0f; /* don't exceed this value...*/
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &value);
+
+        value = (value > max_anisotropy) ? max_anisotropy : value;
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, value);
 
         //Generate the mipmaps
         glGenerateMipmap(GL_TEXTURE_2D);

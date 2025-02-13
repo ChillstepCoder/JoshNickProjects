@@ -13,6 +13,7 @@
 #include "ImGui/backends/imgui_impl_sdl2.h"
 #include "ImGui/backends/imgui_impl_opengl3.h"
 
+class ConnectedTextureSet;
 
 class TextureEditorScreen : public Bengine::IGameScreen {
 public:
@@ -41,15 +42,26 @@ public:
 
     void setScreenIndex(int index) { m_screenIndex = index; }
 
+
 private:
     void checkInput();
+
+    void updateCurrentSubtexture();
+    // Direction represents
+    // the nearby cells
+    // 5 6 7
+    // 3   4
+    // 0 1 2
+    void renderRuleDropDown(int direction);
 
     Bengine::SpriteBatch m_spriteBatch;
     Bengine::Camera2D m_camera;
     Bengine::GLSLProgram m_textureProgram;
     GLuint m_background;
     Bengine::Window* m_window;
-
+    ConnectedTextureSet& m_connectedTextureSet;
+    int subUV_X = 0;
+    int subUV_Y = 0;
     int m_screenIndex = 2;
 };
 

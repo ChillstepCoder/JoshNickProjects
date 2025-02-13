@@ -42,16 +42,24 @@ void Chunk::buildChunkMesh() {
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                     m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
                 } else {
-                    float pixelWidth = 0.00694f;
-                    float pixelHeight = 0.00740f;
+                    float pixelWidth = 0.00690f;
+                    float pixelHeight = 0.00736f;
+                    
+                    int subUV_X = 1;
+                    int subUV_Y = 1;
+
+                    int fixedsubUV_Y = TILE_ATLAS_DIMS_CELLS.y - subUV_Y - 1;
 
                     glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
-                    glm::vec4 uvRect = blockDef.getSubUVRect(glm::ivec2(1, 1), TILE_ATLAS_DIMS_CELLS);
+                    glm::vec4 uvRect = SubTexture::getSubUVRect(glm::ivec2(subUV_X, fixedsubUV_Y), TILE_ATLAS_DIMS_CELLS);
 
                     glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight); // need this because the .png is slightly incorrect
 
 
                     GLuint textureID = BlockDefRepository::getTextureID(id);
+
+                    Bengine::setTextureFilterMode(textureID, Bengine::TextureFilterMode::Linear);
+
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                     m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, color, 0.0f);
                 }
