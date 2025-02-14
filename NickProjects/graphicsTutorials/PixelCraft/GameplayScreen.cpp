@@ -7,8 +7,10 @@
 #include "PerlinNoise.hpp"
 #include "Timer.h"
 #include "Profiler.h"
+#include "ConnectedTextureSet.h"
 
-GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
+
+GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window), m_connectedTextureSet(ConnectedTextureSet::getInstance()) {
 
 }
 GameplayScreen::~GameplayScreen() {
@@ -47,6 +49,8 @@ void GameplayScreen::onEntry() {
     m_blockMeshManager.init();
 
     m_cellularAutomataManager.init();
+
+    m_connectedTextureSet.LoadRules();
 
     m_blockManager = new BlockManager(m_blockMeshManager, m_world, m_cellularAutomataManager);
 
@@ -124,7 +128,7 @@ void GameplayScreen::update() {
         }
         {
             PROFILE_SCOPE("Load nearby chunks");
-            m_blockManager->loadNearbyChunks(playerPos);
+            m_blockManager->loadNearbyChunks(playerPos, *m_blockManager);
         }
         {
             PROFILE_SCOPE("BlockManager Update");

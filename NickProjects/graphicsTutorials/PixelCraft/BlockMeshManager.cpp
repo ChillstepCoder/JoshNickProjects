@@ -2,6 +2,7 @@
 #include "BlockMeshManager.h"
 #include "DebugDraw.h"
 #include "CellularAutomataManager.h"
+#include "ConnectedTextureSet.h"
 #include "PerlinNoise.hpp"
 #include <iostream>
 #include <fstream>
@@ -13,7 +14,7 @@ void Chunk::init() {
         << ", " << m_worldPosition.y << std::endl;
     m_isLoaded = true;
 }
-void Chunk::buildChunkMesh() {
+void Chunk::buildChunkMesh(BlockManager& blockManager) {
     m_spriteBatch.begin();
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         float worldX = CHUNK_WIDTH + x;
@@ -25,6 +26,7 @@ void Chunk::buildChunkMesh() {
                 BlockDefRepository repository;
                 BlockID id = block.getBlockID();
                 BlockDef blockDef = repository.getDef(id);
+                glm::vec2 blockPos = glm::vec2(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f);
 
                 if (id == BlockID::WATER) {
 
@@ -42,16 +44,37 @@ void Chunk::buildChunkMesh() {
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                     m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
                 } else {
+
+                    BlockHandle block0 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1, blockPos.y - 1));
+                    BlockHandle block1 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x, blockPos.y - 1));
+                    BlockHandle block2 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1, blockPos.y - 1));
+                    BlockHandle block3 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1, blockPos.y));
+                    BlockHandle block4 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1, blockPos.y));
+                    BlockHandle block5 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1, blockPos.y + 1));
+                    BlockHandle block6 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x, blockPos.y + 1));
+                    BlockHandle block7 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1, blockPos.y + 1));
+
+
+                    BlockAdjacencyRules blockAdjacencyRules;
+
+                    blockAdjacencyRules.Rules[0] = getAdjacencyRuleForBlock(block0.block->getBlockID()); 
+                    blockAdjacencyRules.Rules[1] = getAdjacencyRuleForBlock(block1.block->getBlockID()); 
+                    blockAdjacencyRules.Rules[2] = getAdjacencyRuleForBlock(block2.block->getBlockID()); 
+                    blockAdjacencyRules.Rules[3] = getAdjacencyRuleForBlock(block3.block->getBlockID()); 
+                    blockAdjacencyRules.Rules[4] = getAdjacencyRuleForBlock(block4.block->getBlockID()); 
+                    blockAdjacencyRules.Rules[5] = getAdjacencyRuleForBlock(block5.block->getBlockID()); 
+                    blockAdjacencyRules.Rules[6] = getAdjacencyRuleForBlock(block6.block->getBlockID()); 
+                    blockAdjacencyRules.Rules[7] = getAdjacencyRuleForBlock(block7.block->getBlockID()); 
+
+
                     float pixelWidth = 0.00690f;
                     float pixelHeight = 0.00736f;
-                    
-                    int subUV_X = 1;
-                    int subUV_Y = 1;
+                    glm::vec4 uvRect = ConnectedTextureSet::getInstance().GetSubTextureUVForRules(blockAdjacencyRules);
 
-                    int fixedsubUV_Y = TILE_ATLAS_DIMS_CELLS.y - subUV_Y - 1;
+
+                    int fixedsubUV_Y = TILE_ATLAS_DIMS_CELLS.y - uvRect.y - 1;
 
                     glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
-                    glm::vec4 uvRect = SubTexture::getSubUVRect(glm::ivec2(subUV_X, fixedsubUV_Y), TILE_ATLAS_DIMS_CELLS);
 
                     glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight); // need this because the .png is slightly incorrect
 
@@ -71,7 +94,17 @@ void Chunk::buildChunkMesh() {
     m_spriteBatch.end();
 }
 
-
+AdjacencyRule Chunk::getAdjacencyRuleForBlock(BlockID blockID) {
+    if (blockID == BlockID::AIR) {
+        return AdjacencyRule::AIR;
+    }
+    //else if (blockID == BlockID::DIRT) {
+    //    return AdjacencyRule::DIRT;
+    //}
+    else {
+        return AdjacencyRule::BLOCK; // Anything else (default to BLOCK)
+    }
+}
 
 
 void Chunk::render() {
@@ -373,7 +406,7 @@ inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Blo
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
 }
 
-void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
+void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager) {
 
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
@@ -386,7 +419,7 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos) {
 
                 glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
                 if (!isChunkFarAway(playerPos, chunkPos)) {
-                    loadChunk(x, y);
+                    loadChunk(x, y, blockManager);
                 }
             }
         }
@@ -455,7 +488,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 
 
 
-void BlockManager::loadChunk(int chunkX, int chunkY) {
+void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager) {
     Chunk& chunk = m_chunks[chunkX][chunkY];
     // Make sure we never double load
     assert(!chunk.isLoaded());
@@ -468,7 +501,7 @@ void BlockManager::loadChunk(int chunkX, int chunkY) {
         generateChunk(chunkX, chunkY, chunk);
         saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
     }
-    chunk.buildChunkMesh();
+    chunk.buildChunkMesh(blockManager);
     m_activeChunks.push_back(&chunk);
 }
 

@@ -9,6 +9,7 @@
 class DebugDraw;
 class BlockManager;
 class CellularAutomataManager;
+enum class AdjacencyRule;
 
 const int CHUNK_WIDTH = 64;
 const int WATER_LEVELS = 100;
@@ -16,7 +17,8 @@ const int WATER_LEVELS = 100;
 class Chunk {
 public:
     void init();
-    void buildChunkMesh() ;
+    void buildChunkMesh(BlockManager& blockManager);
+    AdjacencyRule getAdjacencyRuleForBlock(BlockID blockID);
     void render();
     void save();
     void load();
@@ -58,7 +60,7 @@ public:
     void renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager);
 
 private:
-
+    
 };
 
 const int WORLD_WIDTH_CHUNKS = 32;
@@ -93,13 +95,13 @@ public:
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
-    void loadNearbyChunks(const glm::vec2& playerPos);
+    void loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager);
 
     bool isChunkLoaded(int x, int y);
 
     void generateChunk(int chunkX, int chunkY, Chunk& chunk);
 
-    void loadChunk(int x, int y);
+    void loadChunk(int x, int y, BlockManager& blockManager);
 
     bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
 
