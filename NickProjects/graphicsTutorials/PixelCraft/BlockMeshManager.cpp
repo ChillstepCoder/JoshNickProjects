@@ -44,15 +44,19 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                     m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
                 } else {
+                    // 5 6 7
+                    // 3   4
+                    // 0 1 2
+                    float blockAdj = 1.0f;
 
-                    BlockHandle block0 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1, blockPos.y - 1));
-                    BlockHandle block1 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x, blockPos.y - 1));
-                    BlockHandle block2 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1, blockPos.y - 1));
-                    BlockHandle block3 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1, blockPos.y));
-                    BlockHandle block4 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1, blockPos.y));
-                    BlockHandle block5 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1, blockPos.y + 1));
-                    BlockHandle block6 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x, blockPos.y + 1));
-                    BlockHandle block7 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1, blockPos.y + 1));
+                    BlockHandle block0 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    BlockHandle block1 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    BlockHandle block2 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    BlockHandle block3 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + blockAdj));
+                    BlockHandle block4 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + blockAdj));
+                    BlockHandle block5 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    BlockHandle block6 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    BlockHandle block7 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
 
 
                     BlockAdjacencyRules blockAdjacencyRules;
@@ -72,11 +76,11 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                     glm::vec4 uvRect = ConnectedTextureSet::getInstance().GetSubTextureUVForRules(blockAdjacencyRules);
 
 
-                    int fixedsubUV_Y = TILE_ATLAS_DIMS_CELLS.y - uvRect.y - 1;
+                    float fixedsubUV_Y = 1.0f - uvRect.y - uvRect.z;
 
                     glm::vec4 destRect = glm::vec4(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f, 1.0f, 1.0f);
 
-                    glm::vec4 uvRectFixed = glm::vec4(uvRect.x, uvRect.y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight); // need this because the .png is slightly incorrect
+                    glm::vec4 uvRectFixed = glm::vec4(uvRect.x, fixedsubUV_Y += pixelHeight, uvRect.z -= pixelWidth, uvRect.w -= pixelHeight); // need this because the .png is slightly incorrect
 
 
                     GLuint textureID = BlockDefRepository::getTextureID(id);
