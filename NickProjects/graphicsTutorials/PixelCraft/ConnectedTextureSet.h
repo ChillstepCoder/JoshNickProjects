@@ -35,7 +35,7 @@ public:
 
     void UpdateLookupTable();
 
-    glm::vec4 GetSubTextureUVForRules(BlockAdjacencyRules rules);
+    glm::vec4 GetSubTextureUVForRules(BlockAdjacencyRules rules, int x, int y);
 
     void SaveRules();
 

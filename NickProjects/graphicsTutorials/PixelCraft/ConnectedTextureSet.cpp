@@ -31,6 +31,9 @@ void ConnectedTextureSet::handleAnyRule(BlockAdjacencyRules& rules, int subUV_X,
     if (anyPositions.empty()) {
         return;
     }
+    if (anyPositions.size() == 8) {
+        return;
+    }
 
     // Generate all permutations of AIR (0) and BLOCK (1) for the identified 'ANY' positions
     int numPermutations = 1 << anyPositions.size();  // 2^n permutations
@@ -62,6 +65,19 @@ void ConnectedTextureSet::UpdateLookupTable()
         for (int y = 0; y < TILE_ATLAS_DIMS_CELLS.y; y++) {
             BlockAdjacencyRules& cellRules = SubTextureRules[x][y];
 
+            bool isEmptyBlock = true;
+            for (const auto& rule : cellRules.Rules) {
+                if (rule != AdjacencyRule::ANY) {
+                    isEmptyBlock = false;
+                    break;
+                }
+            }
+
+            // Skip processing this block if it's empty (all rules are ANY)
+            if (isEmptyBlock) {
+                continue; // Skip empty block
+            }
+
             handleAnyRule(cellRules, x, y);
 
             SubTextureList& list = SubTextureLookup[cellRules];
@@ -71,14 +87,14 @@ void ConnectedTextureSet::UpdateLookupTable()
 
 }
 
-glm::vec4 ConnectedTextureSet::GetSubTextureUVForRules(BlockAdjacencyRules rules)
+glm::vec4 ConnectedTextureSet::GetSubTextureUVForRules(BlockAdjacencyRules rules, int x, int y)
 {
     SubTextureList& list = SubTextureLookup[rules];
     if (list.empty()) {
 
         return glm::vec4(0, 0, 1, 1); // Returns fallback texture, missing rule ----TODO REPLACE WITH PROPER FALLBACK TEXTURE
     }
-    std::mt19937 randomEngine((unsigned int)time(nullptr));
+    std::mt19937 randomEngine((unsigned int)(x * y));
     std::uniform_int_distribution<int> randomTexture(0, list.size()-1);
 
     int index = randomTexture(randomEngine);

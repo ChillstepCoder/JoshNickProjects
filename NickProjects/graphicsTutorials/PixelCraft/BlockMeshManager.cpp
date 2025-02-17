@@ -73,7 +73,7 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
 
                     float pixelWidth = 0.00690f;
                     float pixelHeight = 0.00736f;
-                    glm::vec4 uvRect = ConnectedTextureSet::getInstance().GetSubTextureUVForRules(blockAdjacencyRules);
+                    glm::vec4 uvRect = ConnectedTextureSet::getInstance().GetSubTextureUVForRules(blockAdjacencyRules, x , y);
 
 
                     float fixedsubUV_Y = 1.0f - uvRect.y - uvRect.z;
