@@ -70,6 +70,16 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                     blockAdjacencyRules.Rules[6] = getAdjacencyRuleForBlock(block6.block->getBlockID()); 
                     blockAdjacencyRules.Rules[7] = getAdjacencyRuleForBlock(block7.block->getBlockID()); 
 
+                    if (id == BlockID::DIRT) { // if the original block is dirt, ignore the dirt adjacency and treat them all as blocks instead.
+                        for (int i = 0; i < 8; ++i) {
+                            if (blockAdjacencyRules.Rules[i] == AdjacencyRule::DIRT) {
+                                blockAdjacencyRules.Rules[i] = AdjacencyRule::BLOCK; // Replace DIRT with BLOCK
+                            }
+                        }
+                    }
+
+
+
 
                     float pixelWidth = 0.00690f;
                     float pixelHeight = 0.00736f;
@@ -99,10 +109,10 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
 }
 
 AdjacencyRule Chunk::getAdjacencyRuleForBlock(BlockID blockID) {
-    if (blockID == BlockID::AIR) {
+    if (blockID == BlockID::AIR || blockID == BlockID::WATER) {
         return AdjacencyRule::AIR;
     }
-    //else if (blockID == BlockID::DIRT) {
+    //if (blockID == BlockID::DIRT) {
     //    return AdjacencyRule::DIRT;
     //}
     else {
@@ -298,6 +308,10 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
         // Now that the block is destroyed, we can remove it from the chunk
         // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
         Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
+        Chunk& chunkLeft = m_chunks[blockHandle.chunkCoords.x - 1][blockHandle.chunkCoords.y];
+        Chunk& chunkRight = m_chunks[blockHandle.chunkCoords.x + 1][blockHandle.chunkCoords.y];
+        Chunk& chunkTop = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y + 1];
+        Chunk& chunkBot = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y - 1];
 
         if (blockHandle.block->getBlockID() == BlockID::WATER) {
             for (int i = 0; i < chunk.waterBlocks.size(); i++) {
@@ -311,28 +325,16 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
                 }
             }
         }
-        /*
-        Block& leftBlock = chunk.blocks[(blockHandle.blockOffset.x - 1)][blockHandle.blockOffset.y];
-        Block& rightBlock = chunk.blocks[(blockHandle.blockOffset.x + 1)][blockHandle.blockOffset.y];
-        Block& downBlock = chunk.blocks[(blockHandle.blockOffset.x)][(blockHandle.blockOffset.y - 1)];
-        Block& upBlock = chunk.blocks[(blockHandle.blockOffset.x)][(blockHandle.blockOffset.y + 1)];
 
 
-        if (leftBlock.getBlockID() == BlockID::DIRT || leftBlock.getBlockID() == BlockID::STONE || leftBlock.getBlockID() == BlockID::GRASS) {
-            leftBlock.
-        }
-        if (rightBlock.getBlockID() == BlockID::DIRT || rightBlock.getBlockID() == BlockID::STONE || rightBlock.getBlockID() == BlockID::GRASS) {
-            rightBlock.
-        }
-        if (downBlock.getBlockID() == BlockID::DIRT || downBlock.getBlockID() == BlockID::STONE || downBlock.getBlockID() == BlockID::GRASS) {
-            downBlock.
-        }
-        if (upBlock.getBlockID() == BlockID::DIRT || upBlock.getBlockID() == BlockID::STONE || upBlock.getBlockID() == BlockID::GRASS) {
-            upBlock.
-        }
-        */
+
+
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block(); // Reset the broken block to Air
         chunk.m_isMeshDirty = true;
+        chunkLeft.m_isMeshDirty = true;
+        chunkRight.m_isMeshDirty = true;
+        chunkTop.m_isMeshDirty = true;
+        chunkBot.m_isMeshDirty = true;
     }
 }
 
@@ -441,59 +443,132 @@ bool BlockManager::isChunkLoaded(int x, int y) {
 
 void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
+    static siv::PerlinNoise perlin(12345);
+    static siv::PerlinNoise oreNoise(67890);
 
-    static siv::PerlinNoise perlin(12345);  // Use a fixed seed to regenerate terrain consistently
+    const float NOISE_SCALE = 0.05f;
+    const float AMPLITUDE = 10.0f;
+    const float BASE_SURFACE_Y = 1664.0f;
 
+    float initialNoiseValue = perlin.noise1D(chunkX * CHUNK_WIDTH * NOISE_SCALE);
+    int referenceHeight = static_cast<int>(BASE_SURFACE_Y + initialNoiseValue * AMPLITUDE);
+    const float DIRT_BOTTOM = referenceHeight - 10;
+    const float STONE_BOTTOM = referenceHeight - 400;
+    const float DEEP_STONE_BOTTOM = referenceHeight - 800;
 
-    const float NOISE_SCALE = 0.05f;  // Controls how stretched the noise is
-    const float AMPLITUDE = 10.0f;    // Controls the height variation
-    const float BASE_SURFACE_Y = 384.0f;  // Base height for the surface (6 chunks of ground, 2 chunks of sky)
+    struct OreParams {
+        BlockID oreType;
+        float maxDepth;    // Higher Y value (closer to surface)
+        float minDepth;    // Lower Y value (deeper underground)
+        float frequency;
+        float veinSize;
+        int maxVeinSize; // Maximum ores per vein
+    };
 
-    Bengine::ColorRGBA8 textureColor(255, 255, 255, 255);
+    // Adjusted parameters with corrected depth ranges
+    std::vector<OreParams> oreTypes;
+    // Note: For each ore type, maxDepth the higher number (closer to surface)
+    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.62f, 30 }); // upper depth, lower depth, density of vein, frequency of ore veins, max vein amount(doesnt work lol)
+    oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.49f, 0.60f, 25 });
+    oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.48f, 0.58f, 20 });
+    oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.47f, 0.56f, 15 });
+    oreTypes.push_back(OreParams{ BlockID::COBALT,     static_cast<float>(referenceHeight - 400), static_cast<float>(referenceHeight - 650), 0.46f, 0.54f, 14 });
+    oreTypes.push_back(OreParams{ BlockID::MYTHRIL,    static_cast<float>(referenceHeight - 600), static_cast<float>(referenceHeight - 750), 0.45f, 0.52f, 13 });
+    oreTypes.push_back(OreParams{ BlockID::ADAMANTITE, static_cast<float>(referenceHeight - 700), static_cast<float>(referenceHeight - 850), 0.44f, 0.50f, 12 });
+    oreTypes.push_back(OreParams{ BlockID::COSMILITE,  static_cast<float>(referenceHeight - 800), static_cast<float>(referenceHeight - 1300), 0.43f, 0.48f, 11 });
+    oreTypes.push_back(OreParams{ BlockID::PRIMORDIAL, static_cast<float>(referenceHeight - 1100), static_cast<float>(referenceHeight - 1600), 0.42f, 0.44f, 10 });
+
+    activeVeins.clear();
+    for (const auto& ore : oreTypes) {
+        activeVeins[ore.oreType] = std::vector<VeinTracker>();
+    }
+
 
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         int worldX = chunkX * CHUNK_WIDTH + x;
         float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
         int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
-
-        const float DIRT_BOTTOM = height - 10;
+        const float localDirtBottom = height - 10;
+        const float localStoneBottom = height - 400;
+        const float localDeepStoneBottom = height - 800;
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             int worldY = chunkY * CHUNK_WIDTH + y;
             glm::vec2 position(worldX, worldY);
+            Block currentBlock;
 
-            if (worldY == height) {  // Surface block (grass)
-                Block surfaceBlock;
-                //int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::GRASS); // Get texture index for connected grass
-                surfaceBlock.init(m_world, BlockID::GRASS, position);
-                chunk.blocks[x][y] = surfaceBlock;
+            // Base terrain generation first
+            if (worldY == height) {
+                currentBlock.init(m_world, BlockID::GRASS, position);
             }
-            else if (worldY < height && worldY > DIRT_BOTTOM) {  // Dirt blocks
-                Block dirtBlock;
-                //int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::DIRT); // Get texture index for connected dirt
-                dirtBlock.init(m_world, BlockID::DIRT, position);
-                chunk.blocks[x][y] = dirtBlock;
+            else if (worldY < height && worldY > localDirtBottom) {
+                currentBlock.init(m_world, BlockID::DIRT, position);
             }
-            else if (worldY <= DIRT_BOTTOM) {  // Stone blocks
-                Block stoneBlock;
-                //int textureIndex = getConnectedTextureIndex(chunk, x, y, BlockID::STONE); // Get texture index for connected stone
-                stoneBlock.init(m_world, BlockID::STONE, position);
-                chunk.blocks[x][y] = stoneBlock;
+            else if (worldY <= localDirtBottom && worldY > localStoneBottom) {
+                currentBlock.init(m_world, BlockID::STONE, position);
             }
-            else {  // Air blocks
-                Block airBlock;
-                airBlock.init(m_world, BlockID::AIR, position);
-                chunk.blocks[x][y] = airBlock;
+            else if (worldY <= localStoneBottom && worldY > localDeepStoneBottom) {
+                currentBlock.init(m_world, BlockID::DEEPSTONE, position);
             }
+            else if (worldY <= localDeepStoneBottom) {
+                currentBlock.init(m_world, BlockID::DEEPERSTONE, position);
+            }
+
+            // ore generation
+            if (worldY < height) {  // Only generate ores underground
+                for (const auto& ore : oreTypes) {
+                    if (worldY <= ore.maxDepth && worldY >= ore.minDepth) {
+                        float oreNoiseValue = oreNoise.noise2D(
+                            worldX * 0.05f,
+                            worldY * 0.05f
+                        );
+
+                        oreNoiseValue = (oreNoiseValue + 1.0f) * 0.5f;
+
+                        if (oreNoiseValue > ore.veinSize &&
+                            (rand() % 100) < (ore.frequency * 100)) {
+
+                            // Check if this position is part of an existing vein
+                            bool isNewVein = true;
+                            for (auto& vein : activeVeins[ore.oreType]) {
+                                int distanceX = abs(worldX - vein.centerX);
+                                int distanceY = abs(worldY - vein.centerY);
+
+                                // If within range of existing vein
+                                if (distanceX <= 5 && distanceY <= 5) {
+                                    if (vein.oreCount < ore.maxVeinSize) {
+                                        vein.oreCount++;
+                                        currentBlock.init(m_world, ore.oreType, position);
+                                    }
+                                    isNewVein = false;
+                                    break;
+                                }
+                            }
+
+                            // If not part of existing vein, start new vein
+                            if (isNewVein) {
+                                VeinTracker newVein = { 1, worldX, worldY };
+                                activeVeins[ore.oreType].push_back(newVein);
+                                currentBlock.init(m_world, ore.oreType, position);
+                            }
+                        }
+                    }
+                }
+            }
+
+            chunk.blocks[x][y] = currentBlock;
         }
     }
-
 }
 
 
 
 void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager) {
     Chunk& chunk = m_chunks[chunkX][chunkY];
+    Chunk& chunkLeft = m_chunks[chunkX - 1][chunkY];
+    Chunk& chunkRight = m_chunks[chunkX + 1][chunkY];
+    Chunk& chunkTop = m_chunks[chunkX][chunkY + 1];
+    Chunk& chunkBot = m_chunks[chunkX][chunkY - 1];
     // Make sure we never double load
     assert(!chunk.isLoaded());
 
@@ -507,6 +582,12 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager)
     }
     chunk.buildChunkMesh(blockManager);
     m_activeChunks.push_back(&chunk);
+
+    chunk.m_isMeshDirty = true;
+    chunkLeft.m_isMeshDirty = true;
+    chunkRight.m_isMeshDirty = true;
+    chunkTop.m_isMeshDirty = true;
+    chunkBot.m_isMeshDirty = true;
 }
 
 bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {

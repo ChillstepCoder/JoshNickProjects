@@ -255,7 +255,7 @@ bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManag
 void Player::respawnPlayer()
 {
     m_position.x = 1024.0f;
-    m_position.y = 400.0f;
+    m_position.y = 1680.0f;
     m_velocity.x = 0;
     m_velocity.y = 0;
     m_isGrounded = false;

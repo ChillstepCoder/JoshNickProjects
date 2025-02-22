@@ -55,7 +55,7 @@ void BlockDefRepository::initBlockDefs() {
     m_blockDefs[(int)BlockID::AIR].init(uvRect, Bengine::ColorRGBA8(0,0,0,0), Bengine::GLTexture(), 0, false);
     m_blockDefs[(int)BlockID::GRASS].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Grass.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Grass.png", filterMode).id, true);
     m_blockDefs[(int)BlockID::DIRT].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Dirt.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Dirt.png", filterMode).id, true);
-    m_blockDefs[(int)BlockID::STONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Stonelabeled.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Stonelabeled.png", filterMode).id, true);
+    m_blockDefs[(int)BlockID::STONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Stone.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Stone.png", filterMode).id, true);
     m_blockDefs[(int)BlockID::DEEPSTONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/DeepStone.png", filterMode), Bengine::ResourceManager::getTexture("Textures/DeepStone.png", filterMode).id, true);
     m_blockDefs[(int)BlockID::DEEPERSTONE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/DeeperStone.png", filterMode), Bengine::ResourceManager::getTexture("Textures/DeeperStone.png", filterMode).id, true);
     m_blockDefs[(int)BlockID::COPPER].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Copper.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Copper.png", filterMode).id, true);

@@ -35,7 +35,7 @@ void GameplayScreen::destroy() {
 }
 
 void GameplayScreen::onEntry() {
-    glm::vec2 playerPos(1024.0f, 400.0f);
+    glm::vec2 playerPos(1024.0f, 1680.0f);
 
     b2WorldDef worldDef = b2DefaultWorldDef();
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
