@@ -1,4 +1,5 @@
 Event	ID	Name			Wwise Object Path	Notes
+	35070556	Stop_Scrape_SFX			\Default Work Unit\Stop_Scrape_SFX	
 	184892105	Play_Engine_Idle_SFX_1			\Default Work Unit\Play_Engine_Idle_SFX_1	
 	569543538	Play_HyperLoop			\Default Work Unit\Play_HyperLoop	
 	755225576	Play_Countdown_SFX_2			\Default Work Unit\Play_Countdown_SFX_2	
@@ -9,7 +10,10 @@ Event	ID	Name			Wwise Object Path	Notes
 	2441111417	Play_CyberChase			\Default Work Unit\Play_CyberChase	
 	2443478315	Stop_CyberChase			\Default Work Unit\Stop_CyberChase	
 	2622523685	Play_Car_Collision			\Default Work Unit\Play_Car_Collision	
+	2752402750	Play_Scrape_SFX			\Default Work Unit\Play_Scrape_SFX	
 	2960744889	Play_Car_Tire_Skid_1			\Default Work Unit\Play_Car_Tire_Skid_1	
+	3721605055	Play_Car_CollisionGlass			\Default Work Unit\Play_Car_CollisionGlass	
+	4191769032	Play_TrafficCone_SFX			\Default Work Unit\Play_TrafficCone_SFX	
 
 Game Parameter	ID	Name			Wwise Object Path	Notes
 	301156165	Tire_Grass_Volume			\Default Work Unit\Tire_Grass_Volume	
@@ -26,26 +30,39 @@ Game Parameter	ID	Name			Wwise Object Path	Notes
 	3966876546	Engine_Rev_Volume			\Default Work Unit\Engine_Rev_Volume	
 
 Source plug-ins	ID	Name	Type		Wwise Object Path	Notes
-	973345395	Impacter	Impacter		\Actor-Mixer Hierarchy\Default Work Unit\CarCrash_SFX\Impacter	
+	217322492	Impacter	Impacter		\Actor-Mixer Hierarchy\Default Work Unit\Impacts\TrafficCone_SFX\Impacter	
+	563163508	Impacter	Impacter		\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrashGlass_SFX\Impacter	
+	973345395	Impacter	Impacter		\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrash_SFX\Impacter	
 
 In Memory Audio	ID	Name	Audio source file		Wwise Object Path	Notes	Data Size
-	78980995	Music_HyperLoop2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\B0\{B01536C5-B553-23EE-7B35-093F9B5AC15B}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Music_HyperLoop2		24288596
-	108366440	Countdown_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\77\{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_1		359376
+	78980995	Music_HyperLoop2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\B0\{B01536C5-B553-23EE-7B35-093F9B5AC15B}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Music\Music_HyperLoop2		24288596
+	108366440	Countdown_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\77\{77DAD9A6-1C08-AFBF-5AF8-4EC364C7D23C}.wem		\Actor-Mixer Hierarchy\Default Work Unit\SFX\Countdown_SFX_1		359376
 	219920735	Music_CyberChase	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\26\{26CFA13C-EE2B-5F0B-C196-C2BA2178F782}.wem		\Interactive Music Hierarchy\Music\Music_CyberChase\Music_CyberChase		17696916
-	536482941	Engine_Idle_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\6E\{6E418767-4F42-13E8-5BEE-C819302BE4BB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine_Idle_SFX_1		1355080
-	555365400	Car_Dirt_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0A\{0AA01B27-BC48-DA87-41D7-02D3FCFABE68}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Dirt_Skid_1		1308728
-	685517915	Countdown_SFX_2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0D\{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Countdown_SFX_2		359376
-	816917652	Music_CyberChase2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\5B\{5B767F30-F5AA-ECE9-B4AF-CC5E00ADAD67}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Music_CyberChase2		16190508
-	829908123	Engine_Rev_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\51\{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine_Rev_SFX_1		1355080
-	1030427408	Car_Tire_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\A4\{A4ACCE11-2EF3-E8DE-3FA0-504FF246F7AB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Tire_Skid_1		875892
-	1069078306	Car_Grass_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\D1\{D1925B4A-9795-51A5-E7D4-99281C03E004}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Car_Grass_Skid_1		734580
+	536482941	Engine_Idle_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\6E\{6E418767-4F42-13E8-5BEE-C819302BE4BB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine\Engine_Idle_SFX_1		1355080
+	555365400	Car_Dirt_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0A\{0AA01B27-BC48-DA87-41D7-02D3FCFABE68}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Environment\Car_Dirt_Skid_1		1308728
+	685517915	Countdown_SFX_2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0D\{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem		\Actor-Mixer Hierarchy\Default Work Unit\SFX\Countdown_SFX_2		359376
+	816917652	Music_CyberChase2	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\5B\{5B767F30-F5AA-ECE9-B4AF-CC5E00ADAD67}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Music\Music_CyberChase2		16190508
+	829908123	Engine_Rev_SFX_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\51\{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Engine\Engine_Rev_SFX_1		1355080
+	949225117	Car_Scrape_SFX	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\A1\{A12F448D-60C4-39BC-2035-FBD5B24D2BF0}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Environment\Car_Scrape_SFX		489484
+	1030427408	Car_Tire_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\A4\{A4ACCE11-2EF3-E8DE-3FA0-504FF246F7AB}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Environment\Car_Tire_Skid_1		875892
+	1069078306	Car_Grass_Skid_1	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\D1\{D1925B4A-9795-51A5-E7D4-99281C03E004}.wem		\Actor-Mixer Hierarchy\Default Work Unit\Environment\Car_Grass_Skid_1		734580
 	1070648498	Music_HyperLoop	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\93\{9337DD9A-B583-6470-B7ED-039EAB287A6E}.wem		\Interactive Music Hierarchy\Music\Music_HyperLoop\Music_HyperLoop		25907596
 
 Plug-in Media	ID	Name	Source file	Type	Wwise Object Path	Notes	Data Size
-	88325721	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\B2\{B2640466-65FB-CE05-DDA3-680E79C2DB7C}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\CarCrash_SFX\Impacter		1432
-	133719341	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\6F\{6F6ACC91-0DC6-4918-665E-148266B8A729}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\CarCrash_SFX\Impacter		7320
-	147692168	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\DC\{DC350E02-CD89-27CB-2FA0-8EC10F04E237}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\CarCrash_SFX\Impacter		718752
-	349054807	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\36\{3660CCC8-5FA8-DF49-44AF-16D707E6C9FD}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\CarCrash_SFX\Impacter		244656
-	433551775	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\BC\{BC281365-2C87-AEBE-EC55-A16E317A8C59}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\CarCrash_SFX\Impacter		3496
-	849129411	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0B\{0B151883-B6A4-FAB0-5490-C9747AE650D4}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\CarCrash_SFX\Impacter		2488
+	18582218	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\FB\{FB02EB05-AAAA-4394-DEC0-07E0A6CFD4F9}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\TrafficCone_SFX\Impacter		60140
+	88325721	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\B2\{B2640466-65FB-CE05-DDA3-680E79C2DB7C}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrash_SFX\Impacter		1432
+	133719341	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\6F\{6F6ACC91-0DC6-4918-665E-148266B8A729}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrash_SFX\Impacter		7320
+	147692168	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\DC\{DC350E02-CD89-27CB-2FA0-8EC10F04E237}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrash_SFX\Impacter		718752
+	327441632	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\74\{746522F1-B50A-7211-C413-F4FBBE6BD913}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrashGlass_SFX\Impacter		245736
+	349054807	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\36\{3660CCC8-5FA8-DF49-44AF-16D707E6C9FD}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrash_SFX\Impacter		244656
+	433551775	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\BC\{BC281365-2C87-AEBE-EC55-A16E317A8C59}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrash_SFX\Impacter		3496
+	518915322	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\4F\{4F4CAA5F-122F-6BA9-8CA0-E5905089601F}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrashGlass_SFX\Impacter		2488
+	548743814	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\35\{35BD3869-3C7E-A578-90B0-56EA14519D2C}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrashGlass_SFX\Impacter		487096
+	607718218	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\CF\{CFBCA0AD-E1A9-C93C-C8E2-4A7969848FCB}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrashGlass_SFX\Impacter		481208
+	612648862	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\8C\{8CA6FC57-3121-32FA-1CD0-25E4D65213BC}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrashGlass_SFX\Impacter		96
+	666811857	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\A3\{A37FB038-DD5D-B59E-805E-56839C4FAFEC}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrashGlass_SFX\Impacter		1456
+	704322312	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\06\{06FA7244-8372-3895-5AD2-66CE53241332}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\TrafficCone_SFX\Impacter		60196
+	845150532	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\D6\{D61C13BA-66E4-CAE3-6590-378AB6275DB6}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\TrafficCone_SFX\Impacter		59776
+	849129411	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\0B\{0B151883-B6A4-FAB0-5490-C9747AE650D4}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\CarCrash_SFX\Impacter		2488
+	966184684	Impacter	C:\Users\jaydo\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\RacingGame\.cache\96\{96187882-257C-89A7-2629-3A2FAA5A2278}.wem	Impacter (Custom)	\Actor-Mixer Hierarchy\Default Work Unit\Impacts\TrafficCone_SFX\Impacter		62588
 

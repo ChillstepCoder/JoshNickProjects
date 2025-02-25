@@ -30,6 +30,8 @@
 #include <JAGEngine/IMainGame.h>
 
 // Local includes
+#include <AK/SoundEngine/Common/AkSoundEngine.h>
+#include <AK/SoundEngine/Common/AkTypes.h>
 #include "LevelEditorScreen.h"
 #include "SplineTrack.h"
 #include "App.h"
@@ -275,7 +277,10 @@ void LevelEditorScreen::drawImGui() {
     JAGEngine::OpenGLDebug::ResetErrorCount();
   }
 
+  DrawAudioControlWindow(m_game->getGameAs<App>()->getAudioEngine());
+
   ImGui::End();
+  
 }
 
 void LevelEditorScreen::draw() {
@@ -320,7 +325,8 @@ void LevelEditorScreen::draw() {
 
       // Render the main track and objects
       if (m_track) {
-        m_levelRenderer->render(m_camera, m_track.get(), m_objectManager.get(), showSplinePoints, static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
+        m_levelRenderer->render(m_camera, m_track.get(), m_objectManager.get(), showSplinePoints,
+          static_cast<LevelRenderer::RoadViewMode>(m_roadViewMode));
 
         // Render start positions ONLY if not in test mode
         if (!m_testMode && m_levelRenderer->getShowStartPositions()) {
@@ -333,18 +339,24 @@ void LevelEditorScreen::draw() {
     }
   }
 
-  // Draw test mode cars if in test mode
+  // In test mode, draw the test mode UI and cars
   if (m_testMode) {
     drawTestMode();
     drawTestModeUI();
   }
 
-  // Draw ImGui windows last, but only if not in test mode
+  // Now, if the race is finished, draw the race results UI.
+  if (m_raceFinished) {
+    drawRaceResultsUI();
+  }
+
+  // Draw ImGui windows last when not in test mode.
   if (!m_testMode) {
     drawImGui();
     drawDebugWindow();
   }
 }
+
 
 void LevelEditorScreen::checkImGuiState() {
   if (!m_imguiInitialized) {
@@ -727,6 +739,36 @@ void LevelEditorScreen::drawDebugWindow() {
     drawLoadModal();
   }
 }
+
+void LevelEditorScreen::DrawAudioControlWindow(AudioEngine& audioEngine)
+{
+  ImGui::Begin("Audio Control");
+
+  // Get current values from your AudioEngine.
+  static float masterVolume = audioEngine.getMasterVolume();  // 0.0f to 1.0f range
+  static float musicVolume = audioEngine.getMusicVolume();
+  static float sfxVolume = audioEngine.getEffectsVolume();
+
+  if (ImGui::SliderFloat("Master Volume", &masterVolume, 0.0f, 1.0f, "%.2f"))
+  {
+    audioEngine.setMasterVolume(masterVolume);
+    // Set the RTPC value; assuming your RTPC expects a range of 0-100.
+    AK::SoundEngine::SetRTPCValue("Master_Volume", masterVolume * 100.0f);
+  }
+  if (ImGui::SliderFloat("Music Volume", &musicVolume, 0.0f, 1.0f, "%.2f"))
+  {
+    audioEngine.setMusicVolume(musicVolume);
+    AK::SoundEngine::SetRTPCValue("Music_Volume", musicVolume * 100.0f);
+  }
+  if (ImGui::SliderFloat("SFX Volume", &sfxVolume, 0.0f, 1.0f, "%.2f"))
+  {
+    audioEngine.setEffectsVolume(sfxVolume);
+    AK::SoundEngine::SetRTPCValue("Effects_Volume", sfxVolume * 100.0f);
+  }
+
+  ImGui::End();
+}
+
 
 void LevelEditorScreen::drawSaveModal() {
   // Check if this is first time showing the modal
@@ -1777,6 +1819,11 @@ void LevelEditorScreen::handleCarSelection() {
 void LevelEditorScreen::drawCarPropertiesUI() {
   if (!m_testMode || m_testCars.empty()) return;
 
+  // Clamp the selected index so we don't access an invalid element.
+  if (m_selectedCarIndex >= m_testCars.size()) {
+    m_selectedCarIndex = 0;
+  }
+
   ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 310, 10), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(300, 450), ImGuiCond_FirstUseEver);
 
@@ -1918,13 +1965,24 @@ void LevelEditorScreen::drawCarPropertiesUI() {
 
         // If there's a nearby XP star, show its info
         if (m_objectManager) {
-          const auto& cars = m_testCars[m_selectedCarIndex];
-          if (cars) {
-            glm::vec2 carPos = cars->getDebugInfo().position;
+          // Get a reference to the currently selected car’s position.
+          const auto* carPtr = m_testCars[m_selectedCarIndex].get();
+          if (carPtr) {
+            glm::vec2 carPos = carPtr->getDebugInfo().position;
             auto nearbyObjects = m_objectManager->getNearbyObjects(carPos, 150.0f);
 
+            // Also grab the list of objects currently managed.
+            const auto& placedObjects = m_objectManager->getPlacedObjects();
+
             for (const auto* obj : nearbyObjects) {
-              if (obj && obj->getObjectType() == ObjectType::XPPickup) {
+              // Validate that 'obj' is still among our placed objects.
+              bool stillValid = std::any_of(placedObjects.begin(), placedObjects.end(),
+                [obj](const std::unique_ptr<PlaceableObject>& p) { return p.get() == obj; });
+              if (!stillValid)
+                continue;
+
+              // Now check for an XP pickup.
+              if (obj->getObjectType() == ObjectType::XPPickup) {
                 ImGui::Separator();
                 ImGui::Text("Nearby XP Star Info:");
                 const auto& xpProps = obj->getXPProperties();
@@ -1933,7 +1991,7 @@ void LevelEditorScreen::drawCarPropertiesUI() {
                 if (!xpProps.isActive) {
                   ImGui::Text("Respawn in: %.1f seconds", xpProps.respawnTimer);
                 }
-                break;  // Just show the first one
+                break;  // Show just the first valid XP pickup.
               }
             }
           }
@@ -2140,21 +2198,20 @@ void LevelEditorScreen::drawAIDebugUI() {
 }
 
 void LevelEditorScreen::drawTestModeUI() {
-  if (!m_testMode || m_testCars.empty()) return;
+  if (!m_testMode || m_testCars.empty())
+    return;
 
-  // Test mode window
+  // Test Mode Window
   ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
-
   ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
 
-  // Add performance window toggle
+  // Performance debug toggle
   ImGui::Checkbox("Show Performance Debug", &m_showPerformanceWindow);
 
   if (m_readyToStart && !m_raceCountdown->isCountingDown() && !m_raceCountdown->hasFinished()) {
     ImGui::SliderInt("Number of Laps", &m_totalLaps, 1, 10);
     ImGui::Separator();
-
     if (ImGui::Button("Begin Race", ImVec2(180, 30))) {
       m_raceCountdown->startCountdown();
     }
@@ -2175,13 +2232,17 @@ void LevelEditorScreen::drawTestModeUI() {
   ImGui::SliderFloat("Look Ahead Distance", &m_lookAheadDistance, 50.0f, 300.0f);
   ImGui::SliderFloat("Min Screen Edge Distance", &m_minCarScreenDistance, 50.0f, 200.0f);
   ImGui::Text("Use Q/E to zoom");
+
   ImGui::End();
 
-  // Car controls window and AI settings
+  // Car controls window and AI settings (drawn from separate functions)
   drawCarPropertiesUI();
   drawAIDebugUI();
 
-  // Level up window
+  // Draw the Audio Control Window in test mode as well
+  DrawAudioControlWindow(m_game->getGameAs<App>()->getAudioEngine());
+
+  // Level Up Window (only visible when m_showLevelUpUI is true)
   if (m_showLevelUpUI) {
     ImGui::SetNextWindowPos(
       ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f),
@@ -2189,7 +2250,6 @@ void LevelEditorScreen::drawTestModeUI() {
       ImVec2(0.5f, 0.5f)
     );
     ImGui::SetNextWindowSize(ImVec2(300, 200));
-
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse |
       ImGuiWindowFlags_NoResize |
       ImGuiWindowFlags_NoMove |
@@ -2203,38 +2263,34 @@ void LevelEditorScreen::drawTestModeUI() {
       ImGui::Text("Choose an upgrade:");
       ImGui::Spacing();
 
-      // Generate choices when UI first appears
+      // Generate upgrade choices if none are available
       if (m_availableUpgrades.empty()) {
         generateUpgradeChoices();
       }
 
-      // Draw each upgrade choice
+      // Draw upgrade buttons
       for (const auto& upgrade : m_availableUpgrades) {
         const auto& props = m_testCars[0]->getProperties();
-
-        // Create the button label with current -> next level
         std::string buttonText;
         if (upgrade.isSpecial) {
           buttonText = upgrade.name;
         }
         else {
           int currentLevel = 1;  // Default level
-
-          // Get current level based on stat type
           switch (upgrade.type) {
-          case StatType::TopSpeed: currentLevel = props.statLevels.topSpeed; break;
-          case StatType::Acceleration: currentLevel = props.statLevels.acceleration; break;
-          case StatType::Weight: currentLevel = props.statLevels.weight; break;
-          case StatType::WheelGrip: currentLevel = props.statLevels.wheelGrip; break;
-          case StatType::Handling: currentLevel = props.statLevels.handling; break;
-          case StatType::Booster: currentLevel = props.statLevels.booster; break;
+          case StatType::TopSpeed:        currentLevel = props.statLevels.topSpeed; break;
+          case StatType::Acceleration:      currentLevel = props.statLevels.acceleration; break;
+          case StatType::Weight:            currentLevel = props.statLevels.weight; break;
+          case StatType::WheelGrip:         currentLevel = props.statLevels.wheelGrip; break;
+          case StatType::Handling:          currentLevel = props.statLevels.handling; break;
+          case StatType::Booster:           currentLevel = props.statLevels.booster; break;
           case StatType::SurfaceResistance: currentLevel = props.statLevels.surfaceResistance; break;
-          case StatType::DamageResistance: currentLevel = props.statLevels.damageResistance; break;
-          case StatType::XPGain: currentLevel = props.statLevels.xpGain; break;
-          case StatType::Braking: currentLevel = props.statLevels.braking; break;
+          case StatType::DamageResistance:  currentLevel = props.statLevels.damageResistance; break;
+          case StatType::XPGain:            currentLevel = props.statLevels.xpGain; break;
+          case StatType::Braking:           currentLevel = props.statLevels.braking; break;
           }
-
-          buttonText = upgrade.name + " " + std::to_string(currentLevel) + " -> " + std::to_string(currentLevel + 1);
+          buttonText = upgrade.name + " " + std::to_string(currentLevel) + " -> " +
+            std::to_string(currentLevel + 1);
         }
 
         // Style special upgrades differently
@@ -2244,9 +2300,8 @@ void LevelEditorScreen::drawTestModeUI() {
           ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.2f, 0.8f, 1.0f));
         }
 
-        // Create the button
         if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetWindowWidth() - 30, 50))) {
-          applyUpgrade(upgrade, m_testCars[0].get());  // Pass the player car
+          applyUpgrade(upgrade, m_testCars[0].get());
           m_showLevelUpUI = false;
           m_isLevelUpPaused = false;
           m_availableUpgrades.clear();
@@ -2256,13 +2311,11 @@ void LevelEditorScreen::drawTestModeUI() {
           ImGui::PopStyleColor(3);
         }
 
-        // Show description on hover
         if (ImGui::IsItemHovered()) {
           ImGui::BeginTooltip();
           ImGui::Text("%s", upgrade.description.c_str());
           ImGui::EndTooltip();
         }
-
         ImGui::Spacing();
       }
     }
@@ -2270,42 +2323,166 @@ void LevelEditorScreen::drawTestModeUI() {
   }
 }
 
+void LevelEditorScreen::drawRaceResultsUI() {
+  if (!m_raceFinished)
+    return;
+
+  // Center the race results window.
+  ImGuiIO& io = ImGui::GetIO();
+  ImVec2 displaySize = io.DisplaySize;
+  ImVec2 windowSize(400, 300);
+  ImVec2 windowPos((displaySize.x - windowSize.x) * 0.5f,
+    (displaySize.y - windowSize.y) * 0.5f);
+  ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+  ImGui::Begin("Race Results", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
+  ImGui::Text("Race Finished!");
+  ImGui::Separator();
+
+  // Build a vector of RaceResult entries from both active and finished cars.
+  std::vector<RaceResult> results;
+  for (const auto& carPtr : m_testCars) {
+    RaceResult result;
+    result.car = carPtr.get();
+    result.completed = carPtr->getProperties().finished;
+    result.finishTime = carPtr->getProperties().finishTime;
+    results.push_back(result);
+  }
+  for (const auto& carPtr : m_finishedCars) {
+    RaceResult result;
+    result.car = carPtr.get();
+    result.completed = carPtr->getProperties().finished;
+    result.finishTime = carPtr->getProperties().finishTime;
+    results.push_back(result);
+  }
+
+  // Get the player's finish time (if finished) and total laps.
+  float playerFinishTime = 0.0f;
+  if (!m_testCars.empty() && m_testCars[0]->getProperties().finished) {
+    playerFinishTime = m_testCars[0]->getProperties().finishTime;
+  }
+  float totalLapsF = static_cast<float>(m_totalLaps);
+
+  // For each result, if not finished, compute an estimated finish time.
+  for (auto& result : results) {
+    if (result.completed) {
+      result.estimatedFinishTime = result.finishTime;
+    }
+    else {
+      float progress = result.car->getTotalRaceProgress();
+      if (playerFinishTime > 0.0f && progress > 0.001f) {
+        result.estimatedFinishTime = playerFinishTime * (totalLapsF / progress);
+      }
+      else {
+        result.estimatedFinishTime = FLT_MAX;
+      }
+    }
+  }
+
+  // Sort results in ascending order (lowest time = best).
+  std::sort(results.begin(), results.end(), [](const RaceResult& a, const RaceResult& b) {
+    return a.estimatedFinishTime < b.estimatedFinishTime;
+    });
+
+  // Draw a table with three columns: Position, Car, and Finish Time.
+  if (ImGui::BeginTable("ResultsTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    ImGui::TableSetupColumn("Position");
+    ImGui::TableSetupColumn("Car");
+    ImGui::TableSetupColumn("Finish Time");
+    ImGui::TableHeadersRow();
+
+    int pos = 1;
+    for (const auto& result : results) {
+      ImGui::TableNextRow();
+
+      // Column 0: Position
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Text("%d", pos);
+
+      // Column 1: Car identifier with its color.
+      ImGui::TableSetColumnIndex(1);
+      auto col = result.car->getColor();
+      ImVec4 carColor(col.r / 255.0f, col.g / 255.0f, col.b / 255.0f, col.a / 255.0f);
+      ImGui::TextColored(carColor, "Car %u", result.car->getAudioId());
+
+      // Column 2: Finish time (or estimate).
+      ImGui::TableSetColumnIndex(2);
+      if (result.completed) {
+        ImGui::Text("%.2f s", result.finishTime);
+      }
+      else {
+        ImGui::Text("%.2f s (est)", result.estimatedFinishTime);
+      }
+      pos++;
+    }
+    ImGui::EndTable();
+  }
+
+  ImGui::Spacing();
+  if (ImGui::Button("Return to Editor", ImVec2(150, 40))) {
+    m_raceFinished = false;
+    m_finishedCars.clear();
+    cleanupTestMode();
+    ImGui::CloseCurrentPopup();
+  }
+
+  ImGui::End();
+}
+
+
+
+
 void LevelEditorScreen::cleanupTestMode() {
-  if (!m_testCars.empty() && m_game) {
+  // First, stop all sounds globally.
+  AK::SoundEngine::StopAll();
+  AK::SoundEngine::RenderAudio();
+
+  // Then remove audio for every car—both still racing and those that finished.
+  if (m_game) {
     auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
     for (auto& car : m_testCars) {
       audioEngine.removeCarAudio(car.get());
     }
+    for (auto& car : m_finishedCars) {
+      audioEngine.removeCarAudio(car.get());
+    }
   }
-  // Only cleanup barrier collisions if both levelRenderer and physicsSystem exist
+
+  // Cleanup barrier collisions if both levelRenderer and physicsSystem exist.
   if (m_levelRenderer && m_physicsSystem) {
     m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
   }
-  // Clear renderer car references
+
+  // Clear renderer car references.
   if (m_levelRenderer) {
     m_levelRenderer->clearCars();
     m_levelRenderer->setShowStartPositions(m_showStartPositions);
   }
+  // Recreate the object manager from our saved object states.
   if (m_objectManager) {
     m_objectManager->clearCars();
-    // Restore object states from backup
     m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
     m_objectManager->createDefaultTemplates();
     for (const auto& state : m_savedObjectStates) {
       m_objectManager->addObject(state.first, state.second);
     }
   }
-  // Clean up other test mode resources 
+  // Clean up test mode resources.
   m_testCars.clear();
   m_aiDrivers.clear();
   m_carTrackingInfo.clear();
-  // Restore camera state
+
+  // Restore camera state.
   m_camera.setPosition(m_editorCameraPos);
   m_camera.setScale(m_editorCameraScale);
-  // Restore object placement state
+
+  // Restore object placement state.
   m_objectPlacementMode = m_savedObjectPlacementMode;
   m_selectedTemplateIndex = m_savedTemplateIndex;
-  // Clean up race elements
+
+  // Clean up race elements.
   if (m_raceTimer) {
     m_raceTimer.reset();
   }
@@ -2316,10 +2493,13 @@ void LevelEditorScreen::cleanupTestMode() {
   m_enableAI = false;
   m_inputEnabled = false;
   m_testMode = false;
-  // Recreate race elements for next time
-    m_raceTimer = std::make_unique<RaceTimer>();
-    m_raceCountdown = std::make_unique<RaceCountdown>();
-    m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+  m_finishedCount = 0;
+
+
+  // Recreate race elements for next time.
+  m_raceTimer = std::make_unique<RaceTimer>();
+  m_raceCountdown = std::make_unique<RaceCountdown>();
+  m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
 
   if (m_raceCountdown && m_countdownFont) {
     auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
@@ -2333,8 +2513,6 @@ void LevelEditorScreen::cleanupTestMode() {
       m_enableAI = true;
       m_inputEnabled = true;
       m_raceTimer->start();
-
-      // Play selected music track
       std::cout << "Countdown complete, attempting to play music ID: " << m_currentMusicTrackId << std::endl;
       if (m_currentMusicTrackId != 0) {
         m_game->getGameAs<App>()->getAudioEngine().playMusicTrack(m_currentMusicTrackId);
@@ -2345,9 +2523,8 @@ void LevelEditorScreen::cleanupTestMode() {
       });
   }
 
-  // Stop current music track
+  // Finally, stop the current music track.
   if (m_currentMusicTrackId != 0 && m_game) {
-    // Since we need the corresponding stop event, find it from available tracks
     const auto& tracks = m_game->getGameAs<App>()->getAudioEngine().getAvailableTracks();
     for (const auto& track : tracks) {
       if (track.playEventId == m_currentMusicTrackId) {
@@ -2357,6 +2534,7 @@ void LevelEditorScreen::cleanupTestMode() {
     }
   }
 }
+
 
 LevelEditorScreen::CarTrackingInfo LevelEditorScreen::calculateCarTrackingInfo(const Car* car) const {
   CarTrackingInfo info;
@@ -2451,76 +2629,101 @@ void LevelEditorScreen::updateCarTrackingInfo() {
 }
 
 void LevelEditorScreen::updateTestMode() {
-  if (!m_testMode || m_testCars.empty()) return;
+  if (!m_testMode || m_testCars.empty())
+    return;
 
   TIME_SCOPE("Total Frame");
   const float fixedTimeStep = 1.0f / 60.0f;
 
-  // Always update countdown regardless of pause state
+  // Always update countdown.
   if (m_raceCountdown) {
     m_raceCountdown->update(fixedTimeStep);
   }
 
-  // Update race timer only if not paused
+  // Update race timer if running.
   if (m_raceTimer && m_raceTimer->isRunning() && !m_isLevelUpPaused) {
     m_raceTimer->update(fixedTimeStep);
   }
 
-  // Only update game logic if not paused for level up
-  if (!m_isLevelUpPaused) {
-    if (m_testMode && m_raceTimer && m_raceTimer->isRunning()) {
-      // Update race positions BEFORE checking start line crossing
-      if (m_testCars.size() > 1) {
-        m_raceManager.updateRacePositions(m_testCars);
-      }
+  // Determine the finished offset.
+  int finishedOffset = m_finishedCount;
+  // If the player's car is finished, include it in the offset.
+  if (!m_testCars.empty() && m_testCars[0]->getProperties().finished) {
+    finishedOffset++;
+  }
 
-      // Now update start line crossing with correct positions
+  // Only update game logic if not paused for level-up and race is not finished.
+  if (!m_raceFinished && !m_isLevelUpPaused) {
+    if (m_raceTimer && m_raceTimer->isRunning()) {
+      // Update race positions and start line crossings for every car.
+      if (m_testCars.size() > 0) {
+        m_raceManager.updateRacePositions(m_testCars, finishedOffset);
+      }
       for (auto& car : m_testCars) {
         car->updateStartLineCrossing(m_track.get());
       }
     }
 
-    // Check all cars for level ups
-    for (size_t i = 0; i < m_testCars.size(); i++) {
-      auto& props = m_testCars[i]->getProperties();
-      if (props.totalXP >= props.xpLevelUpAmount) {
-        handleCarLevelUp(i);
-        if (i == 0) return;  // Return only for player car (to pause game)
+    // Check each car for race completion.
+    for (auto& car : m_testCars) {
+      auto& props = car->getProperties();
+      // When a car reaches one lap above the target (e.g. 4/3 laps for a 3–lap race),
+      // mark it as finished and record its finish time.
+      if (!props.finished && props.currentLap >= m_totalLaps + 1) {
+        props.finished = true;
+        if (m_raceTimer) {
+          props.finishTime = m_raceTimer->getTime();
+        }
       }
     }
 
-    // Safety check
+    // If the player's car (index 0) has finished, end the race.
+    if (m_testCars[0]->getProperties().finished) {
+      m_raceFinished = true;
+      if (m_raceTimer && m_raceTimer->isRunning()) {
+        m_raceTimer->stop();
+      }
+    }
+    else {
+      // Process level-up logic.
+      for (size_t i = 0; i < m_testCars.size(); i++) {
+        auto& props = m_testCars[i]->getProperties();
+        if (props.totalXP >= props.xpLevelUpAmount) {
+          handleCarLevelUp(i);
+          // For the player's car, pause game logic if a level-up occurs.
+          if (i == 0)
+            return;
+        }
+      }
+    }
+
+    // Safety check.
     if (!m_physicsSystem || !m_testCars[0]) {
       cleanupTestMode();
       return;
     }
 
-    // Handle car selection before any other input
+    // Handle car selection.
     handleCarSelection();
 
-    // Update physics
+    // Update physics.
     {
       TIME_SCOPE("Physics Update");
       if (!m_testCars.empty() && m_inputEnabled) {
         InputState input;
         JAGEngine::InputManager& inputManager = m_game->getInputManager();
-        input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) ||
-          inputManager.isKeyDown(SDLK_w);
-        input.braking = inputManager.isKeyDown(SDL_BUTTON_RIGHT) ||
-          inputManager.isKeyDown(SDLK_s);
-        input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) ||
-          inputManager.isKeyDown(SDLK_a);
-        input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) ||
-          inputManager.isKeyDown(SDLK_d);
+        input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) || inputManager.isKeyDown(SDLK_w);
+        input.braking = inputManager.isKeyDown(SDL_BUTTON_RIGHT) || inputManager.isKeyDown(SDLK_s);
+        input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a);
+        input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d);
         m_testCars[0]->update(input);
       }
-
       if (m_physicsSystem) {
         m_physicsSystem->update(fixedTimeStep);
       }
     }
 
-    // Update AI
+    // Update AI.
     {
       TIME_SCOPE("AI Update");
       if (m_enableAI) {
@@ -2528,32 +2731,49 @@ void LevelEditorScreen::updateTestMode() {
       }
     }
 
-    //update objects
+    // Update objects.
     if (m_objectManager) {
       m_objectManager->update();
     }
 
-    // Update audio
+    // Update audio.
     if (!m_testCars.empty() && m_testCars[0]) {
       auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
       auto playerInfo = m_testCars[0]->getDebugInfo();
       Vec2 listenerPos(playerInfo.position.x, playerInfo.position.y);
-
       audioEngine.setDefaultListener(listenerPos, playerInfo.angle);
-
       for (const auto& car : m_testCars) {
         audioEngine.updateCarAudio(car.get(), listenerPos);
       }
     }
+  }  // End of game logic update.
+
+  // Remove finished AI cars (player is always index 0).
+  for (auto it = m_testCars.begin() + 1; it != m_testCars.end(); ) {
+    if ((*it)->getProperties().finished) {
+      m_finishedCount++;
+      m_finishedCars.push_back(std::move(*it));
+      it = m_testCars.erase(it);
+    }
+    else {
+      ++it;
+    }
   }
 
-  // Always update camera, even when paused
+  // Finally, if the player's car is finished, ensure the race is marked finished.
+  if (!m_testCars.empty() && m_testCars[0]->getProperties().finished) {
+    m_raceFinished = true;
+  }
+
+  // Always update camera.
   {
     TIME_SCOPE("Camera Update");
     updateCarTrackingInfo();
     updateTestCamera();
   }
 }
+
+
 
 void LevelEditorScreen::updateTestCamera() {
   if (m_testCars.empty() || m_carTrackingInfo.empty()) return;

@@ -9,7 +9,7 @@
 class RaceManager
 {
 public:
-  void updateRacePositions(std::vector<std::unique_ptr<Car>>& cars);
+  void updateRacePositions(std::vector<std::unique_ptr<Car>>& cars, int finishedOffset);
 private:
 };
 

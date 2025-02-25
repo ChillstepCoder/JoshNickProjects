@@ -72,6 +72,13 @@ public:
     std::string description;
   };
 
+  struct RaceResult {
+    Car* car;
+    bool completed;
+    float finishTime;
+    float estimatedFinishTime;
+  };
+
   // Constructor/Destructor
   LevelEditorScreen();
   ~LevelEditorScreen();
@@ -205,6 +212,10 @@ private:
   std::unique_ptr<RaceTimer> m_raceTimer;
   std::vector<float> m_aiStartDelays;  // Delay time for each AI car
   float m_maxAIStartDelay = 1.0f;
+  bool m_raceFinished = false;
+  int m_finishedCount = 0;
+  // Finished cars (AI cars that have completed the race)
+  std::vector<std::unique_ptr<Car>> m_finishedCars;
 
   // Text Rendering
   std::unique_ptr<JAGEngine::SpriteFont> m_countdownFont;
@@ -260,6 +271,7 @@ private:
   void drawImGui();
   void checkImGuiState();
   void drawDebugWindow();
+  void DrawAudioControlWindow(AudioEngine& audioEngine);
   void exitGame();
   glm::vec2 screenToWorld(const glm::vec2& screenCoords);
 
@@ -282,6 +294,7 @@ private:
   void drawHUD();
   void drawTestMode();
   void drawTestModeUI();
+  void drawRaceResultsUI();
   void updateCarTrackingInfo();
   void updateTestCamera();
   void drawCarTrackingDebug();

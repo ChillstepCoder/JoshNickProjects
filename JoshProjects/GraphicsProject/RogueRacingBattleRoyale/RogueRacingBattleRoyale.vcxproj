@@ -178,6 +178,7 @@
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui_impls.h" />
     <ClInclude Include="InputState.h" />
+    <ClInclude Include="IPhysicsUserData.h" />
     <ClInclude Include="LevelEditorScreen.h" />
     <ClInclude Include="LevelRenderer.h" />
     <ClInclude Include="LevelSaveLoad.h" />

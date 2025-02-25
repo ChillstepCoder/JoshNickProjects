@@ -170,75 +170,62 @@ void GameplayScreen::onExit() {
 }
 
 void GameplayScreen::drawImGui() {
-  // Set window size and position
-  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
+  // Define desired window size
+  ImVec2 windowSize(250, 300);
 
-  // Create main menu window
-  ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoCollapse);
+  // Compute centered position for the gameplay menu window
+  ImGuiIO& io = ImGui::GetIO();
+  ImVec2 displaySize = io.DisplaySize;
+  ImVec2 windowPos((displaySize.x - windowSize.x) * 0.5f,
+    (displaySize.y - windowSize.y) * 0.5f);
 
-  if (ImGui::Button("Level Editor", ImVec2(180, 40))) {
-    m_currentState = JAGEngine::ScreenState::CHANGE_NEXT;  // Fixed namespace
+  // Always force the gameplay menu to be centered
+  ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+  // Use a unique window title for the gameplay menu so it doesn't share state
+  ImGui::Begin("Main Menu (Game)", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
+  if (ImGui::Button("Level Editor", ImVec2(230, 40))) {
+    m_currentState = JAGEngine::ScreenState::CHANGE_NEXT;
   }
 
-  if (ImGui::Button("Race", ImVec2(180, 40))) {
+  if (ImGui::Button("Race", ImVec2(230, 40))) {
     std::cout << "Race clicked\n";
     m_showMainMenu = false;
   }
-  
-  if (ImGui::Button("Options", ImVec2(180, 40))) {
+
+  if (ImGui::Button("Options", ImVec2(230, 40))) {
     std::cout << "Options clicked\n";
   }
 
-  if (ImGui::Button("Exit", ImVec2(180, 40))) {
+  if (ImGui::Button("Exit", ImVec2(230, 40))) {
     exitGame();
   }
 
   ImGui::End();
-
 }
 
 void GameplayScreen::draw() {
+  // Clear the screen with a dark background color
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // Draw game world
+  // Use your texture shader if needed (omitted here since we won't draw the test car)
   m_textureProgram.use();
+  glUniformMatrix4fv(m_textureProgram.getUniformLocation("P"), 1, GL_FALSE, &m_projectionMatrix[0][0]);
 
-  GLint pUniform = m_textureProgram.getUniformLocation("P");
-  glUniformMatrix4fv(pUniform, 1, GL_FALSE, &m_projectionMatrix[0][0]);
-
+  // Begin and immediately end the sprite batch (if nothing is drawn)
   m_spriteBatch.begin();
-
-  if (b2Body_IsValid(m_playerCarBody)) {
-    b2Vec2 position = b2Body_GetPosition(m_playerCarBody);
-    float angle = b2Rot_GetAngle(b2Body_GetRotation(m_playerCarBody));
-
-    // Make car much bigger for testing
-    float carWidth = 20.0f;
-    float carHeight = 10.0f;
-
-    glm::vec4 destRect(
-      position.x - carWidth / 2.0f,
-      position.y - carHeight / 2.0f,
-      carWidth,
-      carHeight
-    );
-
-    glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
-    JAGEngine::ColorRGBA8 color(255, 0, 0, 255);  // Red
-
-    m_spriteBatch.draw(destRect, uvRect, m_carTexture, 0.0f, color, angle);
-  }
-
+  // (No test car or other world elements are drawn here.)
   m_spriteBatch.end();
   m_spriteBatch.renderBatch();
 
   m_textureProgram.unuse();
 
-  // Draw ImGui windows - only once!
+  // Draw only the main menu ImGui window
   drawImGui();
-  drawDebugWindow();
+
 }
 
 void GameplayScreen::update() {

@@ -19,6 +19,8 @@ public:
     float mass;
     Car* carA;
     Car* carB;
+    PlaceableObject* objectA;
+    PlaceableObject* objectB;
   };
 
   PhysicsSystem();

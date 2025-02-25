@@ -271,30 +271,37 @@ bool PhysicsSystem::isValidUserData(void* userData) const {
 
 bool PhysicsSystem::isCarBody(b2BodyId bodyId) const {
   if (!b2Body_IsValid(bodyId)) return false;
+  void* userData = b2Body_GetUserData(bodyId);
+  if (!userData) return false;
 
-  void* userData = nullptr;
-  userData = b2Body_GetUserData(bodyId);
-
-
-  return isValidUserData(userData) &&
-    static_cast<Car*>(userData) != nullptr;
+  IPhysicsUserData* data = static_cast<IPhysicsUserData*>(userData);
+  return data->isCar();
 }
 
 bool PhysicsSystem::isObjectBody(b2BodyId bodyId) const {
-  if (!b2Body_IsValid(bodyId)) return false;
-
-  void* userData = nullptr;
-
-  userData = b2Body_GetUserData(bodyId);
-
-  if (!isValidUserData(userData)) {
+  if (!b2Body_IsValid(bodyId)) {
     return false;
   }
 
-  // Check if it has the correct type
-  PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
-  return obj->getObjectType() != ObjectType::Default;
-  
+  void* userData = nullptr;
+  try {
+    userData = b2Body_GetUserData(bodyId);
+    if (!isValidUserData(userData)) {
+      return false;
+    }
+
+    PlaceableObject* obj = static_cast<PlaceableObject*>(userData);
+    if (!obj) {
+      return false;
+    }
+
+    ObjectType type = obj->getObjectType();
+    return type != ObjectType::Default;
+  }
+  catch (const std::exception& e) {
+    std::cout << "Exception in isObjectBody: " << e.what() << std::endl;
+    return false;
+  }
 }
 
 void PhysicsSystem::handleSensorEvents() {
@@ -368,57 +375,111 @@ void PhysicsSystem::handleSensorEvents() {
   }
 }
 
-// PhysicsSystem.cpp
 void PhysicsSystem::handleCollisionEvents() {
   if (!b2World_IsValid(m_worldId))
     return;
 
   b2ContactEvents contactEvents = b2World_GetContactEvents(m_worldId);
 
-  // Handle car-to-car collisions
   for (int i = 0; i < contactEvents.hitCount; ++i) {
     b2ContactHitEvent* hit = contactEvents.hitEvents + i;
 
     b2BodyId bodyA = b2Shape_GetBody(hit->shapeIdA);
     b2BodyId bodyB = b2Shape_GetBody(hit->shapeIdB);
 
-    // Check if both bodies are cars
-    if (!isCarBody(bodyA) || !isCarBody(bodyB))
+    if (!b2Body_IsValid(bodyA) || !b2Body_IsValid(bodyB)) {
       continue;
+    }
 
-    // Get the car instances
-    Car* carA = static_cast<Car*>(b2Body_GetUserData(bodyA));
-    Car* carB = static_cast<Car*>(b2Body_GetUserData(bodyB));
-    if (!carA || !carB)
-      continue;
+    if (DEBUG_OUTPUT) {
+      std::cout << "\n=== New Collision Event ===" << std::endl;
+      std::cout << "Body A ID: " << bodyA.index1 << ", Body B ID: " << bodyB.index1 << std::endl;
+    }
 
-    // Get masses from both bodies
-    b2MassData massDataA = b2Body_GetMassData(bodyA);
-    b2MassData massDataB = b2Body_GetMassData(bodyB);
+    void* userDataA = b2Body_GetUserData(bodyA);
+    void* userDataB = b2Body_GetUserData(bodyB);
 
-    // Constants for normalization
-    const float MAX_APPROACH_SPEED = 600.0f;  // raw speed that maps to 1.0
-    const float MAX_COMBINED_MASS = 500.0f;    // raw combined mass that maps to 1.0
+    if (DEBUG_OUTPUT) {
+      std::cout << "UserData A present: " << (userDataA != nullptr) << std::endl;
+      std::cout << "UserData B present: " << (userDataB != nullptr) << std::endl;
+    }
 
-    float combinedMass = massDataA.mass + massDataB.mass;
-    // Normalize the values to a 0–1 range
-    float normalizedSpeed = glm::clamp(hit->approachSpeed / MAX_APPROACH_SPEED, 0.0f, 1.0f);
-    float normalizedMass = glm::clamp(combinedMass / MAX_COMBINED_MASS, 0.0f, 1.0f);
+    // Initialize pointers
+    Car* carA = nullptr;
+    Car* carB = nullptr;
+    PlaceableObject* objectA = nullptr;
+    PlaceableObject* objectB = nullptr;
 
-    // Only trigger the collision event for significant collisions (normalized speed > 0.2)
+    // Try to identify objects and print detailed debug info
+    if (userDataA) {
+      if (isCarBody(bodyA)) {
+        carA = static_cast<Car*>(userDataA);
+        if (DEBUG_OUTPUT) {
+          std::cout << "Body A is car" << std::endl;
+        }
+      }
+      else {
+        try {
+          objectA = static_cast<PlaceableObject*>(userDataA);
+          if (DEBUG_OUTPUT) {
+            std::cout << "Body A is object" << std::endl;
+          }
+        }
+        catch (...) {}
+      }
+    }
+
+    if (userDataB) {
+      if (isCarBody(bodyB)) {
+        carB = static_cast<Car*>(userDataB);
+        if (DEBUG_OUTPUT) {
+          std::cout << "Body B is car" << std::endl;
+        }
+      }
+      else {
+        try {
+          objectB = static_cast<PlaceableObject*>(userDataB);
+          if (DEBUG_OUTPUT) {
+            std::cout << "Body B is object" << std::endl;
+          }
+        }
+        catch (...) {}
+      }
+    }
+
+    // Calculate masses
+    float massA = carA ? b2Body_GetMassData(bodyA).mass : 0.0f;
+    float massB = carB ? b2Body_GetMassData(bodyB).mass : 0.0f;
+    float combinedMass = massA + massB;
+
+    const float MAX_APPROACH_SPEED = 600.0f;
+    const float MAX_COMBINED_MASS = 500.0f;
+
+    float normalizedSpeed = std::min(1.0f, std::max(0.0f, hit->approachSpeed / MAX_APPROACH_SPEED));
+    float normalizedMass = std::min(1.0f, std::max(0.0f, combinedMass / MAX_COMBINED_MASS));
+
     if (normalizedSpeed > 0.2f && m_audioEngine) {
-      CollisionInfo info = { normalizedSpeed, normalizedMass, carA, carB };
-      m_audioEngine->handleCarCollision(info);
+      CollisionInfo info = {
+          normalizedSpeed,
+          normalizedMass,
+          carA,
+          carB,
+          objectA,
+          objectB
+      };
 
-      std::cout << "Car collision detected:" << std::endl;
-      std::cout << "  Car A Mass: " << massDataA.mass
-        << ", Car B Mass: " << massDataB.mass << std::endl;
-      std::cout << "  Combined Mass: " << combinedMass << std::endl;
-      std::cout << "  Approach Speed: " << hit->approachSpeed << std::endl;
-      std::cout << "  Normalized Speed (approachSpeed/600): " << normalizedSpeed << std::endl;
-      std::cout << "  Normalized Mass (combinedMass/500): " << normalizedMass << std::endl;
+      if (DEBUG_OUTPUT) {
+        std::cout << "Sending collision info to audio engine:" << std::endl;
+        std::cout << "objectA: " << (objectA ? "present" : "null") << std::endl;
+        std::cout << "objectB: " << (objectB ? "present" : "null") << std::endl;
+        if (objectA) std::cout << "objectA type: " << static_cast<int>(objectA->getObjectType()) << std::endl;
+        if (objectB) std::cout << "objectB type: " << static_cast<int>(objectB->getObjectType()) << std::endl;
+      }
+
+      m_audioEngine->handleCarCollision(info);
     }
   }
+
 }
 
 void* PhysicsSystem::tryGetUserData(b2BodyId bodyId) {

@@ -57,7 +57,6 @@ public:
   void playMusicTrack(AkUniqueID trackId);
   void stopMusicTrack(AkUniqueID trackId);
 
-  // AudioEngine.h
   void handleCarCollision(const PhysicsSystem::CollisionInfo& collision);
 
   // Sound state control
@@ -65,6 +64,7 @@ public:
   void setCarSpeed(float speed);
   void setTireSurfaceType(int surfaceType);
   void updateTireSkidSound(Car* car, float speedRatio, float driftState);
+  void updateScrapeSound(Car* car);
 
   void setDefaultListener(const Vec2& position, float rotation); // not used ATM
   void setObjectPosition(AkGameObjectID id, const Vec2& position) const;
@@ -100,6 +100,7 @@ private:
   std::unique_ptr<JAGEngine::WWiseAudioEngine> m_audioEngine;
   void updateCarEngineState(Car* car, float speedRatio);
   std::unordered_map<Car*, AkGameObjectID> m_carAudioIds;
+  std::unordered_map<Car*, bool> m_isScrapePlaying;
 
   bool m_isBoostPlaying;
   bool m_isEnginePlaying;

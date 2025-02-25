@@ -8,6 +8,7 @@
 #include <JAGEngine/ResourceManager.h>
 #include "PhysicsSystem.h"
 #include "ObjectProperties.h"
+#include "IPhysicsUserData.h"
 
 class Car;
 
@@ -18,7 +19,7 @@ enum class PlacementZone {
   Anywhere
 };
 
-class PlaceableObject {
+class PlaceableObject : public IPhysicsUserData {
 public:
   PlaceableObject(const std::string& texturePath, PlacementZone zone)
     : m_texturePath(texturePath), m_zone(zone), m_physicsBody(b2_nullBodyId),
@@ -116,6 +117,8 @@ public:
       width,
       height);
   }
+
+  virtual bool isCar() const override { return false; }
 
 protected:
   std::string m_texturePath;

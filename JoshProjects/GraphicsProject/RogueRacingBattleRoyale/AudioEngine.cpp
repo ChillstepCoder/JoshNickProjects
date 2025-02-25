@@ -7,6 +7,11 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include "PhysicsCategories.h"
+#include "ObjectProperties.h"
+#include "PlaceableObject.h"
+#include <Box2D/box2d.h>
+
 
 AudioEngine::AudioEngine() :
   m_isBoostPlaying(false),
@@ -195,32 +200,63 @@ void AudioEngine::stopMusicTrack(AkUniqueID trackId) {
   AK::SoundEngine::PostEvent(trackId, RacingAudio::GAME_OBJECT_MUSIC);
 }
 
-// AudioEngine.cpp
 void AudioEngine::handleCarCollision(const PhysicsSystem::CollisionInfo& collision) {
   if (!m_audioEngine || !m_audioEngine->isInitialized())
     return;
 
-  // Retrieve the audio game object IDs for the two cars
-  AkGameObjectID audioIdA = collision.carA->getAudioId();
-  AkGameObjectID audioIdB = collision.carB->getAudioId();
+  // Skip processing if neither car exists
+  if (!collision.carA && !collision.carB) return;
 
-  // Use the normalized values from collision info directly.
-  // (collision.speed and collision.mass are assumed to be normalized between 0 and 1.)
-  float rtpcSpeed = collision.speed * 100; // e.g., 1.0 means 600 units raw speed
-  float rtpcMass = collision.mass * 100;  // e.g., 0.4 means a combined mass of 200 when 500 is full
+  // Get audio IDs, handling case where one car might be null
+  AkGameObjectID audioIdA = collision.carA ? collision.carA->getAudioId() : 0;
+  AkGameObjectID audioIdB = collision.carB ? collision.carB->getAudioId() : 0;
 
-  // Set RTPC values for collision velocity and mass on both car audio objects
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, rtpcSpeed, audioIdA);
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, rtpcMass, audioIdA);
+  // Get a valid audio ID to play sounds on
+  AkGameObjectID primaryAudioId = audioIdA ? audioIdA : audioIdB;
+  if (primaryAudioId == 0) return;
 
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, rtpcSpeed, audioIdB);
-  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, rtpcMass, audioIdB);
+  // Use the normalized values from collision info directly
+  float rtpcSpeed = collision.speed * 100; // Scale to 0-100 range
+  float rtpcMass = collision.mass * 100;   // Scale to 0-100 range
 
-  // Post the collision event for both car audio objects
-  AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISION, audioIdA);
-  AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISION, audioIdB);
+  // Set RTPC values
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_VELOCITY, rtpcSpeed, primaryAudioId);
+  AK::SoundEngine::SetRTPCValue(AK::GAME_PARAMETERS::COLLISION_MASS, rtpcMass, primaryAudioId);
+
+  // Debug print object types
+  std::cout << "Collision objects: " << std::endl;
+  if (collision.objectA) {
+    std::cout << "Object A type: " << static_cast<int>(collision.objectA->getObjectType()) << std::endl;
+  }
+  if (collision.objectB) {
+    std::cout << "Object B type: " << static_cast<int>(collision.objectB->getObjectType()) << std::endl;
+  }
+
+  // First check for traffic cone collisions
+  bool isTrafficCone = false;
+  if (collision.objectA && collision.objectA->getObjectType() == ObjectType::TrafficCone) {
+    std::cout << "Traffic cone collision detected (Object A)" << std::endl;
+    isTrafficCone = true;
+  }
+  else if (collision.objectB && collision.objectB->getObjectType() == ObjectType::TrafficCone) {
+    std::cout << "Traffic cone collision detected (Object B)" << std::endl;
+    isTrafficCone = true;
+  }
+
+  // Choose which collision sound to play based on object type and speed
+  if (isTrafficCone) {
+    std::cout << "Playing traffic cone sound" << std::endl;
+    AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_TRAFFICCONE_SFX, primaryAudioId);
+  }
+  else if (rtpcSpeed > 50.0f) {
+    std::cout << "Playing glass break sound" << std::endl;
+    AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISIONGLASS, primaryAudioId);
+  }
+  else {
+    std::cout << "Playing regular collision sound" << std::endl;
+    AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_CAR_COLLISION, primaryAudioId);
+  }
 }
-
 
 void AudioEngine::setEngineRPM(float rpm) {
   m_currentRPM = rpm;
@@ -276,6 +312,25 @@ void AudioEngine::updateTireSkidSound(Car* car, float speedRatio, float driftSta
   else if (isSkidPlaying[car]) {
     AK::SoundEngine::PostEvent(AK::EVENTS::STOP_CAR_TIRE_SKID_1, audioId);
     isSkidPlaying[car] = false;
+  }
+}
+
+void AudioEngine::updateScrapeSound(Car* car) {
+  if (!car) return;
+  AkGameObjectID audioId = car->getAudioId();
+
+  // Check if the car is scraping
+  bool scraping = car->isScrapingBarrier();
+
+  if (scraping && !m_isScrapePlaying[car]) {
+    // Start the scrape loop if not already playing
+    AK::SoundEngine::PostEvent(AK::EVENTS::PLAY_SCRAPE_SFX, audioId);
+    m_isScrapePlaying[car] = true;
+  }
+  else if (!scraping && m_isScrapePlaying[car]) {
+    // Stop the scrape loop if it is playing
+    AK::SoundEngine::PostEvent(AK::EVENTS::STOP_SCRAPE_SFX, audioId);
+    m_isScrapePlaying[car] = false;
   }
 }
 
@@ -568,6 +623,64 @@ void AudioEngine::updateCarAudio(Car* car, const Vec2& listenerPos) {
   // Continue with RTPC updates
   float speedRatio = abs(info.forwardSpeed) / (500.0f);
   updateCarEngineState(car, speedRatio);
+
+
+  // Update scraping flag using the C API
+  bool scraping = false;
+  b2BodyId bodyId = car->getDebugInfo().bodyId;
+
+  // Get our car pointer from the body’s user data.
+  void* carUserData = b2Body_GetUserData(bodyId);
+
+  // Get contact data for this body.
+  int capacity = b2Body_GetContactCapacity(bodyId);
+  if (capacity > 0) {
+    // Allocate an array for contacts.
+    std::vector<b2ContactData> contacts(capacity);
+    int contactCount = b2Body_GetContactData(bodyId, contacts.data(), capacity);
+
+    for (int i = 0; i < contactCount; i++) {
+      b2ContactData contact = contacts[i];
+      // Use the manifold's pointCount as a proxy for "touching".
+      if (contact.manifold.pointCount == 0) {
+        continue;
+      }
+
+      b2ShapeId shapeA = contact.shapeIdA;
+      b2ShapeId shapeB = contact.shapeIdB;
+      b2BodyId bodyA = b2Shape_GetBody(shapeA);
+      b2BodyId bodyB = b2Shape_GetBody(shapeB);
+
+      // Retrieve user data for both bodies.
+      void* userDataA = b2Body_GetUserData(bodyA);
+      void* userDataB = b2Body_GetUserData(bodyB);
+
+      b2ShapeId otherShape;
+      // Determine which shape is _not_ attached to our car.
+      if (userDataA == carUserData) {
+        otherShape = shapeB;
+      }
+      else if (userDataB == carUserData) {
+        otherShape = shapeA;
+      }
+      else {
+        // Neither shape belongs to our car; skip.
+        continue;
+      }
+
+      // Get the filter data from the "other" shape.
+      b2Filter filter = b2Shape_GetFilter(otherShape);
+      // If the filter's category includes the barrier flag, we are scraping.
+      if (filter.categoryBits & CATEGORY_BARRIER) {
+        scraping = true;
+        break;
+      }
+    }
+  }
+  car->setScrapingBarrier(scraping);
+
+  // Update the scrape sound
+  updateScrapeSound(car);
 }
 
 void AudioEngine::updateCarEngineState(Car* car, float speedRatio) {
@@ -621,17 +734,16 @@ void AudioEngine::updateCarEngineState(Car* car, float speedRatio) {
 
 void AudioEngine::removeCarAudio(Car* car) {
   auto it = m_carAudioIds.find(car);
-  if (it == m_carAudioIds.end()) return;
+  if (it == m_carAudioIds.end())
+    return;
 
   AkGameObjectID audioId = it->second;
 
-  // Stop all sounds on this game object
+  // Stop all sounds on this game object.
   AK::SoundEngine::StopAll(audioId);
-
-  // Wait for sounds to stop
+  // Ensure the commands are flushed.
   AK::SoundEngine::RenderAudio();
-
-  // Then unregister
+  // Unregister the game object.
   AK::SoundEngine::UnregisterGameObj(audioId);
 
   m_carAudioIds.erase(it);
@@ -640,3 +752,5 @@ void AudioEngine::removeCarAudio(Car* car) {
     std::cout << "Removed audio for car " << audioId << std::endl;
   }
 }
+
+

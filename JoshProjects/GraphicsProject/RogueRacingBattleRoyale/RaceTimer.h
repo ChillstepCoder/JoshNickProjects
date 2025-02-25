@@ -19,6 +19,8 @@ public:
   void draw(JAGEngine::SpriteBatch& batch, const JAGEngine::Camera2D& camera, int currentLap = -1, int totalLaps = -1);
   bool isRunning() const { return m_isRunning; }
 
+  float getTime() const { return m_elapsedTime; }
+
 private:
   std::unique_ptr<JAGEngine::SpriteFont> m_font;
   float m_elapsedTime;

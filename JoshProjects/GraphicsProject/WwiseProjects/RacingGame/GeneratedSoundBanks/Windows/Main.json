@@ -10,11 +10,19 @@
     "Type": "User",
     "GUID": "{125F48BD-7C3C-442F-8043-0B4DAC378908}",
     "Language": "SFX",
-    "Hash": "{05C47F53-41EF-23C5-2151-4077E42087D9}",
+    "Hash": "{8CB2D1C5-2908-7BBE-B67D-8A8539A6847D}",
     "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
     "ShortName": "Main",
     "Path": "Main.bnk",
     "Media": [
+     {
+      "Id": "18582218",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "traffic_cone_2.wav",
+      "CachePath": "FB/{FB02EB05-AAAA-4394-DEC0-07E0A6CFD4F9}.wem"
+     },
      {
       "Id": "78980995",
       "Language": "SFX",
@@ -64,6 +72,14 @@
       "CachePath": "26/{26CFA13C-EE2B-5F0B-C196-C2BA2178F782}.wem"
      },
      {
+      "Id": "327441632",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_2.wav",
+      "CachePath": "74/{746522F1-B50A-7211-C413-F4FBBE6BD913}.wem"
+     },
+     {
       "Id": "349054807",
       "Language": "SFX",
       "Streaming": "false",
@@ -80,12 +96,28 @@
       "CachePath": "BC/{BC281365-2C87-AEBE-EC55-A16E317A8C59}.wem"
      },
      {
+      "Id": "518915322",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_3.wav",
+      "CachePath": "4F/{4F4CAA5F-122F-6BA9-8CA0-E5905089601F}.wem"
+     },
+     {
       "Id": "536482941",
       "Language": "SFX",
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Engine_Idle_SFX_1.wav",
       "CachePath": "6E/{6E418767-4F42-13E8-5BEE-C819302BE4BB}.wem"
+     },
+     {
+      "Id": "548743814",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_Glass_2.wav",
+      "CachePath": "35/{35BD3869-3C7E-A578-90B0-56EA14519D2C}.wem"
      },
      {
       "Id": "555365400",
@@ -96,12 +128,44 @@
       "CachePath": "0A/{0AA01B27-BC48-DA87-41D7-02D3FCFABE68}.wem"
      },
      {
+      "Id": "607718218",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_Glass_1.wav",
+      "CachePath": "CF/{CFBCA0AD-E1A9-C93C-C8E2-4A7969848FCB}.wem"
+     },
+     {
+      "Id": "612648862",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_1.wav",
+      "CachePath": "8C/{8CA6FC57-3121-32FA-1CD0-25E4D65213BC}.wem"
+     },
+     {
+      "Id": "666811857",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "Car_Crash_SFX_4.wav",
+      "CachePath": "A3/{A37FB038-DD5D-B59E-805E-56839C4FAFEC}.wem"
+     },
+     {
       "Id": "685517915",
       "Language": "SFX",
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Countdown_SFX_2.wav",
       "CachePath": "0D/{0DBB22E9-C514-203E-43BF-26E10FA466C6}.wem"
+     },
+     {
+      "Id": "704322312",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "traffic_cone_4.wav",
+      "CachePath": "06/{06FA7244-8372-3895-5AD2-66CE53241332}.wem"
      },
      {
       "Id": "816917652",
@@ -120,12 +184,36 @@
       "CachePath": "51/{51D90BD3-8C9C-7586-1D7D-B551F7DCE6C9}.wem"
      },
      {
+      "Id": "845150532",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "traffic_cone_3.wav",
+      "CachePath": "D6/{D61C13BA-66E4-CAE3-6590-378AB6275DB6}.wem"
+     },
+     {
       "Id": "849129411",
       "Language": "SFX",
       "Streaming": "false",
       "Location": "Memory",
       "ShortName": "Car_Crash_SFX_3.wav",
       "CachePath": "0B/{0B151883-B6A4-FAB0-5490-C9747AE650D4}.wem"
+     },
+     {
+      "Id": "949225117",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "barrier_scrape.wav",
+      "CachePath": "A1/{A12F448D-60C4-39BC-2035-FBD5B24D2BF0}.wem"
+     },
+     {
+      "Id": "966184684",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "traffic_cone_1.wav",
+      "CachePath": "96/{96187882-257C-89A7-2629-3A2FAA5A2278}.wem"
      },
      {
       "Id": "1030427408",
@@ -155,10 +243,63 @@
     "Plugins": {
      "Custom": [
       {
+       "Id": "217322492",
+       "Name": "Impacter",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Default Work Unit\\Impacts\\TrafficCone_SFX\\Impacter",
+       "GUID": "{4EF1CD14-BCEA-4894-A996-EC636C1A943F}",
+       "Color": "7",
+       "LibName": "Impacter",
+       "LibId": "12058626",
+       "MediaRefs": [
+        {
+         "Id": "18582218"
+        },
+        {
+         "Id": "704322312"
+        },
+        {
+         "Id": "845150532"
+        },
+        {
+         "Id": "966184684"
+        }
+       ]
+      },
+      {
+       "Id": "563163508",
+       "Name": "Impacter",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Default Work Unit\\Impacts\\CarCrashGlass_SFX\\Impacter",
+       "GUID": "{F328FE16-9569-43AD-B0D5-D4A7DBEABB2E}",
+       "Color": "7",
+       "LibName": "Impacter",
+       "LibId": "12058626",
+       "MediaRefs": [
+        {
+         "Id": "327441632"
+        },
+        {
+         "Id": "518915322"
+        },
+        {
+         "Id": "548743814"
+        },
+        {
+         "Id": "607718218"
+        },
+        {
+         "Id": "612648862"
+        },
+        {
+         "Id": "666811857"
+        }
+       ]
+      },
+      {
        "Id": "973345395",
        "Name": "Impacter",
-       "ObjectPath": "\\Actor-Mixer Hierarchy\\Default Work Unit\\CarCrash_SFX\\Impacter",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Default Work Unit\\Impacts\\CarCrash_SFX\\Impacter",
        "GUID": "{D0D3242E-B103-4D14-962E-17A8C65B749A}",
+       "Color": "7",
        "LibName": "Impacter",
        "LibId": "12058626",
        "MediaRefs": [
@@ -190,7 +331,6 @@
       "Name": "Play_Car_Collision",
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Car_Collision",
       "GUID": "{DEEA1078-1573-42AA-8F66-E33DF0201433}",
-      "MaxAttenuation": "500",
       "DurationType": "Unknown",
       "PluginRefs": {
        "Custom": [
@@ -201,11 +341,24 @@
       }
      },
      {
+      "Id": "3721605055",
+      "Name": "Play_Car_CollisionGlass",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Car_CollisionGlass",
+      "GUID": "{F956B1E0-CB37-4A62-BA37-11E46B191FCE}",
+      "DurationType": "Unknown",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "563163508"
+        }
+       ]
+      }
+     },
+     {
       "Id": "2960744889",
       "Name": "Play_Car_Tire_Skid_1",
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Car_Tire_Skid_1",
       "GUID": "{A8CE5BF1-FD2D-4C0B-B476-0280BB4777DB}",
-      "MaxAttenuation": "500",
       "DurationType": "Infinite",
       "MediaRefs": [
        {
@@ -267,7 +420,6 @@
       "Name": "Play_Engine_Idle_SFX_1",
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Engine_Idle_SFX_1",
       "GUID": "{9E5B23F7-D560-4385-BD43-AC8DC6CF2AA6}",
-      "MaxAttenuation": "500",
       "DurationType": "Infinite",
       "MediaRefs": [
        {
@@ -280,7 +432,6 @@
       "Name": "Play_Engine_Rev_SFX_1",
       "ObjectPath": "\\Events\\Default Work Unit\\Play_Engine_Rev_SFX_1",
       "GUID": "{3BA07A97-0660-4555-9474-35BA89E6754F}",
-      "MaxAttenuation": "500",
       "DurationType": "Infinite",
       "MediaRefs": [
        {
@@ -302,6 +453,32 @@
         "Id": "1070648498"
        }
       ]
+     },
+     {
+      "Id": "2752402750",
+      "Name": "Play_Scrape_SFX",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Scrape_SFX",
+      "GUID": "{9B57C057-F3BF-4171-BFED-AD0732A29162}",
+      "DurationType": "Infinite",
+      "MediaRefs": [
+       {
+        "Id": "949225117"
+       }
+      ]
+     },
+     {
+      "Id": "4191769032",
+      "Name": "Play_TrafficCone_SFX",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_TrafficCone_SFX",
+      "GUID": "{B74CDDEE-DA44-45C8-84D9-8D395C6881E6}",
+      "DurationType": "Unknown",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "217322492"
+        }
+       ]
+      }
      },
      {
       "Id": "2146366539",
@@ -328,6 +505,16 @@
       "Name": "Stop_HyperLoop",
       "ObjectPath": "\\Events\\Default Work Unit\\Stop_HyperLoop",
       "GUID": "{CF20B0B6-4964-4417-8B58-46DB17D3D950}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "35070556",
+      "Name": "Stop_Scrape_SFX",
+      "ObjectPath": "\\Events\\Default Work Unit\\Stop_Scrape_SFX",
+      "GUID": "{30786C8F-3F06-4E15-BC3E-01F48963AD7C}",
       "MaxAttenuation": "0",
       "DurationType": "OneShot",
       "DurationMin": "0",
@@ -410,6 +597,6 @@
     ]
    }
   ],
-  "FileHash": "{5959BCA8-2302-3BD0-C198-62058EDEDDCD}"
+  "FileHash": "{F6200377-CFE6-7648-DA85-C7681C09B36F}"
  }
 }

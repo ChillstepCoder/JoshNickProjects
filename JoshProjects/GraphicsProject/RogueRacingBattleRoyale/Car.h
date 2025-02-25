@@ -11,13 +11,13 @@
 #include <memory>
 #include "ObjectProperties.h"
 #include <AK/SoundEngine/Common/AkTypes.h>
+#include "IPhysicsUserData.h"
 
 class AudioEngine;
 class PlaceableObject;
 class ObjectManager;
 
-
-class Car {
+class Car : public IPhysicsUserData {
 public:
 
   struct CarProperties {
@@ -84,8 +84,12 @@ public:
     int currentLap = 0;
     float lapProgress = 0.0f;
     int racePosition = 0;
-    bool lastStartLineSide = false;
     glm::vec2 lastPosition = glm::vec2(0.0f);
+    bool finished = false;
+    float finishTime = 0.0f; // in seconds
+    bool crossedStartLine = false;
+    int lastStartLineSide = -1;
+
     // Booster properties
     float currentBoostSpeed = 0.0f;
     float boostAccumulator = 0.0f;
@@ -96,6 +100,7 @@ public:
     int totalXP = 0;
     int xpLevelUpAmount = 10;
     int level = 1;
+
 
     StatLevels statLevels;
     SpecialStats specialStats;
@@ -146,6 +151,7 @@ public:
     std::cout << "Setting audio engine for car" << std::endl;
     m_audioEngine = engine;
   }
+  void setScrapingBarrier(bool scraping) { m_isScrapingBarrier = scraping; }
 
   float getEffectiveFriction() const {
     return m_properties.wheelFriction * m_properties.baseFriction;
@@ -163,6 +169,9 @@ public:
   const JAGEngine::ColorRGBA8& getColor() const { return m_color; }
 
   const std::array<WheelState, 4>& getWheelStates() const { return m_wheelStates; }
+  virtual bool isCar() const override { return true; }
+
+  bool isScrapingBarrier() const { return m_isScrapingBarrier; }
 
   friend class PhysicsSystem;
 
@@ -176,6 +185,7 @@ private:
   b2BodyId m_bodyId;
   CarProperties m_properties;
   ObjectManager* m_objectManager = nullptr;
+  bool m_isScrapingBarrier = false;
 
   b2Vec2 getForwardVector() const;
   void applyLapBonuses();
