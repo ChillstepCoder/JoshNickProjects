@@ -22,6 +22,7 @@
 #include "ImGui/backends/imgui_impl_opengl3.h"
 
 class BlockManager;
+class ConnectedTextureSet;
 
 class GameplayScreen : public Bengine::IGameScreen {
 public:
@@ -74,6 +75,7 @@ private:
     float m_gravity = -80.0f;
     int m_updateFrame = 0;
 
+    ConnectedTextureSet& m_connectedTextureSet;
     CellularAutomataManager m_cellularAutomataManager;
     BlockMeshManager m_blockMeshManager;
     BlockManager* m_blockManager;

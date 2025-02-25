@@ -5,10 +5,12 @@
 #include <vector>
 #include <Bengine/SpriteBatch.h>
 #include "Block.h"
+#include "unordered_map"
 
 class DebugDraw;
 class BlockManager;
 class CellularAutomataManager;
+enum class AdjacencyRule;
 
 const int CHUNK_WIDTH = 64;
 const int WATER_LEVELS = 100;
@@ -16,7 +18,8 @@ const int WATER_LEVELS = 100;
 class Chunk {
 public:
     void init();
-    void buildChunkMesh() ;
+    void buildChunkMesh(BlockManager& blockManager);
+    AdjacencyRule getAdjacencyRuleForBlock(BlockID blockID);
     void render();
     void save();
     void load();
@@ -35,7 +38,7 @@ public:
     glm::vec2 m_worldPosition;
     Bengine::SpriteBatch m_spriteBatch;
     bool m_isLoaded = false;
-    bool m_isMeshDirty = false;
+    bool m_isMeshDirty = true;
 };
 
 struct BlockHandle {
@@ -58,11 +61,11 @@ public:
     void renderMesh(std::vector<std::vector<Chunk>>& chunks, BlockManager& blockManager);
 
 private:
-
+    
 };
 
 const int WORLD_WIDTH_CHUNKS = 32;
-const int WORLD_HEIGHT_CHUNKS = 16;
+const int WORLD_HEIGHT_CHUNKS = 32;
 const int loadRadius = 5;
 
 class BlockManager {
@@ -70,6 +73,14 @@ public:
     BlockManager(BlockMeshManager& meshManager, b2WorldId worldId, CellularAutomataManager& cellularAutomataManager)
         : m_MeshManager(meshManager), m_world(worldId), m_cellularAutomataManager(cellularAutomataManager) {}
     
+
+    struct VeinTracker {
+        int oreCount;
+        int centerX;
+        int centerY;
+    };
+    std::unordered_map<BlockID, std::vector<VeinTracker>> activeVeins;
+
 
     void renderBlocks() {
         m_MeshManager.renderMesh(m_chunks, *this);
@@ -93,13 +104,13 @@ public:
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
-    void loadNearbyChunks(const glm::vec2& playerPos);
+    void loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager);
 
     bool isChunkLoaded(int x, int y);
 
     void generateChunk(int chunkX, int chunkY, Chunk& chunk);
 
-    void loadChunk(int x, int y);
+    void loadChunk(int x, int y, BlockManager& blockManager);
 
     bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
 

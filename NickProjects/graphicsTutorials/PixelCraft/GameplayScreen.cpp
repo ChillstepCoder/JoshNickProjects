@@ -7,8 +7,10 @@
 #include "PerlinNoise.hpp"
 #include "Timer.h"
 #include "Profiler.h"
+#include "ConnectedTextureSet.h"
 
-GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window) {
+
+GameplayScreen::GameplayScreen(Bengine::Window* window) : m_window(window), m_connectedTextureSet(ConnectedTextureSet::getInstance()) {
 
 }
 GameplayScreen::~GameplayScreen() {
@@ -33,7 +35,7 @@ void GameplayScreen::destroy() {
 }
 
 void GameplayScreen::onEntry() {
-    glm::vec2 playerPos(1024.0f, 400.0f);
+    glm::vec2 playerPos(1024.0f, 1680.0f);
 
     b2WorldDef worldDef = b2DefaultWorldDef();
     worldDef.gravity = b2Vec2(0.0f, m_gravity);
@@ -47,6 +49,8 @@ void GameplayScreen::onEntry() {
     m_blockMeshManager.init();
 
     m_cellularAutomataManager.init();
+
+    m_connectedTextureSet.LoadRules();
 
     m_blockManager = new BlockManager(m_blockMeshManager, m_world, m_cellularAutomataManager);
 
@@ -124,7 +128,7 @@ void GameplayScreen::update() {
         }
         {
             PROFILE_SCOPE("Load nearby chunks");
-            m_blockManager->loadNearbyChunks(playerPos);
+            m_blockManager->loadNearbyChunks(playerPos, *m_blockManager);
         }
         {
             PROFILE_SCOPE("BlockManager Update");

@@ -31,9 +31,11 @@ public:
         return instance;
     };
 
+    void handleAnyRule(BlockAdjacencyRules& rules, int subUV_X, int subUV_Y);
+
     void UpdateLookupTable();
 
-    glm::vec4 GetSubTextureUVForRules(BlockAdjacencyRules rules);
+    glm::vec4 GetSubTextureUVForRules(BlockAdjacencyRules rules, int x, int y);
 
     void SaveRules();
 

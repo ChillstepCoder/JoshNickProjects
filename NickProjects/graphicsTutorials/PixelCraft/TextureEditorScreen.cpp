@@ -160,7 +160,7 @@ void TextureEditorScreen::drawImgui() {
     ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Texture Editor");
-    GLuint textureID = Bengine::ResourceManager::getTexture("Textures/Stone.png", Bengine::TextureFilterMode::Nearest).id;
+    GLuint textureID = Bengine::ResourceManager::getTexture("Textures/Stonelabeled.png", Bengine::TextureFilterMode::Nearest).id;
     BlockDefRepository repository;
     BlockID id = BlockID::STONE;
     BlockDef blockDef = repository.getDef(id);

@@ -117,7 +117,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
     if (chunk.m_isMeshDirty == true) {
         chunk.m_isMeshDirty = false;
-        chunk.buildChunkMesh();
+        chunk.buildChunkMesh(blockManager);
     }
 
 }

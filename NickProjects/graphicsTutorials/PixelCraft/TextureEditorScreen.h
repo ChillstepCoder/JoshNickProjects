@@ -41,7 +41,8 @@ public:
     void drawImgui();
 
     void setScreenIndex(int index) { m_screenIndex = index; }
-
+    int subUV_X = 0;
+    int subUV_Y = 0;
 
 private:
     void checkInput();
@@ -60,8 +61,6 @@ private:
     GLuint m_background;
     Bengine::Window* m_window;
     ConnectedTextureSet& m_connectedTextureSet;
-    int subUV_X = 0;
-    int subUV_Y = 0;
     int m_screenIndex = 2;
 };
 
