@@ -249,6 +249,21 @@ void GameplayScreen::drawImgui() {
         m_player.setJumpForce(jumpForce); // Update the player's jump force
     }
 
+    // Sliders for world generation parameters
+    ImGui::SliderFloat("Cave Scale", &m_caveScale, 0.001f, 0.1f, "%.5f");
+    ImGui::SliderFloat("Base Cave Threshold", &m_baseCaveThreshold, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Detail Scale", &m_detailScale, 0.001f, 0.1f, "%.5f");
+    ImGui::SliderFloat("Detail Influence", &m_detailInfluence, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Min Cave Depth", &m_minCaveDepth, 0.0f, 100.0f, "%.1f");
+    ImGui::SliderFloat("Surface Zone", &m_surfaceZone, 0.0f, 200.0f, "%.1f");
+    ImGui::SliderFloat("Deep Zone", &m_deepZone, 0.0f, 1000.0f, "%.1f");
+    ImGui::SliderFloat("Max Surface Bonus", &m_maxSurfaceBonus, 0.0f, 0.1f, "%.4f");
+    ImGui::SliderFloat("Max Depth Penalty", &m_maxDepthPenalty, 0.0f, 0.1f, "%.4f");
+
+    if (ImGui::Button("Regenerate World")) {
+        m_blockManager->regenerateWorld(m_caveScale, m_baseCaveThreshold, m_detailScale, m_detailInfluence, m_minCaveDepth, m_surfaceZone, m_deepZone, m_maxSurfaceBonus, m_maxDepthPenalty);
+    }
+
     for (auto& result : m_profileResults)
     {
         char label[50];

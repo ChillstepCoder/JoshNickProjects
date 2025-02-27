@@ -10,6 +10,7 @@
 class DebugDraw;
 class BlockManager;
 class CellularAutomataManager;
+class GameplayScreen;
 enum class AdjacencyRule;
 
 const int CHUNK_WIDTH = 64;
@@ -110,11 +111,15 @@ public:
 
     void generateChunk(int chunkX, int chunkY, Chunk& chunk);
 
+    void regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty);
+
     void loadChunk(int x, int y, BlockManager& blockManager);
 
     bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
 
     bool loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk);
+
+    void clearWorldFiles();
 
     bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
 
@@ -130,6 +135,16 @@ public:
 
 private:
     std::vector<std::vector<Chunk>> m_chunks;
+
+    float m_caveScale = 0.005419f;        // higher number = smaller cave
+    float m_baseCaveThreshold = 0.08f; // Higher = less caves
+    float m_detailScale = 0.09320f;       // Scale for additional cave detail
+    float m_detailInfluence = 0.77f;   // How much the detail affects the main cave shape
+    float m_minCaveDepth = 20.0f;      // Minimum depth below surface for caves to start
+    float m_surfaceZone = 100.0f;      // Depth range for surface cave adjustment
+    float m_deepZone = 600.0f;         // Depth where deep cave adjustment begins
+    float m_maxSurfaceBonus = 0.02f;   // Maximum bonus for surface caves
+    float m_maxDepthPenalty = 0.01f;   // Maximum penalty for deep caves
 
     CellularAutomataManager& m_cellularAutomataManager;
     BlockMeshManager& m_MeshManager;

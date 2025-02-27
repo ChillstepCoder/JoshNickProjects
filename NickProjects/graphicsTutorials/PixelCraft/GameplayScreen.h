@@ -53,6 +53,17 @@ public:
 
     bool m_debugRenderEnabled = false;
 
+    float m_caveScale = 0.006f;
+    float m_baseCaveThreshold = 0.20f;
+    float m_detailScale = 0.03f;
+    float m_detailInfluence = 0.13f;
+    float m_minCaveDepth = 12.0f;
+    float m_surfaceZone = 100.0f;
+    float m_deepZone = 600.0f;
+    float m_maxSurfaceBonus = 0.02f;
+    float m_maxDepthPenalty = 0.01f;
+
+
 private:
     void checkInput();
 
@@ -74,6 +85,7 @@ private:
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
     float m_gravity = -80.0f;
     int m_updateFrame = 0;
+
 
     ConnectedTextureSet& m_connectedTextureSet;
     CellularAutomataManager m_cellularAutomataManager;

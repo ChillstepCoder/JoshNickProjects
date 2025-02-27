@@ -6,7 +6,7 @@
 #include "PerlinNoise.hpp"
 #include <iostream>
 #include <fstream>
-
+#include <filesystem> 
 
 void Chunk::init() {
     m_spriteBatch.init();
@@ -443,6 +443,7 @@ bool BlockManager::isChunkLoaded(int x, int y) {
 
 void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
+
     static siv::PerlinNoise perlin(12345);
     static siv::PerlinNoise oreNoise(67890);
     static siv::PerlinNoise veinShapeNoise(11111);
@@ -452,19 +453,6 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     const float NOISE_SCALE = 0.05f;
     const float AMPLITUDE = 10.0f;
     const float BASE_SURFACE_Y = 1664.0f;
-
-    const float CAVE_SCALE = 0.006f;        // higher number = smaller cave
-    const float BASE_CAVE_THRESHOLD = 0.20f;     // Higher = less caves
-    const float DETAIL_SCALE = 0.03f;      // Scale for additional cave detail
-    const float DETAIL_INFLUENCE = 0.13f;    // How much the detail affects the main cave shape
-    const float MIN_CAVE_DEPTH = 12.0f;    // Minimum depth below surface for caves to start
-
-    const float SURFACE_ZONE = 100.0f;      // Depth range for surface cave adjustment
-    const float DEEP_ZONE = 600.0f;         // Depth where deep cave adjustment begins
-    const float MAX_SURFACE_BONUS = 0.02f;  // Maximum bonus for surface caves
-    const float MAX_DEPTH_PENALTY = 0.01f;  // Maximum penalty for deep caves
-
-
 
     float initialNoiseValue = perlin.noise1D(chunkX * CHUNK_WIDTH * NOISE_SCALE);
     int referenceHeight = static_cast<int>(BASE_SURFACE_Y + initialNoiseValue * AMPLITUDE);
@@ -489,9 +477,12 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         float angle;
     };
     std::vector<OreVein> chunkOreVeins;
+    chunkOreVeins.clear();
+    assert(chunk.blocks != nullptr);
 
     // Adjusted parameters with corrected depth ranges
     std::vector<OreParams> oreTypes;
+    oreTypes.clear();
     // Note: For each ore type, maxDepth the higher number (closer to surface)
     oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.62f, 30 }); // upper depth, lower depth, density of vein, frequency of ore veins, max vein amount(doesnt work lol)
     oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.49f, 0.60f, 25 });
@@ -553,35 +544,35 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             bool shouldBeAir = false;
 
             // Cave generation
-            if (worldY < height - MIN_CAVE_DEPTH) {
+            if (worldY < height - m_minCaveDepth) {
                 // Calculate depth factors
                 float depthFromSurface = height - worldY;
 
                 // Surface zone calculation (more caves near surface)
-                float surfaceFactor = std::max(0.0f, 1.0f - (depthFromSurface / SURFACE_ZONE));
-                float surfaceBonus = surfaceFactor * MAX_SURFACE_BONUS;
+                float surfaceFactor = std::max(0.0f, 1.0f - (depthFromSurface / m_surfaceZone));
+                float surfaceBonus = surfaceFactor * m_maxSurfaceBonus;
 
                 // Deep zone calculation (fewer caves at extreme depths)
-                float deepFactor = std::max(0.0f, (depthFromSurface - DEEP_ZONE) / DEEP_ZONE);
-                float depthPenalty = deepFactor * MAX_DEPTH_PENALTY;
+                float deepFactor = std::max(0.0f, (depthFromSurface - m_deepZone) / m_deepZone);
+                float depthPenalty = deepFactor * m_maxDepthPenalty;
 
                 // Generate base cave noise
                 float caveVal = caveNoise.noise3D(
-                    worldX * CAVE_SCALE,
-                    worldY * CAVE_SCALE,
-                    sin(worldX * CAVE_SCALE * 0.5f + worldY * CAVE_SCALE * 0.5f) * 2.0f
+                    worldX * m_caveScale,
+                    worldY * m_caveScale,
+                    sin(worldX * m_caveScale * 0.5f + worldY * m_caveScale * 0.5f) * 2.0f
                 );
 
                 float detailVal = caveDetailNoise.noise3D(
-                    worldX * DETAIL_SCALE,
-                    worldY * DETAIL_SCALE,
-                    (worldX + worldY) * DETAIL_SCALE * 0.25f
+                    worldX * m_detailScale,
+                    worldY * m_detailScale,
+                    (worldX + worldY) * m_detailScale * 0.25f
                 );
 
-                float combinedCaveNoise = caveVal + (detailVal * DETAIL_INFLUENCE);
+                float combinedCaveNoise = caveVal + (detailVal * m_detailInfluence);
 
                 // Calculate final threshold with surface bonus and depth penalty
-                float adjustedThreshold = BASE_CAVE_THRESHOLD - surfaceBonus + depthPenalty;
+                float adjustedThreshold = m_baseCaveThreshold - surfaceBonus + depthPenalty;
 
                 // Additional noise variation based on depth
                 float depthVariation = caveNoise.noise2D(worldX * 0.02f, depthFromSurface * 0.01f) * 0.05f;
@@ -595,8 +586,8 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                 // Connecting tunnels with depth-aware thresholds
                 if (!shouldBeAir) {
                     float connectionNoise = caveNoise.noise2D(
-                        worldX * CAVE_SCALE * 1.5f,
-                        worldY * CAVE_SCALE * 1.5f
+                        worldX * m_caveScale * 1.5f,
+                        worldY * m_caveScale * 1.5f
                     );
 
                     // Adjust connection threshold based on depth
@@ -637,6 +628,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                 }
 
                 // ore generation
+                assert(!chunkOreVeins.empty());
                 for (const auto& vein : chunkOreVeins) {
                     // Calculate distance from vein center
                     int dx = worldX - vein.centerX;
@@ -676,6 +668,34 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                 currentBlock.init(m_world, BlockID::AIR, position);
             }
             chunk.blocks[x][y] = currentBlock;
+        }
+    }
+}
+
+
+void BlockManager::regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty) {
+    m_caveScale = caveScale;
+    m_baseCaveThreshold = baseCaveThreshold;
+    m_detailScale = detailScale;
+    m_detailInfluence = detailInfluence;
+    m_minCaveDepth = minCaveDepth;
+    m_surfaceZone = surfaceZone;
+    m_deepZone = deepZone;
+    m_maxSurfaceBonus = maxSurfaceBonus;
+    m_maxDepthPenalty = maxDepthPenalty;
+
+    activeVeins.clear();
+
+    clearWorldFiles();
+
+    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
+
+            Chunk& chunk = m_chunks[chunkX][chunkY]; // Assuming getChunk retrieves the chunk reference
+            chunk.destroy();
+            m_activeChunks.clear();
+
+            generateChunk(chunkX, chunkY, chunk); // Regenerate the chunk
         }
     }
 }
@@ -765,6 +785,19 @@ bool BlockManager::loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk) {
 
     file.close();
     return true;
+}
+
+void BlockManager::clearWorldFiles() {
+    std::filesystem::path worldDir = "World"; // Path to your world folder
+
+    // Iterate through all files in the "World" folder
+    for (const auto& entry : std::filesystem::directory_iterator(worldDir)) {
+        if (entry.path().extension() == ".dat") {
+            std::filesystem::remove(entry.path());  // Delete the file
+        }
+    }
+
+    std::cout << "All chunk files have been cleared." << std::endl;
 }
 
 
