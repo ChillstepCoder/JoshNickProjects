@@ -78,7 +78,7 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(20.0f); // 20.0f
+    m_camera.setScale(10.0f); // 20.0f
     m_player = Player(&m_camera, m_blockManager);
 
     // Init player
@@ -266,10 +266,15 @@ void GameplayScreen::drawImgui() {
 
     for (auto& result : m_profileResults)
     {
-        char label[50];
-        strcpy_s(label, result.Name);
-        strcat_s(label, "  %.3fms");
-        ImGui::Text(label, result.Time);
+        if (result.Time > m_maxTimes[result.Name])
+        {
+            m_maxTimes[result.Name] = result.Time;
+        }
+        char label[100];  // Ensure the size is large enough for the text
+        snprintf(label, sizeof(label), "%s  %.3fms (Max: %.3fms)", result.Name, result.Time, m_maxTimes[result.Name]);
+
+        // Display the label in ImGui
+        ImGui::Text(label);
     }
     m_profileResults.clear();
 

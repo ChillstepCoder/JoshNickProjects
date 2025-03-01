@@ -111,6 +111,8 @@ public:
 
     void generateChunk(int chunkX, int chunkY, Chunk& chunk);
 
+    float generateFractalNoise(int worldX, int worldY, float frequency, float persistence, int octaves, int seed);
+
     void regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty);
 
     void loadChunk(int x, int y, BlockManager& blockManager);
@@ -137,7 +139,7 @@ private:
     std::vector<std::vector<Chunk>> m_chunks;
 
     float m_caveScale = 0.005419f;        // higher number = smaller cave
-    float m_baseCaveThreshold = 0.08f; // Higher = less caves
+    float m_baseCaveThreshold = 0.3f; // Higher = less caves
     float m_detailScale = 0.09320f;       // Scale for additional cave detail
     float m_detailInfluence = 0.77f;   // How much the detail affects the main cave shape
     float m_minCaveDepth = 20.0f;      // Minimum depth below surface for caves to start

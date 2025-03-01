@@ -52,6 +52,7 @@ public:
     void setGravity(float gravity) { m_gravity = gravity; }
 
     bool m_debugRenderEnabled = false;
+    std::unordered_map<std::string, float> m_maxTimes;
 
     float m_caveScale = 0.006f;
     float m_baseCaveThreshold = 0.20f;

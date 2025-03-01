@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem> 
+#include "FastNoise2/FastNoise/FastNoise.h"
 
 void Chunk::init() {
     m_spriteBatch.init();
@@ -447,12 +448,15 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     static siv::PerlinNoise perlin(12345);
     static siv::PerlinNoise oreNoise(67890);
     static siv::PerlinNoise veinShapeNoise(11111);
-    static siv::PerlinNoise caveNoise(24680); 
-    static siv::PerlinNoise caveDetailNoise(13579);
 
     const float NOISE_SCALE = 0.05f;
     const float AMPLITUDE = 10.0f;
     const float BASE_SURFACE_Y = 1664.0f;
+
+    int fractalOctaves = 7;
+    float fractalPersistence = 0.5f;
+    float fractalFrequency = 0.0067f;
+
 
     float initialNoiseValue = perlin.noise1D(chunkX * CHUNK_WIDTH * NOISE_SCALE);
     int referenceHeight = static_cast<int>(BASE_SURFACE_Y + initialNoiseValue * AMPLITUDE);
@@ -484,15 +488,15 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     std::vector<OreParams> oreTypes;
     oreTypes.clear();
     // Note: For each ore type, maxDepth the higher number (closer to surface)
-    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.62f, 30 }); // upper depth, lower depth, density of vein, frequency of ore veins, max vein amount(doesnt work lol)
-    oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.49f, 0.60f, 25 });
-    oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.48f, 0.58f, 20 });
-    oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.47f, 0.56f, 15 });
-    oreTypes.push_back(OreParams{ BlockID::COBALT,     static_cast<float>(referenceHeight - 400), static_cast<float>(referenceHeight - 650), 0.46f, 0.54f, 14 });
-    oreTypes.push_back(OreParams{ BlockID::MYTHRIL,    static_cast<float>(referenceHeight - 600), static_cast<float>(referenceHeight - 750), 0.45f, 0.52f, 13 });
-    oreTypes.push_back(OreParams{ BlockID::ADAMANTITE, static_cast<float>(referenceHeight - 700), static_cast<float>(referenceHeight - 850), 0.44f, 0.50f, 12 });
-    oreTypes.push_back(OreParams{ BlockID::COSMILITE,  static_cast<float>(referenceHeight - 800), static_cast<float>(referenceHeight - 1300), 0.43f, 0.48f, 11 });
-    oreTypes.push_back(OreParams{ BlockID::PRIMORDIAL, static_cast<float>(referenceHeight - 1100), static_cast<float>(referenceHeight - 1600), 0.42f, 0.44f, 10 });
+    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.35f, 30 }); // upper depth, lower depth, density of vein, frequency of ore veins, max vein amount(doesnt work lol)
+    oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.49f, 0.38f, 25 });
+    oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.48f, 0.41f, 20 });
+    oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.47f, 0.44f, 15 });
+    oreTypes.push_back(OreParams{ BlockID::COBALT,     static_cast<float>(referenceHeight - 400), static_cast<float>(referenceHeight - 650), 0.46f, 0.47f, 14 });
+    oreTypes.push_back(OreParams{ BlockID::MYTHRIL,    static_cast<float>(referenceHeight - 600), static_cast<float>(referenceHeight - 750), 0.45f, 0.50f, 13 });
+    oreTypes.push_back(OreParams{ BlockID::ADAMANTITE, static_cast<float>(referenceHeight - 700), static_cast<float>(referenceHeight - 850), 0.44f, 0.53f, 12 });
+    oreTypes.push_back(OreParams{ BlockID::COSMILITE,  static_cast<float>(referenceHeight - 800), static_cast<float>(referenceHeight - 1300), 0.43f, 0.56f, 11 });
+    oreTypes.push_back(OreParams{ BlockID::PRIMORDIAL, static_cast<float>(referenceHeight - 1100), static_cast<float>(referenceHeight - 1600), 0.42f, 0.60f, 10 });
 
     activeVeins.clear();
     for (const auto& ore : oreTypes) {
@@ -510,17 +514,17 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             int worldY = chunkY * CHUNK_WIDTH + localY;
 
             if (worldY <= ore.maxDepth && worldY >= ore.minDepth) {
-                float oreNoiseValue = oreNoise.noise2D(worldX * 0.1f, worldY * 0.1f);
+                float oreNoiseValue = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 72839);
 
-                if (oreNoiseValue > ore.veinSize * 0.8f) { // Reduced threshold for more veins
-                    // Significantly increased vein sizes
-                    int baseRadius = 3 + rand() % 3;
-                    float density = 0.6f + (static_cast<float>(rand()) / RAND_MAX) * 0.3f; // 0.6-0.9
+                if (oreNoiseValue > ore.veinSize) { // Reduced threshold for more veins
+
+                    int baseRadius = 1 + rand() % 2;
+                    float density = 0.3f + (static_cast<float>(rand()) / RAND_MAX) * 0.2f; // 0.3-0.5
                     float angle = (static_cast<float>(rand()) / RAND_MAX) * 6.28f; // Random angle in radians
 
                     // Chance for much larger veins
-                    if (rand() % 100 < 20) { // 30% chance for larger vein
-                        baseRadius += 2 + rand() % 3; // Add 2-4 to radius
+                    if (rand() % 100 < 20) { // 20% chance for larger vein
+                        baseRadius += 1 + rand() % 2; // Add 1-3 to radius
                     }
 
                     chunkOreVeins.push_back({ worldX, worldY, baseRadius, ore.oreType, density, angle});
@@ -545,68 +549,23 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 
             // Cave generation
             if (worldY < height - m_minCaveDepth) {
-                // Calculate depth factors
-                float depthFromSurface = height - worldY;
-
-                // Surface zone calculation (more caves near surface)
-                float surfaceFactor = std::max(0.0f, 1.0f - (depthFromSurface / m_surfaceZone));
-                float surfaceBonus = surfaceFactor * m_maxSurfaceBonus;
-
-                // Deep zone calculation (fewer caves at extreme depths)
-                float deepFactor = std::max(0.0f, (depthFromSurface - m_deepZone) / m_deepZone);
-                float depthPenalty = deepFactor * m_maxDepthPenalty;
 
                 // Generate base cave noise
-                float caveVal = caveNoise.noise3D(
-                    worldX * m_caveScale,
-                    worldY * m_caveScale,
-                    sin(worldX * m_caveScale * 0.5f + worldY * m_caveScale * 0.5f) * 2.0f
-                );
-
-                float detailVal = caveDetailNoise.noise3D(
-                    worldX * m_detailScale,
-                    worldY * m_detailScale,
-                    (worldX + worldY) * m_detailScale * 0.25f
-                );
-
-                float combinedCaveNoise = caveVal + (detailVal * m_detailInfluence);
-
-                // Calculate final threshold with surface bonus and depth penalty
-                float adjustedThreshold = m_baseCaveThreshold - surfaceBonus + depthPenalty;
-
-                // Additional noise variation based on depth
-                float depthVariation = caveNoise.noise2D(worldX * 0.02f, depthFromSurface * 0.01f) * 0.05f;
-                adjustedThreshold += depthVariation;
+                float caveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 12345);
+                float medCaveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 54793);
+                float smallCaveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 65492);
 
                 // Primary cave generation
-                if (combinedCaveNoise > adjustedThreshold) {
+                if (caveVal > m_baseCaveThreshold) { // m_baseCaveThreshold = 0.3f
                     shouldBeAir = true;
                 }
 
-                // Connecting tunnels with depth-aware thresholds
-                if (!shouldBeAir) {
-                    float connectionNoise = caveNoise.noise2D(
-                        worldX * m_caveScale * 1.5f,
-                        worldY * m_caveScale * 1.5f
-                    );
-
-                    // Adjust connection threshold based on depth
-                    float connectionThreshold = 0.68f - surfaceBonus + depthPenalty;
-
-                    if (connectionNoise > connectionThreshold && caveVal > 0.2f) {
-                        shouldBeAir = true;
-                    }
+                if (medCaveVal > m_baseCaveThreshold * 1.75f) { // m_baseCaveThreshold = 0.3f
+                    shouldBeAir = true;
                 }
 
-                // Additional small caves to increase density
-                if (!shouldBeAir) {
-                    float smallCaveNoise = caveDetailNoise.noise2D(
-                        worldX * 0.16f,
-                        worldY * 0.16f
-                    );
-                    if (smallCaveNoise > 0.35f) {
-                        shouldBeAir = true;
-                    }
+                if (smallCaveVal > m_baseCaveThreshold * 2.5f) { // small caves
+                    shouldBeAir = true;
                 }
             }
 
@@ -628,8 +587,11 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                 }
 
                 // ore generation
-                assert(!chunkOreVeins.empty());
+                //assert(!chunkOreVeins.empty());
                 for (const auto& vein : chunkOreVeins) {
+
+                    float oreFrequency = (fractalFrequency / 3.0f);
+
                     // Calculate distance from vein center
                     int dx = worldX - vein.centerX;
                     int dy = worldY - vein.centerY;
@@ -637,27 +599,18 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                     // Calculate distance with directional stretching
                     float stretchedX = dx * cos(vein.angle) - dy * sin(vein.angle);
                     float stretchedY = dx * sin(vein.angle) + dy * cos(vein.angle);
-                    stretchedX *= 1.0f + veinShapeNoise.noise2D(worldX * 0.2f, worldY * 0.2f) * 0.5f;
-                    stretchedY *= 1.0f + veinShapeNoise.noise2D(worldX * 0.2f, worldY * 0.2f) * 0.5f;
+                    stretchedX *= 1.0f + generateFractalNoise(worldX, worldY, oreFrequency, fractalPersistence, fractalOctaves, 35367);
+                    stretchedY *= 1.0f + generateFractalNoise(worldX, worldY, oreFrequency, fractalPersistence, fractalOctaves, 56758);
 
                     float distance = sqrt(stretchedX * stretchedX + stretchedY * stretchedY);
 
                     // If within vein radius, place ore
                     if (distance <= vein.radius) {
-                        // Use multiple noise layers for more irregular shapes
-                        float noise1 = veinShapeNoise.noise2D(
-                            (worldX + dx * 0.2f) * 0.3f,
-                            (worldY + dy * 0.2f) * 0.3f
-                        );
-                        float noise2 = veinShapeNoise.noise2D(
-                            (worldX - dy * 0.15f) * 0.4f,
-                            (worldY + dx * 0.15f) * 0.4f
-                        );
-                        float combinedNoise = (noise1 + noise2) * 0.5f;
+                        float oreNoise  = generateFractalNoise(worldX, worldY, oreFrequency, fractalPersistence, fractalOctaves, 12345);
 
                         // More irregular placement condition
-                        if (combinedNoise > (1.0f - vein.density) * 1.2f ||
-                            (distance <= vein.radius * 0.6f && noise1 > 0.3f)) {
+                        if (oreNoise > (1.0f - vein.density)||
+                            (distance < vein.radius)) {
                             currentBlock.init(m_world, vein.oreType, position);
                             break;
                         }
@@ -670,6 +623,20 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             chunk.blocks[x][y] = currentBlock;
         }
     }
+}
+
+float BlockManager::generateFractalNoise(int worldX, int worldY, float frequency, float persistence, int octaves, int seed) {
+    // Create a FractalRidged node
+    auto fnSimplex = FastNoise::New<FastNoise::Simplex>();
+    auto fractalNode = FastNoise::New<FastNoise::FractalRidged>();
+
+    fractalNode->SetSource(fnSimplex);
+    fractalNode->SetOctaveCount(octaves);
+    fractalNode->SetGain(persistence);  // persistence controls the gain
+    fractalNode->SetLacunarity(2.0f); // frequency controls the lacunarity
+
+    // Generate the fractal noise at the given world coordinates
+    return fractalNode->GenSingle2D(worldX * frequency, worldY * frequency, seed); // Returns the generated noise value
 }
 
 
