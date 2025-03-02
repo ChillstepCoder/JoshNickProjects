@@ -8,6 +8,8 @@
 #include <fstream>
 #include <filesystem> 
 #include "FastNoise2/FastNoise/FastNoise.h"
+#include "Profiler.h"
+#include "Timer.h"
 
 void Chunk::init() {
     m_spriteBatch.init();
@@ -426,7 +428,10 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& bl
 
                 glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
                 if (!isChunkFarAway(playerPos, chunkPos)) {
-                    loadChunk(x, y, blockManager);
+                    {
+                        PROFILE_SCOPE("LoadChunk");
+                        loadChunk(x, y, blockManager);
+                    }
                 }
             }
         }
@@ -502,9 +507,10 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     for (const auto& ore : oreTypes) {
         activeVeins[ore.oreType] = std::vector<VeinTracker>();
     }
-
+    
 
     for (const auto& ore : oreTypes) {
+        PROFILE_SCOPE("generateChunk: ChunkOreVeins");
         int veinAttempts = static_cast<int>(CHUNK_WIDTH * CHUNK_WIDTH * ore.frequency * 0.09f);
 
         for (int i = 0; i < veinAttempts; i++) {
@@ -533,7 +539,11 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         }
     }
 
+
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        PROFILE_SCOPE("generateChunk: Cave Gen, Blocks, Ore Gen");
+
+
         int worldX = chunkX * CHUNK_WIDTH + x;
         float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
         int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
@@ -549,7 +559,6 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
 
             // Cave generation
             if (worldY < height - m_minCaveDepth) {
-
                 // Generate base cave noise
                 float caveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 12345);
                 float medCaveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 54793);
@@ -678,15 +687,29 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager)
     // Make sure we never double load
     assert(!chunk.isLoaded());
 
-
-    chunk.init();
+    {
+        PROFILE_SCOPE("Chunk init");
+        chunk.init();
+    }
 
     if (!loadChunkFromFile(chunkX, chunkY, chunk)) {
         // If no saved chunk data exists, generate it
-        generateChunk(chunkX, chunkY, chunk);
-        saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
+        {
+            PROFILE_SCOPE("generateChunk");
+            generateChunk(chunkX, chunkY, chunk);
+        }
+        {
+            PROFILE_SCOPE("saveChunkToFile");
+            saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
+        }
     }
-    chunk.buildChunkMesh(blockManager);
+
+
+    {
+        PROFILE_SCOPE("buildChunkMesh");
+        chunk.buildChunkMesh(blockManager);
+
+    }
     m_activeChunks.push_back(&chunk);
 
     chunk.m_isMeshDirty = true;

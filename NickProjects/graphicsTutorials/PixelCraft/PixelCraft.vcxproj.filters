@@ -51,6 +51,9 @@
     <ClCompile Include="ConnectedTextureSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Profiler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">

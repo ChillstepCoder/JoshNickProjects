@@ -157,6 +157,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="TextureEditorScreen.cpp" />
   </ItemGroup>
   <ItemGroup>

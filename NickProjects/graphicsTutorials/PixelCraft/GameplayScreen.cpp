@@ -264,19 +264,14 @@ void GameplayScreen::drawImgui() {
         m_blockManager->regenerateWorld(m_caveScale, m_baseCaveThreshold, m_detailScale, m_detailInfluence, m_minCaveDepth, m_surfaceZone, m_deepZone, m_maxSurfaceBonus, m_maxDepthPenalty);
     }
 
-    for (auto& result : m_profileResults)
-    {
-        if (result.Time > m_maxTimes[result.Name])
-        {
-            m_maxTimes[result.Name] = result.Time;
-        }
-        char label[100];  // Ensure the size is large enough for the text
-        snprintf(label, sizeof(label), "%s  %.3fms (Max: %.3fms)", result.Name, result.Time, m_maxTimes[result.Name]);
+    const auto& latestResults = Profiler::Get().GetLatestResults();
+    const auto& maxTimes = Profiler::Get().GetMaxTimes();
 
-        // Display the label in ImGui
-        ImGui::Text(label);
+    for (const auto& [name, result] : latestResults)
+    {
+        ImGui::Text("%s  %.3fms (Max: %.3fms)",
+            name.c_str(), result.Time, maxTimes.at(name));
     }
-    m_profileResults.clear();
 
     ImGui::End();
 
