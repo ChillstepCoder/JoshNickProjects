@@ -168,6 +168,7 @@
     <ClInclude Include="CellularAutomataManager.h" />
     <ClInclude Include="ConnectedTextureSet.h" />
     <ClInclude Include="DebugDraw.h" />
+    <ClInclude Include="FractalNoise.h" />
     <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="Player.h" />

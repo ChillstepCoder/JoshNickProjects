@@ -32,7 +32,7 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                 glm::vec2 blockPos = glm::vec2(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f);
 
                 if (id == BlockID::WATER) {
-
+                    // Water rendering code (unchanged)
                     int waterAmt = block.getWaterAmount();
                     if (waterAmt > WATER_LEVELS) {
                         waterAmt = WATER_LEVELS;
@@ -46,32 +46,58 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                     GLuint textureID = BlockDefRepository::getTextureID(id);
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                     m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
-                } else {
+                }
+                else {
                     // 5 6 7
                     // 3   4
                     // 0 1 2
                     float blockAdj = 1.0f;
 
-                    BlockHandle block0 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
-                    BlockHandle block1 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y - 1.0f + blockAdj));
-                    BlockHandle block2 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
-                    BlockHandle block3 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + blockAdj));
-                    BlockHandle block4 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + blockAdj));
-                    BlockHandle block5 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
-                    BlockHandle block6 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y + 1.0f + blockAdj));
-                    BlockHandle block7 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
-
-
                     BlockAdjacencyRules blockAdjacencyRules;
+                    for (int i = 0; i < 8; ++i) {
+                        blockAdjacencyRules.Rules[i] = AdjacencyRule::AIR;
+                    }
 
-                    blockAdjacencyRules.Rules[0] = getAdjacencyRuleForBlock(block0.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[1] = getAdjacencyRuleForBlock(block1.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[2] = getAdjacencyRuleForBlock(block2.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[3] = getAdjacencyRuleForBlock(block3.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[4] = getAdjacencyRuleForBlock(block4.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[5] = getAdjacencyRuleForBlock(block5.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[6] = getAdjacencyRuleForBlock(block6.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[7] = getAdjacencyRuleForBlock(block7.block->getBlockID()); 
+                    // Safely get adjacent blocks
+                    BlockHandle block0 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    if (block0.block && !block0.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[0] = getAdjacencyRuleForBlock(block0.block->getBlockID());
+                    }
+
+                    BlockHandle block1 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    if (block1.block && !block1.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[1] = getAdjacencyRuleForBlock(block1.block->getBlockID());
+                    }
+
+                    BlockHandle block2 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    if (block2.block && !block2.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[2] = getAdjacencyRuleForBlock(block2.block->getBlockID());
+                    }
+
+                    BlockHandle block3 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + blockAdj));
+                    if (block3.block && !block3.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[3] = getAdjacencyRuleForBlock(block3.block->getBlockID());
+                    }
+
+                    BlockHandle block4 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + blockAdj));
+                    if (block4.block && !block4.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[4] = getAdjacencyRuleForBlock(block4.block->getBlockID());
+                    }
+
+                    BlockHandle block5 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    if (block5.block && !block5.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[5] = getAdjacencyRuleForBlock(block5.block->getBlockID());
+                    }
+
+                    BlockHandle block6 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    if (block6.block && !block6.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[6] = getAdjacencyRuleForBlock(block6.block->getBlockID());
+                    }
+
+                    BlockHandle block7 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    if (block7.block && !block7.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[7] = getAdjacencyRuleForBlock(block7.block->getBlockID());
+                    }
 
                     if (id == BlockID::DIRT) { // if the original block is dirt, ignore the dirt adjacency and treat them all as blocks instead.
                         for (int i = 0; i < 8; ++i) {
@@ -303,41 +329,53 @@ glm::ivec2 BlockManager::getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 off
 
 
 void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
-    // check if the block exists
+    // Check if the block exists
     if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
-
         // Destroy the block (remove physics body and reset visual state)
         b2DestroyBody(blockHandle.block->getBodyID());
-        // Now that the block is destroyed, we can remove it from the chunk
-        // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
-        Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
-        Chunk& chunkLeft = m_chunks[blockHandle.chunkCoords.x - 1][blockHandle.chunkCoords.y];
-        Chunk& chunkRight = m_chunks[blockHandle.chunkCoords.x + 1][blockHandle.chunkCoords.y];
-        Chunk& chunkTop = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y + 1];
-        Chunk& chunkBot = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y - 1];
 
+        // Check if chunk coordinates are valid
+        if (blockHandle.chunkCoords.x < 0 || blockHandle.chunkCoords.x >= m_chunks.size() ||
+            blockHandle.chunkCoords.y < 0 || blockHandle.chunkCoords.y >= m_chunks[0].size()) {
+            return; // Invalid chunk coordinates
+        }
+
+        // Access the current chunk safely
+        Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
+
+        // Handle water blocks
         if (blockHandle.block->getBlockID() == BlockID::WATER) {
             for (int i = 0; i < chunk.waterBlocks.size(); i++) {
                 if (getBlockAtPosition(chunk.waterBlocks[i]) == blockHandle) {
-
                     chunk.waterBlocks[i] = chunk.waterBlocks.back();
-
                     chunk.waterBlocks.pop_back(); // Add to the list of water blocks.
-
                     break;
                 }
             }
         }
 
+        // Reset the broken block to Air
+        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();
 
-
-
-        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block(); // Reset the broken block to Air
+        // Mark the current chunk as dirty
         chunk.m_isMeshDirty = true;
-        chunkLeft.m_isMeshDirty = true;
-        chunkRight.m_isMeshDirty = true;
-        chunkTop.m_isMeshDirty = true;
-        chunkBot.m_isMeshDirty = true;
+
+        // Safely mark adjacent chunks as dirty only if they exist
+        if (blockHandle.chunkCoords.x > 0) {
+            m_chunks[blockHandle.chunkCoords.x - 1][blockHandle.chunkCoords.y].m_isMeshDirty = true; // Left
+        }
+
+        if (blockHandle.chunkCoords.x < m_chunks.size() - 1) {
+            m_chunks[blockHandle.chunkCoords.x + 1][blockHandle.chunkCoords.y].m_isMeshDirty = true; // Right
+        }
+
+        if (blockHandle.chunkCoords.y < m_chunks[0].size() - 1) {
+            m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y + 1].m_isMeshDirty = true; // Top
+        }
+
+        if (blockHandle.chunkCoords.y > 0) {
+            m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y - 1].m_isMeshDirty = true; // Bottom
+        }
     }
 }
 
@@ -451,17 +489,10 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
 
     static siv::PerlinNoise perlin(12345);
-    static siv::PerlinNoise oreNoise(67890);
-    static siv::PerlinNoise veinShapeNoise(11111);
 
     const float NOISE_SCALE = 0.05f;
     const float AMPLITUDE = 10.0f;
     const float BASE_SURFACE_Y = 1664.0f;
-
-    int fractalOctaves = 7;
-    float fractalPersistence = 0.5f;
-    float fractalFrequency = 0.0067f;
-
 
     float initialNoiseValue = perlin.noise1D(chunkX * CHUNK_WIDTH * NOISE_SCALE);
     int referenceHeight = static_cast<int>(BASE_SURFACE_Y + initialNoiseValue * AMPLITUDE);
@@ -493,7 +524,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     std::vector<OreParams> oreTypes;
     oreTypes.clear();
     // Note: For each ore type, maxDepth the higher number (closer to surface)
-    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.35f, 30 }); // upper depth, lower depth, density of vein, frequency of ore veins, max vein amount(doesnt work lol)
+    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.35f, 30 });
     oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.49f, 0.38f, 25 });
     oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.48f, 0.41f, 20 });
     oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.47f, 0.44f, 15 });
@@ -507,8 +538,8 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     for (const auto& ore : oreTypes) {
         activeVeins[ore.oreType] = std::vector<VeinTracker>();
     }
-    
 
+    // Generate ore veins (now using our optimized noise generators)
     for (const auto& ore : oreTypes) {
         PROFILE_SCOPE("generateChunk: ChunkOreVeins");
         int veinAttempts = static_cast<int>(CHUNK_WIDTH * CHUNK_WIDTH * ore.frequency * 0.09f);
@@ -520,10 +551,10 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             int worldY = chunkY * CHUNK_WIDTH + localY;
 
             if (worldY <= ore.maxDepth && worldY >= ore.minDepth) {
-                float oreNoiseValue = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 72839);
+                // Use the cached noise generator for this ore type
+                float oreNoiseValue = m_oreNoiseGenerators[ore.oreType].getNoise2D(worldX, worldY);
 
                 if (oreNoiseValue > ore.veinSize) { // Reduced threshold for more veins
-
                     int baseRadius = 1 + rand() % 2;
                     float density = 0.3f + (static_cast<float>(rand()) / RAND_MAX) * 0.2f; // 0.3-0.5
                     float angle = (static_cast<float>(rand()) / RAND_MAX) * 6.28f; // Random angle in radians
@@ -533,16 +564,15 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                         baseRadius += 1 + rand() % 2; // Add 1-3 to radius
                     }
 
-                    chunkOreVeins.push_back({ worldX, worldY, baseRadius, ore.oreType, density, angle});
+                    chunkOreVeins.push_back({ worldX, worldY, baseRadius, ore.oreType, density, angle });
                 }
             }
         }
     }
 
-
+    // Generate terrain and apply ore veins
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         PROFILE_SCOPE("generateChunk: Cave Gen, Blocks, Ore Gen");
-
 
         int worldX = chunkX * CHUNK_WIDTH + x;
         float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
@@ -557,23 +587,23 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             Block currentBlock;
             bool shouldBeAir = false;
 
-            // Cave generation
+            // Cave generation using pre-created noise generators
             if (worldY < height - m_minCaveDepth) {
-                // Generate base cave noise
-                float caveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 12345);
-                float medCaveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 54793);
-                float smallCaveVal = generateFractalNoise(worldX, worldY, fractalFrequency, fractalPersistence, fractalOctaves, 65492);
+                // Generate cave noise using our cached generators
+                float caveVal = m_caveNoise.getNoise2D(worldX, worldY);
+                float medCaveVal = m_mediumCaveNoise.getNoise2D(worldX, worldY);
+                float smallCaveVal = m_smallCaveNoise.getNoise2D(worldX, worldY);
 
                 // Primary cave generation
-                if (caveVal > m_baseCaveThreshold) { // m_baseCaveThreshold = 0.3f
+                if (caveVal > m_baseCaveThreshold) {
                     shouldBeAir = true;
                 }
 
-                if (medCaveVal > m_baseCaveThreshold * 1.75f) { // m_baseCaveThreshold = 0.3f
+                if (medCaveVal > m_baseCaveThreshold * 1.75f) {
                     shouldBeAir = true;
                 }
 
-                if (smallCaveVal > m_baseCaveThreshold * 2.5f) { // small caves
+                if (smallCaveVal > m_baseCaveThreshold * 2.5f) {
                     shouldBeAir = true;
                 }
             }
@@ -595,31 +625,30 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                     currentBlock.init(m_world, BlockID::DEEPERSTONE, position);
                 }
 
-                // ore generation
-                //assert(!chunkOreVeins.empty());
+                // Ore generation - now more efficient
                 for (const auto& vein : chunkOreVeins) {
-
-                    float oreFrequency = (fractalFrequency / 3.0f);
-
                     // Calculate distance from vein center
                     int dx = worldX - vein.centerX;
                     int dy = worldY - vein.centerY;
 
+                    // Get vein shape noise using our cached generator
+                    float noiseX = m_veinShapeNoiseGenerators[vein.oreType].getNoise2D(worldX, worldY);
+                    float noiseY = m_veinShapeNoiseGenerators[vein.oreType].getNoise2D(worldY, worldX); // Different inputs for variety
+
                     // Calculate distance with directional stretching
                     float stretchedX = dx * cos(vein.angle) - dy * sin(vein.angle);
                     float stretchedY = dx * sin(vein.angle) + dy * cos(vein.angle);
-                    stretchedX *= 1.0f + generateFractalNoise(worldX, worldY, oreFrequency, fractalPersistence, fractalOctaves, 35367);
-                    stretchedY *= 1.0f + generateFractalNoise(worldX, worldY, oreFrequency, fractalPersistence, fractalOctaves, 56758);
+                    stretchedX *= 1.0f + noiseX;
+                    stretchedY *= 1.0f + noiseY;
 
                     float distance = sqrt(stretchedX * stretchedX + stretchedY * stretchedY);
 
                     // If within vein radius, place ore
                     if (distance <= vein.radius) {
-                        float oreNoise  = generateFractalNoise(worldX, worldY, oreFrequency, fractalPersistence, fractalOctaves, 12345);
+                        float oreNoise = m_oreNoiseGenerators[vein.oreType].getNoise2D(worldX + 1000, worldY + 1000); // Offset for different pattern
 
                         // More irregular placement condition
-                        if (oreNoise > (1.0f - vein.density)||
-                            (distance < vein.radius)) {
+                        if (oreNoise > (1.0f - vein.density) || (distance < vein.radius)) {
                             currentBlock.init(m_world, vein.oreType, position);
                             break;
                         }
@@ -633,21 +662,6 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         }
     }
 }
-
-float BlockManager::generateFractalNoise(int worldX, int worldY, float frequency, float persistence, int octaves, int seed) {
-    // Create a FractalRidged node
-    auto fnSimplex = FastNoise::New<FastNoise::Simplex>();
-    auto fractalNode = FastNoise::New<FastNoise::FractalRidged>();
-
-    fractalNode->SetSource(fnSimplex);
-    fractalNode->SetOctaveCount(octaves);
-    fractalNode->SetGain(persistence);  // persistence controls the gain
-    fractalNode->SetLacunarity(2.0f); // frequency controls the lacunarity
-
-    // Generate the fractal noise at the given world coordinates
-    return fractalNode->GenSingle2D(worldX * frequency, worldY * frequency, seed); // Returns the generated noise value
-}
-
 
 void BlockManager::regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty) {
     m_caveScale = caveScale;
@@ -679,11 +693,14 @@ void BlockManager::regenerateWorld(float caveScale, float baseCaveThreshold, flo
 
 
 void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager) {
+    // Check if coordinates are in valid range
+    if (chunkX < 0 || chunkX >= m_chunks.size() ||
+        chunkY < 0 || chunkY >= m_chunks[0].size()) {
+        return; // Out of bounds, don't load
+    }
+
     Chunk& chunk = m_chunks[chunkX][chunkY];
-    Chunk& chunkLeft = m_chunks[chunkX - 1][chunkY];
-    Chunk& chunkRight = m_chunks[chunkX + 1][chunkY];
-    Chunk& chunkTop = m_chunks[chunkX][chunkY + 1];
-    Chunk& chunkBot = m_chunks[chunkX][chunkY - 1];
+
     // Make sure we never double load
     assert(!chunk.isLoaded());
 
@@ -704,19 +721,27 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager)
         }
     }
 
-
     {
         PROFILE_SCOPE("buildChunkMesh");
         chunk.buildChunkMesh(blockManager);
-
     }
-    m_activeChunks.push_back(&chunk);
 
+    m_activeChunks.push_back(&chunk);
     chunk.m_isMeshDirty = true;
-    chunkLeft.m_isMeshDirty = true;
-    chunkRight.m_isMeshDirty = true;
-    chunkTop.m_isMeshDirty = true;
-    chunkBot.m_isMeshDirty = true;
+
+    // Only mark adjacent chunks as dirty if they exist
+    if (chunkX > 0) {
+        m_chunks[chunkX - 1][chunkY].m_isMeshDirty = true; // Left
+    }
+    if (chunkX < m_chunks.size() - 1) {
+        m_chunks[chunkX + 1][chunkY].m_isMeshDirty = true; // Right
+    }
+    if (chunkY < m_chunks[0].size() - 1) {
+        m_chunks[chunkX][chunkY + 1].m_isMeshDirty = true; // Top
+    }
+    if (chunkY > 0) {
+        m_chunks[chunkX][chunkY - 1].m_isMeshDirty = true; // Bottom
+    }
 }
 
 bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
@@ -853,23 +878,18 @@ void BlockManager::unloadChunk(int x, int y) {
 
 std::vector<BlockHandle> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {
     std::vector<BlockHandle> blocksInRange;
-
     // Loop through the range of blocks around the player (in both x and y directions)
     for (int dx = -range; dx <= range; ++dx) {
         for (int dy = -range; dy <= range; ++dy) {
             // Calculate the world position for the block's center
             glm::vec2 blockPos = playerPos + glm::vec2(dx, dy);
-
             // Get the block at the position using the getBlockAtPosition function
             BlockHandle blockHandle = getBlockAtPosition(blockPos);
-
-            // If a valid block is returned, add it to the list
-            if (blockHandle.block->getBlockID() != BlockID::AIR) {
+            // Check if the block handle is valid before trying to access it
+            if (blockHandle.block && blockHandle.block->getBlockID() != BlockID::AIR) {
                 blocksInRange.push_back(blockHandle);
             }
         }
     }
-
     return blocksInRange;
 }
-

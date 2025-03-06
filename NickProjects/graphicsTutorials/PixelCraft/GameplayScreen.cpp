@@ -81,6 +81,12 @@ void GameplayScreen::onEntry() {
     m_camera.setScale(10.0f); // 20.0f
     m_player = Player(&m_camera, m_blockManager);
 
+    // Set map Bounds
+    glm::vec2 minBounds(0.0f, 0.0f);
+    glm::vec2 maxBounds(WORLD_WIDTH_CHUNKS * CHUNK_WIDTH, WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH);
+
+    setMapBoundaries(minBounds, maxBounds);
+
     // Init player
     Bengine::ColorRGBA8 textureColor;
     textureColor.r = 255;
@@ -119,7 +125,17 @@ void GameplayScreen::update() {
 
     {
         PROFILE_SCOPE("player.update + camera.setPosition");
-        const glm::vec2 playerPos = m_player.getPosition();
+        // Get current player position
+        glm::vec2 playerPos = m_player.getPosition();
+
+        // Clamp player position to map boundaries
+        playerPos.x = std::max(m_mapMinBounds.x, std::min(playerPos.x, m_mapMaxBounds.x));
+        playerPos.y = std::max(m_mapMinBounds.y, std::min(playerPos.y, m_mapMaxBounds.y));
+
+        // Set player position (if it has a setPosition method)
+        m_player.setPosition(playerPos);
+
+        // Now update player with the clamped position
         m_player.update(m_game->inputManager, playerPos, m_blockManager, m_debugRenderEnabled);
 
         {
@@ -133,7 +149,7 @@ void GameplayScreen::update() {
         {
             PROFILE_SCOPE("BlockManager Update");
             if (m_updateFrame % 5 == 0)
-            m_blockManager->update(*m_blockManager);
+                m_blockManager->update(*m_blockManager);
         }
 
 

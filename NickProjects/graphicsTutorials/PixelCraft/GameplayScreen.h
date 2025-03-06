@@ -51,6 +51,13 @@ public:
 
     void setGravity(float gravity) { m_gravity = gravity; }
 
+    void setMapBoundaries(const glm::vec2& minBounds, const glm::vec2& maxBounds) {
+        m_mapMinBounds = minBounds;
+        m_mapMaxBounds = maxBounds;
+        // Also set camera boundaries
+        m_camera.setMapBoundaries(minBounds, maxBounds);
+    }
+
     bool m_debugRenderEnabled = false;
     std::unordered_map<std::string, float> m_maxTimes;
 
@@ -86,6 +93,9 @@ private:
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
     float m_gravity = -80.0f;
     int m_updateFrame = 0;
+
+    glm::vec2 m_mapMinBounds;
+    glm::vec2 m_mapMaxBounds;
 
 
     ConnectedTextureSet& m_connectedTextureSet;

@@ -36,6 +36,8 @@ public:
 
     int getScreenIndex() const { return m_screenIndex; }
 
+    void setPosition(glm::vec2 position) { m_position = position; }
+
     void setJumpForce(float jumpForce) { m_jumpForce = jumpForce; }
 
     void setScreenIndex(int screenIndex) { m_screenIndex = screenIndex; }
