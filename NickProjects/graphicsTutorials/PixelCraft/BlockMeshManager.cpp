@@ -489,14 +489,20 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
 
     static siv::PerlinNoise perlin(12345);
+    static siv::PerlinNoise dirtThicknessNoise(54321); 
 
     const float NOISE_SCALE = 0.05f;
     const float AMPLITUDE = 10.0f;
     const float BASE_SURFACE_Y = 1664.0f;
 
+    const float SURFACE_CAVE_TAPER_START = 30.0f;
+    const float MIN_DIRT_THICKNESS = 3.0f;
+    const float MAX_DIRT_THICKNESS = 15.0f;
+    const float DIRT_THICKNESS_NOISE_SCALE = 0.03f; 
+
     float initialNoiseValue = perlin.noise1D(chunkX * CHUNK_WIDTH * NOISE_SCALE);
     int referenceHeight = static_cast<int>(BASE_SURFACE_Y + initialNoiseValue * AMPLITUDE);
-    const float DIRT_BOTTOM = referenceHeight - 10;
+
     const float STONE_BOTTOM = referenceHeight - 400;
     const float DEEP_STONE_BOTTOM = referenceHeight - 800;
 
@@ -524,15 +530,15 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     std::vector<OreParams> oreTypes;
     oreTypes.clear();
     // Note: For each ore type, maxDepth the higher number (closer to surface)
-    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.35f, 30 });
-    oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.49f, 0.38f, 25 });
-    oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.48f, 0.41f, 20 });
-    oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.47f, 0.44f, 15 });
-    oreTypes.push_back(OreParams{ BlockID::COBALT,     static_cast<float>(referenceHeight - 400), static_cast<float>(referenceHeight - 650), 0.46f, 0.47f, 14 });
-    oreTypes.push_back(OreParams{ BlockID::MYTHRIL,    static_cast<float>(referenceHeight - 600), static_cast<float>(referenceHeight - 750), 0.45f, 0.50f, 13 });
-    oreTypes.push_back(OreParams{ BlockID::ADAMANTITE, static_cast<float>(referenceHeight - 700), static_cast<float>(referenceHeight - 850), 0.44f, 0.53f, 12 });
-    oreTypes.push_back(OreParams{ BlockID::COSMILITE,  static_cast<float>(referenceHeight - 800), static_cast<float>(referenceHeight - 1300), 0.43f, 0.56f, 11 });
-    oreTypes.push_back(OreParams{ BlockID::PRIMORDIAL, static_cast<float>(referenceHeight - 1100), static_cast<float>(referenceHeight - 1600), 0.42f, 0.60f, 10 });
+    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.3f, 0.35f, 30 });
+    oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.26f, 0.38f, 25 });
+    oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.24f, 0.41f, 20 });
+    oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.22f, 0.44f, 15 });
+    oreTypes.push_back(OreParams{ BlockID::COBALT,     static_cast<float>(referenceHeight - 400), static_cast<float>(referenceHeight - 650), 0.20f, 0.47f, 14 });
+    oreTypes.push_back(OreParams{ BlockID::MYTHRIL,    static_cast<float>(referenceHeight - 600), static_cast<float>(referenceHeight - 750), 0.18f, 0.50f, 13 });
+    oreTypes.push_back(OreParams{ BlockID::ADAMANTITE, static_cast<float>(referenceHeight - 700), static_cast<float>(referenceHeight - 850), 0.16f, 0.53f, 12 });
+    oreTypes.push_back(OreParams{ BlockID::COSMILITE,  static_cast<float>(referenceHeight - 800), static_cast<float>(referenceHeight - 1300), 0.14f, 0.56f, 11 });
+    oreTypes.push_back(OreParams{ BlockID::PRIMORDIAL, static_cast<float>(referenceHeight - 1100), static_cast<float>(referenceHeight - 1600), 0.10f, 0.60f, 10 });
 
     activeVeins.clear();
     for (const auto& ore : oreTypes) {
@@ -570,6 +576,47 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         }
     }
 
+    // First pass - check for cave entrances at the surface
+    // We'll store them to apply in the second pass
+    std::vector<int> caveEntranceXPositions;
+
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        int worldX = chunkX * CHUNK_WIDTH + x;
+        float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
+        int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
+
+        // Check for cave entrance at this x position
+        // We check a few blocks below the surface
+        bool hasCaveEntrance = false;
+        for (int checkDepth = 1; checkDepth <= 5; checkDepth++) {
+            int worldY = height - checkDepth;
+            int chunkY_local = (worldY - chunkY * CHUNK_WIDTH);
+
+            // Skip if out of chunk bounds
+            if (chunkY_local < 0 || chunkY_local >= CHUNK_WIDTH) continue;
+
+            // Check for potential cave
+            float caveVal = m_caveNoise.getNoise2D(worldX, worldY);
+            float medCaveVal = m_mediumCaveNoise.getNoise2D(worldX, worldY);
+            float smallCaveVal = m_smallCaveNoise.getNoise2D(worldX, worldY);
+
+            // If any of these indicate a cave close to the surface
+            if (caveVal > m_baseCaveThreshold * 1.2f ||
+                medCaveVal > m_baseCaveThreshold * 1.8f ||
+                smallCaveVal > m_baseCaveThreshold * 2.4f) {
+
+                // If close enough to surface, mark as cave entrance
+                hasCaveEntrance = true;
+                break;
+            }
+        }
+
+        if (hasCaveEntrance) {
+            caveEntranceXPositions.push_back(x);
+        }
+    }
+
+
     // Generate terrain and apply ore veins
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         PROFILE_SCOPE("generateChunk: Cave Gen, Blocks, Ore Gen");
@@ -577,9 +624,15 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         int worldX = chunkX * CHUNK_WIDTH + x;
         float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
         int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
-        const float localDirtBottom = height - 10;
+
+        float dirtThicknessValue = dirtThicknessNoise.noise2D(worldX * DIRT_THICKNESS_NOISE_SCALE, chunkX * DIRT_THICKNESS_NOISE_SCALE);
+        float dirtThickness = MIN_DIRT_THICKNESS + (dirtThicknessValue + 1.0f) * 0.5f * (MAX_DIRT_THICKNESS - MIN_DIRT_THICKNESS);
+
+        const float localDirtBottom = height - dirtThickness;
         const float localStoneBottom = height - 400;
         const float localDeepStoneBottom = height - 800;
+         
+        bool isCaveEntrance = std::find(caveEntranceXPositions.begin(), caveEntranceXPositions.end(), x) != caveEntranceXPositions.end();
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             int worldY = chunkY * CHUNK_WIDTH + y;
@@ -588,22 +641,45 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             bool shouldBeAir = false;
 
             // Cave generation using pre-created noise generators
-            if (worldY < height - m_minCaveDepth) {
+
+            if (isCaveEntrance && worldY == height) {
+                shouldBeAir = true;
+            } else if (worldY < height) {
                 // Generate cave noise using our cached generators
                 float caveVal = m_caveNoise.getNoise2D(worldX, worldY);
                 float medCaveVal = m_mediumCaveNoise.getNoise2D(worldX, worldY);
                 float smallCaveVal = m_smallCaveNoise.getNoise2D(worldX, worldY);
 
+                float depth = height - worldY;
+
+                float caveThreshold = m_baseCaveThreshold; // 0.45f
+                float medCaveThreshold = m_baseCaveThreshold + 0.1f;
+                float smallCaveThreshold = m_baseCaveThreshold + 0.2f;
+
+                // Apply tapering
+                if (depth < SURFACE_CAVE_TAPER_START) {
+                    float taperFactor = 1.0f - (depth / SURFACE_CAVE_TAPER_START);
+
+                    caveThreshold += taperFactor * 0.2f;
+                    medCaveThreshold += taperFactor * 0.25f;
+                    smallCaveThreshold += taperFactor * 0.3f;
+
+                    // Allow occasional breakthrough to surface
+                    if (depth < 2.0f && caveVal > 0.75f) {
+                        shouldBeAir = true;
+                    }
+                }
+
                 // Primary cave generation
-                if (caveVal > m_baseCaveThreshold) {
+                if (caveVal > caveThreshold) {
                     shouldBeAir = true;
                 }
 
-                if (medCaveVal > m_baseCaveThreshold * 1.75f) {
+                if (medCaveVal > medCaveThreshold) {
                     shouldBeAir = true;
                 }
 
-                if (smallCaveVal > m_baseCaveThreshold * 2.5f) {
+                if (smallCaveVal > smallCaveThreshold) {
                     shouldBeAir = true;
                 }
             }

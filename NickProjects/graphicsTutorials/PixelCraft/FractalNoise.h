@@ -36,4 +36,5 @@ public:
     float getNoise2D(int worldX, int worldY) const {
         return fractalNode->GenSingle2D(worldX * m_frequency, worldY * m_frequency, m_seed);
     }
+
 };

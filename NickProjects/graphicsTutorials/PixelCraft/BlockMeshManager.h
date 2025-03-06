@@ -76,13 +76,13 @@ public:
         : m_MeshManager(meshManager),
         m_world(worldId),
         m_cellularAutomataManager(cellularAutomataManager),
-        m_baseCaveThreshold(0.3f),
+        m_baseCaveThreshold(0.45f),
         m_minCaveDepth(10),
         // Initialize noise generators with appropriate parameters
         m_terrainNoise(0.05f, 0.5f, 1, 12345),
-        m_caveNoise(0.0067f, 0.5f, 7, 12345),
-        m_mediumCaveNoise(0.0067f, 0.5f, 7, 54793),
-        m_smallCaveNoise(0.0067f, 0.5f, 7, 65492) {
+        m_caveNoise(0.002f, 0.5f, 7, 12345),
+        m_mediumCaveNoise(0.006f, 0.5f, 7, 54793),
+        m_smallCaveNoise(0.009f, 0.5f, 7, 65492) {
         initializeOreNoiseGenerators();
     }
     
@@ -155,10 +155,10 @@ public:
 
         for (const auto& oreType : oreTypes) {
             // Main ore noise
-            m_oreNoiseGenerators[oreType] = FractalNoise(0.0067f, 0.5f, 7, 72839 + static_cast<int>(oreType));
+            m_oreNoiseGenerators[oreType] = FractalNoise(0.15f, 0.5f, 7, 72839 + static_cast<int>(oreType));
 
             // Vein shape noise
-            m_veinShapeNoiseGenerators[oreType] = FractalNoise(0.0067f / 3.0f, 0.5f, 1, 35367 + static_cast<int>(oreType));
+            m_veinShapeNoiseGenerators[oreType] = FractalNoise(0.05f, 0.5f, 1, 35367 + static_cast<int>(oreType));
         }
     }
 
@@ -177,7 +177,7 @@ private:
     std::vector<std::vector<Chunk>> m_chunks;
 
     float m_caveScale = 0.005419f;        // higher number = smaller cave
-    float m_baseCaveThreshold = 0.3f; // Higher = less caves
+    float m_baseCaveThreshold = 0.65f; // Higher = less caves
     float m_detailScale = 0.09320f;       // Scale for additional cave detail
     float m_detailInfluence = 0.77f;   // How much the detail affects the main cave shape
     int m_minCaveDepth = 40;      // Minimum depth below surface for caves to start
