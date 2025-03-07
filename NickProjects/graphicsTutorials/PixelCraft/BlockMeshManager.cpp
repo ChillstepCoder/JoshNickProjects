@@ -489,7 +489,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
 
     static siv::PerlinNoise perlin(12345);
-    static siv::PerlinNoise dirtThicknessNoise(54321); 
+    static siv::PerlinNoise dirtThicknessNoise(54321);
 
     const float NOISE_SCALE = 0.05f;
     const float AMPLITUDE = 10.0f;
@@ -498,7 +498,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     const float SURFACE_CAVE_TAPER_START = 30.0f;
     const float MIN_DIRT_THICKNESS = 3.0f;
     const float MAX_DIRT_THICKNESS = 15.0f;
-    const float DIRT_THICKNESS_NOISE_SCALE = 0.03f; 
+    const float DIRT_THICKNESS_NOISE_SCALE = 0.03f;
 
     float initialNoiseValue = perlin.noise1D(chunkX * CHUNK_WIDTH * NOISE_SCALE);
     int referenceHeight = static_cast<int>(BASE_SURFACE_Y + initialNoiseValue * AMPLITUDE);
@@ -522,6 +522,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         float density;
         float angle;
     };
+
     std::vector<OreVein> chunkOreVeins;
     chunkOreVeins.clear();
     assert(chunk.blocks != nullptr);
@@ -545,9 +546,12 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         activeVeins[ore.oreType] = std::vector<VeinTracker>();
     }
 
-    // Generate ore veins (now using our optimized noise generators)
+    // Create a 2D grid to map ore positions directly
+    std::vector<std::vector<BlockID>> oreMap(CHUNK_WIDTH, std::vector<BlockID>(CHUNK_WIDTH, BlockID::COUNT));
+
+    // Generate ore veins and directly mark affected blocks in the oreMap
+    PROFILE_SCOPE("generateChunk: ChunkOreVeins");
     for (const auto& ore : oreTypes) {
-        PROFILE_SCOPE("generateChunk: ChunkOreVeins");
         int veinAttempts = static_cast<int>(CHUNK_WIDTH * CHUNK_WIDTH * ore.frequency * 0.09f);
 
         for (int i = 0; i < veinAttempts; i++) {
@@ -560,17 +564,57 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                 // Use the cached noise generator for this ore type
                 float oreNoiseValue = m_oreNoiseGenerators[ore.oreType].getNoise2D(worldX, worldY);
 
-                if (oreNoiseValue > ore.veinSize) { // Reduced threshold for more veins
+                if (oreNoiseValue > ore.veinSize) { // Threshold for vein creation
                     int baseRadius = 1 + rand() % 2;
                     float density = 0.3f + (static_cast<float>(rand()) / RAND_MAX) * 0.2f; // 0.3-0.5
                     float angle = (static_cast<float>(rand()) / RAND_MAX) * 6.28f; // Random angle in radians
 
-                    // Chance for much larger veins
+                    // Chance for larger veins
                     if (rand() % 100 < 20) { // 20% chance for larger vein
                         baseRadius += 1 + rand() % 2; // Add 1-3 to radius
                     }
 
-                    chunkOreVeins.push_back({ worldX, worldY, baseRadius, ore.oreType, density, angle });
+                    // Directly populate the oreMap with this vein
+                    int maxRadius = baseRadius + 1; // Add 1 for safety
+                    int startX = std::max(0, localX - maxRadius);
+                    int endX = std::min(CHUNK_WIDTH - 1, localX + maxRadius);
+                    int startY = std::max(0, localY - maxRadius);
+                    int endY = std::min(CHUNK_WIDTH - 1, localY + maxRadius);
+
+                    // Apply the vein to blocks in this area
+                    for (int bx = startX; bx <= endX; bx++) {
+                        for (int by = startY; by <= endY; by++) {
+                            int blockWorldX = chunkX * CHUNK_WIDTH + bx;
+                            int blockWorldY = chunkY * CHUNK_WIDTH + by;
+
+                            // Get vein shape noise
+                            float noiseX = m_veinShapeNoiseGenerators[ore.oreType].getNoise2D(blockWorldX, blockWorldY);
+                            float noiseY = m_veinShapeNoiseGenerators[ore.oreType].getNoise2D(blockWorldY, blockWorldX);
+
+                            // Calculate distance with directional stretching
+                            int dx = blockWorldX - worldX;
+                            int dy = blockWorldY - worldY;
+                            float stretchedX = dx * cos(angle) - dy * sin(angle);
+                            float stretchedY = dx * sin(angle) + dy * cos(angle);
+                            stretchedX *= 1.0f + noiseX;
+                            stretchedY *= 1.0f + noiseY;
+
+                            float distance = sqrt(stretchedX * stretchedX + stretchedY * stretchedY);
+
+                            // If within vein radius, mark for ore placement
+                            if (distance <= baseRadius) {
+                                float oreNoise = m_oreNoiseGenerators[ore.oreType].getNoise2D(blockWorldX + 1000, blockWorldY + 1000);
+
+                                // More irregular placement condition
+                                if (oreNoise > (1.0f - density) || (distance < baseRadius * 0.5f)) {
+                                    // Only mark if not already marked, or if this ore is rarer (higher value)
+                                    if (oreMap[bx][by] == BlockID::COUNT || oreMap[bx][by] < ore.oreType) {
+                                        oreMap[bx][by] = ore.oreType;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -616,7 +660,6 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         }
     }
 
-
     // Generate terrain and apply ore veins
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         PROFILE_SCOPE("generateChunk: Cave Gen, Blocks, Ore Gen");
@@ -631,7 +674,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         const float localDirtBottom = height - dirtThickness;
         const float localStoneBottom = height - 400;
         const float localDeepStoneBottom = height - 800;
-         
+
         bool isCaveEntrance = std::find(caveEntranceXPositions.begin(), caveEntranceXPositions.end(), x) != caveEntranceXPositions.end();
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
@@ -641,10 +684,10 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             bool shouldBeAir = false;
 
             // Cave generation using pre-created noise generators
-
             if (isCaveEntrance && worldY == height) {
                 shouldBeAir = true;
-            } else if (worldY < height) {
+            }
+            else if (worldY < height) {
                 // Generate cave noise using our cached generators
                 float caveVal = m_caveNoise.getNoise2D(worldX, worldY);
                 float medCaveVal = m_mediumCaveNoise.getNoise2D(worldX, worldY);
@@ -685,6 +728,7 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             }
 
             if (!shouldBeAir) {
+                // First set the base block type
                 if (worldY == height) {
                     currentBlock.init(m_world, BlockID::GRASS, position);
                 }
@@ -701,33 +745,14 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                     currentBlock.init(m_world, BlockID::DEEPERSTONE, position);
                 }
 
-                // Ore generation - now more efficient
-                for (const auto& vein : chunkOreVeins) {
-                    // Calculate distance from vein center
-                    int dx = worldX - vein.centerX;
-                    int dy = worldY - vein.centerY;
-
-                    // Get vein shape noise using our cached generator
-                    float noiseX = m_veinShapeNoiseGenerators[vein.oreType].getNoise2D(worldX, worldY);
-                    float noiseY = m_veinShapeNoiseGenerators[vein.oreType].getNoise2D(worldY, worldX); // Different inputs for variety
-
-                    // Calculate distance with directional stretching
-                    float stretchedX = dx * cos(vein.angle) - dy * sin(vein.angle);
-                    float stretchedY = dx * sin(vein.angle) + dy * cos(vein.angle);
-                    stretchedX *= 1.0f + noiseX;
-                    stretchedY *= 1.0f + noiseY;
-
-                    float distance = sqrt(stretchedX * stretchedX + stretchedY * stretchedY);
-
-                    // If within vein radius, place ore
-                    if (distance <= vein.radius) {
-                        float oreNoise = m_oreNoiseGenerators[vein.oreType].getNoise2D(worldX + 1000, worldY + 1000); // Offset for different pattern
-
-                        // More irregular placement condition
-                        if (oreNoise > (1.0f - vein.density) || (distance < vein.radius)) {
-                            currentBlock.init(m_world, vein.oreType, position);
-                            break;
-                        }
+                // NEW APPROACH: Check if this block has an ore in the oreMap
+                if (oreMap[x][y] != BlockID::COUNT) {
+                    // Only replace stone and deeper blocks with ore
+                    BlockID currentType = currentBlock.getBlockID();
+                    if (currentType == BlockID::STONE ||
+                        currentType == BlockID::DEEPSTONE ||
+                        currentType == BlockID::DEEPERSTONE) {
+                        currentBlock.init(m_world, oreMap[x][y], position);
                     }
                 }
             }
