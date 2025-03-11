@@ -14,6 +14,7 @@
 #include <cstring>
 #include <numeric>
 #include <cfloat>
+#include <random>
 
 // GLM includes
 #include <glm/glm.hpp>
@@ -3499,7 +3500,9 @@ void LevelEditorScreen::generateUpgradeChoices() {
       StatType::Braking
   };
 
-  std::random_shuffle(allStats.begin(), allStats.end());
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::shuffle(allStats.begin(), allStats.end(), g);
 
   for (int i = 0; i < 3 && i < allStats.size(); i++) {
     StatUpgrade upgrade;
@@ -3651,7 +3654,9 @@ LevelEditorScreen::StatUpgrade LevelEditorScreen::generateRandomUpgrade() {
   };
 
   // Randomly shuffle the stats
-  std::random_shuffle(allStats.begin(), allStats.end());
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::shuffle(allStats.begin(), allStats.end(), g);
 
   StatUpgrade upgrade;
   upgrade.type = allStats[0];  // Take the first one after shuffling

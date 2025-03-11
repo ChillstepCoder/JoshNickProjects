@@ -1,7 +1,7 @@
 //MainGame.cpp
 
 #include "MainGame.h"
-#include "JAGErrors.h"
+#include "JAGEngine/JAGErrors.h"
 #include <JAGEngine/ResourceManager.h>
 #include <iostream>
 #include <string>

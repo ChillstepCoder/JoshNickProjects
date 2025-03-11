@@ -112,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;FT2_BUILD_LIBRARY;GLM_FORCE_CXX17;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\JoshProjects\GraphicsProject\deps\lib\;$(SolutionDir)\JoshProjects\GraphicsProject\deps\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common;$(SolutionDir)WwiseProjects\RacingGame\GeneratedSoundBanks;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\lib\;$(SolutionDir)deps\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common;$(SolutionDir)WwiseProjects\RacingGame\GeneratedSoundBanks;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -121,7 +121,7 @@
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\x64_vc170\Debug\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\x64_vc170\Profile\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Debug\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
@@ -133,7 +133,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;FT2_BUILD_LIBRARY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\JoshProjects\GraphicsProject\deps\lib\;$(SolutionDir)\JoshProjects\GraphicsProject\deps\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32;$(SolutionDir)WwiseProjects\RacingGame\GeneratedSoundBanks;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\lib\;$(SolutionDir)deps\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\include;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32;$(SolutionDir)WwiseProjects\RacingGame\GeneratedSoundBanks;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,26 +142,26 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\x64_vc170\Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Release\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkDefaultLowLevelIODispatcher.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFileHelpersBase.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFileLocationBase.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFilePackage.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFilePackageLowLevelIO.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFilePackageLowLevelIODeferred.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFilePackageLUT.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkGeneratedSoundBanksResolver.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkJobWorkerMgr.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkMultipleFileLocation.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkPlatformProfilerHooks.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32\AkDefaultIOHookDeferred.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32\AkFileHelpers.h" />
-    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32\stdafx.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkDefaultLowLevelIODispatcher.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFileHelpersBase.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFileLocationBase.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFilePackage.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFilePackageLowLevelIO.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFilePackageLowLevelIODeferred.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFilePackageLUT.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkGeneratedSoundBanksResolver.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkJobWorkerMgr.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkMultipleFileLocation.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkPlatformProfilerHooks.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32\AkDefaultIOHookDeferred.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32\AkFileHelpers.h" />
+    <ClInclude Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32\stdafx.h" />
     <ClInclude Include="AudioEngine.h" />
     <ClInclude Include="Camera2D.h" />
     <ClInclude Include="Core.h" />
@@ -191,17 +191,17 @@
     <ClInclude Include="WWiseAudioEngine.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkDefaultLowLevelIODispatcher.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFileLocationBase.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFilePackage.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFilePackageLUT.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkGeneratedSoundBanksResolver.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkJobWorkerMgr.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkMultipleFileLocation.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkPlatformProfilerHookStubs.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32\AkDefaultIOHookDeferred.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32\AkPlatformProfilerHooks.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Win32\stdafx.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkDefaultLowLevelIODispatcher.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFileLocationBase.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFilePackage.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFilePackageLUT.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkGeneratedSoundBanksResolver.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkJobWorkerMgr.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkMultipleFileLocation.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkPlatformProfilerHookStubs.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32\AkDefaultIOHookDeferred.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32\AkPlatformProfilerHooks.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Win32\stdafx.cpp" />
     <ClCompile Include="AudioEngine.cpp" />
     <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="ImGuiManager.cpp" />
@@ -227,7 +227,7 @@
     <ClCompile Include="WWiseAudioEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.1.8691\SDK\samples\SoundEngine\Common\AkFilePackageLowLevelIO.inl" />
+    <None Include="..\..\..\..\..\..\..\..\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\samples\SoundEngine\Common\AkFilePackageLowLevelIO.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
