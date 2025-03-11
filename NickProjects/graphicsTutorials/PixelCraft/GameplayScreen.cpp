@@ -78,8 +78,14 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(20.0f); // 20.0f
+    m_camera.setScale(10.0f); // 20.0f
     m_player = Player(&m_camera, m_blockManager);
+
+    // Set map Bounds
+    glm::vec2 minBounds(0.0f, 0.0f);
+    glm::vec2 maxBounds(WORLD_WIDTH_CHUNKS * CHUNK_WIDTH, WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH);
+
+    setMapBoundaries(minBounds, maxBounds);
 
     // Init player
     Bengine::ColorRGBA8 textureColor;
@@ -119,7 +125,17 @@ void GameplayScreen::update() {
 
     {
         PROFILE_SCOPE("player.update + camera.setPosition");
-        const glm::vec2 playerPos = m_player.getPosition();
+        // Get current player position
+        glm::vec2 playerPos = m_player.getPosition();
+
+        // Clamp player position to map boundaries
+        playerPos.x = std::max(m_mapMinBounds.x, std::min(playerPos.x, m_mapMaxBounds.x));
+        playerPos.y = std::max(m_mapMinBounds.y, std::min(playerPos.y, m_mapMaxBounds.y));
+
+        // Set player position (if it has a setPosition method)
+        m_player.setPosition(playerPos);
+
+        // Now update player with the clamped position
         m_player.update(m_game->inputManager, playerPos, m_blockManager, m_debugRenderEnabled);
 
         {
@@ -133,7 +149,7 @@ void GameplayScreen::update() {
         {
             PROFILE_SCOPE("BlockManager Update");
             if (m_updateFrame % 5 == 0)
-            m_blockManager->update(*m_blockManager);
+                m_blockManager->update(*m_blockManager);
         }
 
 
@@ -249,14 +265,29 @@ void GameplayScreen::drawImgui() {
         m_player.setJumpForce(jumpForce); // Update the player's jump force
     }
 
-    for (auto& result : m_profileResults)
-    {
-        char label[50];
-        strcpy_s(label, result.Name);
-        strcat_s(label, "  %.3fms");
-        ImGui::Text(label, result.Time);
+    // Sliders for world generation parameters
+    ImGui::SliderFloat("Cave Scale", &m_caveScale, 0.001f, 0.1f, "%.5f");
+    ImGui::SliderFloat("Base Cave Threshold", &m_baseCaveThreshold, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Detail Scale", &m_detailScale, 0.001f, 0.1f, "%.5f");
+    ImGui::SliderFloat("Detail Influence", &m_detailInfluence, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Min Cave Depth", &m_minCaveDepth, 0.0f, 100.0f, "%.1f");
+    ImGui::SliderFloat("Surface Zone", &m_surfaceZone, 0.0f, 200.0f, "%.1f");
+    ImGui::SliderFloat("Deep Zone", &m_deepZone, 0.0f, 1000.0f, "%.1f");
+    ImGui::SliderFloat("Max Surface Bonus", &m_maxSurfaceBonus, 0.0f, 0.1f, "%.4f");
+    ImGui::SliderFloat("Max Depth Penalty", &m_maxDepthPenalty, 0.0f, 0.1f, "%.4f");
+
+    if (ImGui::Button("Regenerate World")) {
+        m_blockManager->regenerateWorld(m_caveScale, m_baseCaveThreshold, m_detailScale, m_detailInfluence, m_minCaveDepth, m_surfaceZone, m_deepZone, m_maxSurfaceBonus, m_maxDepthPenalty);
     }
-    m_profileResults.clear();
+
+    const auto& latestResults = Profiler::Get().GetLatestResults();
+    const auto& maxTimes = Profiler::Get().GetMaxTimes();
+
+    for (const auto& [name, result] : latestResults)
+    {
+        ImGui::Text("%s  %.3fms (Max: %.3fms)",
+            name.c_str(), result.Time, maxTimes.at(name));
+    }
 
     ImGui::End();
 

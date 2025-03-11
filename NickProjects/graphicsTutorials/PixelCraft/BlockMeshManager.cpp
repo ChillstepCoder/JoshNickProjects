@@ -6,7 +6,10 @@
 #include "PerlinNoise.hpp"
 #include <iostream>
 #include <fstream>
-
+#include <filesystem> 
+#include "FastNoise2/FastNoise/FastNoise.h"
+#include "Profiler.h"
+#include "Timer.h"
 
 void Chunk::init() {
     m_spriteBatch.init();
@@ -29,7 +32,7 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                 glm::vec2 blockPos = glm::vec2(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f);
 
                 if (id == BlockID::WATER) {
-
+                    // Water rendering code (unchanged)
                     int waterAmt = block.getWaterAmount();
                     if (waterAmt > WATER_LEVELS) {
                         waterAmt = WATER_LEVELS;
@@ -43,32 +46,58 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                     GLuint textureID = BlockDefRepository::getTextureID(id);
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
                     m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
-                } else {
+                }
+                else {
                     // 5 6 7
                     // 3   4
                     // 0 1 2
                     float blockAdj = 1.0f;
 
-                    BlockHandle block0 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
-                    BlockHandle block1 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y - 1.0f + blockAdj));
-                    BlockHandle block2 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
-                    BlockHandle block3 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + blockAdj));
-                    BlockHandle block4 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + blockAdj));
-                    BlockHandle block5 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
-                    BlockHandle block6 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y + 1.0f + blockAdj));
-                    BlockHandle block7 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
-
-
                     BlockAdjacencyRules blockAdjacencyRules;
+                    for (int i = 0; i < 8; ++i) {
+                        blockAdjacencyRules.Rules[i] = AdjacencyRule::AIR;
+                    }
 
-                    blockAdjacencyRules.Rules[0] = getAdjacencyRuleForBlock(block0.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[1] = getAdjacencyRuleForBlock(block1.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[2] = getAdjacencyRuleForBlock(block2.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[3] = getAdjacencyRuleForBlock(block3.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[4] = getAdjacencyRuleForBlock(block4.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[5] = getAdjacencyRuleForBlock(block5.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[6] = getAdjacencyRuleForBlock(block6.block->getBlockID()); 
-                    blockAdjacencyRules.Rules[7] = getAdjacencyRuleForBlock(block7.block->getBlockID()); 
+                    // Safely get adjacent blocks
+                    BlockHandle block0 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    if (block0.block && !block0.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[0] = getAdjacencyRuleForBlock(block0.block->getBlockID());
+                    }
+
+                    BlockHandle block1 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    if (block1.block && !block1.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[1] = getAdjacencyRuleForBlock(block1.block->getBlockID());
+                    }
+
+                    BlockHandle block2 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y - 1.0f + blockAdj));
+                    if (block2.block && !block2.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[2] = getAdjacencyRuleForBlock(block2.block->getBlockID());
+                    }
+
+                    BlockHandle block3 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + blockAdj));
+                    if (block3.block && !block3.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[3] = getAdjacencyRuleForBlock(block3.block->getBlockID());
+                    }
+
+                    BlockHandle block4 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + blockAdj));
+                    if (block4.block && !block4.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[4] = getAdjacencyRuleForBlock(block4.block->getBlockID());
+                    }
+
+                    BlockHandle block5 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x - 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    if (block5.block && !block5.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[5] = getAdjacencyRuleForBlock(block5.block->getBlockID());
+                    }
+
+                    BlockHandle block6 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    if (block6.block && !block6.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[6] = getAdjacencyRuleForBlock(block6.block->getBlockID());
+                    }
+
+                    BlockHandle block7 = blockManager.getBlockAtPosition(glm::vec2(blockPos.x + 1.0f + blockAdj, blockPos.y + 1.0f + blockAdj));
+                    if (block7.block && !block7.block->isEmpty()) {
+                        blockAdjacencyRules.Rules[7] = getAdjacencyRuleForBlock(block7.block->getBlockID());
+                    }
 
                     if (id == BlockID::DIRT) { // if the original block is dirt, ignore the dirt adjacency and treat them all as blocks instead.
                         for (int i = 0; i < 8; ++i) {
@@ -300,41 +329,53 @@ glm::ivec2 BlockManager::getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 off
 
 
 void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
-    // check if the block exists
+    // Check if the block exists
     if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
-
         // Destroy the block (remove physics body and reset visual state)
         b2DestroyBody(blockHandle.block->getBodyID());
-        // Now that the block is destroyed, we can remove it from the chunk
-        // Access the chunk using chunkCoords and blockOffset to set the block to nullptr
-        Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
-        Chunk& chunkLeft = m_chunks[blockHandle.chunkCoords.x - 1][blockHandle.chunkCoords.y];
-        Chunk& chunkRight = m_chunks[blockHandle.chunkCoords.x + 1][blockHandle.chunkCoords.y];
-        Chunk& chunkTop = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y + 1];
-        Chunk& chunkBot = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y - 1];
 
+        // Check if chunk coordinates are valid
+        if (blockHandle.chunkCoords.x < 0 || blockHandle.chunkCoords.x >= m_chunks.size() ||
+            blockHandle.chunkCoords.y < 0 || blockHandle.chunkCoords.y >= m_chunks[0].size()) {
+            return; // Invalid chunk coordinates
+        }
+
+        // Access the current chunk safely
+        Chunk& chunk = m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y];
+
+        // Handle water blocks
         if (blockHandle.block->getBlockID() == BlockID::WATER) {
             for (int i = 0; i < chunk.waterBlocks.size(); i++) {
                 if (getBlockAtPosition(chunk.waterBlocks[i]) == blockHandle) {
-
                     chunk.waterBlocks[i] = chunk.waterBlocks.back();
-
                     chunk.waterBlocks.pop_back(); // Add to the list of water blocks.
-
                     break;
                 }
             }
         }
 
+        // Reset the broken block to Air
+        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();
 
-
-
-        chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block(); // Reset the broken block to Air
+        // Mark the current chunk as dirty
         chunk.m_isMeshDirty = true;
-        chunkLeft.m_isMeshDirty = true;
-        chunkRight.m_isMeshDirty = true;
-        chunkTop.m_isMeshDirty = true;
-        chunkBot.m_isMeshDirty = true;
+
+        // Safely mark adjacent chunks as dirty only if they exist
+        if (blockHandle.chunkCoords.x > 0) {
+            m_chunks[blockHandle.chunkCoords.x - 1][blockHandle.chunkCoords.y].m_isMeshDirty = true; // Left
+        }
+
+        if (blockHandle.chunkCoords.x < m_chunks.size() - 1) {
+            m_chunks[blockHandle.chunkCoords.x + 1][blockHandle.chunkCoords.y].m_isMeshDirty = true; // Right
+        }
+
+        if (blockHandle.chunkCoords.y < m_chunks[0].size() - 1) {
+            m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y + 1].m_isMeshDirty = true; // Top
+        }
+
+        if (blockHandle.chunkCoords.y > 0) {
+            m_chunks[blockHandle.chunkCoords.x][blockHandle.chunkCoords.y - 1].m_isMeshDirty = true; // Bottom
+        }
     }
 }
 
@@ -425,7 +466,10 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& bl
 
                 glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
                 if (!isChunkFarAway(playerPos, chunkPos)) {
-                    loadChunk(x, y, blockManager);
+                    {
+                        PROFILE_SCOPE("LoadChunk");
+                        loadChunk(x, y, blockManager);
+                    }
                 }
             }
         }
@@ -443,32 +487,22 @@ bool BlockManager::isChunkLoaded(int x, int y) {
 
 void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     assert(chunkX >= 0 && chunkY >= 0 && chunkX < WORLD_WIDTH_CHUNKS && chunkY < WORLD_HEIGHT_CHUNKS);
+
     static siv::PerlinNoise perlin(12345);
-    static siv::PerlinNoise oreNoise(67890);
-    static siv::PerlinNoise veinShapeNoise(11111);
-    static siv::PerlinNoise caveNoise(24680); 
-    static siv::PerlinNoise caveDetailNoise(13579);
+    static siv::PerlinNoise dirtThicknessNoise(54321);
 
     const float NOISE_SCALE = 0.05f;
     const float AMPLITUDE = 10.0f;
     const float BASE_SURFACE_Y = 1664.0f;
 
-    const float CAVE_SCALE = 0.006f;        // higher number = smaller cave
-    const float BASE_CAVE_THRESHOLD = 0.20f;     // Higher = less caves
-    const float DETAIL_SCALE = 0.03f;      // Scale for additional cave detail
-    const float DETAIL_INFLUENCE = 0.13f;    // How much the detail affects the main cave shape
-    const float MIN_CAVE_DEPTH = 12.0f;    // Minimum depth below surface for caves to start
-
-    const float SURFACE_ZONE = 100.0f;      // Depth range for surface cave adjustment
-    const float DEEP_ZONE = 600.0f;         // Depth where deep cave adjustment begins
-    const float MAX_SURFACE_BONUS = 0.02f;  // Maximum bonus for surface caves
-    const float MAX_DEPTH_PENALTY = 0.01f;  // Maximum penalty for deep caves
-
-
+    const float SURFACE_CAVE_TAPER_START = 30.0f;
+    const float MIN_DIRT_THICKNESS = 3.0f;
+    const float MAX_DIRT_THICKNESS = 15.0f;
+    const float DIRT_THICKNESS_NOISE_SCALE = 0.03f;
 
     float initialNoiseValue = perlin.noise1D(chunkX * CHUNK_WIDTH * NOISE_SCALE);
     int referenceHeight = static_cast<int>(BASE_SURFACE_Y + initialNoiseValue * AMPLITUDE);
-    const float DIRT_BOTTOM = referenceHeight - 10;
+
     const float STONE_BOTTOM = referenceHeight - 400;
     const float DEEP_STONE_BOTTOM = referenceHeight - 800;
 
@@ -488,27 +522,35 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
         float density;
         float angle;
     };
+
     std::vector<OreVein> chunkOreVeins;
+    chunkOreVeins.clear();
+    assert(chunk.blocks != nullptr);
 
     // Adjusted parameters with corrected depth ranges
     std::vector<OreParams> oreTypes;
+    oreTypes.clear();
     // Note: For each ore type, maxDepth the higher number (closer to surface)
-    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.5f, 0.62f, 30 }); // upper depth, lower depth, density of vein, frequency of ore veins, max vein amount(doesnt work lol)
-    oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.49f, 0.60f, 25 });
-    oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.48f, 0.58f, 20 });
-    oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.47f, 0.56f, 15 });
-    oreTypes.push_back(OreParams{ BlockID::COBALT,     static_cast<float>(referenceHeight - 400), static_cast<float>(referenceHeight - 650), 0.46f, 0.54f, 14 });
-    oreTypes.push_back(OreParams{ BlockID::MYTHRIL,    static_cast<float>(referenceHeight - 600), static_cast<float>(referenceHeight - 750), 0.45f, 0.52f, 13 });
-    oreTypes.push_back(OreParams{ BlockID::ADAMANTITE, static_cast<float>(referenceHeight - 700), static_cast<float>(referenceHeight - 850), 0.44f, 0.50f, 12 });
-    oreTypes.push_back(OreParams{ BlockID::COSMILITE,  static_cast<float>(referenceHeight - 800), static_cast<float>(referenceHeight - 1300), 0.43f, 0.48f, 11 });
-    oreTypes.push_back(OreParams{ BlockID::PRIMORDIAL, static_cast<float>(referenceHeight - 1100), static_cast<float>(referenceHeight - 1600), 0.42f, 0.44f, 10 });
+    oreTypes.push_back(OreParams{ BlockID::COPPER,     static_cast<float>(referenceHeight - 20),  static_cast<float>(referenceHeight - 150), 0.3f, 0.35f, 30 });
+    oreTypes.push_back(OreParams{ BlockID::IRON,       static_cast<float>(referenceHeight - 100), static_cast<float>(referenceHeight - 250), 0.26f, 0.38f, 25 });
+    oreTypes.push_back(OreParams{ BlockID::GOLD,       static_cast<float>(referenceHeight - 200), static_cast<float>(referenceHeight - 350), 0.24f, 0.41f, 20 });
+    oreTypes.push_back(OreParams{ BlockID::DIAMOND,    static_cast<float>(referenceHeight - 300), static_cast<float>(referenceHeight - 450), 0.22f, 0.44f, 15 });
+    oreTypes.push_back(OreParams{ BlockID::COBALT,     static_cast<float>(referenceHeight - 400), static_cast<float>(referenceHeight - 650), 0.20f, 0.47f, 14 });
+    oreTypes.push_back(OreParams{ BlockID::MYTHRIL,    static_cast<float>(referenceHeight - 600), static_cast<float>(referenceHeight - 750), 0.18f, 0.50f, 13 });
+    oreTypes.push_back(OreParams{ BlockID::ADAMANTITE, static_cast<float>(referenceHeight - 700), static_cast<float>(referenceHeight - 850), 0.16f, 0.53f, 12 });
+    oreTypes.push_back(OreParams{ BlockID::COSMILITE,  static_cast<float>(referenceHeight - 800), static_cast<float>(referenceHeight - 1300), 0.14f, 0.56f, 11 });
+    oreTypes.push_back(OreParams{ BlockID::PRIMORDIAL, static_cast<float>(referenceHeight - 1100), static_cast<float>(referenceHeight - 1600), 0.10f, 0.60f, 10 });
 
     activeVeins.clear();
     for (const auto& ore : oreTypes) {
         activeVeins[ore.oreType] = std::vector<VeinTracker>();
     }
 
+    // Create a 2D grid to map ore positions directly
+    std::vector<std::vector<BlockID>> oreMap(CHUNK_WIDTH, std::vector<BlockID>(CHUNK_WIDTH, BlockID::COUNT));
 
+    // Generate ore veins and directly mark affected blocks in the oreMap
+    PROFILE_SCOPE("generateChunk: ChunkOreVeins");
     for (const auto& ore : oreTypes) {
         int veinAttempts = static_cast<int>(CHUNK_WIDTH * CHUNK_WIDTH * ore.frequency * 0.09f);
 
@@ -519,32 +561,121 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             int worldY = chunkY * CHUNK_WIDTH + localY;
 
             if (worldY <= ore.maxDepth && worldY >= ore.minDepth) {
-                float oreNoiseValue = oreNoise.noise2D(worldX * 0.1f, worldY * 0.1f);
+                // Use the cached noise generator for this ore type
+                float oreNoiseValue = m_oreNoiseGenerators[ore.oreType].getNoise2D(worldX, worldY);
 
-                if (oreNoiseValue > ore.veinSize * 0.8f) { // Reduced threshold for more veins
-                    // Significantly increased vein sizes
-                    int baseRadius = 3 + rand() % 3;
-                    float density = 0.6f + (static_cast<float>(rand()) / RAND_MAX) * 0.3f; // 0.6-0.9
+                if (oreNoiseValue > ore.veinSize) { // Threshold for vein creation
+                    int baseRadius = 1 + rand() % 2;
+                    float density = 0.3f + (static_cast<float>(rand()) / RAND_MAX) * 0.2f; // 0.3-0.5
                     float angle = (static_cast<float>(rand()) / RAND_MAX) * 6.28f; // Random angle in radians
 
-                    // Chance for much larger veins
-                    if (rand() % 100 < 20) { // 30% chance for larger vein
-                        baseRadius += 2 + rand() % 3; // Add 2-4 to radius
+                    // Chance for larger veins
+                    if (rand() % 100 < 20) { // 20% chance for larger vein
+                        baseRadius += 1 + rand() % 2; // Add 1-3 to radius
                     }
 
-                    chunkOreVeins.push_back({ worldX, worldY, baseRadius, ore.oreType, density, angle});
+                    // Directly populate the oreMap with this vein
+                    int maxRadius = baseRadius + 1; // Add 1 for safety
+                    int startX = std::max(0, localX - maxRadius);
+                    int endX = std::min(CHUNK_WIDTH - 1, localX + maxRadius);
+                    int startY = std::max(0, localY - maxRadius);
+                    int endY = std::min(CHUNK_WIDTH - 1, localY + maxRadius);
+
+                    // Apply the vein to blocks in this area
+                    for (int bx = startX; bx <= endX; bx++) {
+                        for (int by = startY; by <= endY; by++) {
+                            int blockWorldX = chunkX * CHUNK_WIDTH + bx;
+                            int blockWorldY = chunkY * CHUNK_WIDTH + by;
+
+                            // Get vein shape noise
+                            float noiseX = m_veinShapeNoiseGenerators[ore.oreType].getNoise2D(blockWorldX, blockWorldY);
+                            float noiseY = m_veinShapeNoiseGenerators[ore.oreType].getNoise2D(blockWorldY, blockWorldX);
+
+                            // Calculate distance with directional stretching
+                            int dx = blockWorldX - worldX;
+                            int dy = blockWorldY - worldY;
+                            float stretchedX = dx * cos(angle) - dy * sin(angle);
+                            float stretchedY = dx * sin(angle) + dy * cos(angle);
+                            stretchedX *= 1.0f + noiseX;
+                            stretchedY *= 1.0f + noiseY;
+
+                            float distance = sqrt(stretchedX * stretchedX + stretchedY * stretchedY);
+
+                            // If within vein radius, mark for ore placement
+                            if (distance <= baseRadius) {
+                                float oreNoise = m_oreNoiseGenerators[ore.oreType].getNoise2D(blockWorldX + 1000, blockWorldY + 1000);
+
+                                // More irregular placement condition
+                                if (oreNoise > (1.0f - density) || (distance < baseRadius * 0.5f)) {
+                                    // Only mark if not already marked, or if this ore is rarer (higher value)
+                                    if (oreMap[bx][by] == BlockID::COUNT || oreMap[bx][by] < ore.oreType) {
+                                        oreMap[bx][by] = ore.oreType;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
+    // First pass - check for cave entrances at the surface
+    // We'll store them to apply in the second pass
+    std::vector<int> caveEntranceXPositions;
+
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         int worldX = chunkX * CHUNK_WIDTH + x;
         float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
         int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
-        const float localDirtBottom = height - 10;
+
+        // Check for cave entrance at this x position
+        // We check a few blocks below the surface
+        bool hasCaveEntrance = false;
+        for (int checkDepth = 1; checkDepth <= 5; checkDepth++) {
+            int worldY = height - checkDepth;
+            int chunkY_local = (worldY - chunkY * CHUNK_WIDTH);
+
+            // Skip if out of chunk bounds
+            if (chunkY_local < 0 || chunkY_local >= CHUNK_WIDTH) continue;
+
+            // Check for potential cave
+            float caveVal = m_caveNoise.getNoise2D(worldX, worldY);
+            float medCaveVal = m_mediumCaveNoise.getNoise2D(worldX, worldY);
+            float smallCaveVal = m_smallCaveNoise.getNoise2D(worldX, worldY);
+
+            // If any of these indicate a cave close to the surface
+            if (caveVal > m_baseCaveThreshold * 1.2f ||
+                medCaveVal > m_baseCaveThreshold * 1.8f ||
+                smallCaveVal > m_baseCaveThreshold * 2.4f) {
+
+                // If close enough to surface, mark as cave entrance
+                hasCaveEntrance = true;
+                break;
+            }
+        }
+
+        if (hasCaveEntrance) {
+            caveEntranceXPositions.push_back(x);
+        }
+    }
+
+    // Generate terrain and apply ore veins
+    for (int x = 0; x < CHUNK_WIDTH; ++x) {
+        PROFILE_SCOPE("generateChunk: Cave Gen, Blocks, Ore Gen");
+
+        int worldX = chunkX * CHUNK_WIDTH + x;
+        float noiseValue = perlin.noise1D(worldX * NOISE_SCALE);
+        int height = static_cast<int>(BASE_SURFACE_Y + noiseValue * AMPLITUDE);
+
+        float dirtThicknessValue = dirtThicknessNoise.noise2D(worldX * DIRT_THICKNESS_NOISE_SCALE, chunkX * DIRT_THICKNESS_NOISE_SCALE);
+        float dirtThickness = MIN_DIRT_THICKNESS + (dirtThicknessValue + 1.0f) * 0.5f * (MAX_DIRT_THICKNESS - MIN_DIRT_THICKNESS);
+
+        const float localDirtBottom = height - dirtThickness;
         const float localStoneBottom = height - 400;
         const float localDeepStoneBottom = height - 800;
+
+        bool isCaveEntrance = std::find(caveEntranceXPositions.begin(), caveEntranceXPositions.end(), x) != caveEntranceXPositions.end();
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             int worldY = chunkY * CHUNK_WIDTH + y;
@@ -552,74 +683,52 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
             Block currentBlock;
             bool shouldBeAir = false;
 
-            // Cave generation
-            if (worldY < height - MIN_CAVE_DEPTH) {
-                // Calculate depth factors
-                float depthFromSurface = height - worldY;
+            // Cave generation using pre-created noise generators
+            if (isCaveEntrance && worldY == height) {
+                shouldBeAir = true;
+            }
+            else if (worldY < height) {
+                // Generate cave noise using our cached generators
+                float caveVal = m_caveNoise.getNoise2D(worldX, worldY);
+                float medCaveVal = m_mediumCaveNoise.getNoise2D(worldX, worldY);
+                float smallCaveVal = m_smallCaveNoise.getNoise2D(worldX, worldY);
 
-                // Surface zone calculation (more caves near surface)
-                float surfaceFactor = std::max(0.0f, 1.0f - (depthFromSurface / SURFACE_ZONE));
-                float surfaceBonus = surfaceFactor * MAX_SURFACE_BONUS;
+                float depth = height - worldY;
 
-                // Deep zone calculation (fewer caves at extreme depths)
-                float deepFactor = std::max(0.0f, (depthFromSurface - DEEP_ZONE) / DEEP_ZONE);
-                float depthPenalty = deepFactor * MAX_DEPTH_PENALTY;
+                float caveThreshold = m_baseCaveThreshold; // 0.45f
+                float medCaveThreshold = m_baseCaveThreshold + 0.1f;
+                float smallCaveThreshold = m_baseCaveThreshold + 0.2f;
 
-                // Generate base cave noise
-                float caveVal = caveNoise.noise3D(
-                    worldX * CAVE_SCALE,
-                    worldY * CAVE_SCALE,
-                    sin(worldX * CAVE_SCALE * 0.5f + worldY * CAVE_SCALE * 0.5f) * 2.0f
-                );
+                // Apply tapering
+                if (depth < SURFACE_CAVE_TAPER_START) {
+                    float taperFactor = 1.0f - (depth / SURFACE_CAVE_TAPER_START);
 
-                float detailVal = caveDetailNoise.noise3D(
-                    worldX * DETAIL_SCALE,
-                    worldY * DETAIL_SCALE,
-                    (worldX + worldY) * DETAIL_SCALE * 0.25f
-                );
+                    caveThreshold += taperFactor * 0.2f;
+                    medCaveThreshold += taperFactor * 0.25f;
+                    smallCaveThreshold += taperFactor * 0.3f;
 
-                float combinedCaveNoise = caveVal + (detailVal * DETAIL_INFLUENCE);
-
-                // Calculate final threshold with surface bonus and depth penalty
-                float adjustedThreshold = BASE_CAVE_THRESHOLD - surfaceBonus + depthPenalty;
-
-                // Additional noise variation based on depth
-                float depthVariation = caveNoise.noise2D(worldX * 0.02f, depthFromSurface * 0.01f) * 0.05f;
-                adjustedThreshold += depthVariation;
+                    // Allow occasional breakthrough to surface
+                    if (depth < 2.0f && caveVal > 0.75f) {
+                        shouldBeAir = true;
+                    }
+                }
 
                 // Primary cave generation
-                if (combinedCaveNoise > adjustedThreshold) {
+                if (caveVal > caveThreshold) {
                     shouldBeAir = true;
                 }
 
-                // Connecting tunnels with depth-aware thresholds
-                if (!shouldBeAir) {
-                    float connectionNoise = caveNoise.noise2D(
-                        worldX * CAVE_SCALE * 1.5f,
-                        worldY * CAVE_SCALE * 1.5f
-                    );
-
-                    // Adjust connection threshold based on depth
-                    float connectionThreshold = 0.68f - surfaceBonus + depthPenalty;
-
-                    if (connectionNoise > connectionThreshold && caveVal > 0.2f) {
-                        shouldBeAir = true;
-                    }
+                if (medCaveVal > medCaveThreshold) {
+                    shouldBeAir = true;
                 }
 
-                // Additional small caves to increase density
-                if (!shouldBeAir) {
-                    float smallCaveNoise = caveDetailNoise.noise2D(
-                        worldX * 0.16f,
-                        worldY * 0.16f
-                    );
-                    if (smallCaveNoise > 0.35f) {
-                        shouldBeAir = true;
-                    }
+                if (smallCaveVal > smallCaveThreshold) {
+                    shouldBeAir = true;
                 }
             }
 
             if (!shouldBeAir) {
+                // First set the base block type
                 if (worldY == height) {
                     currentBlock.init(m_world, BlockID::GRASS, position);
                 }
@@ -636,39 +745,14 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
                     currentBlock.init(m_world, BlockID::DEEPERSTONE, position);
                 }
 
-                // ore generation
-                for (const auto& vein : chunkOreVeins) {
-                    // Calculate distance from vein center
-                    int dx = worldX - vein.centerX;
-                    int dy = worldY - vein.centerY;
-
-                    // Calculate distance with directional stretching
-                    float stretchedX = dx * cos(vein.angle) - dy * sin(vein.angle);
-                    float stretchedY = dx * sin(vein.angle) + dy * cos(vein.angle);
-                    stretchedX *= 1.0f + veinShapeNoise.noise2D(worldX * 0.2f, worldY * 0.2f) * 0.5f;
-                    stretchedY *= 1.0f + veinShapeNoise.noise2D(worldX * 0.2f, worldY * 0.2f) * 0.5f;
-
-                    float distance = sqrt(stretchedX * stretchedX + stretchedY * stretchedY);
-
-                    // If within vein radius, place ore
-                    if (distance <= vein.radius) {
-                        // Use multiple noise layers for more irregular shapes
-                        float noise1 = veinShapeNoise.noise2D(
-                            (worldX + dx * 0.2f) * 0.3f,
-                            (worldY + dy * 0.2f) * 0.3f
-                        );
-                        float noise2 = veinShapeNoise.noise2D(
-                            (worldX - dy * 0.15f) * 0.4f,
-                            (worldY + dx * 0.15f) * 0.4f
-                        );
-                        float combinedNoise = (noise1 + noise2) * 0.5f;
-
-                        // More irregular placement condition
-                        if (combinedNoise > (1.0f - vein.density) * 1.2f ||
-                            (distance <= vein.radius * 0.6f && noise1 > 0.3f)) {
-                            currentBlock.init(m_world, vein.oreType, position);
-                            break;
-                        }
+                // NEW APPROACH: Check if this block has an ore in the oreMap
+                if (oreMap[x][y] != BlockID::COUNT) {
+                    // Only replace stone and deeper blocks with ore
+                    BlockID currentType = currentBlock.getBlockID();
+                    if (currentType == BlockID::STONE ||
+                        currentType == BlockID::DEEPSTONE ||
+                        currentType == BlockID::DEEPERSTONE) {
+                        currentBlock.init(m_world, oreMap[x][y], position);
                     }
                 }
             }
@@ -680,33 +764,85 @@ void BlockManager::generateChunk(int chunkX, int chunkY, Chunk& chunk) {
     }
 }
 
+void BlockManager::regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty) {
+    m_caveScale = caveScale;
+    m_baseCaveThreshold = baseCaveThreshold;
+    m_detailScale = detailScale;
+    m_detailInfluence = detailInfluence;
+    m_minCaveDepth = minCaveDepth;
+    m_surfaceZone = surfaceZone;
+    m_deepZone = deepZone;
+    m_maxSurfaceBonus = maxSurfaceBonus;
+    m_maxDepthPenalty = maxDepthPenalty;
+
+    activeVeins.clear();
+
+    clearWorldFiles();
+
+    for (int chunkX = 0; chunkX < WORLD_WIDTH_CHUNKS; ++chunkX) {
+        for (int chunkY = 0; chunkY < WORLD_HEIGHT_CHUNKS; ++chunkY) {
+
+            Chunk& chunk = m_chunks[chunkX][chunkY]; // Assuming getChunk retrieves the chunk reference
+            chunk.destroy();
+            m_activeChunks.clear();
+
+            generateChunk(chunkX, chunkY, chunk); // Regenerate the chunk
+        }
+    }
+}
+
 
 
 void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager) {
+    // Check if coordinates are in valid range
+    if (chunkX < 0 || chunkX >= m_chunks.size() ||
+        chunkY < 0 || chunkY >= m_chunks[0].size()) {
+        return; // Out of bounds, don't load
+    }
+
     Chunk& chunk = m_chunks[chunkX][chunkY];
-    Chunk& chunkLeft = m_chunks[chunkX - 1][chunkY];
-    Chunk& chunkRight = m_chunks[chunkX + 1][chunkY];
-    Chunk& chunkTop = m_chunks[chunkX][chunkY + 1];
-    Chunk& chunkBot = m_chunks[chunkX][chunkY - 1];
+
     // Make sure we never double load
     assert(!chunk.isLoaded());
 
-
-    chunk.init();
+    {
+        PROFILE_SCOPE("Chunk init");
+        chunk.init();
+    }
 
     if (!loadChunkFromFile(chunkX, chunkY, chunk)) {
         // If no saved chunk data exists, generate it
-        generateChunk(chunkX, chunkY, chunk);
-        saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
+        {
+            PROFILE_SCOPE("generateChunk");
+            generateChunk(chunkX, chunkY, chunk);
+        }
+        {
+            PROFILE_SCOPE("saveChunkToFile");
+            saveChunkToFile(chunkX, chunkY, chunk);  // Save the generated chunk for later
+        }
     }
-    chunk.buildChunkMesh(blockManager);
-    m_activeChunks.push_back(&chunk);
 
+    {
+        PROFILE_SCOPE("buildChunkMesh");
+        chunk.buildChunkMesh(blockManager);
+    }
+
+    m_activeChunks.push_back(&chunk);
     chunk.m_isMeshDirty = true;
-    chunkLeft.m_isMeshDirty = true;
-    chunkRight.m_isMeshDirty = true;
-    chunkTop.m_isMeshDirty = true;
-    chunkBot.m_isMeshDirty = true;
+
+    // Only mark adjacent chunks as dirty if they exist
+    if (chunkX > 0) {
+        m_chunks[chunkX - 1][chunkY].m_isMeshDirty = true; // Left
+    }
+    if (chunkX < m_chunks.size() - 1) {
+        m_chunks[chunkX + 1][chunkY].m_isMeshDirty = true; // Right
+    }
+    if (chunkY < m_chunks[0].size() - 1) {
+        m_chunks[chunkX][chunkY + 1].m_isMeshDirty = true; // Top
+    }
+    if (chunkY > 0) {
+        m_chunks[chunkX][chunkY - 1].m_isMeshDirty = true; // Bottom
+    }
 }
 
 bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
@@ -765,6 +901,19 @@ bool BlockManager::loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk) {
 
     file.close();
     return true;
+}
+
+void BlockManager::clearWorldFiles() {
+    std::filesystem::path worldDir = "World"; // Path to your world folder
+
+    // Iterate through all files in the "World" folder
+    for (const auto& entry : std::filesystem::directory_iterator(worldDir)) {
+        if (entry.path().extension() == ".dat") {
+            std::filesystem::remove(entry.path());  // Delete the file
+        }
+    }
+
+    std::cout << "All chunk files have been cleared." << std::endl;
 }
 
 
@@ -830,23 +979,18 @@ void BlockManager::unloadChunk(int x, int y) {
 
 std::vector<BlockHandle> BlockManager::getBlocksInRange(const glm::vec2& playerPos, int range) {
     std::vector<BlockHandle> blocksInRange;
-
     // Loop through the range of blocks around the player (in both x and y directions)
     for (int dx = -range; dx <= range; ++dx) {
         for (int dy = -range; dy <= range; ++dy) {
             // Calculate the world position for the block's center
             glm::vec2 blockPos = playerPos + glm::vec2(dx, dy);
-
             // Get the block at the position using the getBlockAtPosition function
             BlockHandle blockHandle = getBlockAtPosition(blockPos);
-
-            // If a valid block is returned, add it to the list
-            if (blockHandle.block->getBlockID() != BlockID::AIR) {
+            // Check if the block handle is valid before trying to access it
+            if (blockHandle.block && blockHandle.block->getBlockID() != BlockID::AIR) {
                 blocksInRange.push_back(blockHandle);
             }
         }
     }
-
     return blocksInRange;
 }
-

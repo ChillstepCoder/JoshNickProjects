@@ -6,10 +6,12 @@
 #include <Bengine/SpriteBatch.h>
 #include "Block.h"
 #include "unordered_map"
+#include "FractalNoise.h"
 
 class DebugDraw;
 class BlockManager;
 class CellularAutomataManager;
+class GameplayScreen;
 enum class AdjacencyRule;
 
 const int CHUNK_WIDTH = 64;
@@ -71,7 +73,18 @@ const int loadRadius = 5;
 class BlockManager {
 public:
     BlockManager(BlockMeshManager& meshManager, b2WorldId worldId, CellularAutomataManager& cellularAutomataManager)
-        : m_MeshManager(meshManager), m_world(worldId), m_cellularAutomataManager(cellularAutomataManager) {}
+        : m_MeshManager(meshManager),
+        m_world(worldId),
+        m_cellularAutomataManager(cellularAutomataManager),
+        m_baseCaveThreshold(0.45f),
+        m_minCaveDepth(10),
+        // Initialize noise generators with appropriate parameters
+        m_terrainNoise(0.05f, 0.5f, 1, 12345),
+        m_caveNoise(0.002f, 0.5f, 7, 12345),
+        m_mediumCaveNoise(0.006f, 0.5f, 7, 54793),
+        m_smallCaveNoise(0.009f, 0.5f, 7, 65492) {
+        initializeOreNoiseGenerators();
+    }
     
 
     struct VeinTracker {
@@ -110,11 +123,15 @@ public:
 
     void generateChunk(int chunkX, int chunkY, Chunk& chunk);
 
+    void regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty);
+
     void loadChunk(int x, int y, BlockManager& blockManager);
 
     bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
 
     bool loadChunkFromFile(int chunkX, int chunkY, Chunk& chunk);
+
+    void clearWorldFiles();
 
     bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
 
@@ -128,10 +145,57 @@ public:
 
     std::vector<Chunk*> m_activeChunks;
 
+    void initializeOreNoiseGenerators() {
+        // Create noise generators for each ore type
+        std::vector<BlockID> oreTypes = {
+            BlockID::COPPER, BlockID::IRON, BlockID::GOLD, BlockID::DIAMOND,
+            BlockID::COBALT, BlockID::MYTHRIL, BlockID::ADAMANTITE,
+            BlockID::COSMILITE, BlockID::PRIMORDIAL
+        };
+
+        for (const auto& oreType : oreTypes) {
+            // Main ore noise
+            m_oreNoiseGenerators[oreType] = FractalNoise(0.15f, 0.5f, 7, 72839 + static_cast<int>(oreType));
+
+            // Vein shape noise
+            m_veinShapeNoiseGenerators[oreType] = FractalNoise(0.05f, 0.5f, 1, 35367 + static_cast<int>(oreType));
+        }
+    }
+
+    glm::vec2 getWorldMinBounds() const {
+        return glm::vec2(0, 0);
+    }
+
+    glm::vec2 getWorldMaxBounds() const {
+        return glm::vec2(
+            WORLD_WIDTH_CHUNKS * CHUNK_WIDTH,   // Total world width in blocks
+            WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH   // Total world height in blocks
+        );
+    }
+
 private:
     std::vector<std::vector<Chunk>> m_chunks;
+
+    float m_caveScale = 0.005419f;        // higher number = smaller cave
+    float m_baseCaveThreshold = 0.65f; // Higher = less caves
+    float m_detailScale = 0.09320f;       // Scale for additional cave detail
+    float m_detailInfluence = 0.77f;   // How much the detail affects the main cave shape
+    int m_minCaveDepth = 40;      // Minimum depth below surface for caves to start
+    float m_surfaceZone = 100.0f;      // Depth range for surface cave adjustment
+    float m_deepZone = 600.0f;         // Depth where deep cave adjustment begins
+    float m_maxSurfaceBonus = 0.02f;   // Maximum bonus for surface caves
+    float m_maxDepthPenalty = 0.01f;   // Maximum penalty for deep caves
+
+    FractalNoise m_terrainNoise;
+    FractalNoise m_caveNoise;
+    FractalNoise m_mediumCaveNoise;
+    FractalNoise m_smallCaveNoise;
+    std::unordered_map<BlockID, FractalNoise> m_oreNoiseGenerators;
+    std::unordered_map<BlockID, FractalNoise> m_veinShapeNoiseGenerators;
+
 
     CellularAutomataManager& m_cellularAutomataManager;
     BlockMeshManager& m_MeshManager;
     b2WorldId m_world;
+
 };

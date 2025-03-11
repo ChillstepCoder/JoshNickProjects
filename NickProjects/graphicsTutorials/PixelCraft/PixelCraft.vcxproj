@@ -71,11 +71,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)deps/include/ImGui/;$(SolutionDir)deps/include/PerlinNoise/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)deps/include/ImGui/;$(SolutionDir)deps/include/PerlinNoise/;$(SolutionDir)deps/include/FastNoise2/;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)deps/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)deps/include/PerlinNoise/;$(SolutionDir)deps/include/ImGui/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)deps/include/;$(SolutionDir);$(SolutionDir)deps/include/PerlinNoise/;$(SolutionDir)deps/include/ImGui/;$(SolutionDir)deps/include/FastNoise2/;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)deps/lib/;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
@@ -120,7 +120,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_ttf.lib;SDL2_mixer.lib;opengl32.lib;Bengine.lib;box2dd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_ttf.lib;SDL2_mixer.lib;opengl32.lib;Bengine.lib;box2dd.lib;FastNoiseD.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -139,7 +139,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_ttf.lib;SDL2_mixer.lib;opengl32.lib;Bengine.lib;box2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_ttf.lib;SDL2_mixer.lib;opengl32.lib;Bengine.lib;box2d.lib;FastNoise.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -157,6 +157,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="TextureEditorScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -167,6 +168,7 @@
     <ClInclude Include="CellularAutomataManager.h" />
     <ClInclude Include="ConnectedTextureSet.h" />
     <ClInclude Include="DebugDraw.h" />
+    <ClInclude Include="FractalNoise.h" />
     <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="Player.h" />

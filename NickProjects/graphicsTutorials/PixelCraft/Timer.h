@@ -1,45 +1,43 @@
-#include "ImGui/imgui.h"
-#include <chrono>
-#include <iostream>
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #pragma once
+#include <chrono>
+#include "Profiler.h"
 
-template<typename Fn>
 class Timer
 {
 public:
-    Timer(const char* name, Fn&& func)
-        :m_name(name), m_func(func), m_stopped(false)
+    Timer(const char* name)
+        : m_Name(name), m_Stopped(false)
     {
-        m_startTimePoint = std::chrono::high_resolution_clock::now();
+        m_StartTimepoint = std::chrono::high_resolution_clock::now();
     }
 
     ~Timer()
     {
-        if (!m_stopped)
-            stop();
+        if (!m_Stopped)
+            Stop();
     }
 
-    void stop()
+    void Stop()
     {
-        auto endTimePoint = std::chrono::high_resolution_clock::now();
+        auto endTimepoint = std::chrono::high_resolution_clock::now();
 
-        long long start = std::chrono::time_point_cast<std::chrono::microseconds>(m_startTimePoint).time_since_epoch().count();
-        long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimePoint).time_since_epoch().count();
+        long long start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch().count();
+        long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
 
-        m_stopped = true;
+        float duration = (end - start) * 0.001f; // Convert to milliseconds
 
-        float duration = (end - start) * 0.001f;
-        m_func({ m_name, duration });
+        ProfileResult result;
+        result.Name = m_Name;
+        result.Time = duration;
+
+        // Submit to global profiler
+        Profiler::Get().AddResult(result);
+
+        m_Stopped = true;
     }
 
 private:
-    const char* m_name;
-    Fn m_func;
-    std::chrono::time_point<std::chrono::steady_clock> m_startTimePoint;
-    bool m_stopped;
+    const char* m_Name;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimepoint;
+    bool m_Stopped;
 };
-

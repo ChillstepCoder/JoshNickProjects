@@ -51,7 +51,26 @@ public:
 
     void setGravity(float gravity) { m_gravity = gravity; }
 
+    void setMapBoundaries(const glm::vec2& minBounds, const glm::vec2& maxBounds) {
+        m_mapMinBounds = minBounds;
+        m_mapMaxBounds = maxBounds;
+        // Also set camera boundaries
+        m_camera.setMapBoundaries(minBounds, maxBounds);
+    }
+
     bool m_debugRenderEnabled = false;
+    std::unordered_map<std::string, float> m_maxTimes;
+
+    float m_caveScale = 0.006f;
+    float m_baseCaveThreshold = 0.20f;
+    float m_detailScale = 0.03f;
+    float m_detailInfluence = 0.13f;
+    float m_minCaveDepth = 12.0f;
+    float m_surfaceZone = 100.0f;
+    float m_deepZone = 600.0f;
+    float m_maxSurfaceBonus = 0.02f;
+    float m_maxDepthPenalty = 0.01f;
+
 
 private:
     void checkInput();
@@ -74,6 +93,10 @@ private:
     float m_debugAlpha = 0.5f; // Transparency value for debug rendering
     float m_gravity = -80.0f;
     int m_updateFrame = 0;
+
+    glm::vec2 m_mapMinBounds;
+    glm::vec2 m_mapMaxBounds;
+
 
     ConnectedTextureSet& m_connectedTextureSet;
     CellularAutomataManager m_cellularAutomataManager;
