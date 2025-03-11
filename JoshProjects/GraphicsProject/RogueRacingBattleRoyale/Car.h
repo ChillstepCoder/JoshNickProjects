@@ -162,9 +162,12 @@ public:
   SplineTrack* getTrack() const { return m_track; }
 
   AudioEngine* getAudioEngine() const { return m_audioEngine; }
-  AkGameObjectID getAudioId() const { return static_cast<AkGameObjectID>(m_bodyId.index1); }
+  //AkGameObjectID getAudioId() const { return static_cast<AkGameObjectID>(m_bodyId.index1); }
+  AkGameObjectID getAudioId() const { return m_audioId; }
+  void setAudioId(AkGameObjectID id) { m_audioId = id; }
 
   float getTotalRaceProgress() const;
+
 
   const JAGEngine::ColorRGBA8& getColor() const { return m_color; }
 
@@ -206,5 +209,6 @@ private:
   float calculateAverageWheelFriction() const;
 
   AudioEngine* m_audioEngine = nullptr;
+  AkGameObjectID m_audioId = AK_INVALID_GAME_OBJECT;
 
 };

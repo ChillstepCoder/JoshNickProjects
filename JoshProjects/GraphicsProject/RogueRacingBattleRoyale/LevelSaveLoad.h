@@ -34,7 +34,9 @@ public:
     glm::vec3 barrierSecondaryColor;
     float barrierPatternScale;
     AkUniqueID musicTrackId = 0;
+    int roadLOD;
   };
+
 
   static bool saveLevel(const SavedLevel& level);
   static bool loadLevel(const std::string& filename, SavedLevel& outLevel);

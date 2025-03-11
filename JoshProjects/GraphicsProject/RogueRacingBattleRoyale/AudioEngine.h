@@ -72,6 +72,7 @@ public:
   void initializeCarAudio(Car* car);
   void updateCarAudio(Car* car, const Vec2& listenerPos);
   void removeCarAudio(Car* car);
+  void resetNextCarAudioId();
 
   // Volume controls
   void setMasterVolume(float volume);
@@ -110,4 +111,6 @@ private:
   float m_masterVolume;
   float m_effectsVolume;
   float m_musicVolume;
+  AkGameObjectID m_nextCarAudioId = 1;
+
 };

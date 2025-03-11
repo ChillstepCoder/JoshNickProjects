@@ -93,6 +93,12 @@ public:
   virtual int getNextScreenIndex() const override;
   virtual int getPreviousScreenIndex() const override;
 
+  void setEditorMode(bool mode) { m_editorMode = mode; }
+  static void SetNextEditorMode(bool editorMode);
+  static bool GetNextEditorMode();
+
+  void loadRandomLevel();
+
 private:
   // Rendering components
   JAGEngine::SpriteBatch m_spriteBatch;
@@ -189,6 +195,10 @@ private:
   std::string m_loadedFilename;
   int m_totalLaps = 3;
   int m_currentMusicTrackId = 0;
+  bool m_editorMode = true;
+  static bool s_nextEditorMode;
+  int m_currentRaceLevel = 1;
+  std::vector<int> m_lastFinishingOrder;
 
   // AI Drivers
   std::vector<std::unique_ptr<AIDriver>> m_aiDrivers;
@@ -255,6 +265,7 @@ private:
   void handleCarSelection();
   void drawCarPropertiesUI();
   void applySyncedProperties(const Car::CarProperties& props);
+  void spawnRaceCars(int numCars, const std::vector<int>& finishingOrder = std::vector<int>());
 
   // AI Drivers
   void updateAIDrivers();
@@ -288,18 +299,25 @@ private:
   void handleObjectPlacement(const glm::vec2& worldPos);
 
   // Test mode
+  bool m_showRaceStartUI = false;
+  bool m_raceStarted = false;
+
   void initTestMode();
   void updateTestMode();
+  void updateRaceMode();
   void cleanupTestMode();
   void drawHUD();
   void drawTestMode();
   void drawTestModeUI();
+  void drawEditorGUI();
+  void drawRaceStartUI();
   void drawRaceResultsUI();
   void updateCarTrackingInfo();
   void updateTestCamera();
   void drawCarTrackingDebug();
   CarTrackingInfo calculateCarTrackingInfo(const Car* car) const;
   glm::vec2 calculateLookAheadPoint(const CarTrackingInfo& carInfo) const;
+  void restartRace();
 
   // Performance debug
   bool m_showPerformanceWindow = false;

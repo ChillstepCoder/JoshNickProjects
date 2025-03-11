@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>  
 #include <glm/gtc/type_ptr.hpp>
+#include "LevelEditorScreen.h"
 
 
 float b2Vec2Length(const b2Vec2& vec) {
@@ -187,12 +188,15 @@ void GameplayScreen::drawImGui() {
   ImGui::Begin("Main Menu (Game)", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
   if (ImGui::Button("Level Editor", ImVec2(230, 40))) {
+    LevelEditorScreen::SetNextEditorMode(true);
     m_currentState = JAGEngine::ScreenState::CHANGE_NEXT;
   }
 
   if (ImGui::Button("Race", ImVec2(230, 40))) {
     std::cout << "Race clicked\n";
-    m_showMainMenu = false;
+    // For Race mode, set editor mode to false so that editor GUI is hidden.
+    LevelEditorScreen::SetNextEditorMode(false);
+    m_currentState = JAGEngine::ScreenState::CHANGE_NEXT;
   }
 
   if (ImGui::Button("Options", ImVec2(230, 40))) {

@@ -65,6 +65,7 @@ bool LevelSaveLoad::saveLevel(const SavedLevel& level) {
   file.write(reinterpret_cast<const char*>(&level.barrierSecondaryColor), sizeof(glm::vec3));
   file.write(reinterpret_cast<const char*>(&level.barrierPatternScale), sizeof(float));
   file.write(reinterpret_cast<const char*>(&level.musicTrackId), sizeof(AkUniqueID));
+  file.write(reinterpret_cast<const char*>(&level.roadLOD), sizeof(int));
 
   file.close();
   return true;
@@ -186,6 +187,7 @@ bool LevelSaveLoad::loadLevel(const std::string& filename, SavedLevel& outLevel)
   file.read(reinterpret_cast<char*>(&outLevel.barrierSecondaryColor), sizeof(glm::vec3));
   file.read(reinterpret_cast<char*>(&outLevel.barrierPatternScale), sizeof(float));
   file.read(reinterpret_cast<char*>(&outLevel.musicTrackId), sizeof(AkUniqueID));
+  file.read(reinterpret_cast<char*>(&outLevel.roadLOD), sizeof(int));
 
   return true;
 }

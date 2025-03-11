@@ -36,6 +36,8 @@
 #include "SplineTrack.h"
 #include "App.h"
 
+bool LevelEditorScreen::s_nextEditorMode = true;
+
 template<typename T>
 T getMin(T a, T b) {
   return (a < b) ? a : b;
@@ -93,58 +95,116 @@ void LevelEditorScreen::onEntry() {
   int screenWidth = game->getWindow().getScreenWidth();
   int screenHeight = game->getWindow().getScreenHeight();
 
-  // Initialize Shaders
+  // Set mode at the very beginning.
+  m_editorMode = GetNextEditorMode();
+
+  // Initialize texture shader.
   m_textureProgram.compileShaders("Shaders/textureShading.vert", "Shaders/textureShading.frag");
   m_textureProgram.addAttribute("vertexPosition");
   m_textureProgram.addAttribute("vertexColor");
   m_textureProgram.addAttribute("vertexUV");
   m_textureProgram.linkShaders();
 
-  // Initialize cameras
+  // Initialize cameras.
   m_camera.init(screenWidth, screenHeight);
   m_camera.setScale(1.0f);
   m_camera.setPosition(glm::vec2(0.0f));
-
-  // HUD
   m_hudCamera.init(screenWidth, screenHeight);
   m_hudCamera.setPosition(glm::vec2(screenWidth / 2.0f, screenHeight / 2.0f));
   m_hudCamera.setScale(1.0f);
 
-  // Initialize sprite batches
+  // Initialize sprite batches.
   m_spriteBatch.init();
   m_hudSpriteBatch.init();
 
-  // Initialize track and renderer components
-  m_track = std::make_unique<SplineTrack>();
-  m_track->createDefaultTrack();
-
+  // Initialize the level renderer.
   m_levelRenderer = std::make_unique<LevelRenderer>();
   m_levelRenderer->init();
   m_levelRenderer->setShowStartPositions(m_showStartPositions);
 
-  m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
-  m_objectManager->createDefaultTemplates();
+  if (m_editorMode) {
+    // --- Editor Mode ---
+    // Create a new track for editing.
+    m_track = std::make_unique<SplineTrack>();
+    m_track->createDefaultTrack();
+    // Create the ObjectManager without a physics system.
+    m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
+    m_objectManager->createDefaultTemplates();
+  }
+  else {
+    // --- Race Mode ---
+    // Initialize the physics system first.
+    m_physicsSystem = std::make_unique<PhysicsSystem>();
+    m_physicsSystem->init(0.0f, 0.0f);
 
+    // Load a random level (this will set up m_track and load objects).
+    loadRandomLevel();
+
+    // At this point, loadLevelFromFile() (called inside loadRandomLevel())
+    // has created an ObjectManager using a nullptr physics pointer.
+    // We now "upgrade" it by copying its data into a new ObjectManager.
+    {
+      std::unique_ptr<ObjectManager> oldManager = std::move(m_objectManager);
+      m_objectManager = std::make_unique<ObjectManager>(m_track.get(), m_physicsSystem.get());
+      // Copy over the templates.
+      for (const auto& tmpl : oldManager->getObjectTemplates()) {
+        m_objectManager->addTemplate(tmpl->clone());
+      }
+      // Re-add the placed objects by matching display names.
+      const auto& templates = oldManager->getObjectTemplates();
+      for (const auto& obj : oldManager->getPlacedObjects()) {
+        size_t templateIndex = 0;
+        for (size_t i = 0; i < templates.size(); i++) {
+          if (templates[i]->getDisplayName() == obj->getDisplayName()) {
+            templateIndex = i;
+            break;
+          }
+        }
+        m_objectManager->addObject(templateIndex, obj->getPosition());
+      }
+    }
+    // (Optional) Reinitialize default templates if you need additional ones.
+    // m_objectManager->createDefaultTemplates();
+
+    // Spawn 10 race cars.
+    spawnRaceCars(10);
+
+    // Load the car texture and assign it to the level renderer.
+    m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
+    m_levelRenderer->setCarTexture(m_carTexture);
+
+    m_levelRenderer->setCars(m_testCars);
+
+    // Create barrier collisions so cars don't pass through them.
+    m_levelRenderer->createBarrierCollisions(m_track.get(), m_physicsSystem->getWorld());
+
+    // Set flags to enter test (race) mode.
+    m_testMode = true;
+    m_showRaceStartUI = true;
+    m_raceStarted = false;
+    m_enableAI = false;
+  }
+
+  // Update road mesh (this will rebuild the mesh using the track and objects).
+  m_levelRenderer->setRoadLOD(m_roadLOD);
   m_levelRenderer->updateRoadMesh(m_track.get());
 
-  // Initialize text rendering
+  // Initialize text rendering (for countdown and HUD).
   try {
-    // Initialize shaders first
     m_textRenderingProgram.compileShaders("Shaders/textRendering.vert", "Shaders/textRendering.frag");
     m_textRenderingProgram.addAttribute("vertexPosition");
     m_textRenderingProgram.addAttribute("vertexColor");
     m_textRenderingProgram.addAttribute("vertexUV");
     m_textRenderingProgram.linkShaders();
 
-    // Create and initialize font first
+    // Create and initialize the countdown font.
     m_countdownFont = std::make_unique<JAGEngine::SpriteFont>();
     m_countdownFont->init("Fonts/titilium_bold.ttf", 72);
-
     if (!m_countdownFont->isValid()) {
       throw std::runtime_error("Failed to initialize countdown font");
     }
 
-    // Initialize countdown and race timer
+    // Initialize countdown and race timer.
     if (!m_raceCountdown) {
       m_raceCountdown = std::make_unique<RaceCountdown>();
       m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
@@ -153,9 +213,8 @@ void LevelEditorScreen::onEntry() {
       m_raceTimer = std::make_unique<RaceTimer>();
     }
 
-    // Now it's safe to copy the font to the countdown
+    // Create a separate font instance for the countdown.
     if (m_raceCountdown) {
-      // Create a new SpriteFont instance for RaceCountdown
       auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
       countdownFont->init("Fonts/titilium_bold.ttf", 72);
       m_raceCountdown->setFont(std::move(countdownFont));
@@ -170,8 +229,7 @@ void LevelEditorScreen::onEntry() {
       m_enableAI = true;
       m_inputEnabled = true;
       m_raceTimer->start();
-
-      // Play selected music track
+      m_raceStarted = true;
       std::cout << "Countdown complete, attempting to play music ID: " << m_currentMusicTrackId << std::endl;
       if (m_currentMusicTrackId != 0) {
         m_game->getGameAs<App>()->getAudioEngine().playMusicTrack(m_currentMusicTrackId);
@@ -180,15 +238,16 @@ void LevelEditorScreen::onEntry() {
         std::cout << "No music track selected" << std::endl;
       }
       });
-
   }
   catch (const std::exception& e) {
     std::cerr << "Error in LevelEditorScreen::onEntry: " << e.what() << std::endl;
-    // Handle initialization failure
+    // Handle initialization failure as needed.
   }
 
   std::cout << "LevelEditorScreen::onEntry() complete\n";
 }
+
+
 
 void LevelEditorScreen::onExit() {
   std::cout << "LevelEditorScreen::onExit() start\n";
@@ -213,26 +272,64 @@ void LevelEditorScreen::onExit() {
 }
 
 void LevelEditorScreen::update() {
-
+  // Update the no-start-line message timer
   if (m_showNoStartLineMessage) {
-    m_messageTimer -= 1.0f / 60.0f; // Assuming 60 FPS
-    if (m_messageTimer <= 0) {
+    m_messageTimer -= 1.0f / 60.0f; // (You might later want to use a real deltaTime)
+    if (m_messageTimer <= 0)
       m_showNoStartLineMessage = false;
+  }
+
+  // Separate the behavior between editor mode and race mode.
+  if (m_editorMode) {
+    if (m_testMode) {
+      updateTestMode();
+    }
+    else {
+      handleInput();
+    }
+  }
+  else {
+    updateRaceMode();
+    handleInput();
+  }
+}
+
+void LevelEditorScreen::loadRandomLevel() {
+  // Get all saved levels.
+  std::vector<LevelSaveLoad::LevelMetadata> levels = LevelSaveLoad::getLevelList();
+
+  // Filter levels based on the current race level difficulty.
+  std::vector<LevelSaveLoad::LevelMetadata> filteredLevels;
+  for (const auto& levelMeta : levels) {
+    if (levelMeta.difficulty == m_currentRaceLevel) {
+      filteredLevels.push_back(levelMeta);
     }
   }
 
-  if (m_testMode) {
-    updateTestMode();
+  if (!filteredLevels.empty()) {
+    int randomIndex = rand() % static_cast<int>(filteredLevels.size());
+    std::string filename = filteredLevels[randomIndex].filename;
+    loadLevelFromFile(filename);
+    std::cout << "Random level loaded for race mode: " << filename
+      << " (Difficulty: " << m_currentRaceLevel << ")\n";
   }
   else {
-    handleInput();
+    // No levels with the current difficulty – fallback to a default track.
+    initDefaultTrack();
+    std::cout << "No saved levels found for difficulty " << m_currentRaceLevel
+      << "; default track loaded for race mode.\n";
   }
-
-  //if (m_raceTimer && !m_isLevelUpPaused) {
-  //  m_raceTimer->update(1.0f / 60.0f);
-  //}
 }
 
+
+
+void LevelEditorScreen::SetNextEditorMode(bool editorMode) {
+  s_nextEditorMode = editorMode;
+}
+
+bool LevelEditorScreen::GetNextEditorMode() {
+  return s_nextEditorMode;
+}
 
 void LevelEditorScreen::drawImGui() {
   // Main menu window
@@ -352,8 +449,9 @@ void LevelEditorScreen::draw() {
 
   // Draw ImGui windows last when not in test mode.
   if (!m_testMode) {
-    drawImGui();
-    drawDebugWindow();
+    if (m_editorMode) {
+      drawEditorGUI();
+    }
   }
 }
 
@@ -887,6 +985,7 @@ void LevelEditorScreen::saveLevelToFile() {
   level.barrierSecondaryColor = m_barrierSecondaryColor;
   level.barrierPatternScale = m_barrierPatternScale;
   level.musicTrackId = m_currentMusicTrackId;
+  level.roadLOD = m_roadLOD;
 
   if (LevelSaveLoad::saveLevel(level)) {
     m_loadedFilename = LevelSaveLoad::constructFilename(m_levelDifficulty, m_levelNameBuffer);
@@ -896,6 +995,7 @@ void LevelEditorScreen::saveLevelToFile() {
     std::cout << "Failed to save level\n";
   }
 }
+
 
 void LevelEditorScreen::loadLevelFromFile(const std::string& filename) {
   LevelSaveLoad::SavedLevel loadedLevel;
@@ -925,7 +1025,8 @@ void LevelEditorScreen::loadLevelFromFile(const std::string& filename) {
     m_barrierSecondaryColor = loadedLevel.barrierSecondaryColor;
     m_barrierPatternScale = loadedLevel.barrierPatternScale;
     m_currentMusicTrackId = loadedLevel.musicTrackId;
-
+    m_roadLOD = loadedLevel.roadLOD;
+    std::cout << "Loaded road LOD: " << m_roadLOD << "\n";
     // Update difficulty
     m_levelDifficulty = loadedLevel.difficulty;
 
@@ -938,6 +1039,7 @@ void LevelEditorScreen::loadLevelFromFile(const std::string& filename) {
     std::cout << "Failed to load level\n";
   }
 }
+
 
 glm::vec2 LevelEditorScreen::screenToWorld(const glm::vec2& screenCoords) {
   JAGEngine::IMainGame* game = static_cast<JAGEngine::IMainGame*>(m_game);
@@ -1048,96 +1150,97 @@ void LevelEditorScreen::handleInput() {
       // -----------------------------
       // Free manipulation mode
       // -----------------------------
-
-      // Update node hover states if not dragging an object
-      if (!m_isDraggingObject) {
-        for (auto& node : m_track->getNodes()) {
-          node.setHovered(false);
-        }
-
-        float baseRadius = 20.0f;
-        float scaledRadius = baseRadius / m_camera.getScale();
-        TrackNode* hoveredNode = m_track->getNodeAtPosition(worldPos, scaledRadius);
-        if (hoveredNode) {
-          hoveredNode->setHovered(true);
-        }
-
-        // Handle node selection and dragging
-        if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
-          if (!m_isDragging && hoveredNode && !m_isDraggingObject) {
-            // Select new node
-            if (m_selectedNode && m_selectedNode != hoveredNode) {
-              m_selectedNode->setSelected(false);
-            }
-            m_selectedNode = hoveredNode;
-            m_selectedNode->setSelected(true);
-            m_isDragging = true;
+      if (m_editorMode) {
+        // Update node hover states if not dragging an object
+        if (!m_isDraggingObject) {
+          for (auto& node : m_track->getNodes()) {
+            node.setHovered(false);
           }
 
-          if (m_isDragging && m_selectedNode) {
-            // Move selected node
-            m_selectedNode->setPosition(worldPos);
-            updateRoadMesh();
+          float baseRadius = 20.0f;
+          float scaledRadius = baseRadius / m_camera.getScale();
+          TrackNode* hoveredNode = m_track->getNodeAtPosition(worldPos, scaledRadius);
+          if (hoveredNode) {
+            hoveredNode->setHovered(true);
+          }
+
+          // Handle node selection and dragging
+          if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+            if (!m_isDragging && hoveredNode && !m_isDraggingObject) {
+              // Select new node
+              if (m_selectedNode && m_selectedNode != hoveredNode) {
+                m_selectedNode->setSelected(false);
+              }
+              m_selectedNode = hoveredNode;
+              m_selectedNode->setSelected(true);
+              m_isDragging = true;
+            }
+
+            if (m_isDragging && m_selectedNode) {
+              // Move selected node
+              m_selectedNode->setPosition(worldPos);
+              updateRoadMesh();
+            }
+          }
+          else {
+            // Handle node drag release
+            if (m_isDragging) {
+              validatePlacedObjects();
+            }
+            m_isDragging = false;
+          }
+        }
+
+        // Handle object manipulation
+        if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
+          if (!m_isDraggingObject && !m_isDragging) {
+            // Try to select an object if not already dragging anything
+            PlaceableObject* clickedObject = m_objectManager->getObjectAtPosition(worldPos);
+            if (clickedObject) {
+              // Clear any selected node when starting object drag
+              if (m_selectedNode) {
+                m_selectedNode->setSelected(false);
+                m_selectedNode = nullptr;
+              }
+
+              // Select the object
+              if (m_selectedObject) m_selectedObject->setSelected(false);
+              m_selectedObject = clickedObject;
+              m_selectedObject->setSelected(true);
+              m_isDraggingObject = true;
+              m_lastDragPos = worldPos;
+            }
+            else {
+              if (m_selectedObject) {
+                m_selectedObject->setSelected(false);
+                m_selectedObject = nullptr;
+              }
+            }
+          }
+          else if (m_isDraggingObject && m_selectedObject) {
+            // Continue dragging selected object
+            glm::vec2 dragDelta = worldPos - m_lastDragPos;
+            glm::vec2 newPos = m_selectedObject->getPosition() + dragDelta;
+
+            // Update object position and show preview
+            m_selectedObject->setPosition(newPos);
+            m_lastDragPos = worldPos;
+
+            bool validPlacement = m_objectManager->isValidPlacement(m_selectedObject, newPos);
+            m_levelRenderer->setObjectPlacementPreview(true, m_selectedObject, newPos);
           }
         }
         else {
-          // Handle node drag release
-          if (m_isDragging) {
-            validatePlacedObjects();
-          }
-          m_isDragging = false;
-        }
-      }
-
-      // Handle object manipulation
-      if (inputManager.isKeyDown(SDL_BUTTON_LEFT)) {
-        if (!m_isDraggingObject && !m_isDragging) {
-          // Try to select an object if not already dragging anything
-          PlaceableObject* clickedObject = m_objectManager->getObjectAtPosition(worldPos);
-          if (clickedObject) {
-            // Clear any selected node when starting object drag
-            if (m_selectedNode) {
-              m_selectedNode->setSelected(false);
-              m_selectedNode = nullptr;
-            }
-
-            // Select the object
-            if (m_selectedObject) m_selectedObject->setSelected(false);
-            m_selectedObject = clickedObject;
-            m_selectedObject->setSelected(true);
-            m_isDraggingObject = true;
-            m_lastDragPos = worldPos;
-          }
-          else {
-            if (m_selectedObject) {
-              m_selectedObject->setSelected(false);
+          // Handle object drag release
+          if (m_isDraggingObject && m_selectedObject) {
+            glm::vec2 finalPos = m_selectedObject->getPosition();
+            if (!m_objectManager->isValidPlacement(m_selectedObject, finalPos)) {
+              m_objectManager->removeSelectedObject();
               m_selectedObject = nullptr;
             }
+            m_isDraggingObject = false;
+            m_levelRenderer->setObjectPlacementPreview(false, nullptr, glm::vec2(0.0f));
           }
-        }
-        else if (m_isDraggingObject && m_selectedObject) {
-          // Continue dragging selected object
-          glm::vec2 dragDelta = worldPos - m_lastDragPos;
-          glm::vec2 newPos = m_selectedObject->getPosition() + dragDelta;
-
-          // Update object position and show preview
-          m_selectedObject->setPosition(newPos);
-          m_lastDragPos = worldPos;
-
-          bool validPlacement = m_objectManager->isValidPlacement(m_selectedObject, newPos);
-          m_levelRenderer->setObjectPlacementPreview(true, m_selectedObject, newPos);
-        }
-      }
-      else {
-        // Handle object drag release
-        if (m_isDraggingObject && m_selectedObject) {
-          glm::vec2 finalPos = m_selectedObject->getPosition();
-          if (!m_objectManager->isValidPlacement(m_selectedObject, finalPos)) {
-            m_objectManager->removeSelectedObject();
-            m_selectedObject = nullptr;
-          }
-          m_isDraggingObject = false;
-          m_levelRenderer->setObjectPlacementPreview(false, nullptr, glm::vec2(0.0f));
         }
       }
     }
@@ -1180,6 +1283,7 @@ void LevelEditorScreen::updateRoadMesh() {
   std::cout << "Updating road meshes...\n";
   if (m_levelRenderer) {
     m_track->invalidateCache();
+    m_levelRenderer->setRoadLOD(m_roadLOD);
     m_levelRenderer->updateRoadMesh(m_track.get());
   }
 }
@@ -1754,6 +1858,10 @@ void LevelEditorScreen::drawTestMode() {
     drawCarTrackingDebug();
   }
 
+  if (!m_editorMode && m_showRaceStartUI) {
+    drawRaceStartUI();
+  }
+
   drawHUD();
   drawPerformanceWindow();
 }
@@ -2139,6 +2247,90 @@ void LevelEditorScreen::drawCarPropertiesUI() {
   ImGui::End();
 }
 
+void LevelEditorScreen::spawnRaceCars(int numCars, const std::vector<int>& finishingOrder) {
+  // Get start positions from the track.
+  auto startPositions = m_track->calculateStartPositions();
+  int totalPositions = static_cast<int>(startPositions.size());
+  // Clear previous car-related containers.
+  m_testCars.clear();
+  m_finishedCars.clear();
+  m_aiDrivers.clear();
+  m_carTrackingInfo.clear();
+
+  // Generate car colors, etc. (your existing code)
+  std::vector<JAGEngine::ColorRGBA8> carColors(numCars);
+  for (int i = 0; i < numCars; i++) {
+    float hue = float(i) / float(numCars);
+    float saturation = 0.8f;
+    float value = 1.0f;
+    float c = value * saturation;
+    float x = c * (1 - fabs(fmod(hue * 6, 2) - 1));
+    float m = value - c;
+    float r, g, b;
+    if (hue < 1.0f / 6.0f) { r = c; g = x; b = 0; }
+    else if (hue < 2.0f / 6.0f) { r = x; g = c; b = 0; }
+    else if (hue < 3.0f / 6.0f) { r = 0; g = c; b = x; }
+    else if (hue < 4.0f / 6.0f) { r = 0; g = x; b = c; }
+    else if (hue < 5.0f / 6.0f) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    carColors[i] = JAGEngine::ColorRGBA8(
+      uint8_t((r + m) * 255),
+      uint8_t((g + m) * 255),
+      uint8_t((b + m) * 255),
+      255
+    );
+  }
+
+  // Spawn each car.
+  for (int i = 0; i < numCars; i++) {
+    int posIndex = (i < static_cast<int>(finishingOrder.size()))
+      ? finishingOrder[i] % totalPositions
+      : i % totalPositions;
+
+    auto posData = startPositions[posIndex]; // Contains position and angle.
+
+    // Create a new physics body.
+    b2BodyId carBody = m_physicsSystem->createDynamicBody(posData.position.x, posData.position.y);
+    uint16_t carCategory = CATEGORY_CAR;
+    uint16_t carMask = MASK_CAR;
+    m_physicsSystem->createPillShape(carBody, 15.0f, 15.0f, carCategory, carMask, CollisionType::DEFAULT);
+    b2Body_SetLinearDamping(carBody, 0.8f);
+    b2Body_SetAngularDamping(carBody, 3.0f);
+    b2MassData massData;
+    massData.mass = 15.0f;
+    massData.center = b2Vec2_zero;
+    massData.rotationalInertia = 2.5f;
+    b2Body_SetMassData(carBody, massData);
+
+    // Create the Car object.
+    auto car = std::make_unique<Car>(carBody);
+    car->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+    m_game->getGameAs<App>()->getAudioEngine().initializeCarAudio(car.get());
+
+    Car::CarProperties props;
+    props.totalXP = 0;
+    props.racePosition = i + 1;
+    car->setProperties(props);
+    car->setObjectManager(m_objectManager.get());
+    car->setTrack(m_track.get());
+    car->resetPosition({ posData.position.x, posData.position.y }, posData.angle);
+    car->setColor(carColors[i]);
+
+    // The player's car is always at index 0; others are AI.
+    if (i > 0) {
+      auto aiDriver = std::make_unique<AIDriver>(car.get());
+      aiDriver->setConfig(m_aiConfig);
+      aiDriver->setObjectManager(m_objectManager.get());
+      m_aiDrivers.push_back(std::move(aiDriver));
+    }
+
+    m_testCars.push_back(std::move(car));
+    m_carTrackingInfo.push_back({ glm::vec2(0.0f), 0.0f, i + 1, (i == 0) });
+  }
+
+}
+
+
 void LevelEditorScreen::applySyncedProperties(const Car::CarProperties& props) {
   // Only apply to AI cars (skip player car)
   for (size_t i = 1; i < m_testCars.size(); i++) {
@@ -2198,54 +2390,61 @@ void LevelEditorScreen::drawAIDebugUI() {
 }
 
 void LevelEditorScreen::drawTestModeUI() {
+  // Only proceed if we have test cars.
   if (!m_testMode || m_testCars.empty())
     return;
 
-  // Test Mode Window
-  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
-  ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
+  if (m_editorMode) {
+    // Editor Test Mode: draw the full UI including Test Mode window,
+    // car controls, debug, audio control, etc.
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Test Mode", nullptr, ImGuiWindowFlags_NoCollapse);
 
-  // Performance debug toggle
-  ImGui::Checkbox("Show Performance Debug", &m_showPerformanceWindow);
+    // Performance debug toggle
+    ImGui::Checkbox("Show Performance Debug", &m_showPerformanceWindow);
 
-  if (m_readyToStart && !m_raceCountdown->isCountingDown() && !m_raceCountdown->hasFinished()) {
-    ImGui::SliderInt("Number of Laps", &m_totalLaps, 1, 10);
-    ImGui::Separator();
-    if (ImGui::Button("Begin Race", ImVec2(180, 30))) {
-      m_raceCountdown->startCountdown();
+    if (m_readyToStart && !m_raceCountdown->isCountingDown() && !m_raceCountdown->hasFinished()) {
+      ImGui::SliderInt("Number of Laps", &m_totalLaps, 1, 10);
+      ImGui::Separator();
+      if (ImGui::Button("Begin Race", ImVec2(180, 30))) {
+        m_raceCountdown->startCountdown();
+      }
     }
+
+    if (ImGui::Button("Return to Editor", ImVec2(180, 30))) {
+      cleanupTestMode();
+    }
+
+    // Debug visualization toggles
+    ImGui::Separator();
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Debug Visualization");
+    ImGui::Checkbox("Show Collision Shapes", &m_showDebugDraw);
+    ImGui::Checkbox("Show Track Points", &m_showTrackingPoints);
+
+    // Camera controls
+    ImGui::Separator();
+    ImGui::SliderFloat("Look Ahead Distance", &m_lookAheadDistance, 50.0f, 300.0f);
+    ImGui::SliderFloat("Min Screen Edge Distance", &m_minCarScreenDistance, 50.0f, 200.0f);
+    ImGui::Text("Use Q/E to zoom");
+
+    ImGui::End();
+
+    // Draw additional UI windows (car controls, AI settings, audio, etc.)
+    drawCarPropertiesUI();
+    drawAIDebugUI();
+    DrawAudioControlWindow(m_game->getGameAs<App>()->getAudioEngine());
+  }
+  else {
+    // Race Mode: in race mode, we DO NOT want the full Test Mode UI.
+    // Only draw the Level Up window if it should be shown.
   }
 
-  if (ImGui::Button("Return to Editor", ImVec2(180, 30))) {
-    cleanupTestMode();
-  }
-
-  // Debug visualization toggles
-  ImGui::Separator();
-  ImGui::TextColored(ImVec4(1, 1, 0, 1), "Debug Visualization");
-  ImGui::Checkbox("Show Collision Shapes", &m_showDebugDraw);
-  ImGui::Checkbox("Show Track Points", &m_showTrackingPoints);
-
-  // Camera controls
-  ImGui::Separator();
-  ImGui::SliderFloat("Look Ahead Distance", &m_lookAheadDistance, 50.0f, 300.0f);
-  ImGui::SliderFloat("Min Screen Edge Distance", &m_minCarScreenDistance, 50.0f, 200.0f);
-  ImGui::Text("Use Q/E to zoom");
-
-  ImGui::End();
-
-  // Car controls window and AI settings (drawn from separate functions)
-  drawCarPropertiesUI();
-  drawAIDebugUI();
-
-  // Draw the Audio Control Window in test mode as well
-  DrawAudioControlWindow(m_game->getGameAs<App>()->getAudioEngine());
-
-  // Level Up Window (only visible when m_showLevelUpUI is true)
+  // In both modes, if a level–up is pending, always draw the Level Up window.
   if (m_showLevelUpUI) {
     ImGui::SetNextWindowPos(
-      ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f),
+      ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f,
+        ImGui::GetIO().DisplaySize.y * 0.5f),
       ImGuiCond_Always,
       ImVec2(0.5f, 0.5f)
     );
@@ -2288,6 +2487,7 @@ void LevelEditorScreen::drawTestModeUI() {
           case StatType::DamageResistance:  currentLevel = props.statLevels.damageResistance; break;
           case StatType::XPGain:            currentLevel = props.statLevels.xpGain; break;
           case StatType::Braking:           currentLevel = props.statLevels.braking; break;
+          default: break;
           }
           buttonText = upgrade.name + " " + std::to_string(currentLevel) + " -> " +
             std::to_string(currentLevel + 1);
@@ -2322,6 +2522,28 @@ void LevelEditorScreen::drawTestModeUI() {
     ImGui::End();
   }
 }
+
+
+void LevelEditorScreen::drawEditorGUI() {
+  drawImGui();
+  drawDebugWindow();
+}
+
+void LevelEditorScreen::drawRaceStartUI() {
+  ImGui::SetNextWindowPos(ImVec2((ImGui::GetIO().DisplaySize.x - 200) * 0.5f,
+    (ImGui::GetIO().DisplaySize.y - 100) * 0.5f), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_Always);
+  ImGui::Begin("Race Start", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+  if (ImGui::Button("Begin Race", ImVec2(180, 40))) {
+    if (m_raceCountdown) {
+      m_raceCountdown->startCountdown();
+    }
+    m_showRaceStartUI = false;
+  }
+  ImGui::End();
+}
+
 
 void LevelEditorScreen::drawRaceResultsUI() {
   if (!m_raceFinished)
@@ -2421,16 +2643,90 @@ void LevelEditorScreen::drawRaceResultsUI() {
   }
 
   ImGui::Spacing();
-  if (ImGui::Button("Return to Editor", ImVec2(150, 40))) {
-    m_raceFinished = false;
-    m_finishedCars.clear();
-    cleanupTestMode();
-    ImGui::CloseCurrentPopup();
+  if (m_editorMode) {
+    if (ImGui::Button("Return to Editor", ImVec2(150, 40))) {
+      m_raceFinished = false;
+      m_finishedCars.clear();
+      cleanupTestMode();
+      ImGui::CloseCurrentPopup();
+    }
+  }
+  else {
+    if (ImGui::Button("Next Race", ImVec2(150, 40))) {
+      m_raceFinished = false;
+      m_finishedCars.clear();
+      restartRace();
+      ImGui::CloseCurrentPopup();
+    }
   }
 
   ImGui::End();
 }
 
+void LevelEditorScreen::restartRace() {
+  // Increment race level
+  m_currentRaceLevel = std::min<int>(m_currentRaceLevel + 1, 10);
+
+  // Save the finishing order from the previous race.
+  m_lastFinishingOrder.clear();
+  std::vector<std::pair<int, int>> order;
+  for (int i = 0; i < static_cast<int>(m_testCars.size()); i++) {
+    int pos = m_testCars[i]->getProperties().racePosition; // lower is better
+    order.push_back({ pos, i });
+  }
+  // Sort in ascending order so that the best finishing car comes first.
+  std::sort(order.begin(), order.end(), [](const auto& a, const auto& b) {
+    return a.first < b.first;
+    });
+  // Save the indices. These indices represent the starting positions the cars originally had.
+  for (auto& p : order) {
+    m_lastFinishingOrder.push_back(p.second);
+  }
+
+  // Clean up the current race/test mode state.
+  cleanupTestMode();
+
+  // Reinitialize the physics system.
+  m_physicsSystem = std::make_unique<PhysicsSystem>();
+  m_physicsSystem->init(0.0f, 0.0f);
+
+  // Load a new random level.
+  loadRandomLevel();
+
+  // Upgrade the ObjectManager as before.
+  {
+    std::unique_ptr<ObjectManager> oldManager = std::move(m_objectManager);
+    m_objectManager = std::make_unique<ObjectManager>(m_track.get(), m_physicsSystem.get());
+    // Transfer templates and placed objects.
+    for (const auto& tmpl : oldManager->getObjectTemplates()) {
+      m_objectManager->addTemplate(tmpl->clone());
+    }
+    const auto& templates = oldManager->getObjectTemplates();
+    for (const auto& obj : oldManager->getPlacedObjects()) {
+      size_t templateIndex = 0;
+      for (size_t i = 0; i < templates.size(); i++) {
+        if (templates[i]->getDisplayName() == obj->getDisplayName()) {
+          templateIndex = i;
+          break;
+        }
+      }
+      m_objectManager->addObject(templateIndex, obj->getPosition());
+    }
+  }
+
+  // Now spawn the race cars using the finishing order from the previous race.
+  spawnRaceCars(10, m_lastFinishingOrder);
+
+  // (Then set up renderer, collisions, flags, etc., as before.)
+  m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
+  m_levelRenderer->setCarTexture(m_carTexture);
+  m_levelRenderer->setCars(m_testCars);
+  m_levelRenderer->createBarrierCollisions(m_track.get(), m_physicsSystem->getWorld());
+  m_testMode = true;
+  m_showRaceStartUI = true;
+  m_levelRenderer->setRoadLOD(m_roadLOD);
+  m_levelRenderer->updateRoadMesh(m_track.get());
+}
 
 
 
@@ -2449,6 +2745,8 @@ void LevelEditorScreen::cleanupTestMode() {
       audioEngine.removeCarAudio(car.get());
     }
   }
+
+  m_game->getGameAs<App>()->getAudioEngine().resetNextCarAudioId();
 
   // Cleanup barrier collisions if both levelRenderer and physicsSystem exist.
   if (m_levelRenderer && m_physicsSystem) {
@@ -2773,6 +3071,150 @@ void LevelEditorScreen::updateTestMode() {
   }
 }
 
+void LevelEditorScreen::updateRaceMode() {
+  if (!m_testMode || m_testCars.empty())
+    return;
+
+  TIME_SCOPE("Total Frame");
+  const float fixedTimeStep = 1.0f / 60.0f;
+
+  // Always update countdown.
+  if (m_raceCountdown) {
+    m_raceCountdown->update(fixedTimeStep);
+  }
+
+  // Update race timer if running.
+  if (m_raceTimer && m_raceTimer->isRunning() && !m_isLevelUpPaused) {
+    m_raceTimer->update(fixedTimeStep);
+  }
+
+  // Determine the finished offset.
+  int finishedOffset = m_finishedCount;
+  // If the player's car is finished, include it in the offset.
+  if (!m_testCars.empty() && m_testCars[0]->getProperties().finished) {
+    finishedOffset++;
+  }
+
+  // Only update game logic if not paused for level-up and race is not finished.
+  if (!m_raceFinished && !m_isLevelUpPaused) {
+    if (m_raceTimer && m_raceTimer->isRunning()) {
+      // Update race positions and start line crossings for every car.
+      if (m_testCars.size() > 0) {
+        m_raceManager.updateRacePositions(m_testCars, finishedOffset);
+      }
+      for (auto& car : m_testCars) {
+        car->updateStartLineCrossing(m_track.get());
+      }
+    }
+
+    // Check each car for race completion.
+    for (auto& car : m_testCars) {
+      auto& props = car->getProperties();
+      // When a car reaches one lap above the target (e.g. 4/3 laps for a 3–lap race),
+      // mark it as finished and record its finish time.
+      if (!props.finished && props.currentLap >= m_totalLaps + 1) {
+        props.finished = true;
+        if (m_raceTimer) {
+          props.finishTime = m_raceTimer->getTime();
+        }
+      }
+    }
+
+    // If the player's car (index 0) has finished, end the race.
+    if (m_testCars[0]->getProperties().finished) {
+      m_raceFinished = true;
+      if (m_raceTimer && m_raceTimer->isRunning()) {
+        m_raceTimer->stop();
+      }
+    }
+    else {
+      // Process level-up logic.
+      for (size_t i = 0; i < m_testCars.size(); i++) {
+        auto& props = m_testCars[i]->getProperties();
+        if (props.totalXP >= props.xpLevelUpAmount) {
+          handleCarLevelUp(i);
+          // For the player's car, pause game logic if a level-up occurs.
+          if (i == 0)
+            return;
+        }
+      }
+    }
+
+    // Safety check.
+    if (!m_physicsSystem || !m_testCars[0]) {
+      cleanupTestMode();
+      return;
+    }
+
+    // Handle car selection.
+    handleCarSelection();
+
+    // Update physics.
+    {
+      TIME_SCOPE("Physics Update");
+      if (!m_testCars.empty() && m_inputEnabled) {
+        InputState input;
+        JAGEngine::InputManager& inputManager = m_game->getInputManager();
+        input.accelerating = inputManager.isKeyDown(SDL_BUTTON_LEFT) || inputManager.isKeyDown(SDLK_w);
+        input.braking = inputManager.isKeyDown(SDL_BUTTON_RIGHT) || inputManager.isKeyDown(SDLK_s);
+        input.turningLeft = inputManager.isKeyDown(SDLK_LEFT) || inputManager.isKeyDown(SDLK_a);
+        input.turningRight = inputManager.isKeyDown(SDLK_RIGHT) || inputManager.isKeyDown(SDLK_d);
+        m_testCars[0]->update(input);
+      }
+      if (m_physicsSystem) {
+        m_physicsSystem->update(fixedTimeStep);
+      }
+    }
+
+    // Update AI.
+    {
+      TIME_SCOPE("AI Update");
+      if (m_enableAI) {
+        updateAIDrivers();
+      }
+    }
+
+    // Update objects.
+    if (m_objectManager) {
+      m_objectManager->update();
+    }
+
+    // Update audio.
+    if (!m_testCars.empty() && m_testCars[0]) {
+      auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
+      auto playerInfo = m_testCars[0]->getDebugInfo();
+      Vec2 listenerPos(playerInfo.position.x, playerInfo.position.y);
+      audioEngine.setDefaultListener(listenerPos, playerInfo.angle);
+      for (const auto& car : m_testCars) {
+        audioEngine.updateCarAudio(car.get(), listenerPos);
+      }
+    }
+  }  // End of game logic update.
+
+  // Remove finished AI cars (player is always index 0).
+  for (auto it = m_testCars.begin() + 1; it != m_testCars.end(); ) {
+    if ((*it)->getProperties().finished) {
+      m_finishedCount++;
+      m_finishedCars.push_back(std::move(*it));
+      it = m_testCars.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
+
+  // Finally, if the player's car is finished, ensure the race is marked finished.
+  if (!m_testCars.empty() && m_testCars[0]->getProperties().finished) {
+    m_raceFinished = true;
+  }
+
+  // Always update camera.
+  {
+    TIME_SCOPE("Camera Update");
+    updateCarTrackingInfo();
+    updateTestCamera();
+  }
+}
 
 
 void LevelEditorScreen::updateTestCamera() {
