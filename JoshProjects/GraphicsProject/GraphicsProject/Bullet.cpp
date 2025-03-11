@@ -18,7 +18,7 @@ void Bullet::draw(JAGEngine::SpriteBatch& spriteBatch) {
 
   JAGEngine::GLTexture texture = JAGEngine::ResourceManager::getTexture("Textures/jimmyjump_pack/PNG/Lightning1.png");
    
-  JAGEngine::Color color;
+  JAGEngine::ColorRGBA8 color;
 
   color.r = 255;
   color.g = 255;

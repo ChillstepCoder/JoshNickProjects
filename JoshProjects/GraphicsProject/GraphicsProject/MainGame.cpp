@@ -199,7 +199,7 @@ MainGame::MainGame() :
     JAGEngine::GLTexture texture = JAGEngine::ResourceManager::getTexture("Textures/jimmyjump_pack/PNG/HappyCloud.png");
     //std::cout << "Texture ID: " << texture.id << std::endl;
 
-    JAGEngine::Color color;
+    JAGEngine::ColorRGBA8 color;
     color.r = 255;
     color.g = 255;
     color.b = 255;
