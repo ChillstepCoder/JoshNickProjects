@@ -7,20 +7,19 @@
 #include "Block.h"
 #include "unordered_map"
 #include "FractalNoise.h"
+#include "GameConstants.h"
 
+class LightingSystem;
 class DebugDraw;
 class BlockManager;
 class CellularAutomataManager;
 class GameplayScreen;
 enum class AdjacencyRule;
 
-const int CHUNK_WIDTH = 64;
-const int WATER_LEVELS = 100;
-
 class Chunk {
 public:
     void init();
-    void buildChunkMesh(BlockManager& blockManager);
+    void buildChunkMesh(BlockManager& blockManager, const LightingSystem& lightingSystem);
     AdjacencyRule getAdjacencyRuleForBlock(BlockID blockID);
     void render();
     void save();
@@ -66,10 +65,6 @@ private:
     
 };
 
-const int WORLD_WIDTH_CHUNKS = 32;
-const int WORLD_HEIGHT_CHUNKS = 32;
-const int loadRadius = 5;
-
 class BlockManager {
 public:
     BlockManager(BlockMeshManager& meshManager, b2WorldId worldId, CellularAutomataManager& cellularAutomataManager)
@@ -101,7 +96,7 @@ public:
 
     void initializeChunks(glm::vec2 playerPosition);
 
-    void update(BlockManager& blockManager);
+    void update(BlockManager& blockManager, const LightingSystem& lightingSystem);
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
@@ -117,7 +112,7 @@ public:
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
-    void loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager);
+    void loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem);
 
     bool isChunkLoaded(int x, int y);
 
@@ -125,7 +120,7 @@ public:
 
     void regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty);
 
-    void loadChunk(int x, int y, BlockManager& blockManager);
+    void loadChunk(int x, int y, BlockManager& blockManager, const LightingSystem& lightingSystem);
 
     bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
 
@@ -173,6 +168,17 @@ public:
         );
     }
 
+    void setLightingSystem(LightingSystem* lightingSystem) {
+        m_lightingSystem = lightingSystem;
+
+        //if (!m_activeChunks.empty()) {
+        //    m_lightingSystem->setBlockGrid(m_activeChunks[0]->blocks);
+        //}
+    }
+
+    LightingSystem* getLightingSystem() {
+        return m_lightingSystem;
+    }
 private:
     std::vector<std::vector<Chunk>> m_chunks;
 
@@ -198,4 +204,5 @@ private:
     BlockMeshManager& m_MeshManager;
     b2WorldId m_world;
 
+    LightingSystem* m_lightingSystem = nullptr;
 };

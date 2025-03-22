@@ -12,7 +12,7 @@ void CellularAutomataManager::init() {
 
 }
 
-void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockManager) {
+void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockManager, const LightingSystem& lightingSystem) {
 
     //Calculate and apply flow for each block
     for (int i = chunk.waterBlocks.size() - 1; i >= 0; --i) {
@@ -117,7 +117,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
     if (chunk.m_isMeshDirty == true) {
         chunk.m_isMeshDirty = false;
-        chunk.buildChunkMesh(blockManager);
+        chunk.buildChunkMesh(blockManager, lightingSystem);
     }
 
 }

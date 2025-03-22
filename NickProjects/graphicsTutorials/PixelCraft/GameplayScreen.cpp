@@ -87,6 +87,13 @@ void GameplayScreen::onEntry() {
 
     setMapBoundaries(minBounds, maxBounds);
 
+    m_lightingSystem.init(WORLD_WIDTH_CHUNKS * CHUNK_WIDTH, WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH);
+
+    m_blockManager->setLightingSystem(&m_lightingSystem);
+
+    m_lightingSystem.setBlockManager(m_blockManager);
+
+
     // Init player
     Bengine::ColorRGBA8 textureColor;
     textureColor.r = 255;
@@ -144,12 +151,17 @@ void GameplayScreen::update() {
         }
         {
             PROFILE_SCOPE("Load nearby chunks");
-            m_blockManager->loadNearbyChunks(playerPos, *m_blockManager);
+            m_blockManager->loadNearbyChunks(playerPos, *m_blockManager, m_lightingSystem);
+        }
+        {
+            PROFILE_SCOPE("Update Lighting");
+            m_lightingSystem.updateLighting();
+
         }
         {
             PROFILE_SCOPE("BlockManager Update");
             if (m_updateFrame % 5 == 0)
-                m_blockManager->update(*m_blockManager);
+                m_blockManager->update(*m_blockManager, m_lightingSystem);
         }
 
 

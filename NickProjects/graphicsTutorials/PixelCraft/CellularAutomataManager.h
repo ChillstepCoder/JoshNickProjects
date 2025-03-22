@@ -12,7 +12,7 @@ public:
 
     void init();
 
-    void simulateWater(Chunk& chunk, BlockManager& blockManager);
+    void simulateWater(Chunk& chunk, BlockManager& blockManager, const LightingSystem& lightingSystem);
 
 private:
     // Returns true if our original block has no more water

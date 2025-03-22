@@ -1,5 +1,6 @@
 #include "Block.h"
 #include <Bengine/ResourceManager.h>
+#include "LightingSystem.h"
 #include <iostream>
 
 
@@ -47,9 +48,6 @@ void BlockDefRepository::initBlockDefs() {
 
     glm::vec4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
 
-    Bengine::ColorRGBA8 waterColor(255, 255, 255, 155);
-
-
     Bengine::TextureFilterMode filterMode = Bengine::TextureFilterMode::Nearest;
 
     m_blockDefs[(int)BlockID::AIR].init(uvRect, Bengine::ColorRGBA8(0,0,0,0), Bengine::GLTexture(), 0, false);
@@ -67,16 +65,15 @@ void BlockDefRepository::initBlockDefs() {
     m_blockDefs[(int)BlockID::ADAMANTITE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Adamantite.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Adamantite.png", filterMode).id, true);
     m_blockDefs[(int)BlockID::COSMILITE].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Cosmilite.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Cosmilite.png", filterMode).id, true);
     m_blockDefs[(int)BlockID::PRIMORDIAL].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/Primordial.png", filterMode), Bengine::ResourceManager::getTexture("Textures/Primordial.png", filterMode).id, true);
-    m_blockDefs[(int)BlockID::WATER].init(uvRect, waterColor, Bengine::ResourceManager::getTexture("Textures/waterBlock.png", filterMode), Bengine::ResourceManager::getTexture("Textures/waterBlock.png", filterMode).id, false);
+    m_blockDefs[(int)BlockID::WATER].init(uvRect, textureColor, Bengine::ResourceManager::getTexture("Textures/waterBlock.png", filterMode), Bengine::ResourceManager::getTexture("Textures/waterBlock.png", filterMode).id, false);
 
 
     assert(m_blockDefs[(int)BlockID::STONE].m_color == textureColor);
 
 }
 
-
-
-void BlockRenderer::renderBlock(Bengine::SpriteBatch& sb, const BlockDef& blockDef, glm::vec2 position) {
+/*
+void BlockRenderer::renderBlock(Bengine::SpriteBatch& sb, const BlockDef& blockDef, glm::vec2 position, const LightingSystem& lightingSystem) {
     glm::vec4 destRect;
 
     destRect.x = (position.x - 0.5f);
@@ -84,9 +81,14 @@ void BlockRenderer::renderBlock(Bengine::SpriteBatch& sb, const BlockDef& blockD
     destRect.z = 1.0f;
     destRect.w = 1.0f;
 
-    sb.draw(destRect, blockDef.m_uvRect, blockDef.m_textureID, 0.0f, blockDef.m_color, 0.0f);
-}
+    Bengine::ColorRGBA8 originalColor = blockDef.m_color;
 
+    // Apply lighting to the color based on position
+    Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(originalColor, position.x, position.y);
+
+    sb.draw(destRect, blockDef.m_uvRect, blockDef.m_textureID, 0.0f, lightedColor, 0.0f);
+}
+*/
 
 
 Block::Block() {

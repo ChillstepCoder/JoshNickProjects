@@ -154,6 +154,7 @@
     <ClCompile Include="ConnectedTextureSet.cpp" />
     <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="GameplayScreen.cpp" />
+    <ClCompile Include="LightingSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Player.cpp" />
@@ -169,7 +170,9 @@
     <ClInclude Include="ConnectedTextureSet.h" />
     <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="FractalNoise.h" />
+    <ClInclude Include="GameConstants.h" />
     <ClInclude Include="GameplayScreen.h" />
+    <ClInclude Include="LightingSystem.h" />
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Profiler.h" />

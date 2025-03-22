@@ -69,28 +69,50 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
     // Get the blocks in range around the player
     std::vector<BlockHandle> blocksInRange = blockManager->getBlocksInRange(playerPos, 2);
 
-    if (m_velocity.x > 0) {
+    // Update facing direction consistently
+    if (m_velocity.x > 0.01f) {  // Added small threshold to avoid flipping on tiny movements
         m_isGoingRight = true;
-    } else if (m_velocity.x < 0) {
+    }
+    else if (m_velocity.x < -0.01f) {
         m_isGoingRight = false;
     }
+    // Note: We don't change facing when velocity is near zero
 
+    // Handle jumping - only when grounded
     if (m_isGrounded && inputManager.isKeyPressed(SDLK_SPACE)) {
         m_velocity.y = m_jumpForce;
     }
 
-    // Gravity
+    // Apply gravity
     m_velocity.y += m_gravity;
 
+    // Handle horizontal movement with consistent acceleration
     const float ACCELERATION = 0.02f;
+    const float DECELERATION = 0.15f;  // More immediate deceleration for responsive controls
+
+    bool movingHorizontally = false;
+
     if (inputManager.isKeyDown(SDLK_a)) {
         m_velocity.x -= ACCELERATION;
+        movingHorizontally = true;
     }
-    else if (inputManager.isKeyDown(SDLK_d)) {
+
+    if (inputManager.isKeyDown(SDLK_d)) {
         m_velocity.x += ACCELERATION;
+        movingHorizontally = true;
     }
-    else {
-        m_velocity.x = (m_velocity.x / 1.2); // slowdown
+
+    // Apply deceleration only when not pressing movement keys
+    if (!movingHorizontally) {
+        if (abs(m_velocity.x) < DECELERATION) {
+            m_velocity.x = 0.0f; // Stop completely if velocity is very small
+        }
+        else if (m_velocity.x > 0) {
+            m_velocity.x -= DECELERATION;
+        }
+        else if (m_velocity.x < 0) {
+            m_velocity.x += DECELERATION;
+        }
     }
 
     movePlayer();
@@ -174,8 +196,17 @@ bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManag
     m_jumpForce = 0.45f;
     m_maxHorizontalSpeed = 0.4f;
     m_maxVerticalSpeed = 1.0f;
+
+    bool wasGrounded = m_isGrounded;
     m_isGrounded = false;
 
+    bool inWater = false;
+
+    std::sort(blocksInRange.begin(), blocksInRange.end(), [this](BlockHandle& a, BlockHandle& b) {
+        float distA = glm::distance(this->m_position, a.getWorldPosition());
+        float distB = glm::distance(this->m_position, b.getWorldPosition());
+        return distA < distB;
+        });
 
     for (int i = 0; i < blocksInRange.size(); i++) {
 
@@ -186,7 +217,6 @@ bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManag
 
         // Get center of the block
         glm::vec2 blockWorldPos = blockHandle.getWorldPosition();
-
         glm::vec2 blockDimensions(1.0f, 1.0f);
 
 
@@ -203,20 +233,17 @@ bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManag
 
         float PenetrationDepthX = (((blockDimensions.x / 2) + (m_dimensions.x / 2)) - (abs(blockWorldPos.x - m_position.x)));
 
-        if (PenetrationDepthY > 0.0f && PenetrationDepthX > 0.0f) {
+        const float COLLISION_THRESHOLD = 0.001f;
+        if (PenetrationDepthY > COLLISION_THRESHOLD && PenetrationDepthX > COLLISION_THRESHOLD) {
+            hadAnyCollision = true;
 
             if (blockHandle.block->getBlockID() == BlockID::WATER) { // touching water
-                m_gravity = WATER_GRAVITY;
-                m_jumpForce = WATER_JUMP_FORCE;
-                m_maxHorizontalSpeed = WATER_MAX_HORIZONTAL_SPEED;
-                m_maxVerticalSpeed = WATER_MAX_VERTICAL_SPEED;
-                m_isGrounded = true;
+                inWater = true;
                 continue;
             }
 
-
             if (PenetrationDepthY < PenetrationDepthX) { // collided with top or bottom of a block
-
+                
                 if (blockWorldPos.y < m_position.y) { // collided with the top of the block
                     m_position.y += PenetrationDepthY;
                     m_isGrounded = true;
@@ -248,6 +275,16 @@ bool Player::updateCollision(std::vector<BlockHandle>& blocksInRange, BlockManag
             }
         }
     }
+
+    if (inWater) {
+        m_gravity = WATER_GRAVITY;
+        m_jumpForce = WATER_JUMP_FORCE;
+        m_maxHorizontalSpeed = WATER_MAX_HORIZONTAL_SPEED;
+        m_maxVerticalSpeed = WATER_MAX_VERTICAL_SPEED;
+        m_isGrounded = true;  // Allow jumping while in water
+    }
+
+
     return hadAnyCollision;
 
 }

@@ -10,6 +10,7 @@
 #include "FastNoise2/FastNoise/FastNoise.h"
 #include "Profiler.h"
 #include "Timer.h"
+#include "LightingSystem.h"
 
 void Chunk::init() {
     m_spriteBatch.init();
@@ -17,7 +18,7 @@ void Chunk::init() {
         << ", " << m_worldPosition.y << std::endl;
     m_isLoaded = true;
 }
-void Chunk::buildChunkMesh(BlockManager& blockManager) {
+void Chunk::buildChunkMesh(BlockManager& blockManager, const LightingSystem& lightingSystem) {
     m_spriteBatch.begin();
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         float worldX = CHUNK_WIDTH + x;
@@ -45,7 +46,10 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                     glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
                     GLuint textureID = BlockDefRepository::getTextureID(id);
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
-                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+
+                    Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
+
+                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, lightedColor, 0.0f);
                 }
                 else {
                     // 5 6 7
@@ -127,7 +131,11 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                     Bengine::setTextureFilterMode(textureID, Bengine::TextureFilterMode::Linear);
 
                     Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
-                    m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, color, 0.0f);
+
+                    Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
+
+
+                    m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, lightedColor, 0.0f);
                 }
 
                 //BlockRenderer::renderBlock(m_spriteBatch, repository.getDef(id),glm::vec2(x,y));
@@ -274,10 +282,10 @@ void BlockManager::initializeChunks(glm::vec2 playerPosition) {
     }
 }
 
-void BlockManager::update(BlockManager& blockManager) {
+void BlockManager::update(BlockManager& blockManager, const LightingSystem& lightingSystem) {
 
     for (int i = 0; i < m_activeChunks.size(); i++) { // Simulate water for all active chunks
-        m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager);
+        m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager, lightingSystem);
     }
 
 }
@@ -453,7 +461,7 @@ inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Blo
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
 }
 
-void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager) {
+void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem) {
 
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
@@ -468,7 +476,7 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& bl
                 if (!isChunkFarAway(playerPos, chunkPos)) {
                     {
                         PROFILE_SCOPE("LoadChunk");
-                        loadChunk(x, y, blockManager);
+                        loadChunk(x, y, blockManager, lightingSystem);
                     }
                 }
             }
@@ -793,7 +801,7 @@ void BlockManager::regenerateWorld(float caveScale, float baseCaveThreshold, flo
 
 
 
-void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager) {
+void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager, const LightingSystem& lightingSystem) {
     // Check if coordinates are in valid range
     if (chunkX < 0 || chunkX >= m_chunks.size() ||
         chunkY < 0 || chunkY >= m_chunks[0].size()) {
@@ -824,7 +832,7 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager)
 
     {
         PROFILE_SCOPE("buildChunkMesh");
-        chunk.buildChunkMesh(blockManager);
+        chunk.buildChunkMesh(blockManager, lightingSystem);
     }
 
     m_activeChunks.push_back(&chunk);
