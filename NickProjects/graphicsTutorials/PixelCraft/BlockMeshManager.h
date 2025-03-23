@@ -96,7 +96,7 @@ public:
 
     void initializeChunks(glm::vec2 playerPosition);
 
-    void update(BlockManager& blockManager, const LightingSystem& lightingSystem);
+    void update(BlockManager& blockManager, LightingSystem& lightingSystem);
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
@@ -104,11 +104,11 @@ public:
 
     glm::ivec2 getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset);
 
-    void destroyBlock(const BlockHandle& blockHandle);
-    void breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
+    void destroyBlock(const BlockHandle& blockHandle, LightingSystem& lightingSystem);
+    void breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem);
 
-    void placeBlock(const BlockHandle& blockHandle, const glm::vec2& position);
-    void placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
+    void placeBlock(const BlockHandle& blockHandle, const glm::vec2& position, LightingSystem& lightingSystem);
+    void placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem);
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
@@ -130,9 +130,9 @@ public:
 
     bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
 
-    void unloadFarChunks(const glm::vec2& playerPos);
+    void unloadFarChunks(const glm::vec2& playerPos, LightingSystem& lightingSystem);
 
-    void unloadChunk(int x, int y);
+    void unloadChunk(int x, int y, LightingSystem& lightingSystem);
 
     int getConnectedTextureIndex(const Chunk& chunk, int x, int y, BlockID blockID);
 

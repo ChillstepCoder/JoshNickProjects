@@ -59,7 +59,7 @@ void Player::draw(Bengine::SpriteBatch& spriteBatch) {
     spriteBatch.draw(destRect, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), textureId, 0.0f, m_color, 0.0f);
 }
 
-void Player::update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled) {
+void Player::update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled, LightingSystem& lightingSystem) {
 
     if (!(playerPos.x < WORLD_WIDTH_CHUNKS * CHUNK_WIDTH && 0 < playerPos.x && playerPos.y < WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH && 0 < playerPos.y)) {
         respawnPlayer();
@@ -127,7 +127,7 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         glm::vec2 mouseWorldPos = m_camera->convertScreenToWorld(mouseCoords);
 
         // Check if the mouse position is over a block and break it
-        m_blockManager->breakBlockAtPosition(mouseWorldPos, playerPos);
+        m_blockManager->breakBlockAtPosition(mouseWorldPos, playerPos, lightingSystem);
     }
 
     if (inputManager.isKeyDown(SDL_BUTTON_RIGHT)) {
@@ -138,7 +138,7 @@ void Player::update(Bengine::InputManager& inputManager, const glm::vec2& player
         glm::vec2 mouseWorldPos = m_camera->convertScreenToWorld(mouseCoords);
 
         // Check if the mouse position is over a block and break it
-        m_blockManager->placeBlockAtPosition(mouseWorldPos, playerPos);
+        m_blockManager->placeBlockAtPosition(mouseWorldPos, playerPos, lightingSystem);
     }
 
     if (inputManager.isKeyPressed(SDLK_ESCAPE)) {

@@ -24,20 +24,14 @@ public:
     void setBlockManager(BlockManager* blockManager);
 
     void updateLighting();
+
+    void updateLightingOnBlockBreak(int x, int y);
+    void updateLightingOnBlockAdd(int x, int y, BlockID previousBlockID);
+
     glm::vec3 getLightValue(int x, int y) const;
     Bengine::ColorRGBA8 applyLighting(const Bengine::ColorRGBA8& blockColor, int x, int y) const;
 
 private:
-    int width;
-    int height;
-    const Block(*blockGrid)[CHUNK_WIDTH];
-    BlockManager* m_blockManager;
-
-    // Single light map instead of separate RGB
-    std::vector<std::vector<unsigned char>> lightMap;
-
-    // Queue for light propagation
-    std::vector<LightNode> lightPropagationQueue;
 
     // Lighting computation methods
     void calculateLighting();
@@ -49,4 +43,12 @@ private:
     BlockID getBlockIDAt(int x, int y) const;
     bool isBlockSolid(int x, int y) const;
     bool isBlockTransparent(int x, int y) const;
+
+
+    int width;
+    int height;
+    std::vector<std::vector<unsigned char>> lightMap; // Single light map instead of separate RGB
+    std::vector<LightNode> lightPropagationQueue; // Queue for light propagation
+    const Block(*blockGrid)[CHUNK_WIDTH];
+    BlockManager* m_blockManager;
 };

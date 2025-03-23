@@ -24,7 +24,7 @@ public:
 
     void draw(Bengine::SpriteBatch& spriteBatch);
 
-    void update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled);
+    void update(Bengine::InputManager& inputManager, const glm::vec2& playerPos, BlockManager* blockManager, bool debugRenderEnabled, LightingSystem& lightingSystem);
 
     void movePlayer();
 

@@ -35,6 +35,130 @@ void LightingSystem::updateLighting() {
     calculateLighting();
 }
 
+void LightingSystem::updateLightingOnBlockBreak(int x, int y) {
+    // Skip if position is invalid
+    if (!isValidPosition(x, y)) {
+        return;
+    }
+
+    // Find the highest light level among neighboring blocks
+    unsigned char highestNeighborLight = 0;
+
+    // Check all adjacent blocks (including diagonals)
+    const int dx[] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+    const int dy[] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+    for (int i = 0; i < 8; i++) {
+        int nx = x + dx[i];
+        int ny = y + dy[i];
+
+        if (isValidPosition(nx, ny)) {
+            highestNeighborLight = std::max(highestNeighborLight, lightMap[nx][ny]);
+        }
+    }
+
+    // If there's light nearby, propagate it to this block
+    if (highestNeighborLight > 0) {
+        // New block is air, so set it to the highest neighbor light level minus 1
+        // Unless it would be 0, in which case we leave it at 0
+        unsigned char newLightLevel = (highestNeighborLight > 1) ? (highestNeighborLight - 1) : 0;
+
+        // If we're making this an air block, set it to max light
+        if (getBlockIDAt(x, y) == BlockID::AIR) {
+            newLightLevel = 10;
+        }
+
+        // Set the light level for the block
+        lightMap[x][y] = newLightLevel;
+
+        // Only propagate if we have light
+        if (newLightLevel > 0) {
+            // Clear propagation queue
+            lightPropagationQueue.clear();
+
+            // Add to propagation queue for further propagation
+            enqueueLightNode(x, y, newLightLevel);
+
+            // Propagate light from this block
+            propagateLight();
+        }
+    }
+    else if (getBlockIDAt(x, y) == BlockID::AIR) {
+        // If breaking a block makes this position air, set it to max light
+        lightMap[x][y] = 10;
+
+        // Clear propagation queue
+        lightPropagationQueue.clear();
+
+        // Add to propagation queue for further propagation
+        enqueueLightNode(x, y, 10);
+
+        // Propagate light from this block
+        propagateLight();
+    }
+}
+
+void LightingSystem::updateLightingOnBlockAdd(int x, int y, BlockID previousBlockID) {
+    // Skip if position is invalid
+    if (!isValidPosition(x, y)) {
+        return;
+    }
+
+    // Get the light level that was at this position before we added the block
+    unsigned char prevLightLevel = lightMap[x][y];
+
+    // Block was added, so it will block light. Set its light level to 0.
+    // (unless it's a light source block, which you could handle here)
+    lightMap[x][y] = 0;
+
+    // If the previous block had light, we need to update neighboring blocks
+    if (prevLightLevel > 0) {
+        // Find blocks that need updating (lights that were influenced by this block)
+        std::vector<LightNode> blocksToUpdate;
+
+        // Check all adjacent blocks (including diagonals)
+        const int dx[] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+        const int dy[] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+        for (int i = 0; i < 8; i++) {
+            int nx = x + dx[i];
+            int ny = y + dy[i];
+
+            if (isValidPosition(nx, ny)) {
+                // If the neighboring block's light level is greater than 0 and less than maximum
+                if (lightMap[nx][ny] > 0 && lightMap[nx][ny] < 10) {
+                    // Add to list of blocks that need updating
+                    LightNode node;
+                    node.x = nx;
+                    node.y = ny;
+                    node.lightLevel = lightMap[nx][ny];
+                    blocksToUpdate.push_back(node);
+
+                    // Set the light to 0 temporarily so it can be recalculated
+                    lightMap[nx][ny] = 0;
+                }
+            }
+        }
+
+        // If we have blocks to update, redo the light propagation for those blocks
+        if (!blocksToUpdate.empty()) {
+            // Recalculate light from all max light sources (air blocks)
+            for (int nx = std::max(0, x - 10); nx < std::min(width, x + 10); nx++) {
+                for (int ny = std::max(0, y - 10); ny < std::min(height, y + 10); ny++) {
+                    if (getBlockIDAt(nx, ny) == BlockID::AIR) {
+                        lightMap[nx][ny] = 10;  // Max light level for air
+                        enqueueLightNode(nx, ny, 10);
+                    }
+                }
+            }
+
+            // Propagate light from these sources
+            propagateLight();
+        }
+    }
+}
+
+
 glm::vec3 LightingSystem::getLightValue(int x, int y) const {
     if (!isValidPosition(x, y)) {
         return glm::vec3(0.0f);

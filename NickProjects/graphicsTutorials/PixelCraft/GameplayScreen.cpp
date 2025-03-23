@@ -78,7 +78,7 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(10.0f); // 20.0f
+    m_camera.setScale(20.0f); // 20.0f
     m_player = Player(&m_camera, m_blockManager);
 
     // Set map Bounds
@@ -87,11 +87,18 @@ void GameplayScreen::onEntry() {
 
     setMapBoundaries(minBounds, maxBounds);
 
+    m_blockManager->loadNearbyChunks(playerPos, *m_blockManager, m_lightingSystem);
+
     m_lightingSystem.init(WORLD_WIDTH_CHUNKS * CHUNK_WIDTH, WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH);
 
     m_blockManager->setLightingSystem(&m_lightingSystem);
 
     m_lightingSystem.setBlockManager(m_blockManager);
+
+    {
+        PROFILE_SCOPE("Initial Lighting Update");
+        m_lightingSystem.updateLighting();
+    }
 
 
     // Init player
@@ -143,21 +150,17 @@ void GameplayScreen::update() {
         m_player.setPosition(playerPos);
 
         // Now update player with the clamped position
-        m_player.update(m_game->inputManager, playerPos, m_blockManager, m_debugRenderEnabled);
+        m_player.update(m_game->inputManager, playerPos, m_blockManager, m_debugRenderEnabled, m_lightingSystem);
 
         {
             PROFILE_SCOPE("Unload far chunks");
-            m_blockManager->unloadFarChunks(playerPos);
+            m_blockManager->unloadFarChunks(playerPos, m_lightingSystem);
         }
         {
             PROFILE_SCOPE("Load nearby chunks");
             m_blockManager->loadNearbyChunks(playerPos, *m_blockManager, m_lightingSystem);
         }
-        {
-            PROFILE_SCOPE("Update Lighting");
-            m_lightingSystem.updateLighting();
 
-        }
         {
             PROFILE_SCOPE("BlockManager Update");
             if (m_updateFrame % 5 == 0)

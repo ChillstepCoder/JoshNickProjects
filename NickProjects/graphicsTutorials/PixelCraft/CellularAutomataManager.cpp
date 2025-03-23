@@ -12,7 +12,7 @@ void CellularAutomataManager::init() {
 
 }
 
-void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockManager, const LightingSystem& lightingSystem) {
+void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockManager, LightingSystem& lightingSystem) {
 
     //Calculate and apply flow for each block
     for (int i = chunk.waterBlocks.size() - 1; i >= 0; --i) {
@@ -73,7 +73,7 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
         if (downBlock.block->getBlockID() == BlockID::AIR) { // If downBlock is air, transfers all water to downBlock
 
-            if (moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), waterBlock.block->getWaterAmount(), blockManager)) {
+            if (moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), waterBlock.block->getWaterAmount(), blockManager, lightingSystem)) {
                 continue;
             }
 
@@ -87,30 +87,30 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
                     waterBlock.block->setWaterAmount(waterBlock.block->getWaterAmount() - waterDifference);
                     chunk.m_isMeshDirty = true;
                 } else { // The waterBlock doesnt have enough to fill up downBlock
-                    if (moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount(), blockManager)) {
+                    if (moveWaterToBlock(waterBlock, downBlock, glm::vec2(downPosX, downPosY), downBlock.block->getWaterAmount() + waterBlock.block->getWaterAmount(), blockManager, lightingSystem)) {
                         continue;
                     }
                 }
             }
         }
 
-        if (moveWaterDiagonally(waterBlock, downRightBlock, glm::vec2(downRightPosX, downRightPosY), rightBlock, glm::vec2(rightPosX, rightPosY), blockManager)) {
+        if (moveWaterDiagonally(waterBlock, downRightBlock, glm::vec2(downRightPosX, downRightPosY), rightBlock, glm::vec2(rightPosX, rightPosY), blockManager, lightingSystem)) {
             chunk.m_isMeshDirty = true;
             continue;
         }
 
         if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock
-            blockManager.destroyBlock(waterBlock);
+            blockManager.destroyBlock(waterBlock, lightingSystem);
             continue;
         }
         
-        if (moveWaterDiagonally(waterBlock, downLeftBlock, glm::vec2(downLeftPosX, downLeftPosY), leftBlock, glm::vec2(leftPosX, leftPosY), blockManager)) {
+        if (moveWaterDiagonally(waterBlock, downLeftBlock, glm::vec2(downLeftPosX, downLeftPosY), leftBlock, glm::vec2(leftPosX, leftPosY), blockManager, lightingSystem)) {
             chunk.m_isMeshDirty = true;
             continue;
         }
 
         if (waterBlock.block->getWaterAmount() == 0) { // Check if there is water still left in the waterBlock
-            blockManager.destroyBlock(waterBlock);
+            blockManager.destroyBlock(waterBlock, lightingSystem);
             continue;
         }
     }
@@ -122,16 +122,16 @@ void CellularAutomataManager::simulateWater(Chunk& chunk, BlockManager& blockMan
 
 }
 
-bool CellularAutomataManager::moveWaterToBlock(BlockHandle& sourceBlock, BlockHandle& targetBlock, glm::vec2 targetPos, int amountToPush, BlockManager& blockManager) {
+bool CellularAutomataManager::moveWaterToBlock(BlockHandle& sourceBlock, BlockHandle& targetBlock, glm::vec2 targetPos, int amountToPush, BlockManager& blockManager, LightingSystem& lightingSystem) {
     // This function will move amountToPush water from sourceBlock to targetBlock, and will destroy sourceBlock if it is empty at the end, and return true if sourceBlock is empty
 
     if (targetBlock.block->getBlockID() == BlockID::AIR) {
-        blockManager.placeBlock(targetBlock, glm::vec2(targetPos.x, targetPos.y));
+        blockManager.placeBlock(targetBlock, glm::vec2(targetPos.x, targetPos.y), lightingSystem);
     }
     targetBlock.block->setWaterAmount(amountToPush);
 
     if (amountToPush >= sourceBlock.block->getWaterAmount()) {
-        blockManager.destroyBlock(sourceBlock);
+        blockManager.destroyBlock(sourceBlock, lightingSystem);
         return true;
     } else {
         sourceBlock.block->setWaterAmount(sourceBlock.block->getWaterAmount() - amountToPush);
@@ -140,18 +140,18 @@ bool CellularAutomataManager::moveWaterToBlock(BlockHandle& sourceBlock, BlockHa
 
 }
 
-void CellularAutomataManager::splitWaterToEmpty(BlockHandle& sourceBlock, BlockHandle& targetBlock, glm::vec2 targetPos, BlockManager& blockManager) {
+void CellularAutomataManager::splitWaterToEmpty(BlockHandle& sourceBlock, BlockHandle& targetBlock, glm::vec2 targetPos, BlockManager& blockManager, LightingSystem& lightingSystem) {
 
     int avgAmt = (sourceBlock.block->getWaterAmount()) / 2;
 
     sourceBlock.block->setWaterAmount(avgAmt);
 
-    blockManager.placeBlock(targetBlock, glm::vec2(targetPos.x, targetPos.y));
+    blockManager.placeBlock(targetBlock, glm::vec2(targetPos.x, targetPos.y), lightingSystem);
     targetBlock.block->setWaterAmount(avgAmt);
 }
 
 
-bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, BlockHandle& diagonalBlock, glm::vec2 diagonalPos, BlockHandle& adjacentBlock, glm::vec2 adjacentPos, BlockManager& blockManager) {
+bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, BlockHandle& diagonalBlock, glm::vec2 diagonalPos, BlockHandle& adjacentBlock, glm::vec2 adjacentPos, BlockManager& blockManager, LightingSystem& lightingSystem) {
     bool isMeshDirty = false;
 
     // Should implement the common diagonal logic, and USE moveWaterToBlock to do the actual moving of water
@@ -165,7 +165,7 @@ bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, Bloc
 
         if (diagonalBlock.block->getBlockID() == BlockID::AIR) { // Check the diagonalBlock first to see if water is placeable
 
-            if (moveWaterToBlock(sourceBlock, diagonalBlock, glm::vec2(diagonalPos.x, diagonalPos.y), sourceBlock.block->getWaterAmount(), blockManager)) {
+            if (moveWaterToBlock(sourceBlock, diagonalBlock, glm::vec2(diagonalPos.x, diagonalPos.y), sourceBlock.block->getWaterAmount(), blockManager, lightingSystem)) {
                 isMeshDirty = true;
                 return isMeshDirty;
             }
@@ -185,23 +185,23 @@ bool CellularAutomataManager::moveWaterDiagonally(BlockHandle& sourceBlock, Bloc
 
                     sourceBlock.block->setWaterAmount(avgLeftOverWater);
 
-                    blockManager.placeBlock(adjacentBlock, glm::vec2(adjacentPos.x, adjacentPos.y));
+                    blockManager.placeBlock(adjacentBlock, glm::vec2(adjacentPos.x, adjacentPos.y), lightingSystem);
                     adjacentBlock.block->setWaterAmount(avgLeftOverWater);
                     isMeshDirty = true;
                     return isMeshDirty;
                 }
                 else { // The waterBlock doesnt have enough to fill up downRightBlock
-                    moveWaterToBlock(sourceBlock, diagonalBlock, glm::vec2(diagonalPos.x, diagonalPos.y), diagonalBlock.block->getWaterAmount() + sourceBlock.block->getWaterAmount(), blockManager);
+                    moveWaterToBlock(sourceBlock, diagonalBlock, glm::vec2(diagonalPos.x, diagonalPos.y), diagonalBlock.block->getWaterAmount() + sourceBlock.block->getWaterAmount(), blockManager, lightingSystem);
                     isMeshDirty = true;
                     return isMeshDirty;
                 }
             }
             else { // downRightBlock is full
-                splitWaterToEmpty(sourceBlock, adjacentBlock, glm::vec2(adjacentPos.x, adjacentPos.y), blockManager);
+                splitWaterToEmpty(sourceBlock, adjacentBlock, glm::vec2(adjacentPos.x, adjacentPos.y), blockManager, lightingSystem);
             }
         }
         else { // downRightBlock is a solid block
-            splitWaterToEmpty(sourceBlock, adjacentBlock, glm::vec2(adjacentPos.x, adjacentPos.y), blockManager);
+            splitWaterToEmpty(sourceBlock, adjacentBlock, glm::vec2(adjacentPos.x, adjacentPos.y), blockManager, lightingSystem);
         }
     }
     else if (adjacentBlock.block->getBlockID() == BlockID::WATER) {

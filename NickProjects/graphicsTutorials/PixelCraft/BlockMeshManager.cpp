@@ -282,7 +282,7 @@ void BlockManager::initializeChunks(glm::vec2 playerPosition) {
     }
 }
 
-void BlockManager::update(BlockManager& blockManager, const LightingSystem& lightingSystem) {
+void BlockManager::update(BlockManager& blockManager, LightingSystem& lightingSystem) {
 
     for (int i = 0; i < m_activeChunks.size(); i++) { // Simulate water for all active chunks
         m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager, lightingSystem);
@@ -336,7 +336,7 @@ glm::ivec2 BlockManager::getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 off
 }
 
 
-void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
+void BlockManager::destroyBlock(const BlockHandle& blockHandle, LightingSystem& lightingSystem) {
     // Check if the block exists
     if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
         // Destroy the block (remove physics body and reset visual state)
@@ -365,6 +365,9 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
         // Reset the broken block to Air
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();
 
+
+        lightingSystem.updateLightingOnBlockBreak((blockHandle.chunkCoords.x * CHUNK_WIDTH) + blockHandle.blockOffset.x, (blockHandle.chunkCoords.y * CHUNK_WIDTH) + blockHandle.blockOffset.y);
+
         // Mark the current chunk as dirty
         chunk.m_isMeshDirty = true;
 
@@ -387,7 +390,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     }
 }
 
-void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {
+void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem) {
     // Get the block at the given position
     float realpositionX = position.x + 0.5f;
     float realPositionY = position.y + 0.5f;
@@ -401,14 +404,17 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::ve
         // If the block is within the specified range (e.g., 8 blocks radius)
         if (distance <= 8.0f) {
             // "Break" the block - this can involve various actions, like setting it to empty, destroying it, etc.
-            destroyBlock(blockHandle);
+            destroyBlock(blockHandle, lightingSystem);
         }
     }
 }
 
-void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& position) {
+void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& position, LightingSystem& lightingSystem) {
     float realpositionX = position.x - 0.5f;
     float realPositionY = position.y - 0.5f;
+
+
+    BlockID previousBlockID = BlockID::AIR;
 
     Block waterBlock;
     waterBlock.init(m_world, BlockID::WATER, glm::vec2(realpositionX, realPositionY));
@@ -422,13 +428,15 @@ void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& p
         chunk.waterBlocks.push_back(glm::vec2(position.x, position.y)); // Add to the list of water blocks.
     }
 
+    lightingSystem.updateLightingOnBlockAdd(realpositionX, realPositionY, previousBlockID);
+
     //std::cout << "water placed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
 
 
     chunk.m_isMeshDirty = true;
 }
 
-void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {
+void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem) {
     // Get the block at the given position
     float realpositionX = position.x + 0.5f;
     float realPositionY = position.y + 0.5f;
@@ -443,7 +451,7 @@ void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::ve
         // If the block is within the specified range (e.g., 8 blocks radius)
         if (distance <= 8.0f) {
             // "Break" the block - this can involve various actions, like setting it to empty, destroying it, etc.
-            placeBlock(blockHandle, glm::vec2(realpositionX, realPositionY));
+            placeBlock(blockHandle, glm::vec2(realpositionX, realPositionY), lightingSystem);
         }
     }
 }
@@ -823,6 +831,7 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager,
         {
             PROFILE_SCOPE("generateChunk");
             generateChunk(chunkX, chunkY, chunk);
+
         }
         {
             PROFILE_SCOPE("saveChunkToFile");
@@ -936,7 +945,7 @@ bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& c
 
 }
 
-void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
+void BlockManager::unloadFarChunks(const glm::vec2& playerPos, LightingSystem& lightingSystem) {
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
     int playerChunkY = static_cast<int>(playerPos.y) / CHUNK_WIDTH;
@@ -947,14 +956,14 @@ void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
             if (isChunkLoaded(x, y)) {
                 glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
                 if (isChunkFarAway(playerPos, chunkPos)) {
-                    unloadChunk(x, y);
+                    unloadChunk(x, y, lightingSystem);
                 }
             }
         }
     }
 }
 
-void BlockManager::unloadChunk(int x, int y) {
+void BlockManager::unloadChunk(int x, int y, LightingSystem& lightingSystem) {
     assert(x >= 0 && y >= 0 && x < WORLD_WIDTH_CHUNKS && y < WORLD_HEIGHT_CHUNKS);
 
     Chunk& chunk = m_chunks[x][y];
@@ -970,7 +979,7 @@ void BlockManager::unloadChunk(int x, int y) {
             BlockHandle blockHandle = getBlockAtPosition(glm::vec2(realpositionX, realPositionY));
 
 
-            destroyBlock(blockHandle);
+            destroyBlock(blockHandle, lightingSystem);
         }
     }
 
