@@ -158,7 +158,19 @@ void GameplayScreen::update() {
         }
         {
             PROFILE_SCOPE("Load nearby chunks");
-            m_blockManager->loadNearbyChunks(playerPos, *m_blockManager, m_lightingSystem);
+            if (m_blockManager->loadNearbyChunks(playerPos, *m_blockManager, m_lightingSystem)) {
+                std::vector<Chunk*> newlyLoadedChunks = m_blockManager->getNewlyLoadedChunks();
+
+                // Update lighting for each newly loaded chunk
+                for (auto* chunk : newlyLoadedChunks) {
+                    // Calculate the world position of the chunk
+                    int chunkX = static_cast<int>(chunk->getWorldPosition().x) / CHUNK_WIDTH;
+                    int chunkY = static_cast<int>(chunk->getWorldPosition().y) / CHUNK_WIDTH;
+
+                    // Update lighting for this chunk and adjacent chunks
+                    m_lightingSystem.updateLightingForRegion(chunkX, chunkY, *m_blockManager);
+                }
+            }
         }
 
         {

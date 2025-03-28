@@ -112,7 +112,7 @@ public:
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
-    void loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem);
+    bool loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem);
 
     bool isChunkLoaded(int x, int y);
 
@@ -120,7 +120,7 @@ public:
 
     void regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty);
 
-    void loadChunk(int x, int y, BlockManager& blockManager, const LightingSystem& lightingSystem);
+    bool loadChunk(int x, int y, BlockManager& blockManager, const LightingSystem& lightingSystem);
 
     bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
 
@@ -179,8 +179,23 @@ public:
     LightingSystem* getLightingSystem() {
         return m_lightingSystem;
     }
+
+    void clearNewlyLoadedChunks() {
+        m_newlyLoadedChunks.clear();
+    }
+
+    void addNewlyLoadedChunk(Chunk* chunk) {
+        m_newlyLoadedChunks.push_back(chunk);
+    }
+
+    std::vector<Chunk*> getNewlyLoadedChunks() {
+        return m_newlyLoadedChunks;
+    }
+
+
 private:
     std::vector<std::vector<Chunk>> m_chunks;
+    std::vector<Chunk*> m_newlyLoadedChunks;
 
     float m_caveScale = 0.005419f;        // higher number = smaller cave
     float m_baseCaveThreshold = 0.65f; // Higher = less caves

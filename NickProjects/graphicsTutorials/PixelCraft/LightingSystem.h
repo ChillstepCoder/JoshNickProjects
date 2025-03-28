@@ -24,12 +24,14 @@ public:
     void setBlockManager(BlockManager* blockManager);
 
     void updateLighting();
+    void updateLightingForRegion(int chunkX, int chunkY, BlockManager& blockManager);
 
     void updateLightingOnBlockBreak(int x, int y);
     void updateLightingOnBlockAdd(int x, int y, BlockID previousBlockID);
 
     glm::vec3 getLightValue(int x, int y) const;
-    Bengine::ColorRGBA8 applyLighting(const Bengine::ColorRGBA8& blockColor, int x, int y) const;
+    glm::vec3 getInterpolatedLightValue(float x, float y) const;
+    Bengine::ColorRGBA8 applyLighting(const Bengine::ColorRGBA8& blockColor, float x, float y) const;
 
 private:
 

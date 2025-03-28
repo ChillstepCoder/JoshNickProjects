@@ -35,6 +35,94 @@ void LightingSystem::updateLighting() {
     calculateLighting();
 }
 
+void LightingSystem::updateLightingForRegion(int chunkX, int chunkY, BlockManager& blockManager) {
+    // Calculate the world coordinates of the chunk
+    int startX = chunkX * CHUNK_WIDTH;
+    int startY = chunkY * CHUNK_WIDTH;
+
+    // Define the range of chunks to update (current chunk and adjacent chunks)
+    int minChunkX = std::max(0, chunkX - 1);
+    int maxChunkX = std::min(static_cast<int>(WORLD_WIDTH_CHUNKS) - 1, chunkX + 1);
+    int minChunkY = std::max(0, chunkY - 1);
+    int maxChunkY = std::min(static_cast<int>(WORLD_HEIGHT_CHUNKS) - 1, chunkY + 1);
+
+    // Clear the propagation queue
+    lightPropagationQueue.clear();
+
+    // Clear lighting for the specified region (extended to adjacent chunks)
+    for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+        for (int cy = minChunkY; cy <= maxChunkY; cy++) {
+            int regionStartX = cx * CHUNK_WIDTH;
+            int regionStartY = cy * CHUNK_WIDTH;
+
+            for (int x = regionStartX; x < regionStartX + CHUNK_WIDTH; x++) {
+                for (int y = regionStartY; y < regionStartY + CHUNK_WIDTH; y++) {
+                    if (isValidPosition(x, y)) {
+                        lightMap[x][y] = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // FIRST PASS: Set all air blocks to maximum light level (10)
+    for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+        for (int cy = minChunkY; cy <= maxChunkY; cy++) {
+            int regionStartX = cx * CHUNK_WIDTH;
+            int regionStartY = cy * CHUNK_WIDTH;
+
+            for (int x = regionStartX; x < regionStartX + CHUNK_WIDTH; x++) {
+                for (int y = regionStartY; y < regionStartY + CHUNK_WIDTH; y++) {
+                    if (isValidPosition(x, y) && getBlockIDAt(x, y) == BlockID::AIR) {
+                        lightMap[x][y] = 10;
+                    }
+                }
+            }
+        }
+    }
+
+    // SECOND PASS: Find blocks adjacent to air blocks and add them to the propagation queue
+    for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+        for (int cy = minChunkY; cy <= maxChunkY; cy++) {
+            int regionStartX = cx * CHUNK_WIDTH;
+            int regionStartY = cy * CHUNK_WIDTH;
+
+            for (int x = regionStartX; x < regionStartX + CHUNK_WIDTH; x++) {
+                for (int y = regionStartY; y < regionStartY + CHUNK_WIDTH; y++) {
+                    if (isValidPosition(x, y) && getBlockIDAt(x, y) != BlockID::AIR) {
+                        bool adjacentToAir = false;
+
+                        // Check all adjacent blocks (including diagonals)
+                        const int dx[] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+                        const int dy[] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+                        for (int i = 0; i < 8; i++) {
+                            int nx = x + dx[i];
+                            int ny = y + dy[i];
+
+                            if (isValidPosition(nx, ny) && getBlockIDAt(nx, ny) == BlockID::AIR) {
+                                adjacentToAir = true;
+                                break;
+                            }
+                        }
+
+                        if (adjacentToAir) {
+                            // Set light level to 9 (one less than air blocks)
+                            lightMap[x][y] = 9;
+
+                            // Add to propagation queue for further propagation
+                            enqueueLightNode(x, y, 9);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // THIRD PASS: Propagate light from the queue
+    propagateLight();
+}
+
 void LightingSystem::updateLightingOnBlockBreak(int x, int y) {
     // Skip if position is invalid
     if (!isValidPosition(x, y)) {
@@ -169,19 +257,46 @@ glm::vec3 LightingSystem::getLightValue(int x, int y) const {
     return glm::vec3(lightValue, lightValue, lightValue);
 }
 
-Bengine::ColorRGBA8 LightingSystem::applyLighting(const Bengine::ColorRGBA8& blockColor, int x, int y) const {
-    if (!isValidPosition(x, y)) {
+glm::vec3 LightingSystem::getInterpolatedLightValue(float x, float y) const {
+    // Get the base block position
+    int baseX = static_cast<int>(x);
+    int baseY = static_cast<int>(y);
+
+    // Calculate fractional parts
+    float fracX = x - baseX;
+    float fracY = y - baseY;
+
+    // Sample light values from surrounding blocks
+    glm::vec3 lightValues[4] = {
+        getLightValue(baseX, baseY),
+        getLightValue(baseX + 1, baseY),
+        getLightValue(baseX, baseY + 1),
+        getLightValue(baseX + 1, baseY + 1)
+    };
+
+    // Bilinear interpolation
+    glm::vec3 interpolatedLight =
+        lightValues[0] * (1.0f - fracX) * (1.0f - fracY) +
+        lightValues[1] * fracX * (1.0f - fracY) +
+        lightValues[2] * (1.0f - fracX) * fracY +
+        lightValues[3] * fracX * fracY;
+
+    return interpolatedLight;
+}
+
+Bengine::ColorRGBA8 LightingSystem::applyLighting(const Bengine::ColorRGBA8& blockColor, float x, float y) const {
+    if (!isValidPosition(static_cast<int>(x), static_cast<int>(y))) {
         return blockColor;
     }
 
     // Apply lighting to the block color
     // Light level ranges from 0 to 10, where 10 is full brightness
-    float lightFactor = lightMap[x][y] / 10.0f;
+    glm::vec3 lightFactor = getInterpolatedLightValue(x, y);
 
     return Bengine::ColorRGBA8(
-        static_cast<GLubyte>(blockColor.r * lightFactor),
-        static_cast<GLubyte>(blockColor.g * lightFactor),
-        static_cast<GLubyte>(blockColor.b * lightFactor),
+        static_cast<GLubyte>(blockColor.r * lightFactor.x),
+        static_cast<GLubyte>(blockColor.g * lightFactor.y),
+        static_cast<GLubyte>(blockColor.b * lightFactor.z),
         blockColor.a
     );
 }

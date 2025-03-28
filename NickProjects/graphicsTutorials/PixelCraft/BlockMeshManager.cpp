@@ -32,6 +32,23 @@ void Chunk::buildChunkMesh(BlockManager& blockManager, const LightingSystem& lig
                 BlockDef blockDef = repository.getDef(id);
                 glm::vec2 blockPos = glm::vec2(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f);
 
+                std::array<Bengine::ColorRGBA8, 4> cornerColors;
+
+                // Calculate lighting for each corner with interpolation
+                cornerColors[0] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x, blockPos.y
+                );
+                cornerColors[1] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x + 1.0f, blockPos.y
+                );
+                cornerColors[2] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x, blockPos.y + 1.0f
+                );
+                cornerColors[3] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x + 1.0f, blockPos.y + 1.0f
+                );
+
+
                 if (id == BlockID::WATER) {
                     // Water rendering code (unchanged)
                     int waterAmt = block.getWaterAmount();
@@ -45,11 +62,22 @@ void Chunk::buildChunkMesh(BlockManager& blockManager, const LightingSystem& lig
 
                     glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
                     GLuint textureID = BlockDefRepository::getTextureID(id);
-                    Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
 
-                    Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
+                    m_spriteBatch.drawWithCornerColors(
+                        destRect,
+                        uvRect,
+                        textureID,
+                        0.0f,
+                        cornerColors[0],  // Bottom-left
+                        cornerColors[1],  // Bottom-right
+                        cornerColors[2],  // Top-left
+                        cornerColors[3]   // Top-right
+                    );
 
-                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, lightedColor, 0.0f);
+
+                    //Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
+                    //Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
+                    //m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, lightedColor, 0.0f);
                 }
                 else {
                     // 5 6 7
@@ -130,12 +158,21 @@ void Chunk::buildChunkMesh(BlockManager& blockManager, const LightingSystem& lig
 
                     Bengine::setTextureFilterMode(textureID, Bengine::TextureFilterMode::Linear);
 
-                    Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
+                    m_spriteBatch.drawWithCornerColors(
+                        destRect,
+                        uvRectFixed,
+                        textureID,
+                        0.0f,
+                        cornerColors[0],  // Bottom-left
+                        cornerColors[1],  // Bottom-right
+                        cornerColors[2],  // Top-left
+                        cornerColors[3]   // Top-right
+                    );
 
-                    Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
 
-
-                    m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, lightedColor, 0.0f);
+                    //Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
+                    //Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
+                    //m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, lightedColor, 0.0f);
                 }
 
                 //BlockRenderer::renderBlock(m_spriteBatch, repository.getDef(id),glm::vec2(x,y));
@@ -469,7 +506,10 @@ inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Blo
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
 }
 
-void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem) {
+bool BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem) {
+    clearNewlyLoadedChunks();
+
+    bool didLoad = false;
 
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
@@ -484,12 +524,19 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& bl
                 if (!isChunkFarAway(playerPos, chunkPos)) {
                     {
                         PROFILE_SCOPE("LoadChunk");
-                        loadChunk(x, y, blockManager, lightingSystem);
+                        if (loadChunk(x, y, blockManager, lightingSystem)) {
+                            Chunk* newChunk = &m_chunks[x][y];
+
+                            m_newlyLoadedChunks.push_back(newChunk);
+                            didLoad = true;
+
+                        }
                     }
                 }
             }
         }
     }
+    return didLoad;
 }
 
 bool BlockManager::isChunkLoaded(int x, int y) {
@@ -809,11 +856,11 @@ void BlockManager::regenerateWorld(float caveScale, float baseCaveThreshold, flo
 
 
 
-void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager, const LightingSystem& lightingSystem) {
+bool BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager, const LightingSystem& lightingSystem) {
     // Check if coordinates are in valid range
     if (chunkX < 0 || chunkX >= m_chunks.size() ||
         chunkY < 0 || chunkY >= m_chunks[0].size()) {
-        return; // Out of bounds, don't load
+        return false; // Out of bounds, don't load
     }
 
     Chunk& chunk = m_chunks[chunkX][chunkY];
@@ -860,6 +907,8 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager,
     if (chunkY > 0) {
         m_chunks[chunkX][chunkY - 1].m_isMeshDirty = true; // Bottom
     }
+
+    return true;
 }
 
 bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {

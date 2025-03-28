@@ -72,24 +72,6 @@ void BlockDefRepository::initBlockDefs() {
 
 }
 
-/*
-void BlockRenderer::renderBlock(Bengine::SpriteBatch& sb, const BlockDef& blockDef, glm::vec2 position, const LightingSystem& lightingSystem) {
-    glm::vec4 destRect;
-
-    destRect.x = (position.x - 0.5f);
-    destRect.y = (position.y - 0.5f);
-    destRect.z = 1.0f;
-    destRect.w = 1.0f;
-
-    Bengine::ColorRGBA8 originalColor = blockDef.m_color;
-
-    // Apply lighting to the color based on position
-    Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(originalColor, position.x, position.y);
-
-    sb.draw(destRect, blockDef.m_uvRect, blockDef.m_textureID, 0.0f, lightedColor, 0.0f);
-}
-*/
-
 
 Block::Block() {
 
