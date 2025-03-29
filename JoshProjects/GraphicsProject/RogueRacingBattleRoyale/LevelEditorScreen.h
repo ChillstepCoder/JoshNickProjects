@@ -318,6 +318,15 @@ private:
   CarTrackingInfo calculateCarTrackingInfo(const Car* car) const;
   glm::vec2 calculateLookAheadPoint(const CarTrackingInfo& carInfo) const;
   void restartRace();
+  void spawnRaceCarsWithStats();
+
+  // Car Stats
+  struct SavedCarStats {
+      Car::CarProperties props;
+      JAGEngine::ColorRGBA8 color;
+  };
+  std::vector<SavedCarStats> m_savedCarStats;
+  void saveCarStats();
 
   // Performance debug
   bool m_showPerformanceWindow = false;

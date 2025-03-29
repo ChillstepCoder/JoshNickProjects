@@ -285,3 +285,7 @@ WwiseProjects/**
 !WwiseProjects/RacingGame/GeneratedSoundBanks/Windows/*.bnk
 !WwiseProjects/RacingGame/GeneratedSoundBanks/Windows/SoundbanksInfo.xml
 /NickProjects/graphicsTutorials/PixelCraft/World
+
+# Code Grabber exclusions
+/JoshProjects/GraphicsProject/Code Grabber/
+/JoshProjects/GraphicsProject/install.bat

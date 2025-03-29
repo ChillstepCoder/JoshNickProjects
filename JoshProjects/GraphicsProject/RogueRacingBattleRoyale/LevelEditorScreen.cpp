@@ -2665,173 +2665,284 @@ void LevelEditorScreen::drawRaceResultsUI() {
 }
 
 void LevelEditorScreen::restartRace() {
-  // Increment race level
-  m_currentRaceLevel = std::min<int>(m_currentRaceLevel + 1, 10);
-
-  // Save the finishing order from the previous race.
-  m_lastFinishingOrder.clear();
-  std::vector<std::pair<int, int>> order;
-  for (int i = 0; i < static_cast<int>(m_testCars.size()); i++) {
-    int pos = m_testCars[i]->getProperties().racePosition; // lower is better
-    order.push_back({ pos, i });
-  }
-  // Sort in ascending order so that the best finishing car comes first.
-  std::sort(order.begin(), order.end(), [](const auto& a, const auto& b) {
-    return a.first < b.first;
-    });
-  // Save the indices. These indices represent the starting positions the cars originally had.
-  for (auto& p : order) {
-    m_lastFinishingOrder.push_back(p.second);
-  }
-
-  // Clean up the current race/test mode state.
-  cleanupTestMode();
-
-  // Reinitialize the physics system.
-  m_physicsSystem = std::make_unique<PhysicsSystem>();
-  m_physicsSystem->init(0.0f, 0.0f);
-
-  // Load a new random level.
-  loadRandomLevel();
-
-  // Upgrade the ObjectManager as before.
-  {
-    std::unique_ptr<ObjectManager> oldManager = std::move(m_objectManager);
-    m_objectManager = std::make_unique<ObjectManager>(m_track.get(), m_physicsSystem.get());
-    // Transfer templates and placed objects.
-    for (const auto& tmpl : oldManager->getObjectTemplates()) {
-      m_objectManager->addTemplate(tmpl->clone());
+    // Save car stats before clearing cars
+    if (!m_editorMode) {
+        saveCarStats();
     }
-    const auto& templates = oldManager->getObjectTemplates();
-    for (const auto& obj : oldManager->getPlacedObjects()) {
-      size_t templateIndex = 0;
-      for (size_t i = 0; i < templates.size(); i++) {
-        if (templates[i]->getDisplayName() == obj->getDisplayName()) {
-          templateIndex = i;
-          break;
+
+    // Increment race level
+    m_currentRaceLevel = std::min<int>(m_currentRaceLevel + 1, 10);
+
+    // Save the finishing order from the previous race.
+    m_lastFinishingOrder.clear();
+    std::vector<std::pair<int, int>> order;
+    for (int i = 0; i < static_cast<int>(m_testCars.size()); i++) {
+        int pos = m_testCars[i]->getProperties().racePosition; // lower is better
+        order.push_back({ pos, i });
+    }
+    // Sort in ascending order so that the best finishing car comes first.
+    std::sort(order.begin(), order.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+        });
+    // Save the indices. These indices represent the starting positions the cars originally had.
+    for (auto& p : order) {
+        m_lastFinishingOrder.push_back(p.second);
+    }
+
+    // Clean up the current race/test mode state.
+    cleanupTestMode();
+
+    // Reinitialize the physics system.
+    m_physicsSystem = std::make_unique<PhysicsSystem>();
+    m_physicsSystem->init(0.0f, 0.0f);
+
+    // Load a new random level.
+    loadRandomLevel();
+
+    // Upgrade the ObjectManager as before.
+    {
+        std::unique_ptr<ObjectManager> oldManager = std::move(m_objectManager);
+        m_objectManager = std::make_unique<ObjectManager>(m_track.get(), m_physicsSystem.get());
+        // Transfer templates and placed objects.
+        for (const auto& tmpl : oldManager->getObjectTemplates()) {
+            m_objectManager->addTemplate(tmpl->clone());
         }
-      }
-      m_objectManager->addObject(templateIndex, obj->getPosition());
+        const auto& templates = oldManager->getObjectTemplates();
+        for (const auto& obj : oldManager->getPlacedObjects()) {
+            size_t templateIndex = 0;
+            for (size_t i = 0; i < templates.size(); i++) {
+                if (templates[i]->getDisplayName() == obj->getDisplayName()) {
+                    templateIndex = i;
+                    break;
+                }
+            }
+            m_objectManager->addObject(templateIndex, obj->getPosition());
+        }
     }
-  }
 
-  // Now spawn the race cars using the finishing order from the previous race.
-  spawnRaceCars(10, m_lastFinishingOrder);
+    // Now spawn the race cars using the finishing order from the previous race.
+    if (!m_editorMode && !m_savedCarStats.empty()) {
+        // Restore cars with their saved stats
+        spawnRaceCarsWithStats();
+    }
+    else {
+        // Regular car spawn for editor mode or first race
+        spawnRaceCars(10, m_lastFinishingOrder);
+    }
 
-  // (Then set up renderer, collisions, flags, etc., as before.)
-  m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
-  m_levelRenderer->setCarTexture(m_carTexture);
-  m_levelRenderer->setCars(m_testCars);
-  m_levelRenderer->createBarrierCollisions(m_track.get(), m_physicsSystem->getWorld());
-  m_testMode = true;
-  m_showRaceStartUI = true;
-  m_levelRenderer->setRoadLOD(m_roadLOD);
-  m_levelRenderer->updateRoadMesh(m_track.get());
+    // (Then set up renderer, collisions, flags, etc., as before.)
+    m_carTexture = JAGEngine::ResourceManager::getTexture("Textures/car.png").id;
+    m_levelRenderer->setCarTexture(m_carTexture);
+    m_levelRenderer->setCars(m_testCars);
+    m_levelRenderer->createBarrierCollisions(m_track.get(), m_physicsSystem->getWorld());
+    m_testMode = true;
+    m_showRaceStartUI = true;
+    m_raceFinished = false;
+    m_levelRenderer->setRoadLOD(m_roadLOD);
+    m_levelRenderer->updateRoadMesh(m_track.get());
+}
+
+void LevelEditorScreen::saveCarStats() {
+    m_savedCarStats.clear();
+
+    // Save stats from active cars
+    for (const auto& car : m_testCars) {
+        SavedCarStats stats;
+        stats.props = car->getProperties();
+        stats.color = car->getColor();
+        m_savedCarStats.push_back(stats);
+    }
+
+    // Save stats from finished cars as well
+    for (const auto& car : m_finishedCars) {
+        SavedCarStats stats;
+        stats.props = car->getProperties();
+        stats.color = car->getColor();
+        m_savedCarStats.push_back(stats);
+    }
+}
+
+void LevelEditorScreen::spawnRaceCarsWithStats() {
+    // Get start positions from the track
+    auto startPositions = m_track->calculateStartPositions();
+    int totalPositions = static_cast<int>(startPositions.size());
+
+    // Clear previous car-related containers
+    m_testCars.clear();
+    m_finishedCars.clear();
+    m_aiDrivers.clear();
+    m_carTrackingInfo.clear();
+
+    // Sort saved car stats by race position
+    std::sort(m_savedCarStats.begin(), m_savedCarStats.end(),
+        [](const SavedCarStats& a, const SavedCarStats& b) {
+            return a.props.racePosition < b.props.racePosition;
+        });
+
+    // Limit cars to either the number of saved stats or positions available
+    int numCars = std::min<int>(static_cast<int>(m_savedCarStats.size()),
+        static_cast<int>(startPositions.size()));
+
+    // Spawn each car
+    for (int i = 0; i < numCars; i++) {
+        int posIndex = i % totalPositions;
+        auto posData = startPositions[posIndex];
+
+        // Create a new physics body
+        b2BodyId carBody = m_physicsSystem->createDynamicBody(posData.position.x, posData.position.y);
+        uint16_t carCategory = CATEGORY_CAR;
+        uint16_t carMask = MASK_CAR;
+        m_physicsSystem->createPillShape(carBody, 15.0f, 15.0f, carCategory, carMask, CollisionType::DEFAULT);
+        b2Body_SetLinearDamping(carBody, 0.8f);
+        b2Body_SetAngularDamping(carBody, 3.0f);
+        b2MassData massData;
+        massData.mass = m_savedCarStats[i].props.weight; // Use saved weight
+        massData.center = b2Vec2_zero;
+        massData.rotationalInertia = 2.5f;
+        b2Body_SetMassData(carBody, massData);
+
+        // Create the Car object
+        auto car = std::make_unique<Car>(carBody);
+        car->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+        m_game->getGameAs<App>()->getAudioEngine().initializeCarAudio(car.get());
+
+        // Set the saved properties but reset race-specific values
+        Car::CarProperties props = m_savedCarStats[i].props;
+        props.currentLap = 0;
+        props.lapProgress = 0.0f;
+        props.racePosition = i + 1;
+        props.finished = false;
+        props.finishTime = 0.0f;
+        props.isOnBooster = false;
+        props.currentBooster = nullptr;
+        props.currentBoostSpeed = 0.0f;
+        props.boostAccumulator = 0.0f;
+        car->setProperties(props);
+
+        car->setObjectManager(m_objectManager.get());
+        car->setTrack(m_track.get());
+        car->resetPosition({ posData.position.x, posData.position.y }, posData.angle);
+        car->setColor(m_savedCarStats[i].color);
+
+        // The player's car is always at index 0; others are AI
+        if (i > 0) {
+            auto aiDriver = std::make_unique<AIDriver>(car.get());
+            aiDriver->setConfig(m_aiConfig);
+            aiDriver->setObjectManager(m_objectManager.get());
+            m_aiDrivers.push_back(std::move(aiDriver));
+        }
+
+        m_testCars.push_back(std::move(car));
+        m_carTrackingInfo.push_back({ glm::vec2(0.0f), 0.0f, i + 1, (i == 0) });
+    }
 }
 
 
-
 void LevelEditorScreen::cleanupTestMode() {
-  // First, stop all sounds globally.
-  AK::SoundEngine::StopAll();
-  AK::SoundEngine::RenderAudio();
+    // First, stop all sounds globally.
+    AK::SoundEngine::StopAll();
+    AK::SoundEngine::RenderAudio();
 
-  // Then remove audio for every car—both still racing and those that finished.
-  if (m_game) {
-    auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
-    for (auto& car : m_testCars) {
-      audioEngine.removeCarAudio(car.get());
+    // Then remove audio for every car—both still racing and those that finished.
+    if (m_game) {
+        auto& audioEngine = m_game->getGameAs<App>()->getAudioEngine();
+        for (auto& car : m_testCars) {
+            audioEngine.removeCarAudio(car.get());
+        }
+        for (auto& car : m_finishedCars) {
+            audioEngine.removeCarAudio(car.get());
+        }
     }
-    for (auto& car : m_finishedCars) {
-      audioEngine.removeCarAudio(car.get());
+
+    m_game->getGameAs<App>()->getAudioEngine().resetNextCarAudioId();
+
+    // Cleanup barrier collisions if both levelRenderer and physicsSystem exist.
+    if (m_levelRenderer && m_physicsSystem) {
+        m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
     }
-  }
 
-  m_game->getGameAs<App>()->getAudioEngine().resetNextCarAudioId();
-
-  // Cleanup barrier collisions if both levelRenderer and physicsSystem exist.
-  if (m_levelRenderer && m_physicsSystem) {
-    m_levelRenderer->cleanupBarrierCollisions(m_physicsSystem->getWorld());
-  }
-
-  // Clear renderer car references.
-  if (m_levelRenderer) {
-    m_levelRenderer->clearCars();
-    m_levelRenderer->setShowStartPositions(m_showStartPositions);
-  }
-  // Recreate the object manager from our saved object states.
-  if (m_objectManager) {
-    m_objectManager->clearCars();
-    m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
-    m_objectManager->createDefaultTemplates();
-    for (const auto& state : m_savedObjectStates) {
-      m_objectManager->addObject(state.first, state.second);
+    // Clear renderer car references.
+    if (m_levelRenderer) {
+        m_levelRenderer->clearCars();
+        m_levelRenderer->setShowStartPositions(m_showStartPositions);
     }
-  }
-  // Clean up test mode resources.
-  m_testCars.clear();
-  m_aiDrivers.clear();
-  m_carTrackingInfo.clear();
 
-  // Restore camera state.
-  m_camera.setPosition(m_editorCameraPos);
-  m_camera.setScale(m_editorCameraScale);
-
-  // Restore object placement state.
-  m_objectPlacementMode = m_savedObjectPlacementMode;
-  m_selectedTemplateIndex = m_savedTemplateIndex;
-
-  // Clean up race elements.
-  if (m_raceTimer) {
-    m_raceTimer.reset();
-  }
-  if (m_raceCountdown) {
-    m_raceCountdown.reset();
-  }
-  m_readyToStart = false;
-  m_enableAI = false;
-  m_inputEnabled = false;
-  m_testMode = false;
-  m_finishedCount = 0;
-
-
-  // Recreate race elements for next time.
-  m_raceTimer = std::make_unique<RaceTimer>();
-  m_raceCountdown = std::make_unique<RaceCountdown>();
-  m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
-
-  if (m_raceCountdown && m_countdownFont) {
-    auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
-    countdownFont->init("Fonts/titilium_bold.ttf", 72);
-    m_raceCountdown->setFont(std::move(countdownFont));
-    m_raceCountdown->setOnCountdownStart([this]() {
-      m_enableAI = false;
-      m_inputEnabled = false;
-      });
-    m_raceCountdown->setOnCountdownComplete([this]() {
-      m_enableAI = true;
-      m_inputEnabled = true;
-      m_raceTimer->start();
-      std::cout << "Countdown complete, attempting to play music ID: " << m_currentMusicTrackId << std::endl;
-      if (m_currentMusicTrackId != 0) {
-        m_game->getGameAs<App>()->getAudioEngine().playMusicTrack(m_currentMusicTrackId);
-      }
-      else {
-        std::cout << "No music track selected" << std::endl;
-      }
-      });
-  }
-
-  // Finally, stop the current music track.
-  if (m_currentMusicTrackId != 0 && m_game) {
-    const auto& tracks = m_game->getGameAs<App>()->getAudioEngine().getAvailableTracks();
-    for (const auto& track : tracks) {
-      if (track.playEventId == m_currentMusicTrackId) {
-        m_game->getGameAs<App>()->getAudioEngine().stopMusicTrack(track.stopEventId);
-        break;
-      }
+    // In editor mode, recreate the object manager from saved object states
+    // In race mode, we'll handle this separately to preserve car stats
+    if (m_objectManager && m_editorMode) {
+        m_objectManager->clearCars();
+        m_objectManager = std::make_unique<ObjectManager>(m_track.get(), nullptr);
+        m_objectManager->createDefaultTemplates();
+        for (const auto& state : m_savedObjectStates) {
+            m_objectManager->addObject(state.first, state.second);
+        }
     }
-  }
+
+    // Clean up test mode resources.
+    m_testCars.clear();
+    m_aiDrivers.clear();
+    m_carTrackingInfo.clear();
+
+    // Restore camera state in editor mode
+    if (m_editorMode) {
+        m_camera.setPosition(m_editorCameraPos);
+        m_camera.setScale(m_editorCameraScale);
+
+        // Restore object placement state.
+        m_objectPlacementMode = m_savedObjectPlacementMode;
+        m_selectedTemplateIndex = m_savedTemplateIndex;
+    }
+
+    // Clean up race elements.
+    if (m_raceTimer) {
+        m_raceTimer.reset();
+    }
+    if (m_raceCountdown) {
+        m_raceCountdown.reset();
+    }
+    m_readyToStart = false;
+    m_enableAI = false;
+    m_inputEnabled = false;
+    m_testMode = false;
+    m_finishedCount = 0;
+
+    // Recreate race elements for next time.
+    m_raceTimer = std::make_unique<RaceTimer>();
+    m_raceCountdown = std::make_unique<RaceCountdown>();
+    m_raceCountdown->setAudioEngine(&m_game->getGameAs<App>()->getAudioEngine());
+
+    if (m_raceCountdown && m_countdownFont) {
+        auto countdownFont = std::make_unique<JAGEngine::SpriteFont>();
+        countdownFont->init("Fonts/titilium_bold.ttf", 72);
+        m_raceCountdown->setFont(std::move(countdownFont));
+        m_raceCountdown->setOnCountdownStart([this]() {
+            m_enableAI = false;
+            m_inputEnabled = false;
+            });
+        m_raceCountdown->setOnCountdownComplete([this]() {
+            m_enableAI = true;
+            m_inputEnabled = true;
+            m_raceTimer->start();
+            std::cout << "Countdown complete, attempting to play music ID: " << m_currentMusicTrackId << std::endl;
+            if (m_currentMusicTrackId != 0) {
+                m_game->getGameAs<App>()->getAudioEngine().playMusicTrack(m_currentMusicTrackId);
+            }
+            else {
+                std::cout << "No music track selected" << std::endl;
+            }
+            });
+    }
+
+    // Finally, stop the current music track.
+    if (m_currentMusicTrackId != 0 && m_game) {
+        const auto& tracks = m_game->getGameAs<App>()->getAudioEngine().getAvailableTracks();
+        for (const auto& track : tracks) {
+            if (track.playEventId == m_currentMusicTrackId) {
+                m_game->getGameAs<App>()->getAudioEngine().stopMusicTrack(track.stopEventId);
+                break;
+            }
+        }
+    }
 }
 
 

@@ -156,79 +156,81 @@ void Car::update(const InputState& input) {
 }
 
 void Car::updateStartLineCrossing(const SplineTrack* track) {
-  if (!track) return;
-  const TrackNode* startNode = track->getStartLineNode();
-  if (!startNode) return;
-  auto splinePoints = track->getSplinePoints(200);
-  if (splinePoints.empty()) return;
+    if (!track) return;
+    const TrackNode* startNode = track->getStartLineNode();
+    if (!startNode) return;
+    auto splinePoints = track->getSplinePoints(200);
+    if (splinePoints.empty()) return;
 
-  // Get current position, previous position, and velocity.
-  auto debugInfo = getDebugInfo();
-  glm::vec2 currentPos(debugInfo.position);
-  glm::vec2 lastPos = m_properties.lastPosition;
-  glm::vec2 velocity(debugInfo.velocity);
-  glm::vec2 startPos = startNode->getPosition();
+    // Get current position, previous position, and velocity.
+    auto debugInfo = getDebugInfo();
+    glm::vec2 currentPos(debugInfo.position);
+    glm::vec2 lastPos = m_properties.lastPosition;
+    glm::vec2 velocity(debugInfo.velocity);
+    glm::vec2 startPos = startNode->getPosition();
 
-  // Use the road width to define a detection radius.
-  const float LINE_DETECTION_RADIUS = startNode->getRoadWidth() * 1.5f;
-  float distToStart = glm::distance(currentPos, startPos);
-  float lastDistToStart = glm::distance(lastPos, startPos);
+    // Use the road width to define a detection radius.
+    const float LINE_DETECTION_RADIUS = startNode->getRoadWidth() * 1.5f;
+    float distToStart = glm::distance(currentPos, startPos);
+    float lastDistToStart = glm::distance(lastPos, startPos);
 
-  // If the car is far away from the start line, update our stored side and exit.
-  if (distToStart > LINE_DETECTION_RADIUS && lastDistToStart > LINE_DETECTION_RADIUS) {
-    // Update lastStartLineSide to current side.
-    float currentSideVal = glm::dot(currentPos - startPos, track->getTrackDirectionAtNode(startNode));
-    m_properties.lastStartLineSide = (currentSideVal >= 0) ? 1 : -1;
+    // If the car is far away from the start line, update our stored side and exit.
+    if (distToStart > LINE_DETECTION_RADIUS && lastDistToStart > LINE_DETECTION_RADIUS) {
+        // Update lastStartLineSide to current side.
+        float currentSideVal = glm::dot(currentPos - startPos, track->getTrackDirectionAtNode(startNode));
+        m_properties.lastStartLineSide = (currentSideVal >= 0) ? 1 : -1;
+        m_properties.lastPosition = currentPos;
+        return;
+    }
+
+    // Determine the current side relative to the start line.
+    glm::vec2 startNormal = track->getTrackDirectionAtNode(startNode);
+    int currentSide = (glm::dot(currentPos - startPos, startNormal) >= 0) ? 1 : -1;
+    int lastSide = m_properties.lastStartLineSide; // previously stored side
+
+    // Only register a crossing if the side has changed.
+    float speed = glm::length(velocity);
+    const float MIN_CROSSING_SPEED = 0.1f;
+    if (speed > MIN_CROSSING_SPEED && currentSide != lastSide) {
+        // If crossing into the "forward" side (currentSide > 0), register a forward crossing.
+        if (currentSide > 0) {
+            m_properties.lapProgress = 0.0f;
+            m_properties.currentLap++;
+
+            // Apply lap bonuses/XP only if this is a new lap (and not the very first lap).
+            if (m_properties.currentLap > m_properties.highestLapCompleted && m_properties.currentLap > 1) {
+                applyLapBonuses();
+                int xpReward;
+                switch (m_properties.racePosition) {
+                case 1: xpReward = 10; break;
+                case 2: xpReward = 8; break;
+                case 3: xpReward = 6; break;
+                case 4: xpReward = 5; break;
+                case 5: xpReward = 4; break;
+                case 6: xpReward = 3; break;
+                case 7: xpReward = 2; break;
+                default: xpReward = 1; break;
+                }
+                if (m_properties.specialStats.xpGain.level > 0) {
+                    float xpMultiplier = 1.0f + (m_properties.specialStats.xpGain.level * 0.01f);
+                    xpReward = static_cast<int>(xpReward * xpMultiplier);
+                }
+                m_properties.totalXP += xpReward;
+            }
+        }
+        // If crossing into the reverse side, decrement lap (if above zero).
+        else {
+            if (m_properties.currentLap > 0) {
+                // Set lap progress to 1.0f BEFORE decrementing lap counter
+                m_properties.lapProgress = 1.0f;
+                m_properties.currentLap--;
+            }
+        }
+        // Update the stored side to prevent multiple crossings until the car leaves.
+        m_properties.lastStartLineSide = currentSide;
+    }
+
     m_properties.lastPosition = currentPos;
-    return;
-  }
-
-  // Determine the current side relative to the start line.
-  glm::vec2 startNormal = track->getTrackDirectionAtNode(startNode);
-  int currentSide = (glm::dot(currentPos - startPos, startNormal) >= 0) ? 1 : -1;
-  int lastSide = m_properties.lastStartLineSide; // previously stored side
-
-  // Only register a crossing if the side has changed.
-  float speed = glm::length(velocity);
-  const float MIN_CROSSING_SPEED = 0.1f;
-  if (speed > MIN_CROSSING_SPEED && currentSide != lastSide) {
-    // If crossing into the “forward” side (currentSide > 0), register a forward crossing.
-    if (currentSide > 0) {
-      m_properties.currentLap++;
-      // Apply lap bonuses/XP only if this is a new lap (and not the very first lap).
-      if (m_properties.currentLap > m_properties.highestLapCompleted && m_properties.currentLap > 1) {
-        applyLapBonuses();
-        int xpReward;
-        switch (m_properties.racePosition) {
-        case 1: xpReward = 10; break;
-        case 2: xpReward = 8; break;
-        case 3: xpReward = 6; break;
-        case 4: xpReward = 5; break;
-        case 5: xpReward = 4; break;
-        case 6: xpReward = 3; break;
-        case 7: xpReward = 2; break;
-        default: xpReward = 1; break;
-        }
-        if (m_properties.specialStats.xpGain.level > 0) {
-          float xpMultiplier = 1.0f + (m_properties.specialStats.xpGain.level * 0.01f);
-          xpReward = static_cast<int>(xpReward * xpMultiplier);
-        }
-        m_properties.totalXP += xpReward;
-      }
-      m_properties.lapProgress = 0.0f;
-    }
-    // If crossing into the reverse side, decrement lap (if above zero).
-    else {
-      if (m_properties.currentLap > 0) {
-        m_properties.currentLap--;
-        m_properties.lapProgress = 1.0f;
-      }
-    }
-    // Update the stored side to prevent multiple crossings until the car leaves.
-    m_properties.lastStartLineSide = currentSide;
-  }
-
-  m_properties.lastPosition = currentPos;
 }
 
 void Car::updatePhysicsWeight() {
