@@ -76,6 +76,7 @@ namespace Bengine {
         void end();
 
         void draw(const glm::vec4& destRect,const glm::vec4& uvRect, GLuint texture, float depth, const ColorRGBA8& color, float rotation);
+        void drawWithCornerColors(const glm::vec4& destRect, const glm::vec4& uvRect, GLuint texture, float depth, const ColorRGBA8& bottomLeft, const ColorRGBA8& bottomRight, const ColorRGBA8& topLeft, const ColorRGBA8& topRight);
 
         void renderBatch();
 

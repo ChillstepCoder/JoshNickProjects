@@ -20,6 +20,7 @@
 #include "Imgui.h"
 #include "ImGui/backends/imgui_impl_sdl2.h"
 #include "ImGui/backends/imgui_impl_opengl3.h"
+#include "LightingSystem.h"
 
 class BlockManager;
 class ConnectedTextureSet;
@@ -102,4 +103,5 @@ private:
     CellularAutomataManager m_cellularAutomataManager;
     BlockMeshManager m_blockMeshManager;
     BlockManager* m_blockManager;
+    LightingSystem m_lightingSystem;
 };

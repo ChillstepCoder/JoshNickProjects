@@ -10,6 +10,7 @@
 #include "FastNoise2/FastNoise/FastNoise.h"
 #include "Profiler.h"
 #include "Timer.h"
+#include "LightingSystem.h"
 
 void Chunk::init() {
     m_spriteBatch.init();
@@ -17,7 +18,7 @@ void Chunk::init() {
         << ", " << m_worldPosition.y << std::endl;
     m_isLoaded = true;
 }
-void Chunk::buildChunkMesh(BlockManager& blockManager) {
+void Chunk::buildChunkMesh(BlockManager& blockManager, const LightingSystem& lightingSystem) {
     m_spriteBatch.begin();
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         float worldX = CHUNK_WIDTH + x;
@@ -30,6 +31,23 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
                 BlockID id = block.getBlockID();
                 BlockDef blockDef = repository.getDef(id);
                 glm::vec2 blockPos = glm::vec2(getWorldPosition().x + x - 0.5f, getWorldPosition().y + y - 0.5f);
+
+                std::array<Bengine::ColorRGBA8, 4> cornerColors;
+
+                // Calculate lighting for each corner with interpolation
+                cornerColors[0] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x, blockPos.y
+                );
+                cornerColors[1] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x + 1.0f, blockPos.y
+                );
+                cornerColors[2] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x, blockPos.y + 1.0f
+                );
+                cornerColors[3] = lightingSystem.applyLighting(
+                    blockDef.m_color, blockPos.x + 1.0f, blockPos.y + 1.0f
+                );
+
 
                 if (id == BlockID::WATER) {
                     // Water rendering code (unchanged)
@@ -44,8 +62,22 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
 
                     glm::vec4 uvRect = BlockDefRepository::getUVRect(id);
                     GLuint textureID = BlockDefRepository::getTextureID(id);
-                    Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
-                    m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, color, 0.0f);
+
+                    m_spriteBatch.drawWithCornerColors(
+                        destRect,
+                        uvRect,
+                        textureID,
+                        0.0f,
+                        cornerColors[0],  // Bottom-left
+                        cornerColors[1],  // Bottom-right
+                        cornerColors[2],  // Top-left
+                        cornerColors[3]   // Top-right
+                    );
+
+
+                    //Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
+                    //Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
+                    //m_spriteBatch.draw(destRect, uvRect, textureID, 0.0f, lightedColor, 0.0f);
                 }
                 else {
                     // 5 6 7
@@ -126,8 +158,21 @@ void Chunk::buildChunkMesh(BlockManager& blockManager) {
 
                     Bengine::setTextureFilterMode(textureID, Bengine::TextureFilterMode::Linear);
 
-                    Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
-                    m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, color, 0.0f);
+                    m_spriteBatch.drawWithCornerColors(
+                        destRect,
+                        uvRectFixed,
+                        textureID,
+                        0.0f,
+                        cornerColors[0],  // Bottom-left
+                        cornerColors[1],  // Bottom-right
+                        cornerColors[2],  // Top-left
+                        cornerColors[3]   // Top-right
+                    );
+
+
+                    //Bengine::ColorRGBA8 color = BlockDefRepository::getColor(id);
+                    //Bengine::ColorRGBA8 lightedColor = lightingSystem.applyLighting(color, blockPos.x, blockPos.y);
+                    //m_spriteBatch.draw(destRect, uvRectFixed, textureID, 0.0f, lightedColor, 0.0f);
                 }
 
                 //BlockRenderer::renderBlock(m_spriteBatch, repository.getDef(id),glm::vec2(x,y));
@@ -274,10 +319,10 @@ void BlockManager::initializeChunks(glm::vec2 playerPosition) {
     }
 }
 
-void BlockManager::update(BlockManager& blockManager) {
+void BlockManager::update(BlockManager& blockManager, LightingSystem& lightingSystem) {
 
     for (int i = 0; i < m_activeChunks.size(); i++) { // Simulate water for all active chunks
-        m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager);
+        m_cellularAutomataManager.simulateWater(*m_activeChunks[i], blockManager, lightingSystem);
     }
 
 }
@@ -328,7 +373,7 @@ glm::ivec2 BlockManager::getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 off
 }
 
 
-void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
+void BlockManager::destroyBlock(const BlockHandle& blockHandle, LightingSystem& lightingSystem) {
     // Check if the block exists
     if (blockHandle.block != nullptr && !blockHandle.block->isEmpty()) {
         // Destroy the block (remove physics body and reset visual state)
@@ -357,6 +402,9 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
         // Reset the broken block to Air
         chunk.blocks[blockHandle.blockOffset.x][blockHandle.blockOffset.y] = Block();
 
+
+        lightingSystem.updateLightingOnBlockBreak((blockHandle.chunkCoords.x * CHUNK_WIDTH) + blockHandle.blockOffset.x, (blockHandle.chunkCoords.y * CHUNK_WIDTH) + blockHandle.blockOffset.y);
+
         // Mark the current chunk as dirty
         chunk.m_isMeshDirty = true;
 
@@ -379,7 +427,7 @@ void BlockManager::destroyBlock(const BlockHandle& blockHandle) {
     }
 }
 
-void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {
+void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem) {
     // Get the block at the given position
     float realpositionX = position.x + 0.5f;
     float realPositionY = position.y + 0.5f;
@@ -393,14 +441,17 @@ void BlockManager::breakBlockAtPosition(const glm::vec2& position, const glm::ve
         // If the block is within the specified range (e.g., 8 blocks radius)
         if (distance <= 8.0f) {
             // "Break" the block - this can involve various actions, like setting it to empty, destroying it, etc.
-            destroyBlock(blockHandle);
+            destroyBlock(blockHandle, lightingSystem);
         }
     }
 }
 
-void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& position) {
+void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& position, LightingSystem& lightingSystem) {
     float realpositionX = position.x - 0.5f;
     float realPositionY = position.y - 0.5f;
+
+
+    BlockID previousBlockID = BlockID::AIR;
 
     Block waterBlock;
     waterBlock.init(m_world, BlockID::WATER, glm::vec2(realpositionX, realPositionY));
@@ -414,13 +465,15 @@ void BlockManager::placeBlock(const BlockHandle& blockHandle, const glm::vec2& p
         chunk.waterBlocks.push_back(glm::vec2(position.x, position.y)); // Add to the list of water blocks.
     }
 
+    lightingSystem.updateLightingOnBlockAdd(realpositionX, realPositionY, previousBlockID);
+
     //std::cout << "water placed at X: " << blockHandle.blockOffset.x << "   Y: " << blockHandle.blockOffset.y << std::endl;
 
 
     chunk.m_isMeshDirty = true;
 }
 
-void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos) {
+void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem) {
     // Get the block at the given position
     float realpositionX = position.x + 0.5f;
     float realPositionY = position.y + 0.5f;
@@ -435,7 +488,7 @@ void BlockManager::placeBlockAtPosition(const glm::vec2& position, const glm::ve
         // If the block is within the specified range (e.g., 8 blocks radius)
         if (distance <= 8.0f) {
             // "Break" the block - this can involve various actions, like setting it to empty, destroying it, etc.
-            placeBlock(blockHandle, glm::vec2(realpositionX, realPositionY));
+            placeBlock(blockHandle, glm::vec2(realpositionX, realPositionY), lightingSystem);
         }
     }
 }
@@ -453,7 +506,10 @@ inline bool BlockManager::isPositionInBlock(const glm::vec2& position, const Blo
         position.y >= blockPos.y - blockSize.y / 2 && position.y <= blockPos.y + blockSize.y / 2);
 }
 
-void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager) {
+bool BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem) {
+    clearNewlyLoadedChunks();
+
+    bool didLoad = false;
 
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
@@ -468,12 +524,19 @@ void BlockManager::loadNearbyChunks(const glm::vec2& playerPos, BlockManager& bl
                 if (!isChunkFarAway(playerPos, chunkPos)) {
                     {
                         PROFILE_SCOPE("LoadChunk");
-                        loadChunk(x, y, blockManager);
+                        if (loadChunk(x, y, blockManager, lightingSystem)) {
+                            Chunk* newChunk = &m_chunks[x][y];
+
+                            m_newlyLoadedChunks.push_back(newChunk);
+                            didLoad = true;
+
+                        }
                     }
                 }
             }
         }
     }
+    return didLoad;
 }
 
 bool BlockManager::isChunkLoaded(int x, int y) {
@@ -793,11 +856,11 @@ void BlockManager::regenerateWorld(float caveScale, float baseCaveThreshold, flo
 
 
 
-void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager) {
+bool BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager, const LightingSystem& lightingSystem) {
     // Check if coordinates are in valid range
     if (chunkX < 0 || chunkX >= m_chunks.size() ||
         chunkY < 0 || chunkY >= m_chunks[0].size()) {
-        return; // Out of bounds, don't load
+        return false; // Out of bounds, don't load
     }
 
     Chunk& chunk = m_chunks[chunkX][chunkY];
@@ -815,6 +878,7 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager)
         {
             PROFILE_SCOPE("generateChunk");
             generateChunk(chunkX, chunkY, chunk);
+
         }
         {
             PROFILE_SCOPE("saveChunkToFile");
@@ -824,7 +888,7 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager)
 
     {
         PROFILE_SCOPE("buildChunkMesh");
-        chunk.buildChunkMesh(blockManager);
+        chunk.buildChunkMesh(blockManager, lightingSystem);
     }
 
     m_activeChunks.push_back(&chunk);
@@ -843,6 +907,8 @@ void BlockManager::loadChunk(int chunkX, int chunkY, BlockManager& blockManager)
     if (chunkY > 0) {
         m_chunks[chunkX][chunkY - 1].m_isMeshDirty = true; // Bottom
     }
+
+    return true;
 }
 
 bool BlockManager::saveChunkToFile(int chunkX, int chunkY, Chunk& chunk) {
@@ -928,7 +994,7 @@ bool BlockManager::isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& c
 
 }
 
-void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
+void BlockManager::unloadFarChunks(const glm::vec2& playerPos, LightingSystem& lightingSystem) {
     // Calc player chunk position
     int playerChunkX = static_cast<int>(playerPos.x) / CHUNK_WIDTH;
     int playerChunkY = static_cast<int>(playerPos.y) / CHUNK_WIDTH;
@@ -939,14 +1005,14 @@ void BlockManager::unloadFarChunks(const glm::vec2& playerPos) {
             if (isChunkLoaded(x, y)) {
                 glm::vec2 chunkPos = m_chunks[x][y].getWorldPosition();
                 if (isChunkFarAway(playerPos, chunkPos)) {
-                    unloadChunk(x, y);
+                    unloadChunk(x, y, lightingSystem);
                 }
             }
         }
     }
 }
 
-void BlockManager::unloadChunk(int x, int y) {
+void BlockManager::unloadChunk(int x, int y, LightingSystem& lightingSystem) {
     assert(x >= 0 && y >= 0 && x < WORLD_WIDTH_CHUNKS && y < WORLD_HEIGHT_CHUNKS);
 
     Chunk& chunk = m_chunks[x][y];
@@ -962,7 +1028,7 @@ void BlockManager::unloadChunk(int x, int y) {
             BlockHandle blockHandle = getBlockAtPosition(glm::vec2(realpositionX, realPositionY));
 
 
-            destroyBlock(blockHandle);
+            destroyBlock(blockHandle, lightingSystem);
         }
     }
 

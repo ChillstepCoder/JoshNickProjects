@@ -7,20 +7,19 @@
 #include "Block.h"
 #include "unordered_map"
 #include "FractalNoise.h"
+#include "GameConstants.h"
 
+class LightingSystem;
 class DebugDraw;
 class BlockManager;
 class CellularAutomataManager;
 class GameplayScreen;
 enum class AdjacencyRule;
 
-const int CHUNK_WIDTH = 64;
-const int WATER_LEVELS = 100;
-
 class Chunk {
 public:
     void init();
-    void buildChunkMesh(BlockManager& blockManager);
+    void buildChunkMesh(BlockManager& blockManager, const LightingSystem& lightingSystem);
     AdjacencyRule getAdjacencyRuleForBlock(BlockID blockID);
     void render();
     void save();
@@ -66,10 +65,6 @@ private:
     
 };
 
-const int WORLD_WIDTH_CHUNKS = 32;
-const int WORLD_HEIGHT_CHUNKS = 32;
-const int loadRadius = 5;
-
 class BlockManager {
 public:
     BlockManager(BlockMeshManager& meshManager, b2WorldId worldId, CellularAutomataManager& cellularAutomataManager)
@@ -101,7 +96,7 @@ public:
 
     void initializeChunks(glm::vec2 playerPosition);
 
-    void update(BlockManager& blockManager);
+    void update(BlockManager& blockManager, LightingSystem& lightingSystem);
 
     BlockHandle getBlockAtPosition(glm::vec2 position);
 
@@ -109,15 +104,15 @@ public:
 
     glm::ivec2 getBlockWorldPos(glm::ivec2 chunkCoords, glm::ivec2 offset);
 
-    void destroyBlock(const BlockHandle& blockHandle);
-    void breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
+    void destroyBlock(const BlockHandle& blockHandle, LightingSystem& lightingSystem);
+    void breakBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem);
 
-    void placeBlock(const BlockHandle& blockHandle, const glm::vec2& position);
-    void placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos);
+    void placeBlock(const BlockHandle& blockHandle, const glm::vec2& position, LightingSystem& lightingSystem);
+    void placeBlockAtPosition(const glm::vec2& position, const glm::vec2& playerPos, LightingSystem& lightingSystem);
 
     bool isPositionInBlock(const glm::vec2& position, const Block& block);
 
-    void loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager);
+    bool loadNearbyChunks(const glm::vec2& playerPos, BlockManager& blockManager, const LightingSystem& lightingSystem);
 
     bool isChunkLoaded(int x, int y);
 
@@ -125,7 +120,7 @@ public:
 
     void regenerateWorld(float caveScale, float baseCaveThreshold, float detailScale, float detailInfluence, float minCaveDepth, float surfaceZone, float deepZone, float maxSurfaceBonus, float maxDepthPenalty);
 
-    void loadChunk(int x, int y, BlockManager& blockManager);
+    bool loadChunk(int x, int y, BlockManager& blockManager, const LightingSystem& lightingSystem);
 
     bool saveChunkToFile(int chunkX, int chunkY, Chunk& chunk);
 
@@ -135,9 +130,9 @@ public:
 
     bool isChunkFarAway(const glm::vec2& playerPos, const glm::vec2& chunkPos);
 
-    void unloadFarChunks(const glm::vec2& playerPos);
+    void unloadFarChunks(const glm::vec2& playerPos, LightingSystem& lightingSystem);
 
-    void unloadChunk(int x, int y);
+    void unloadChunk(int x, int y, LightingSystem& lightingSystem);
 
     int getConnectedTextureIndex(const Chunk& chunk, int x, int y, BlockID blockID);
 
@@ -173,8 +168,34 @@ public:
         );
     }
 
+    void setLightingSystem(LightingSystem* lightingSystem) {
+        m_lightingSystem = lightingSystem;
+
+        //if (!m_activeChunks.empty()) {
+        //    m_lightingSystem->setBlockGrid(m_activeChunks[0]->blocks);
+        //}
+    }
+
+    LightingSystem* getLightingSystem() {
+        return m_lightingSystem;
+    }
+
+    void clearNewlyLoadedChunks() {
+        m_newlyLoadedChunks.clear();
+    }
+
+    void addNewlyLoadedChunk(Chunk* chunk) {
+        m_newlyLoadedChunks.push_back(chunk);
+    }
+
+    std::vector<Chunk*> getNewlyLoadedChunks() {
+        return m_newlyLoadedChunks;
+    }
+
+
 private:
     std::vector<std::vector<Chunk>> m_chunks;
+    std::vector<Chunk*> m_newlyLoadedChunks;
 
     float m_caveScale = 0.005419f;        // higher number = smaller cave
     float m_baseCaveThreshold = 0.65f; // Higher = less caves
@@ -198,4 +219,5 @@ private:
     BlockMeshManager& m_MeshManager;
     b2WorldId m_world;
 
+    LightingSystem* m_lightingSystem = nullptr;
 };

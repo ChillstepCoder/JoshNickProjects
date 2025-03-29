@@ -78,7 +78,7 @@ void GameplayScreen::onEntry() {
 
     // Init camera
     m_camera.init(m_window->getScreenWidth(), m_window->getScreenHeight());
-    m_camera.setScale(10.0f); // 20.0f
+    m_camera.setScale(20.0f); // 20.0f
     m_player = Player(&m_camera, m_blockManager);
 
     // Set map Bounds
@@ -86,6 +86,20 @@ void GameplayScreen::onEntry() {
     glm::vec2 maxBounds(WORLD_WIDTH_CHUNKS * CHUNK_WIDTH, WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH);
 
     setMapBoundaries(minBounds, maxBounds);
+
+    m_blockManager->loadNearbyChunks(playerPos, *m_blockManager, m_lightingSystem);
+
+    m_lightingSystem.init(WORLD_WIDTH_CHUNKS * CHUNK_WIDTH, WORLD_HEIGHT_CHUNKS * CHUNK_WIDTH);
+
+    m_blockManager->setLightingSystem(&m_lightingSystem);
+
+    m_lightingSystem.setBlockManager(m_blockManager);
+
+    {
+        PROFILE_SCOPE("Initial Lighting Update");
+        m_lightingSystem.updateLighting();
+    }
+
 
     // Init player
     Bengine::ColorRGBA8 textureColor;
@@ -136,20 +150,33 @@ void GameplayScreen::update() {
         m_player.setPosition(playerPos);
 
         // Now update player with the clamped position
-        m_player.update(m_game->inputManager, playerPos, m_blockManager, m_debugRenderEnabled);
+        m_player.update(m_game->inputManager, playerPos, m_blockManager, m_debugRenderEnabled, m_lightingSystem);
 
         {
             PROFILE_SCOPE("Unload far chunks");
-            m_blockManager->unloadFarChunks(playerPos);
+            m_blockManager->unloadFarChunks(playerPos, m_lightingSystem);
         }
         {
             PROFILE_SCOPE("Load nearby chunks");
-            m_blockManager->loadNearbyChunks(playerPos, *m_blockManager);
+            if (m_blockManager->loadNearbyChunks(playerPos, *m_blockManager, m_lightingSystem)) {
+                std::vector<Chunk*> newlyLoadedChunks = m_blockManager->getNewlyLoadedChunks();
+
+                // Update lighting for each newly loaded chunk
+                for (auto* chunk : newlyLoadedChunks) {
+                    // Calculate the world position of the chunk
+                    int chunkX = static_cast<int>(chunk->getWorldPosition().x) / CHUNK_WIDTH;
+                    int chunkY = static_cast<int>(chunk->getWorldPosition().y) / CHUNK_WIDTH;
+
+                    // Update lighting for this chunk and adjacent chunks
+                    m_lightingSystem.updateLightingForRegion(chunkX, chunkY, *m_blockManager);
+                }
+            }
         }
+
         {
             PROFILE_SCOPE("BlockManager Update");
             if (m_updateFrame % 5 == 0)
-                m_blockManager->update(*m_blockManager);
+                m_blockManager->update(*m_blockManager, m_lightingSystem);
         }
 
 

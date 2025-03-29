@@ -43,6 +43,41 @@ namespace Bengine {
 
     }
 
+    void SpriteBatch::drawWithCornerColors(
+        const glm::vec4& destRect,
+        const glm::vec4& uvRect,
+        GLuint texture,
+        float depth,
+        const ColorRGBA8& bottomLeft,
+        const ColorRGBA8& bottomRight,
+        const ColorRGBA8& topLeft,
+        const ColorRGBA8& topRight
+    ) {
+        // Your existing drawing logic, but with per-corner colors
+        Glyph glyph;
+        glyph.texture = texture;
+        glyph.depth = depth;
+
+        glyph.topLeft.color = topLeft;
+        glyph.topLeft.setPosition(destRect.x, destRect.y + destRect.w);
+        glyph.topLeft.setUV(uvRect.x, uvRect.y + uvRect.w);
+
+        glyph.bottomLeft.color = bottomLeft;
+        glyph.bottomLeft.setPosition(destRect.x, destRect.y);
+        glyph.bottomLeft.setUV(uvRect.x, uvRect.y);
+
+        glyph.bottomRight.color = bottomRight;
+        glyph.bottomRight.setPosition(destRect.x + destRect.z, destRect.y);
+        glyph.bottomRight.setUV(uvRect.x + uvRect.z, uvRect.y);
+
+        glyph.topRight.color = topRight;
+        glyph.topRight.setPosition(destRect.x + destRect.z, destRect.y + destRect.w);
+        glyph.topRight.setUV(uvRect.x + uvRect.z, uvRect.y + uvRect.w);
+
+        m_glyphs.push_back(glyph);
+    }
+
+
     void SpriteBatch::renderBatch() {
         assert(m_vao != 0 && "Forgot to init spritebatch!");
 

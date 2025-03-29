@@ -5,6 +5,8 @@
 #include <Bengine/GLTexture.h>
 #include <fstream>
 
+class LightingSystem;
+
 const glm::ivec2 TILE_ATLAS_DIMS_CELLS = glm::ivec2(16, 15);
 
 enum class BlockID {
@@ -92,7 +94,9 @@ private:
 
 class BlockRenderer {
 public:
-    static void renderBlock(Bengine::SpriteBatch& sb, const BlockDef& blockDef, glm::vec2 position);
+    //static void renderBlock(Bengine::SpriteBatch& sb, const BlockDef& blockDef, glm::vec2 position);
+    //static void renderBlock(Bengine::SpriteBatch& sb, const Block& block, glm::vec2 position);
+    //static void renderBlock(Bengine::SpriteBatch& sb, const BlockDef& blockDef, glm::vec2 position, const LightingSystem& lightingSystem);
 };
 
 
