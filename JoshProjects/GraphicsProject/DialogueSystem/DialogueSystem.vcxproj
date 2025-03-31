@@ -118,8 +118,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2dd.lib;glu32.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSoundEngine.lib;AkAudioInputSource.lib;CommunicationCentral.lib;AkImpacterSource.lib;imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Debug\lib;$(SolutionDir)deps\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2dd.lib;glu32.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSoundEngine.lib;AkAudioInputSource.lib;CommunicationCentral.lib;AkImpacterSource.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Debug\lib;$(SolutionDir)deps\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -137,14 +137,17 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2d.lib;glu32.lib;CommunicationCentral.lib;AkSoundEngine.lib;imgui.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSpatialAudio.lib;AkAudioInputSource.lib;AkImpacterSource.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Release\lib;$(SolutionDir)deps;$(SolutionDir)deps\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2d.lib;glu32.lib;CommunicationCentral.lib;AkSoundEngine.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSpatialAudio.lib;AkAudioInputSource.lib;AkImpacterSource.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Release\lib;$(SolutionDir)deps\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\RogueRacingBattleRoyale\imconfig.h" />
+    <ClInclude Include="..\RogueRacingBattleRoyale\imgui_impls.h" />
     <ClInclude Include="DialogueApp.h" />
     <ClInclude Include="DialogueAudioEngine.h" />
     <ClInclude Include="DialogueEditor.h" />
+    <ClInclude Include="DialogueScreen.h" />
     <ClInclude Include="DialogueSystem.h" />
     <ClInclude Include="DialogueTreeView.h" />
   </ItemGroup>
@@ -154,7 +157,9 @@
     <ClCompile Include="DialogueEditor.cpp" />
     <ClCompile Include="DialogueSystem.cpp" />
     <ClCompile Include="DialogueTreeView.cpp" />
+    <ClCompile Include="imgui_impls.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="standalone_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

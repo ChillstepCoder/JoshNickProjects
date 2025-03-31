@@ -289,3 +289,49 @@ std::string DialogueManager::getVoiceIdFromType(VoiceType voice) {
     default: return "";
     }
 }
+
+std::string DialogueManager::getPromptForPersonality(ResponseType type, PersonalityType personality, const std::string& defaultText) {
+    // Build a prompt for the GPT API based on response type and personality
+    std::string prompt = "Create a dialogue response for a ";
+
+    // Add personality
+    switch (personality) {
+    case PersonalityType::Bubbly: prompt += "bubbly"; break;
+    case PersonalityType::Grumpy: prompt += "grumpy"; break;
+    case PersonalityType::Manic: prompt += "manic"; break;
+    case PersonalityType::Shy: prompt += "shy"; break;
+    case PersonalityType::Serious: prompt += "serious"; break;
+    case PersonalityType::Anxious: prompt += "anxious"; break;
+    case PersonalityType::Confident: prompt += "confident"; break;
+    case PersonalityType::Intellectual: prompt += "intellectual"; break;
+    case PersonalityType::Mysterious: prompt += "mysterious"; break;
+    case PersonalityType::Friendly: prompt += "friendly"; break;
+    default: prompt += "generic"; break;
+    }
+
+    prompt += " character who is giving a ";
+
+    // Add response type
+    switch (type) {
+    case ResponseType::EnthusiasticAffirmative: prompt += "very enthusiastic yes"; break;
+    case ResponseType::IndifferentAffirmative: prompt += "indifferent yes"; break;
+    case ResponseType::ReluctantAffirmative: prompt += "reluctant yes"; break;
+    case ResponseType::EnthusiasticNegative: prompt += "very enthusiastic no"; break;
+    case ResponseType::IndifferentNegative: prompt += "indifferent no"; break;
+    case ResponseType::UntrustworthyResponse: prompt += "suspicious or untrustworthy answer"; break;
+    case ResponseType::Confused: prompt += "confused response"; break;
+    case ResponseType::Greeting: prompt += "greeting"; break;
+    case ResponseType::Farewell: prompt += "farewell"; break;
+    case ResponseType::MarkOnMap: prompt += "response about marking something on a map"; break;
+    case ResponseType::GiveDirections: prompt += "response giving directions"; break;
+    case ResponseType::AskForMoney: prompt += "response asking for money"; break;
+    case ResponseType::OfferHelp: prompt += "response offering help"; break;
+    case ResponseType::RefuseHelp: prompt += "response refusing to help"; break;
+    case ResponseType::AskToFollow: prompt += "response asking someone to follow"; break;
+    default: prompt += "general response"; break;
+    }
+
+    prompt += ".\n\nBase response: " + defaultText + "\n\nGenerated response:";
+
+    return prompt;
+}

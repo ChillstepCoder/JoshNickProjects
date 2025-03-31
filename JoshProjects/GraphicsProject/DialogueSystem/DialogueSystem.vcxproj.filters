@@ -30,6 +30,15 @@
     <ClInclude Include="DialogueAudioEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\RogueRacingBattleRoyale\imgui_impls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RogueRacingBattleRoyale\imconfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DialogueScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DialogueSystem.cpp">
@@ -48,6 +57,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_impls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="standalone_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

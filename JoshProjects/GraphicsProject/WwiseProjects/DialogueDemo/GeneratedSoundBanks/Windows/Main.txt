@@ -1,0 +1,6 @@
+Event	ID	Name			Wwise Object Path	Notes
+	290606676	PlaySong			\Default Work Unit\PlaySong	
+
+In Memory Audio	ID	Name	Audio source file		Wwise Object Path	Notes	Data Size
+	1056292638	JAY ARNOLD - CLOSURE	C:\Users\jayar\Documents\GitHub\JoshNickProjects\JoshProjects\GraphicsProject\WwiseProjects\DialogueDemo\.cache\E2\{E246EC92-88E3-8A79-0A11-10541AFADD65}.wem		\Actor-Mixer Hierarchy\Default Work Unit\JAY ARNOLD - CLOSURE		28830520
+

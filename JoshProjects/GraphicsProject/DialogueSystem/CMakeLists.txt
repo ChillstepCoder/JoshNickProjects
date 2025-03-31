@@ -11,6 +11,7 @@ set(JAGENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JAGEngine" CACHE PATH "Path to
 # Find required packages
 find_package(OpenGL REQUIRED)
 find_package(CURL REQUIRED)
+find_package(ImGui REQUIRED)
 
 # Find nlohmann_json (optional - can be added as submodule if needed)
 find_package(nlohmann_json CONFIG)
@@ -29,6 +30,7 @@ set(SOURCES
     DialogueSystem.cpp
     DialogueEditor.cpp
     DialogueApp.cpp
+    imgui_impls.cpp
 )
 
 set(HEADERS
@@ -51,6 +53,7 @@ target_link_libraries(DialogueSystem PRIVATE
     ${OPENGL_LIBRARIES}
     ${CURL_LIBRARIES}
     nlohmann_json::nlohmann_json
+	ImGui::ImGui
 )
 
 # Copy necessary files to build directory

@@ -1,0 +1,47 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "154",
+  "SoundBanks": [
+   {
+    "Id": "3161908922",
+    "Type": "User",
+    "GUID": "{0EE6F5AA-BF9D-496B-AA8A-3B9F00941513}",
+    "Language": "SFX",
+    "Hash": "{01F59904-982F-2A16-14D8-EFC7321281DD}",
+    "ObjectPath": "\\SoundBanks\\Default Work Unit\\Main",
+    "ShortName": "Main",
+    "Path": "Main.bnk",
+    "Media": [
+     {
+      "Id": "1056292638",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Memory",
+      "ShortName": "JAY ARNOLD - CLOSURE.wav",
+      "CachePath": "E2/{E246EC92-88E3-8A79-0A11-10541AFADD65}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "290606676",
+      "Name": "PlaySong",
+      "ObjectPath": "\\Events\\Default Work Unit\\PlaySong",
+      "GUID": "{22012181-FB4A-4D4B-9640-FC80F0BB2463}",
+      "DurationType": "OneShot",
+      "DurationMin": "163.4375",
+      "DurationMax": "163.4375",
+      "MediaRefs": [
+       {
+        "Id": "1056292638"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{C1B6F8C5-8EC4-CB4A-34F7-5F0074D915EF}"
+ }
+}

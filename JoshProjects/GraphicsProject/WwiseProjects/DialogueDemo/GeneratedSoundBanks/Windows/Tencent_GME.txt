@@ -1,0 +1,26 @@
+Event	ID	Name			Wwise Object Path	Notes
+	992244	Play_Shotgun			\Factory Tencent GME\Aliases\Play_Shotgun	
+	89948534	Stop_Shotgun			\Factory Tencent GME\Aliases\Stop_Shotgun	
+	511699757	Play_GME_Send_Loop			\Factory Tencent GME\Play_GME_Send_Loop	
+	1185674625	Play_GME_Receive			\Factory Tencent GME\Play_GME_Receive	
+	1257006919	Play_gme_blend			\Factory Tencent GME\Aliases\Play_gme_blend	
+	1301038397	Stop_original			\Factory Tencent GME\Aliases\Stop_original	
+	1640874226	Stop_Loop			\Factory Tencent GME\Stop_Loop	
+	1724457055	Play_original			\Factory Tencent GME\Aliases\Play_original	
+	2181745102	Stop_Short			\Factory Tencent GME\Stop_Short	
+	2793175796	Play_GME_Send			\Factory Tencent GME\Play_GME_Send	
+	2839222858	Stop_GME_Send			\Factory Tencent GME\Stop_GME_Send	
+	3094646336	Play_Short			\Factory Tencent GME\Play_Short	
+	3854968841	Stop_gme_blend			\Factory Tencent GME\Aliases\Stop_gme_blend	
+	3949320891	Stop_GME_Send_Loop			\Factory Tencent GME\Stop_GME_Send_Loop	
+	4154133439	Stop_GME_Receive			\Factory Tencent GME\Stop_GME_Receive	
+	4266239556	Play_Loop			\Factory Tencent GME\Play_Loop	
+
+Source plug-ins	ID	Name	Type		Wwise Object Path	Notes
+	312778980	Tencent GME Receive	Tencent GME Receive		\Actor-Mixer Hierarchy\Factory Tencent GME\GME Receive\Tencent GME Receive	
+	392570486	Tone Generator	Wwise Tone Generator		\Actor-Mixer Hierarchy\Factory Tencent GME\Short\Tone Generator	
+	403148069	Tencent GME Source	Tencent GME Source		\Actor-Mixer Hierarchy\Factory Tencent GME\GME Send Mixer\GME Send Voice\Tencent GME Source	
+	405326769	Tencent GME Source	Tencent GME Source		\Actor-Mixer Hierarchy\Factory Tencent GME\GME Send Mixer\GME Send Loop\Muted Voice GME Source\Tencent GME Source	The GME Send plugin requires an active GME Source.
+	463440259	Tone Generator	Wwise Tone Generator		\Actor-Mixer Hierarchy\Factory Tencent GME\GME Send Mixer\GME Send Loop\GME Send Loop\Tone Generator	
+	747922802	Tone Generator	Wwise Tone Generator		\Actor-Mixer Hierarchy\Factory Tencent GME\Loop\Tone Generator	
+

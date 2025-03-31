@@ -1,0 +1,305 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "154",
+  "SoundBanks": [
+   {
+    "Id": "3683561152",
+    "Type": "User",
+    "GUID": "{ACFD17FF-AC29-4CD1-B8A2-F70164A8A7D4}",
+    "Language": "SFX",
+    "Hash": "{6EB873BB-5F1E-AEE9-8C3C-B93EEF2ED2F6}",
+    "ObjectPath": "\\SoundBanks\\Factory Tencent GME\\Tencent_GME",
+    "ShortName": "Tencent_GME",
+    "Path": "Tencent_GME.bnk",
+    "Plugins": {
+     "Custom": [
+      {
+       "Id": "312778980",
+       "Name": "Tencent GME Receive",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Factory Tencent GME\\GME Receive\\Tencent GME Receive",
+       "GUID": "{D23B1C35-7200-4304-823C-7BC29061CADC}",
+       "LibName": "Tencent GME Receive",
+       "LibId": "590025234"
+      },
+      {
+       "Id": "392570486",
+       "Name": "Tone Generator",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Factory Tencent GME\\Short\\Tone Generator",
+       "GUID": "{DFE6A69F-1249-4536-BD50-A69A113E0307}",
+       "LibName": "Wwise Tone Generator",
+       "LibId": "6684674"
+      },
+      {
+       "Id": "403148069",
+       "Name": "Tencent GME Source",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Factory Tencent GME\\GME Send Mixer\\GME Send Voice\\Tencent GME Source",
+       "GUID": "{701F3751-9594-4A33-A619-2FEEEDF04DA6}",
+       "LibName": "Tencent GME Source",
+       "LibId": "589894162"
+      },
+      {
+       "Id": "405326769",
+       "Name": "Tencent GME Source",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Factory Tencent GME\\GME Send Mixer\\GME Send Loop\\Muted Voice GME Source\\Tencent GME Source",
+       "GUID": "{0EFBC3D0-C41B-471F-84B2-B6A910DF0851}",
+       "LibName": "Tencent GME Source",
+       "LibId": "589894162"
+      },
+      {
+       "Id": "463440259",
+       "Name": "Tone Generator",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Factory Tencent GME\\GME Send Mixer\\GME Send Loop\\GME Send Loop\\Tone Generator",
+       "GUID": "{1193DD67-7D0E-4E46-BFE3-1862358E1CA2}",
+       "LibName": "Wwise Tone Generator",
+       "LibId": "6684674"
+      },
+      {
+       "Id": "747922802",
+       "Name": "Tone Generator",
+       "ObjectPath": "\\Actor-Mixer Hierarchy\\Factory Tencent GME\\Loop\\Tone Generator",
+       "GUID": "{9044D1C9-B960-4E4B-9749-B0F8DC4442CB}",
+       "LibName": "Wwise Tone Generator",
+       "LibId": "6684674"
+      }
+     ]
+    },
+    "Events": [
+     {
+      "Id": "1257006919",
+      "Name": "Play_gme_blend",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Aliases\\Play_gme_blend",
+      "GUID": "{51E24B83-1EC1-456F-A073-54C5EBEF3D14}",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0",
+      "ActionPostEvent": [
+       {
+        "Id": "511699757",
+        "Name": "Play_GME_Send_Loop",
+        "ObjectPath": "\\Events\\Factory Tencent GME\\Play_GME_Send_Loop",
+        "GUID": "{E6A363E6-B008-4E2E-94CF-1AA3B670656D}"
+       }
+      ]
+     },
+     {
+      "Id": "1185674625",
+      "Name": "Play_GME_Receive",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Play_GME_Receive",
+      "GUID": "{1E18FDB9-8309-474B-9D84-49B3160F1D07}",
+      "DurationType": "Unknown",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "312778980"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "2793175796",
+      "Name": "Play_GME_Send",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Play_GME_Send",
+      "GUID": "{8973DC7A-7E7A-4A84-AD30-B546CB50720B}",
+      "DurationType": "Unknown",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "403148069"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "511699757",
+      "Name": "Play_GME_Send_Loop",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Play_GME_Send_Loop",
+      "GUID": "{E6A363E6-B008-4E2E-94CF-1AA3B670656D}",
+      "DurationType": "Infinite",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "405326769"
+        },
+        {
+         "Id": "463440259"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "4266239556",
+      "Name": "Play_Loop",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Play_Loop",
+      "GUID": "{C29764DA-06FD-43A1-AC62-ED16F82E46C9}",
+      "DurationType": "Infinite",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "747922802"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "1724457055",
+      "Name": "Play_original",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Aliases\\Play_original",
+      "GUID": "{DB4827D7-8E9D-4D12-BD74-7986E6333199}",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0",
+      "ActionPostEvent": [
+       {
+        "Id": "4266239556",
+        "Name": "Play_Loop",
+        "ObjectPath": "\\Events\\Factory Tencent GME\\Play_Loop",
+        "GUID": "{C29764DA-06FD-43A1-AC62-ED16F82E46C9}"
+       }
+      ]
+     },
+     {
+      "Id": "3094646336",
+      "Name": "Play_Short",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Play_Short",
+      "GUID": "{DEC87872-7CA3-4FDF-99A9-97F4AD73A5F1}",
+      "DurationType": "OneShot",
+      "DurationMin": "0.75",
+      "DurationMax": "0.75",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "392570486"
+        }
+       ]
+      }
+     },
+     {
+      "Id": "992244",
+      "Name": "Play_Shotgun",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Aliases\\Play_Shotgun",
+      "GUID": "{92CCB5F4-AD7E-4C2F-B269-DA58D36A80D8}",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0",
+      "ActionPostEvent": [
+       {
+        "Id": "3094646336",
+        "Name": "Play_Short",
+        "ObjectPath": "\\Events\\Factory Tencent GME\\Play_Short",
+        "GUID": "{DEC87872-7CA3-4FDF-99A9-97F4AD73A5F1}"
+       }
+      ]
+     },
+     {
+      "Id": "3854968841",
+      "Name": "Stop_gme_blend",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Aliases\\Stop_gme_blend",
+      "GUID": "{7296F5B6-CDF0-4028-A040-A96E4089B61A}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0",
+      "ActionPostEvent": [
+       {
+        "Id": "3949320891",
+        "Name": "Stop_GME_Send_Loop",
+        "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_GME_Send_Loop",
+        "GUID": "{05A61C97-E0F5-4B80-9FA6-AE4E99F9DB68}"
+       }
+      ]
+     },
+     {
+      "Id": "4154133439",
+      "Name": "Stop_GME_Receive",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_GME_Receive",
+      "GUID": "{37169F7F-A978-42B0-BDAE-B768CEFCE580}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "2839222858",
+      "Name": "Stop_GME_Send",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_GME_Send",
+      "GUID": "{7826CC88-B725-4539-9416-2F53E7723708}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "3949320891",
+      "Name": "Stop_GME_Send_Loop",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_GME_Send_Loop",
+      "GUID": "{05A61C97-E0F5-4B80-9FA6-AE4E99F9DB68}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "1640874226",
+      "Name": "Stop_Loop",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_Loop",
+      "GUID": "{DBE6F35D-10BD-4F50-8701-0B8A9901CD27}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "1301038397",
+      "Name": "Stop_original",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Aliases\\Stop_original",
+      "GUID": "{718E9BAD-6ADB-4B0E-83F7-781A5FB30689}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0",
+      "ActionPostEvent": [
+       {
+        "Id": "1640874226",
+        "Name": "Stop_Loop",
+        "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_Loop",
+        "GUID": "{DBE6F35D-10BD-4F50-8701-0B8A9901CD27}"
+       }
+      ]
+     },
+     {
+      "Id": "2181745102",
+      "Name": "Stop_Short",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_Short",
+      "GUID": "{DF48E4CC-30E7-47D3-8BB6-F13734FCB53E}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     },
+     {
+      "Id": "89948534",
+      "Name": "Stop_Shotgun",
+      "ObjectPath": "\\Events\\Factory Tencent GME\\Aliases\\Stop_Shotgun",
+      "GUID": "{0D855CF7-EFCC-409B-B7C8-986E793C15A3}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0",
+      "ActionPostEvent": [
+       {
+        "Id": "2181745102",
+        "Name": "Stop_Short",
+        "ObjectPath": "\\Events\\Factory Tencent GME\\Stop_Short",
+        "GUID": "{DF48E4CC-30E7-47D3-8BB6-F13734FCB53E}"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{7C7724CC-B4F9-D290-8561-B54E741E5532}"
+ }
+}

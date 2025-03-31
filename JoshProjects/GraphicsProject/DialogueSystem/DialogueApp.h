@@ -1,16 +1,13 @@
-//DialogueApp.h
-
+// DialogueApp.h
 #pragma once
-
 #include <memory>
 #include <JAGEngine/IMainGame.h>
+#include <SDL/SDL.h>
 
 // Forward declarations
-class DialogueManager;
-class DialogueEditor;
-class DialogueAudioEngine;
+class DialogueScreen;
 
-// A simple implementation that doesn't use ScreenList
+// Using the screen approach like your racing game
 class DialogueApp : public JAGEngine::IMainGame {
 public:
     DialogueApp();
@@ -24,6 +21,8 @@ public:
     // Audio update called by the engine
     void updateAudio() override;
 
+    void run();
+
     // Override update method to handle our own updates
     void update() override;
 
@@ -31,10 +30,13 @@ public:
     void draw() override;
 
 private:
-    // Custom method for rendering our dialogue demo
-    void drawDialogueDemo();
-
-    std::unique_ptr<DialogueAudioEngine> m_audioEngine;
-    std::unique_ptr<DialogueManager> m_dialogueManager;
-    std::unique_ptr<DialogueEditor> m_dialogueEditor;
+    bool initSystems();
+    void checkImGuiInput();
+    bool handleEvents();
+    bool processEvents();
+    void initializeImGui();
+    void renderDialogueInterface();
+    std::unique_ptr<DialogueScreen> m_dialogueScreen;
+protected:
+    void onSDLEvent(SDL_Event& evnt);
 };

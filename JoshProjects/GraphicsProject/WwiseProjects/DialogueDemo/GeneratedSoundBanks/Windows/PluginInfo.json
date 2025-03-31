@@ -1,0 +1,54 @@
+{
+ "PluginInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "PluginLibs": [
+   {
+    "LibName": "Wwise Tone Generator",
+    "LibId": "6684674",
+    "Type": "Source",
+    "DLL": "AkToneGen",
+    "StaticLib": "AkToneSource"
+   },
+   {
+    "LibName": "System",
+    "LibId": "11403271",
+    "Type": "AudioDevice"
+   },
+   {
+    "LibName": "No Output",
+    "LibId": "11862023",
+    "Type": "AudioDevice"
+   },
+   {
+    "LibName": "Motion",
+    "LibId": "33226759",
+    "Type": "AudioDevice",
+    "DLL": "AkMotion",
+    "StaticLib": "AkMotionSink"
+   },
+   {
+    "LibName": "Tencent GME Source",
+    "LibId": "589894162",
+    "Type": "Source",
+    "DLL": "TencentGME",
+    "StaticLib": "TencentGME"
+   },
+   {
+    "LibName": "Tencent GME Receive",
+    "LibId": "590025234",
+    "Type": "Source",
+    "DLL": "TencentGME",
+    "StaticLib": "TencentGME"
+   },
+   {
+    "LibName": "Tencent GME Send",
+    "LibId": "590090771",
+    "Type": "Effect",
+    "DLL": "TencentGME",
+    "StaticLib": "TencentGME"
+   }
+  ],
+  "FileHash": "{A99E9654-7D5F-2901-7432-35731F343C5F}"
+ }
+}
