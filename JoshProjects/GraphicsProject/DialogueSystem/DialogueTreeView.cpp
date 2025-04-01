@@ -35,12 +35,12 @@ void createSampleDialogueTree(DialogueManager* manager) {
 
     // Create the dialogue tree nodes
     auto rootNode = manager->createDialogueNode(
-        DialogueNode::NodeType::Statement,
+        DialogueNode::NodeType::NPCStatement,
         "Do you know where..."
     );
 
     auto johnNode = manager->createDialogueNode(
-        DialogueNode::NodeType::Statement,
+        DialogueNode::NodeType::NPCStatement,
         "John is?"
     );
 
@@ -57,7 +57,7 @@ void createSampleDialogueTree(DialogueManager* manager) {
     noNode->setResponse(manager->getResponse(ResponseType::EnthusiasticNegative));
 
     auto likeNode = manager->createDialogueNode(
-        DialogueNode::NodeType::Statement,
+        DialogueNode::NodeType::NPCStatement,
         "Do you like me?"
     );
 
@@ -74,13 +74,13 @@ void createSampleDialogueTree(DialogueManager* manager) {
     likeNoNode->setResponse(manager->getResponse(ResponseType::IndifferentAffirmative));
 
     auto mapNode = manager->createDialogueNode(
-        DialogueNode::NodeType::Statement,
+        DialogueNode::NodeType::NPCStatement,
         "Let me mark it on your map."
     );
     mapNode->setResponse(manager->getResponse(ResponseType::MarkOnMap));
 
     auto whyNode = manager->createDialogueNode(
-        DialogueNode::NodeType::Statement,
+        DialogueNode::NodeType::NPCStatement,
         "Why?"
     );
 
@@ -132,7 +132,7 @@ void renderDialogueTreeView(DialogueManager* manager, std::shared_ptr<DialogueNo
             std::string typeText;
 
             switch (node->getType()) {
-            case DialogueNode::NodeType::Statement:
+            case DialogueNode::NodeType::NPCStatement:
                 typeText = "[Statement]";
                 break;
             case DialogueNode::NodeType::PlayerChoice:

@@ -38,6 +38,9 @@ public:
         // Initialize dialogue editor
         m_dialogueEditor = std::make_unique<DialogueEditor>(m_dialogueManager.get());
         m_dialogueEditor->initialize();
+
+        // Create a sample dialogue tree for testing
+        testDialogueTreeEditor(m_dialogueManager.get());
     }
 
     virtual void destroy() override {
@@ -220,7 +223,302 @@ private:
         ImGui::End();
     }
 
+    void testDialogueTreeEditor(DialogueManager* manager) {
+        // Create a sample dialogue tree for testing
+
+        // 1. Create root node - Player question
+        auto rootNode = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Do you know where..."
+        );
+
+        // 2. Create child nodes
+        auto johnNode = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "John is?"
+        );
+
+        auto yesNode = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Yes"
+        );
+
+        auto noNode = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "No"
+        );
+
+        // 3. Connect nodes
+        rootNode->addChildNode(johnNode);
+        johnNode->addChildNode(yesNode);
+        johnNode->addChildNode(noNode);
+
+        // 4. Add responses to nodes
+        auto enthusiasticResponse = manager->getResponse(ResponseType::EnthusiasticAffirmative);
+        auto negativeResponse = manager->getResponse(ResponseType::IndifferentNegative);
+
+        yesNode->setResponse(enthusiasticResponse);
+        noNode->setResponse(negativeResponse);
+
+        // Create a deeper branch for testing
+        auto likeNode = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Do you like me?"
+        );
+
+        auto likeYesNode = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Yes"
+        );
+
+        auto likeNoNode = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "No"
+        );
+
+        yesNode->addChildNode(likeNode);
+        likeNode->addChildNode(likeYesNode);
+        likeNode->addChildNode(likeNoNode);
+
+        // Set responses for these nodes
+        likeYesNode->setResponse(manager->getResponse(ResponseType::EnthusiasticAffirmative));
+        likeNoNode->setResponse(manager->getResponse(ResponseType::IndifferentNegative));
+
+        // Add a final node
+        auto mapNode = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Let me mark it on your map."
+        );
+
+        likeYesNode->addChildNode(mapNode);
+        likeNoNode->addChildNode(mapNode);
+
+        mapNode->setResponse(manager->getResponse(ResponseType::MarkOnMap));
+    }
+
+    void createRelationshipTestTree(DialogueManager* manager) {
+        // Create responses if they don't exist
+        if (!manager->getResponse(ResponseType::EnthusiasticAffirmative)) {
+            manager->createResponse(ResponseType::EnthusiasticAffirmative, "Absolutely!");
+        }
+
+        if (!manager->getResponse(ResponseType::IndifferentAffirmative)) {
+            manager->createResponse(ResponseType::IndifferentAffirmative, "Yeah, sure.");
+        }
+
+        if (!manager->getResponse(ResponseType::MarkOnMap)) {
+            manager->createResponse(ResponseType::MarkOnMap, "Let me mark that on your map.");
+        }
+
+        if (!manager->getResponse(ResponseType::Farewell)) {
+            manager->createResponse(ResponseType::Farewell, "See you around!");
+        }
+
+        // Create root node - starting dialogue
+        auto rootNode = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Do you know where John is?"
+        );
+
+        // Create a relationship check node (using ConditionCheck)
+        auto relationshipNode = manager->createDialogueNode(
+            DialogueNode::NodeType::ConditionCheck,
+            "Check if NPC likes player"
+        );
+
+        // Set the relationship condition to check if NPC is friendly or better
+        relationshipNode->setCondition(
+            DialogueCondition::CreateRelationshipCondition(RelationshipStatus::Friendly)
+        );
+
+        // Create response nodes based on relationship
+        // If relationship is Friendly or better
+        auto friendlyResponse = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Friendly response"
+        );
+        friendlyResponse->setResponse(manager->getResponse(ResponseType::EnthusiasticAffirmative));
+
+        // If relationship is Neutral or worse
+        auto neutralResponse = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Neutral response"
+        );
+        neutralResponse->setResponse(manager->getResponse(ResponseType::IndifferentAffirmative));
+
+        // Create the map marking node - both paths lead here
+        auto mapNode = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Mark location on map"
+        );
+        mapNode->setResponse(manager->getResponse(ResponseType::MarkOnMap));
+
+        // Create player choices to demonstrate more branching
+        auto choicesNode = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Can I ask you something else?"
+        );
+
+        auto yesChoice = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Yes"
+        );
+
+        auto noChoice = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "No"
+        );
+
+        // Additional response for more dialogue
+        auto moreDialogue = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "What else do you want to know?"
+        );
+
+        auto endDialogue = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "See you around then."
+        );
+        endDialogue->setResponse(manager->getResponse(ResponseType::Farewell));
+
+        // Connect all the nodes together
+
+        // Initial query connects to relationship check
+        rootNode->addChildNode(relationshipNode);
+
+        // Relationship check branches based on relationship status
+        relationshipNode->addChildNode(friendlyResponse, "Friendly");
+        relationshipNode->addChildNode(neutralResponse, "Neutral/Unfriendly");
+
+        // Both relationship responses lead to map marker
+        friendlyResponse->addChildNode(mapNode);
+        neutralResponse->addChildNode(mapNode);
+
+        // After map marker, go to follow-up question
+        mapNode->addChildNode(choicesNode);
+
+        // Follow-up question offers player choices
+        choicesNode->addChildNode(yesChoice);
+        choicesNode->addChildNode(noChoice);
+
+        // Player choices lead to different outcomes
+        yesChoice->addChildNode(moreDialogue);
+        noChoice->addChildNode(endDialogue);
+
+        // For testing, set up a relationship
+        manager->setRelationshipForTesting(1, 1, RelationshipStatus::Friendly); // NPC 1 likes player 1
+        manager->setRelationshipForTesting(2, 1, RelationshipStatus::Unfriendly); // NPC 2 dislikes player 1
+    }
+
+    void testDialogueNavigation() {
+        // Find a root node to start with
+        auto nodes = m_dialogueManager->getAllNodes();
+        std::shared_ptr<DialogueNode> startNode = nullptr;
+
+        for (auto& node : nodes) {
+            if (!m_dialogueManager->hasParent(node->getId())) {
+                startNode = node;
+                break;
+            }
+        }
+
+        if (!startNode) {
+            ImGui::Text("No root nodes found. Create a dialogue tree first.");
+            return;
+        }
+
+        ImGui::Text("Testing dialogue tree navigation");
+        ImGui::Text("Starting from node: %s", startNode->getText().c_str());
+
+        // Set up test parameters
+        static int npcId = 1;
+        static int playerId = 1;
+        static int relationshipLevel = static_cast<int>(RelationshipStatus::Friendly);
+
+        ImGui::SliderInt("NPC ID", &npcId, 1, 10);
+        ImGui::SliderInt("Player ID", &playerId, 1, 10);
+
+        const char* relationshipLevels[] = {
+            "Hostile", "Unfriendly", "Neutral", "Friendly", "Close"
+        };
+
+        if (ImGui::Combo("Relationship", &relationshipLevel, relationshipLevels, IM_ARRAYSIZE(relationshipLevels))) {
+            // Update the test relationship
+            m_dialogueManager->setRelationshipForTesting(
+                npcId, playerId, static_cast<RelationshipStatus>(relationshipLevel)
+            );
+        }
+
+        ImGui::Separator();
+
+        // Navigate through the dialogue tree
+        static std::shared_ptr<DialogueNode> currentNode = startNode;
+
+        if (currentNode) {
+            // Display current node
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "Current Node: %s", currentNode->getText().c_str());
+
+            // Display associated response if any
+            auto response = currentNode->getResponse();
+            if (response) {
+                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.0f, 1.0f), "Response: %s",
+                    response->getTextForPersonality(PersonalityType::Bubbly).c_str());
+            }
+
+            ImGui::Separator();
+
+            // For condition nodes, show evaluation result
+            if (currentNode->getType() == DialogueNode::NodeType::ConditionCheck) {
+                bool result = m_dialogueManager->evaluateCondition(
+                    currentNode->getCondition(), npcId, playerId
+                );
+
+                ImGui::TextColored(
+                    result ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
+                    "Condition result: %s", result ? "SUCCESS" : "FAIL"
+                );
+
+                // Auto-advance for condition nodes
+                if (ImGui::Button("Evaluate Condition")) {
+                    auto nextNode = m_dialogueManager->findNextNode(currentNode, npcId, playerId);
+                    if (nextNode) {
+                        currentNode = nextNode;
+                    }
+                }
+            }
+
+            // For player choice nodes, show all options
+            if (currentNode->getType() == DialogueNode::NodeType::PlayerChoice) {
+                ImGui::Text("Select a choice:");
+            }
+
+            // Show options to move to children
+            auto children = currentNode->getChildren();
+            if (!children.empty()) {
+                for (const auto& childPair : children) {
+                    std::string buttonText = childPair.first->getText();
+                    if (!childPair.second.empty()) {
+                        buttonText += " [" + childPair.second + "]";
+                    }
+
+                    if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                        currentNode = childPair.first;
+                    }
+                }
+            }
+            else {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "End of dialogue branch");
+            }
+
+            // Reset button
+            if (ImGui::Button("Reset to Start")) {
+                currentNode = startNode;
+            }
+        }
+    }
+
     std::unique_ptr<DialogueAudioEngine> m_audioEngine;
     std::unique_ptr<DialogueManager> m_dialogueManager;
     std::unique_ptr<DialogueEditor> m_dialogueEditor;
 };
+

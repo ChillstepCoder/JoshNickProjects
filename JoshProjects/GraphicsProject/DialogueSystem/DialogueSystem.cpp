@@ -64,17 +64,19 @@ void DialogueResponse::setVoiceFilePath(PersonalityType personality, VoiceType v
 }
 
 void DialogueResponse::generateAllPersonalityVariants() {
-    // Create mock personality variants
-    setTextForPersonality(PersonalityType::Bubbly, m_defaultText + " [Bubbly version]", false);
-    setTextForPersonality(PersonalityType::Grumpy, m_defaultText + " [Grumpy version]", false);
-    setTextForPersonality(PersonalityType::Manic, m_defaultText + " [Manic version]", false);
-    setTextForPersonality(PersonalityType::Shy, m_defaultText + " [Shy version]", false);
-    setTextForPersonality(PersonalityType::Serious, m_defaultText + " [Serious version]", false);
-    setTextForPersonality(PersonalityType::Anxious, m_defaultText + " [Anxious version]", false);
-    setTextForPersonality(PersonalityType::Confident, m_defaultText + " [Confident version]", false);
-    setTextForPersonality(PersonalityType::Intellectual, m_defaultText + " [Intellectual version]", false);
-    setTextForPersonality(PersonalityType::Mysterious, m_defaultText + " [Mysterious version]", false);
-    setTextForPersonality(PersonalityType::Friendly, m_defaultText + " [Friendly version]", false);
+    // Create mock personality variants if they don't exist
+    if (m_personalityVariants.empty()) {
+        setTextForPersonality(PersonalityType::Bubbly, m_defaultText + " [Bubbly version]", false);
+        setTextForPersonality(PersonalityType::Grumpy, m_defaultText + " [Grumpy version]", false);
+        setTextForPersonality(PersonalityType::Manic, m_defaultText + " [Manic version]", false);
+        setTextForPersonality(PersonalityType::Shy, m_defaultText + " [Shy version]", false);
+        setTextForPersonality(PersonalityType::Serious, m_defaultText + " [Serious version]", false);
+        setTextForPersonality(PersonalityType::Anxious, m_defaultText + " [Anxious version]", false);
+        setTextForPersonality(PersonalityType::Confident, m_defaultText + " [Confident version]", false);
+        setTextForPersonality(PersonalityType::Intellectual, m_defaultText + " [Intellectual version]", false);
+        setTextForPersonality(PersonalityType::Mysterious, m_defaultText + " [Mysterious version]", false);
+        setTextForPersonality(PersonalityType::Friendly, m_defaultText + " [Friendly version]", false);
+    }
 }
 
 void DialogueResponse::regeneratePersonalityVariant(PersonalityType personality) {
@@ -114,6 +116,26 @@ std::vector<std::pair<std::shared_ptr<DialogueNode>, std::string>> DialogueNode:
     return m_children;
 }
 
+bool DialogueNode::updateChildCondition(int childId, const std::string& newCondition) {
+    for (auto& childPair : m_children) {
+        if (childPair.first->getId() == childId) {
+            childPair.second = newCondition;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool DialogueNode::removeChild(int childId) {
+    for (auto it = m_children.begin(); it != m_children.end(); ++it) {
+        if (it->first->getId() == childId) {
+            m_children.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
 void DialogueNode::setResponse(std::shared_ptr<DialogueResponse> response) {
     m_response = response;
 }
@@ -147,7 +169,71 @@ void DialogueManager::shutdown() {
 std::shared_ptr<DialogueResponse> DialogueManager::createResponse(ResponseType type, const std::string& defaultText) {
     auto response = std::make_shared<DialogueResponse>(type, defaultText);
     m_responses[type] = response;
+
+    // Automatically generate variants for all personality types
+    generatePersonalityVariants(response);
+
     return response;
+}
+
+void DialogueManager::generatePersonalityVariants(std::shared_ptr<DialogueResponse> response) {
+    // For each personality type, generate a variant
+    for (int i = 0; i <= static_cast<int>(PersonalityType::Friendly); i++) {
+        PersonalityType personality = static_cast<PersonalityType>(i);
+
+        // Generate text with GPT (or use mock for now)
+        std::string baseText = response->getTextForPersonality(PersonalityType::Bubbly);
+        std::string generatedText = generateTextWithGPT(
+            response->getType(), personality, baseText);
+
+        // Set as unedited
+        response->setTextForPersonality(personality, generatedText, false);
+
+        std::cout << "Generated " << getPersonalityName(personality)
+            << " variant: " << generatedText << std::endl;
+    }
+}
+
+std::string DialogueManager::generateTextWithGPT(ResponseType type, PersonalityType personality, const std::string& defaultText) {
+    if (m_gptApiKey.empty()) {
+        std::cerr << "No GPT API key set. Using mock responses." << std::endl;
+
+        // More detailed mock responses based on personality
+        switch (personality) {
+        case PersonalityType::Bubbly:
+            return "Absolutely! I'd be super happy to help with that!";
+        case PersonalityType::Grumpy:
+            return "Yeah, fine, whatever. I'll do it.";
+        case PersonalityType::Manic:
+            return "YES! YES! ABSOLUTELY YES!! LET'S DO THIS RIGHT NOW!!";
+        case PersonalityType::Shy:
+            return "Um... I guess... if that's okay with you...";
+        case PersonalityType::Serious:
+            return "Affirmative. I will proceed with the task.";
+        case PersonalityType::Anxious:
+            return "Oh! Yes, I can do that... unless that's going to be a problem?";
+        case PersonalityType::Confident:
+            return "Of course I can. There's nobody better for the job.";
+        case PersonalityType::Intellectual:
+            return "Indeed, I shall undertake this task with methodical precision.";
+        case PersonalityType::Mysterious:
+            return "Perhaps... if fate allows it... the task shall be done.";
+        case PersonalityType::Friendly:
+            return "Sure thing, friend! Happy to help!";
+        default:
+            return defaultText + " [Mock response]";
+        }
+    }
+
+    // In a real implementation, you would:
+    // 1. Build a prompt with the personality and response type
+    std::string prompt = getPromptForPersonality(type, personality, defaultText);
+
+    // 2. Make an API call to GPT
+    // 3. Parse the response
+
+    // For demo, just return the mock
+    return defaultText + " [API Key present but using mock]";
 }
 
 std::shared_ptr<DialogueResponse> DialogueManager::getResponse(ResponseType type) {
@@ -185,34 +271,6 @@ void DialogueManager::setAPIKeys(const std::string& gptKey, const std::string& e
     m_elevenLabsApiKey = elevenLabsKey;
 }
 
-// Mock implementation without actual API calls
-std::string DialogueManager::generateTextWithGPT(ResponseType type, PersonalityType personality, const std::string& defaultText) {
-    if (m_gptApiKey.empty()) {
-        std::cerr << "ERROR: No GPT API key set" << std::endl;
-        return defaultText + " [API Key missing]";
-    }
-
-    std::string prompt = getPromptForPersonality(type, personality, defaultText);
-
-    // Instead of making API call, generate mock text
-    std::string personalityStr;
-    switch (personality) {
-    case PersonalityType::Bubbly: personalityStr = "Absolutely! For sure!"; break;
-    case PersonalityType::Grumpy: personalityStr = "Yeah, whatever."; break;
-    case PersonalityType::Manic: personalityStr = "YES! YES! YES!"; break;
-    case PersonalityType::Shy: personalityStr = "Um, I guess so..."; break;
-    case PersonalityType::Serious: personalityStr = "Affirmative."; break;
-    case PersonalityType::Anxious: personalityStr = "Oh! Yes, if that's okay?"; break;
-    case PersonalityType::Confident: personalityStr = "Without a doubt."; break;
-    case PersonalityType::Intellectual: personalityStr = "Indeed, I concur with that assessment."; break;
-    case PersonalityType::Mysterious: personalityStr = "Perhaps... if fate allows it."; break;
-    case PersonalityType::Friendly: personalityStr = "Sure thing, friend!"; break;
-    default: personalityStr = defaultText; break;
-    }
-
-    return personalityStr;
-}
-
 bool DialogueManager::generateVoiceWithElevenLabs(const std::string& text, PersonalityType personality, VoiceType voice, const std::string& outputPath) {
     if (m_elevenLabsApiKey.empty()) {
         std::cerr << "ERROR: No ElevenLabs API key set" << std::endl;
@@ -245,33 +303,447 @@ void DialogueManager::generateAllTextVariants() {
     }
 }
 
-void DialogueManager::generateAllVoiceVariants(VoiceType voice) {
+void DialogueManager::generateAllVoiceVariants(VoiceType defaultVoice) {
+    // For each response type
     for (auto& pair : m_responses) {
         auto& response = pair.second;
 
         // For each personality type
-        for (int i = 0; i < static_cast<int>(PersonalityType::Friendly) + 1; ++i) {
+        for (int i = 0; i <= static_cast<int>(PersonalityType::Friendly); i++) {
             PersonalityType personality = static_cast<PersonalityType>(i);
-
-            // Get the text for this personality
             std::string text = response->getTextForPersonality(personality);
 
-            // Generate output path
-            std::string responseType = std::to_string(static_cast<int>(pair.first));
-            std::string personalityType = std::to_string(i);
-            std::string voiceType = std::to_string(static_cast<int>(voice));
+            // Generate voice for the default voice type
+            std::string outputPath = buildAudioFilePath(pair.first, personality, defaultVoice);
 
-            std::string outputPath = "Audio/Dialogue/";
-            outputPath += "response" + responseType + "_";
-            outputPath += "personality" + personalityType + "_";
-            outputPath += "voice" + voiceType + ".mp3";
-
-            // Generate voice file
-            if (generateVoiceWithElevenLabs(text, personality, voice, outputPath)) {
-                response->setVoiceFilePath(personality, voice, outputPath);
+            // Generate voice file if it doesn't exist already
+            if (!response->hasVoiceGenerated(personality, defaultVoice)) {
+                if (generateVoiceWithElevenLabs(text, personality, defaultVoice, outputPath)) {
+                    response->setVoiceFilePath(personality, defaultVoice, outputPath);
+                    std::cout << "Generated voice for " << getResponseTypeName(pair.first)
+                        << " with " << getPersonalityName(personality)
+                        << " personality and " << getVoiceTypeName(defaultVoice) << " voice." << std::endl;
+                }
             }
         }
     }
+}
+
+std::string DialogueManager::getPersonalityName(PersonalityType type) const {
+    switch (type) {
+    case PersonalityType::Bubbly: return "Bubbly";
+    case PersonalityType::Grumpy: return "Grumpy";
+    case PersonalityType::Manic: return "Manic";
+    case PersonalityType::Shy: return "Shy";
+    case PersonalityType::Serious: return "Serious";
+    case PersonalityType::Anxious: return "Anxious";
+    case PersonalityType::Confident: return "Confident";
+    case PersonalityType::Intellectual: return "Intellectual";
+    case PersonalityType::Mysterious: return "Mysterious";
+    case PersonalityType::Friendly: return "Friendly";
+    default: return "Unknown";
+    }
+}
+
+std::string DialogueManager::getResponseTypeName(ResponseType type) const {
+    switch (type) {
+    case ResponseType::EnthusiasticAffirmative: return "Enthusiastic Affirmative";
+    case ResponseType::IndifferentAffirmative: return "Indifferent Affirmative";
+    case ResponseType::ReluctantAffirmative: return "Reluctant Affirmative";
+    case ResponseType::EnthusiasticNegative: return "Enthusiastic Negative";
+    case ResponseType::IndifferentNegative: return "Indifferent Negative";
+    case ResponseType::UntrustworthyResponse: return "Untrustworthy Response";
+    case ResponseType::Confused: return "Confused";
+    case ResponseType::Greeting: return "Greeting";
+    case ResponseType::Farewell: return "Farewell";
+    case ResponseType::MarkOnMap: return "Mark on Map";
+    case ResponseType::GiveDirections: return "Give Directions";
+    case ResponseType::AskForMoney: return "Ask for Money";
+    case ResponseType::OfferHelp: return "Offer Help";
+    case ResponseType::RefuseHelp: return "Refuse Help";
+    case ResponseType::AskToFollow: return "Ask to Follow";
+    default: return "Unknown";
+    }
+}
+
+std::string DialogueManager::getVoiceTypeName(VoiceType type) const {
+    switch (type) {
+    case VoiceType::Male1: return "Male 1";
+    case VoiceType::Male2: return "Male 2";
+    case VoiceType::Male3: return "Male 3";
+    case VoiceType::Female1: return "Female 1";
+    case VoiceType::Female2: return "Female 2";
+    case VoiceType::Female3: return "Female 3";
+    case VoiceType::Child1: return "Child 1";
+    case VoiceType::Elderly1: return "Elderly 1";
+    case VoiceType::Robot1: return "Robot 1";
+    default: return "Unknown";
+    }
+}
+
+RelationshipStatus DialogueManager::getRelationshipStatus(int npcId, int playerId) {
+    // Check the test relationship map
+    auto key = std::make_pair(npcId, playerId);
+    auto it = m_testRelationships.find(key);
+
+    if (it != m_testRelationships.end()) {
+        return it->second;
+    }
+
+    // Default is neutral
+    return RelationshipStatus::Neutral;
+}
+
+bool DialogueManager::registerWithWwise() {
+    if (!m_audioEngine) {
+        std::cerr << "Error: Audio engine not initialized" << std::endl;
+        return false;
+    }
+
+    // For each response type
+    for (auto& pair : m_responses) {
+        auto& response = pair.second;
+        ResponseType type = pair.first;
+
+        // For each personality/voice combination
+        for (int i = 0; i <= static_cast<int>(PersonalityType::Friendly); i++) {
+            PersonalityType personality = static_cast<PersonalityType>(i);
+
+            for (int j = 0; j <= static_cast<int>(VoiceType::Robot1); j++) {
+                VoiceType voice = static_cast<VoiceType>(j);
+
+                if (response->hasVoiceGenerated(personality, voice)) {
+                    std::string filePath = response->getVoiceFilePath(personality, voice);
+
+                    // Create a unique event ID based on the response type, personality and voice
+                    AkUniqueID eventID = createDialogueEventID(type, personality, voice);
+
+                    // Register the audio file with Wwise (mock implementation)
+                    std::cout << "Registering dialogue audio with Wwise: " << filePath
+                        << " as event ID " << eventID << std::endl;
+
+                    // In a real implementation, you would:
+                    // 1. Register the file with Wwise
+                    // 2. Create an event for it
+                    // 3. Store the mapping for later use
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+DialogueManager::AkUniqueID DialogueManager::createDialogueEventID(ResponseType type, PersonalityType personality, VoiceType voice) {
+    // This is a simple hash function to create a unique ID
+    // In reality, you would use Wwise's event ID system
+    uint32_t typeVal = static_cast<uint32_t>(type);
+    uint32_t personalityVal = static_cast<uint32_t>(personality);
+    uint32_t voiceVal = static_cast<uint32_t>(voice);
+
+    return 1000000 + (typeVal * 10000) + (personalityVal * 100) + voiceVal;
+}
+
+bool DialogueManager::playDialogueResponse(ResponseType type, PersonalityType personality, VoiceType voice) {
+    if (!m_audioEngine) {
+        std::cerr << "Error: Audio engine not initialized" << std::endl;
+        return false;
+    }
+
+    // Get the response
+    auto response = getResponse(type);
+    if (!response) {
+        std::cerr << "Error: Response not found for type " << static_cast<int>(type) << std::endl;
+        return false;
+    }
+
+    // Check if voice is generated
+    if (!response->hasVoiceGenerated(personality, voice)) {
+        std::cerr << "Error: Voice not generated for this combination" << std::endl;
+        return false;
+    }
+
+    // Get file path
+    std::string filePath = response->getVoiceFilePath(personality, voice);
+
+    // Create event ID
+    AkUniqueID eventID = createDialogueEventID(type, personality, voice);
+
+    // In a real implementation, you would:
+    // 1. Play the Wwise event
+    std::cout << "Playing dialogue event ID " << eventID << " from file " << filePath << std::endl;
+
+    return true;
+}
+
+std::vector<std::shared_ptr<DialogueNode>> DialogueManager::getAllNodes() const {
+    std::vector<std::shared_ptr<DialogueNode>> result;
+    for (const auto& pair : m_nodes) {
+        result.push_back(pair.second);
+    }
+    return result;
+}
+
+bool DialogueManager::deleteNode(int nodeId) {
+    // First check if the node exists
+    auto it = m_nodes.find(nodeId);
+    if (it == m_nodes.end()) {
+        return false;
+    }
+
+    // Get the node to delete
+    auto nodeToDelete = it->second;
+
+    // Remove this node from any parent nodes
+    removeChildFromParent(nodeId);
+
+    // Remove this node from our map
+    m_nodes.erase(it);
+
+    return true;
+}
+
+std::shared_ptr<DialogueNode> DialogueManager::duplicateNode(int nodeId) {
+    auto sourceNode = getNodeById(nodeId);
+    if (!sourceNode) {
+        return nullptr;
+    }
+
+    // Create a new node with the same type and text
+    auto newNode = createDialogueNode(sourceNode->getType(), sourceNode->getText() + " (Copy)");
+
+    // Copy the response if any
+    if (auto response = sourceNode->getResponse()) {
+        newNode->setResponse(response);
+    }
+
+    // Copy the condition if relevant
+    newNode->setCondition(sourceNode->getCondition());
+
+    // We don't copy children, as that would potentially create a deep copy
+
+    return newNode;
+}
+
+bool DialogueManager::hasParent(int nodeId) const {
+    // Check if this node is a child of any other node
+    return findParentNode(nodeId) != nullptr;
+}
+
+std::shared_ptr<DialogueNode> DialogueManager::findParentNode(int childId) const {
+    for (const auto& pair : m_nodes) {
+        auto& parentNode = pair.second;
+        auto children = parentNode->getChildren();
+
+        for (const auto& childPair : children) {
+            if (childPair.first->getId() == childId) {
+                return parentNode;
+            }
+        }
+    }
+    return nullptr;
+}
+
+bool DialogueManager::removeChildFromParent(int childId) {
+    auto parent = findParentNode(childId);
+    if (parent) {
+        return parent->removeChild(childId);
+    }
+    return false;
+}
+
+bool DialogueManager::updateNodeType(int nodeId, DialogueNode::NodeType newType) {
+    auto it = m_nodes.find(nodeId);
+    if (it == m_nodes.end()) {
+        return false;
+    }
+
+    // Since we can't modify the type directly (it's private),
+    // we need to create a new node and transfer properties
+    auto oldNode = it->second;
+    auto newNode = createDialogueNode(newType, oldNode->getText());
+
+    // Copy response if present
+    auto response = oldNode->getResponse();
+    if (response) {
+        newNode->setResponse(response);
+    }
+
+    // Copy condition if present
+    newNode->setCondition(oldNode->getCondition());
+
+    // Copy children
+    for (const auto& childPair : oldNode->getChildren()) {
+        newNode->addChildNode(childPair.first, childPair.second);
+    }
+
+    // Replace the old node in all parent nodes
+    for (auto& pair : m_nodes) {
+        auto& node = pair.second;
+        auto children = node->getChildren();
+
+        for (const auto& childPair : children) {
+            if (childPair.first->getId() == nodeId) {
+                // Replace child with new node
+                node->removeChild(nodeId);
+                node->addChildNode(newNode, childPair.second);
+            }
+        }
+    }
+
+    // Replace old node in the map
+    m_nodes[nodeId] = newNode;
+
+    return true;
+}
+
+std::shared_ptr<DialogueNode> DialogueManager::findNextNode(std::shared_ptr<DialogueNode> currentNode, int npcId, int playerId) {
+    if (!currentNode) {
+        return nullptr;
+    }
+
+    // Handle based on node type
+    switch (currentNode->getType()) {
+    case DialogueNode::NodeType::ConditionCheck: {
+        // Evaluate the condition
+        const DialogueCondition& condition = currentNode->getCondition();
+        bool conditionResult = evaluateCondition(condition, npcId, playerId);
+
+        // Find a child node based on the condition result
+        for (const auto& childPair : currentNode->getChildren()) {
+            // Look for "success" or "true" in the condition text for passing case
+            std::string conditionText = childPair.second;
+            std::transform(conditionText.begin(), conditionText.end(), conditionText.begin(), ::tolower);
+
+            if ((conditionResult && (conditionText.find("success") != std::string::npos ||
+                conditionText.find("true") != std::string::npos ||
+                conditionText.find("pass") != std::string::npos ||
+                conditionText.find("friendly") != std::string::npos)) ||
+                (!conditionResult && (conditionText.find("fail") != std::string::npos ||
+                    conditionText.find("false") != std::string::npos ||
+                    conditionText.find("neutral") != std::string::npos ||
+                    conditionText.find("unfriendly") != std::string::npos))) {
+                return childPair.first;
+            }
+        }
+
+        // If no specific condition branch found, use the first child node
+        auto children = currentNode->getChildren();
+        if (!children.empty()) {
+            return children.front().first;
+        }
+
+        // No valid child nodes
+        return nullptr;
+    }
+
+    case DialogueNode::NodeType::BranchPoint: {
+        // For branch points, let the caller decide which branch to take
+        // Just return the node itself
+        return currentNode;
+    }
+
+    default: {
+        // For other node types, just return the node itself
+        return currentNode;
+    }
+    }
+}
+
+bool DialogueManager::evaluateCondition(const DialogueCondition& condition, int npcId, int playerId) {
+    // Based on condition type, evaluate it
+    switch (condition.type) {
+    case ConditionType::None:
+        return true; // No condition always passes
+
+    case ConditionType::RelationshipStatus: {
+        RelationshipStatus npcRelationship = getRelationshipStatus(npcId, playerId);
+        return static_cast<int>(npcRelationship) >= static_cast<int>(condition.relationshipThreshold);
+    }
+
+    case ConditionType::QuestStatus:
+        return checkQuestStatus(condition.parameterName, condition.parameterValue);
+
+    case ConditionType::InventoryCheck: {
+        int quantity = 0;
+        try {
+            quantity = std::stoi(condition.parameterValue);
+        }
+        catch (...) {
+            return false; // Invalid quantity
+        }
+        return checkInventoryItem(condition.parameterName, quantity);
+    }
+
+    case ConditionType::StatCheck: {
+        int threshold = 0;
+        try {
+            threshold = std::stoi(condition.parameterValue);
+        }
+        catch (...) {
+            return false; // Invalid threshold
+        }
+        return checkPlayerStat(condition.parameterName, threshold);
+    }
+
+    case ConditionType::Custom:
+        // For custom conditions, we'd need a scripting system
+        // For now, assume custom conditions pass for testing
+        return true;
+
+    default:
+        return false; // Unknown condition type fails
+    }
+}
+
+bool DialogueManager::checkQuestStatus(const std::string& questId, const std::string& status) {
+    // Check the test quest state map
+    auto it = m_testQuestStates.find(questId);
+
+    if (it != m_testQuestStates.end()) {
+        return it->second == status;
+    }
+
+    // Default is quest not found
+    return false;
+}
+
+bool DialogueManager::checkInventoryItem(const std::string& itemId, int quantity) {
+    // Check the test inventory map
+    auto it = m_testInventory.find(itemId);
+
+    if (it != m_testInventory.end()) {
+        return it->second >= quantity;
+    }
+
+    // Default is item not in inventory
+    return false;
+}
+
+bool DialogueManager::checkPlayerStat(const std::string& statName, int threshold) {
+    // Check the test player stats map
+    auto it = m_testPlayerStats.find(statName);
+
+    if (it != m_testPlayerStats.end()) {
+        return it->second >= threshold;
+    }
+
+    // Default is stat not found
+    return false;
+}
+
+
+std::string DialogueManager::buildAudioFilePath(ResponseType type, PersonalityType personality, VoiceType voice) {
+    std::string responseType = std::to_string(static_cast<int>(type));
+    std::string personalityType = std::to_string(static_cast<int>(personality));
+    std::string voiceType = std::to_string(static_cast<int>(voice));
+
+    std::string outputPath = "Audio/Dialogue/";
+    outputPath += "response" + responseType + "_";
+    outputPath += "personality" + personalityType + "_";
+    outputPath += "voice" + voiceType + ".mp3";
+
+    return outputPath;
 }
 
 std::string DialogueManager::getVoiceIdFromType(VoiceType voice) {
@@ -334,4 +806,8 @@ std::string DialogueManager::getPromptForPersonality(ResponseType type, Personal
     prompt += ".\n\nBase response: " + defaultText + "\n\nGenerated response:";
 
     return prompt;
+}
+
+void DialogueManager::setRelationshipForTesting(int npcId, int playerId, RelationshipStatus status) {
+    m_testRelationships[std::make_pair(npcId, playerId)] = status;
 }
