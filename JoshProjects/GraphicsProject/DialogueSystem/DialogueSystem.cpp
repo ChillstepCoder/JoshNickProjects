@@ -144,6 +144,7 @@ std::shared_ptr<DialogueResponse> DialogueNode::getResponse() const {
     return m_response;
 }
 
+
 // ==========================================================
 // DialogueManager Implementation
 // ==========================================================
@@ -174,6 +175,302 @@ std::shared_ptr<DialogueResponse> DialogueManager::createResponse(ResponseType t
     generatePersonalityVariants(response);
 
     return response;
+}
+
+void DialogueManager::createConditionBranches(std::shared_ptr<DialogueNode> conditionNode, int numBranches) {
+    if (!conditionNode || conditionNode->getType() != DialogueNode::NodeType::ConditionCheck) {
+        return; // Not a condition node
+    }
+
+    // Get the condition
+    DialogueCondition condition = conditionNode->getCondition();
+
+    // Get appropriate branch labels based on condition type
+    std::vector<std::string> branchLabels = condition.GetBranchLabels();
+
+    // Make sure we have at least the default branches
+    while (branchLabels.size() < 2) {
+        branchLabels.push_back("Branch " + std::to_string(branchLabels.size() + 1));
+    }
+
+    // Add more generic branches if needed
+    while (branchLabels.size() < numBranches) {
+        branchLabels.push_back("Branch " + std::to_string(branchLabels.size() + 1));
+    }
+
+    // Limit to requested number of branches
+    branchLabels.resize(numBranches);
+
+    // Get existing children and their conditions
+    auto children = conditionNode->getChildren();
+    std::vector<std::shared_ptr<DialogueNode>> existingNodes;
+    std::vector<std::string> existingLabels;
+    std::map<int, BranchCondition> existingBranchConditions;
+
+    // Save existing children to preserve them
+    for (int i = 0; i < children.size(); i++) {
+        existingNodes.push_back(children[i].first);
+        existingLabels.push_back(children[i].second);
+        existingBranchConditions[i] = conditionNode->getBranchCondition(i);
+
+        // Remove from the node but don't delete
+        conditionNode->removeChild(children[i].first->getId());
+    }
+
+    // Determine how to reuse existing nodes
+    int existingCount = static_cast<int>(existingNodes.size());
+    int branchCount = static_cast<int>(branchLabels.size());
+
+    // If we have specific condition type, create appropriate branch conditions
+    if (condition.type == ConditionType::RelationshipStatus) {
+        // For relationship conditions, create appropriate ranges
+        RelationshipStatus threshold = condition.relationshipThreshold;
+
+        // Set up default branch conditions
+        std::vector<BranchCondition> defaultBranchConditions;
+
+        switch (threshold) {
+        case RelationshipStatus::Close:
+            // If threshold is Close, branches are Close, Friendly, Neutral, Unfriendly, Hostile
+            defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Close, RelationshipStatus::Close));
+            if (branchCount > 1) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Friendly, RelationshipStatus::Friendly));
+            if (branchCount > 2) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Neutral, RelationshipStatus::Neutral));
+            if (branchCount > 3) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Unfriendly, RelationshipStatus::Unfriendly));
+            if (branchCount > 4) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Hostile, RelationshipStatus::Hostile));
+            break;
+
+        case RelationshipStatus::Friendly:
+            // If threshold is Friendly, branches are Friendly+, Neutral, Unfriendly, Hostile
+            defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Friendly, RelationshipStatus::Close));
+            if (branchCount > 1) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Neutral, RelationshipStatus::Neutral));
+            if (branchCount > 2) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Unfriendly, RelationshipStatus::Unfriendly));
+            if (branchCount > 3) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Hostile, RelationshipStatus::Hostile));
+            break;
+
+        case RelationshipStatus::Neutral:
+            // If threshold is Neutral, branches are Neutral+, Unfriendly, Hostile
+            defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Neutral, RelationshipStatus::Close));
+            if (branchCount > 1) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Unfriendly, RelationshipStatus::Unfriendly));
+            if (branchCount > 2) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Hostile, RelationshipStatus::Hostile));
+            break;
+
+        case RelationshipStatus::Unfriendly:
+            // If threshold is Unfriendly, branches are Unfriendly+, Hostile
+            defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Unfriendly, RelationshipStatus::Close));
+            if (branchCount > 1) defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Hostile, RelationshipStatus::Hostile));
+            break;
+
+        case RelationshipStatus::Hostile:
+            // If threshold is Hostile, all relationships qualify
+            defaultBranchConditions.push_back(BranchCondition::CreateRelationshipRange(RelationshipStatus::Hostile, RelationshipStatus::Close));
+            break;
+        }
+
+        // Fill in any remaining branches with neutral conditions
+        while (defaultBranchConditions.size() < branchCount) {
+            defaultBranchConditions.push_back(BranchCondition());
+        }
+
+        // If we have fewer existing nodes than requested branches,
+        // we'll reuse all existing ones and create new ones as needed
+        if (existingCount <= branchCount) {
+            // Reuse existing nodes
+            for (int i = 0; i < existingCount; i++) {
+                conditionNode->addChildNode(existingNodes[i], branchLabels[i]);
+
+                // Keep existing branch condition if available, otherwise use default
+                if (existingBranchConditions.find(i) != existingBranchConditions.end()) {
+                    conditionNode->setBranchCondition(i, existingBranchConditions[i]);
+                }
+                else {
+                    conditionNode->setBranchCondition(i, defaultBranchConditions[i]);
+                }
+            }
+
+            // Create new nodes for any additional branches
+            for (int i = existingCount; i < branchCount; i++) {
+                auto childNode = createDialogueNode(
+                    DialogueNode::NodeType::NPCStatement,
+                    "Response for " + branchLabels[i]
+                );
+                conditionNode->addChildNode(childNode, branchLabels[i]);
+                conditionNode->setBranchCondition(i, defaultBranchConditions[i]);
+            }
+        }
+        // If we have more existing nodes than requested branches,
+        // reuse the first N and let the rest be garbage collected
+        else {
+            // Reuse only the nodes we need
+            for (int i = 0; i < branchCount; i++) {
+                conditionNode->addChildNode(existingNodes[i], branchLabels[i]);
+
+                // Keep existing branch condition if available, otherwise use default
+                if (existingBranchConditions.find(i) != existingBranchConditions.end()) {
+                    conditionNode->setBranchCondition(i, existingBranchConditions[i]);
+                }
+                else {
+                    conditionNode->setBranchCondition(i, defaultBranchConditions[i]);
+                }
+            }
+            // The rest of the existing nodes will be garbage collected
+        }
+    }
+    else {
+        // For other condition types, just reuse existing nodes or create new ones
+        // without special branch conditions
+
+        // If we have fewer existing nodes than requested branches,
+        // we'll reuse all existing ones and create new ones as needed
+        if (existingCount <= branchCount) {
+            // Reuse existing nodes
+            for (int i = 0; i < existingCount; i++) {
+                conditionNode->addChildNode(existingNodes[i], branchLabels[i]);
+
+                // Keep existing branch condition if available
+                if (existingBranchConditions.find(i) != existingBranchConditions.end()) {
+                    conditionNode->setBranchCondition(i, existingBranchConditions[i]);
+                }
+            }
+
+            // Create new nodes for any additional branches
+            for (int i = existingCount; i < branchCount; i++) {
+                auto childNode = createDialogueNode(
+                    DialogueNode::NodeType::NPCStatement,
+                    "Response for " + branchLabels[i]
+                );
+                conditionNode->addChildNode(childNode, branchLabels[i]);
+            }
+        }
+        // If we have more existing nodes than requested branches,
+        // reuse the first N and let the rest be garbage collected
+        else {
+            // Reuse only the nodes we need
+            for (int i = 0; i < branchCount; i++) {
+                conditionNode->addChildNode(existingNodes[i], branchLabels[i]);
+
+                // Keep existing branch condition if available
+                if (existingBranchConditions.find(i) != existingBranchConditions.end()) {
+                    conditionNode->setBranchCondition(i, existingBranchConditions[i]);
+                }
+            }
+            // The rest of the existing nodes will be garbage collected
+        }
+    }
+}
+
+int DialogueManager::evaluateConditionBranchIndex(const DialogueCondition& condition, int npcId, int playerId) {
+    // Default branch is 0 (first branch, success case)
+    int branchIndex = 0;
+
+    // Evaluate based on condition type
+    switch (condition.type) {
+    case ConditionType::RelationshipStatus: {
+        // Get current relationship
+        RelationshipStatus currentRelationship = getRelationshipStatus(npcId, playerId);
+
+        // If relationship is below the threshold, use branch 1 (failure case)
+        if (static_cast<int>(currentRelationship) < static_cast<int>(condition.relationshipThreshold)) {
+            branchIndex = 1;
+        }
+        break;
+    }
+
+    case ConditionType::QuestStatus: {
+        // Check if quest status matches
+        bool statusMatches = checkQuestStatus(condition.parameterName, condition.parameterValue);
+        if (!statusMatches) {
+            branchIndex = 1; // Branch 1 for non-matching status
+        }
+        break;
+    }
+
+    case ConditionType::InventoryCheck: {
+        // Parse quantity
+        int quantity = 1;
+        try {
+            quantity = std::stoi(condition.parameterValue);
+        }
+        catch (...) {
+            // Use default
+        }
+
+        // Check if player has enough items
+        bool hasEnough = checkInventoryItem(condition.parameterName, quantity);
+        if (!hasEnough) {
+            branchIndex = 1; // Branch 1 for not enough items
+        }
+        break;
+    }
+
+    case ConditionType::StatCheck: {
+        // Parse threshold
+        int threshold = 1;
+        try {
+            threshold = std::stoi(condition.parameterValue);
+        }
+        catch (...) {
+            // Use default
+        }
+
+        // Check if player stat meets threshold
+        bool statHighEnough = checkPlayerStat(condition.parameterName, threshold);
+        if (!statHighEnough) {
+            branchIndex = 1; // Branch 1 for stat too low
+        }
+        break;
+    }
+
+    case ConditionType::TimeOfDay: {
+        // This would need integration with your game's time system
+        // For now, just use a random example
+        std::string currentTimeOfDay = "Morning"; // This would come from your game
+
+        if (currentTimeOfDay != condition.parameterName) {
+            branchIndex = 1; // Branch 1 for time mismatch
+        }
+        break;
+    }
+
+    case ConditionType::Custom: {
+        // Custom conditions would need their own evaluation logic
+        // For now, let's assume a random 50/50 chance for testing
+        if (rand() % 2 == 0) {
+            branchIndex = 1; // Branch 1 with 50% chance
+        }
+        break;
+    }
+
+    default:
+        // Default is branch 0
+        break;
+    }
+
+    return branchIndex;
+}
+
+std::shared_ptr<DialogueNode> DialogueManager::getNodeByBranchIndex(std::shared_ptr<DialogueNode> conditionNode, int branchIndex) {
+    if (!conditionNode) return nullptr;
+
+    auto children = conditionNode->getChildren();
+    if (children.empty()) return nullptr;
+
+    // If branch index is out of bounds, use the last branch
+    if (branchIndex < 0) branchIndex = 0;
+    if (branchIndex >= static_cast<int>(children.size())) {
+        branchIndex = static_cast<int>(children.size()) - 1;
+    }
+
+    // Find the node corresponding to the branch index
+    int currentIndex = 0;
+    for (const auto& childPair : children) {
+        if (currentIndex == branchIndex) {
+            return childPair.first;
+        }
+        currentIndex++;
+    }
+
+    // Fallback to first child if we couldn't find the right branch
+    return children.front().first;
 }
 
 void DialogueManager::generatePersonalityVariants(std::shared_ptr<DialogueResponse> response) {
@@ -597,6 +894,78 @@ bool DialogueManager::updateNodeType(int nodeId, DialogueNode::NodeType newType)
     return true;
 }
 
+bool DialogueManager::evaluateBranchCondition(const BranchCondition& branchCond, int npcId, int playerId) {
+    // Evaluate based on condition type
+    switch (branchCond.type) {
+    case ConditionType::RelationshipStatus: {
+        // Get current relationship
+        RelationshipStatus currentRelationship = getRelationshipStatus(npcId, playerId);
+
+        // Check if relationship is within the specified range
+        return static_cast<int>(currentRelationship) >= static_cast<int>(branchCond.minRelationship) &&
+            static_cast<int>(currentRelationship) <= static_cast<int>(branchCond.maxRelationship);
+    }
+
+    case ConditionType::InventoryCheck: {
+        // Check if player has item quantity within range
+        int quantity = 0; // This would come from your game's inventory system
+
+        // For testing, use a mock inventory
+        auto it = m_testInventory.find(branchCond.itemId);
+        if (it != m_testInventory.end()) {
+            quantity = it->second;
+        }
+
+        return quantity >= branchCond.minQuantity && quantity <= branchCond.maxQuantity;
+    }
+
+    case ConditionType::StatCheck: {
+        // Check if player stat is within range
+        int statValue = 0; // This would come from your game's stat system
+
+        // For testing, use a mock stat system
+        auto it = m_testPlayerStats.find(branchCond.statName);
+        if (it != m_testPlayerStats.end()) {
+            statValue = it->second;
+        }
+
+        return statValue >= branchCond.minValue && statValue <= branchCond.maxValue;
+    }
+
+    case ConditionType::QuestStatus: {
+        // Check if quest has the specified status
+        std::string currentStatus = "Not Started"; // Default for non-existing quests
+
+        // For testing, use a mock quest system
+        auto it = m_testQuestStates.find(branchCond.questId);
+        if (it != m_testQuestStates.end()) {
+            currentStatus = it->second;
+        }
+
+        return currentStatus == branchCond.questStatus;
+    }
+
+    case ConditionType::TimeOfDay: {
+        // Check if current time matches specified time
+        std::string currentTime = "Morning"; // This would come from your game's time system
+
+        // For testing, use a mock time ("Morning", "Afternoon", "Evening", "Night")
+        // You would replace this with your actual game time system
+
+        return currentTime == branchCond.timeOfDay;
+    }
+
+    case ConditionType::Custom: {
+        // For custom conditions, you would implement game-specific logic
+        // For testing, return true for "True" and false for anything else
+        return branchCond.parameterValue == "True";
+    }
+
+    default:
+        return false;
+    }
+}
+
 std::shared_ptr<DialogueNode> DialogueManager::findNextNode(std::shared_ptr<DialogueNode> currentNode, int npcId, int playerId) {
     if (!currentNode) {
         return nullptr;
@@ -605,36 +974,43 @@ std::shared_ptr<DialogueNode> DialogueManager::findNextNode(std::shared_ptr<Dial
     // Handle based on node type
     switch (currentNode->getType()) {
     case DialogueNode::NodeType::ConditionCheck: {
-        // Evaluate the condition
-        const DialogueCondition& condition = currentNode->getCondition();
-        bool conditionResult = evaluateCondition(condition, npcId, playerId);
+        // Get all child branches
+        auto children = currentNode->getChildren();
+        if (children.empty()) {
+            return nullptr; // No branches to follow
+        }
 
-        // Find a child node based on the condition result
-        for (const auto& childPair : currentNode->getChildren()) {
-            // Look for "success" or "true" in the condition text for passing case
-            std::string conditionText = childPair.second;
-            std::transform(conditionText.begin(), conditionText.end(), conditionText.begin(), ::tolower);
+        // For each branch, check if its condition is met
+        for (int i = 0; i < children.size(); i++) {
+            // Get branch-specific condition
+            BranchCondition branchCond = currentNode->getBranchCondition(i);
 
-            if ((conditionResult && (conditionText.find("success") != std::string::npos ||
-                conditionText.find("true") != std::string::npos ||
-                conditionText.find("pass") != std::string::npos ||
-                conditionText.find("friendly") != std::string::npos)) ||
-                (!conditionResult && (conditionText.find("fail") != std::string::npos ||
-                    conditionText.find("false") != std::string::npos ||
-                    conditionText.find("neutral") != std::string::npos ||
-                    conditionText.find("unfriendly") != std::string::npos))) {
-                return childPair.first;
+            // If not properly initialized, use the main condition
+            if (branchCond.type == ConditionType::None) {
+                // Evaluate with the main condition instead
+                if (evaluateCondition(currentNode->getCondition(), npcId, playerId)) {
+                    // This is the success branch
+                    if (i == 0) {
+                        return children[i].first;
+                    }
+                }
+                else {
+                    // This is the failure branch
+                    if (i == 1 && children.size() > 1) {
+                        return children[i].first;
+                    }
+                }
+            }
+            else {
+                // Evaluate branch-specific condition
+                if (evaluateBranchCondition(branchCond, npcId, playerId)) {
+                    return children[i].first;
+                }
             }
         }
 
-        // If no specific condition branch found, use the first child node
-        auto children = currentNode->getChildren();
-        if (!children.empty()) {
-            return children.front().first;
-        }
-
-        // No valid child nodes
-        return nullptr;
+        // If no branch condition is met, use the first branch as default
+        return children[0].first;
     }
 
     case DialogueNode::NodeType::BranchPoint: {

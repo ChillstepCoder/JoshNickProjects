@@ -223,78 +223,154 @@ private:
         ImGui::End();
     }
 
-    void testDialogueTreeEditor(DialogueManager* manager) {
-        // Create a sample dialogue tree for testing
+    void testDialogueTreeEditor(DialogueManager* manager)
+    {
+        // Clear any existing nodes first to avoid duplicate trees.
+        auto nodes = manager->getAllNodes();
+        for (auto& node : nodes)
+        {
+            manager->deleteNode(node->getId());
+        }
 
-        // 1. Create root node - Player question
+        // Create responses if they don't exist.
+        if (!manager->getResponse(ResponseType::EnthusiasticAffirmative))
+            manager->createResponse(ResponseType::EnthusiasticAffirmative, "Absolutely!");
+        if (!manager->getResponse(ResponseType::IndifferentAffirmative))
+            manager->createResponse(ResponseType::IndifferentAffirmative, "Yeah, sure.");
+        if (!manager->getResponse(ResponseType::UntrustworthyResponse))
+            manager->createResponse(ResponseType::UntrustworthyResponse, "Why should I help you?");
+        if (!manager->getResponse(ResponseType::Farewell))
+            manager->createResponse(ResponseType::Farewell, "Goodbye!");
+        if (!manager->getResponse(ResponseType::MarkOnMap))
+            manager->createResponse(ResponseType::MarkOnMap, "I'll mark that on your map.");
+
+        // 1. Root node: Player asks for help.
         auto rootNode = manager->createDialogueNode(
             DialogueNode::NodeType::PlayerChoice,
-            "Do you know where..."
+            "Can you help me find John?"
         );
 
-        // 2. Create child nodes
-        auto johnNode = manager->createDialogueNode(
-            DialogueNode::NodeType::PlayerChoice,
-            "John is?"
+        // 2. Create a condition check node for NPC relationship.
+        auto relationshipNode = manager->createDialogueNode(
+            DialogueNode::NodeType::ConditionCheck,
+            "Check NPC's friendliness"
+        );
+        // Set the condition to check if the NPC is at least Neutral.
+        relationshipNode->setCondition(
+            DialogueCondition::CreateRelationshipCondition(RelationshipStatus::Neutral)
         );
 
-        auto yesNode = manager->createDialogueNode(
-            DialogueNode::NodeType::PlayerChoice,
-            "Yes"
-        );
-
-        auto noNode = manager->createDialogueNode(
-            DialogueNode::NodeType::PlayerChoice,
-            "No"
-        );
-
-        // 3. Connect nodes
-        rootNode->addChildNode(johnNode);
-        johnNode->addChildNode(yesNode);
-        johnNode->addChildNode(noNode);
-
-        // 4. Add responses to nodes
-        auto enthusiasticResponse = manager->getResponse(ResponseType::EnthusiasticAffirmative);
-        auto negativeResponse = manager->getResponse(ResponseType::IndifferentNegative);
-
-        yesNode->setResponse(enthusiasticResponse);
-        noNode->setResponse(negativeResponse);
-
-        // Create a deeper branch for testing
-        auto likeNode = manager->createDialogueNode(
+        // 3. Create NPC responses based on relationship.
+        // Friendly branch: NPC readily helps.
+        auto friendlyNPC = manager->createDialogueNode(
             DialogueNode::NodeType::NPCStatement,
-            "Do you like me?"
+            "Sure, follow me. John is at the tavern by the market square."
         );
+        friendlyNPC->setResponse(manager->getResponse(ResponseType::EnthusiasticAffirmative));
 
-        auto likeYesNode = manager->createDialogueNode(
-            DialogueNode::NodeType::PlayerChoice,
-            "Yes"
-        );
-
-        auto likeNoNode = manager->createDialogueNode(
-            DialogueNode::NodeType::PlayerChoice,
-            "No"
-        );
-
-        yesNode->addChildNode(likeNode);
-        likeNode->addChildNode(likeYesNode);
-        likeNode->addChildNode(likeNoNode);
-
-        // Set responses for these nodes
-        likeYesNode->setResponse(manager->getResponse(ResponseType::EnthusiasticAffirmative));
-        likeNoNode->setResponse(manager->getResponse(ResponseType::IndifferentNegative));
-
-        // Add a final node
-        auto mapNode = manager->createDialogueNode(
+        // Neutral branch: NPC is hesitant.
+        auto neutralNPC = manager->createDialogueNode(
             DialogueNode::NodeType::NPCStatement,
-            "Let me mark it on your map."
+            "I know where John is, but I'm not sure if I should help you."
         );
+        neutralNPC->setResponse(manager->getResponse(ResponseType::IndifferentAffirmative));
 
-        likeYesNode->addChildNode(mapNode);
-        likeNoNode->addChildNode(mapNode);
+        // Hostile branch: NPC is openly unhelpful.
+        auto hostileNPC = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Why should I help you?"
+        );
+        hostileNPC->setResponse(manager->getResponse(ResponseType::UntrustworthyResponse));
 
-        mapNode->setResponse(manager->getResponse(ResponseType::MarkOnMap));
+        // Connect relationship node with its three branches.
+        relationshipNode->addChildNode(friendlyNPC, "Friendly+");
+        relationshipNode->addChildNode(neutralNPC, "Neutral");
+        relationshipNode->addChildNode(hostileNPC, "Hostile");
+
+        // Set branch conditions for the relationship node.
+        BranchCondition friendlyBranch = BranchCondition::CreateRelationshipRange(
+            RelationshipStatus::Friendly, RelationshipStatus::Close
+        );
+        relationshipNode->setBranchCondition(0, friendlyBranch);
+        BranchCondition neutralBranch = BranchCondition::CreateRelationshipRange(
+            RelationshipStatus::Neutral, RelationshipStatus::Neutral
+        );
+        relationshipNode->setBranchCondition(1, neutralBranch);
+        BranchCondition hostileBranch = BranchCondition::CreateRelationshipRange(
+            RelationshipStatus::Hostile, RelationshipStatus::Unfriendly
+        );
+        relationshipNode->setBranchCondition(2, hostileBranch);
+
+        // 4. Friendly branch goes directly to a directions node.
+        auto directionsNode = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "The tavern is by the market square."
+        );
+        directionsNode->setResponse(manager->getResponse(ResponseType::MarkOnMap));
+        friendlyNPC->addChildNode(directionsNode);
+
+        // 5. Neutral branch: Directly attach two player choice options.
+        auto neutralPersuade = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Please help me. I really need your help."
+        );
+        auto neutralDecline = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Never mind. I'll manage on my own."
+        );
+        neutralNPC->addChildNode(neutralPersuade, "Persuade");
+        neutralNPC->addChildNode(neutralDecline, "Decline");
+
+        // NPC responses for neutral branch.
+        auto neutralResponseA = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Alright, then follow me."
+        );
+        neutralResponseA->setResponse(manager->getResponse(ResponseType::EnthusiasticAffirmative));
+        neutralPersuade->addChildNode(neutralResponseA);
+
+        auto neutralResponseB = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Then I won't help you."
+        );
+        neutralResponseB->setResponse(manager->getResponse(ResponseType::Farewell));
+        neutralDecline->addChildNode(neutralResponseB);
+
+        // 6. Hostile branch: Directly attach two player choice options.
+        auto hostilePersuade = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "I'm your friend—trust me!"
+        );
+        auto hostileRebuff = manager->createDialogueNode(
+            DialogueNode::NodeType::PlayerChoice,
+            "Get lost!"
+        );
+        hostileNPC->addChildNode(hostilePersuade, "Persuade");
+        hostileNPC->addChildNode(hostileRebuff, "Rebuff");
+
+        // NPC responses for hostile branch.
+        auto hostileResponseA = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Fine, I'll help you out."
+        );
+        hostileResponseA->setResponse(manager->getResponse(ResponseType::EnthusiasticAffirmative));
+        hostilePersuade->addChildNode(hostileResponseA);
+
+        auto hostileResponseB = manager->createDialogueNode(
+            DialogueNode::NodeType::NPCStatement,
+            "Good, I won't waste my time."
+        );
+        hostileResponseB->setResponse(manager->getResponse(ResponseType::Farewell));
+        hostileRebuff->addChildNode(hostileResponseB);
+
+        // 7. Connect the root node to the relationship check.
+        rootNode->addChildNode(relationshipNode);
+
+        // Optionally, set up testing relationships.
+        manager->setRelationshipForTesting(1, 1, RelationshipStatus::Friendly);   // NPC 1 is friendly
+        manager->setRelationshipForTesting(2, 1, RelationshipStatus::Hostile);     // NPC 2 is hostile
     }
+
 
     void createRelationshipTestTree(DialogueManager* manager) {
         // Create responses if they don't exist

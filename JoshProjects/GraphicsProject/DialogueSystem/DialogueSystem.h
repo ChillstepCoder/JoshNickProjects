@@ -86,6 +86,148 @@ enum class RelationshipStatus {
     Close          // NPC likes player strongly
 };
 
+struct BranchCondition {
+    ConditionType type = ConditionType::None;
+
+    // Relationship range parameters
+    RelationshipStatus minRelationship = RelationshipStatus::Neutral;
+    RelationshipStatus maxRelationship = RelationshipStatus::Close;
+
+    // Inventory check parameters
+    std::string itemId = "";
+    int minQuantity = 0;
+    int maxQuantity = 9999;
+
+    // Quest status parameters
+    std::string questId = "";
+    std::string questStatus = "";
+
+    // Stat check parameters
+    std::string statName = "";
+    int minValue = 0;
+    int maxValue = 9999;
+
+    // Time of day parameters
+    std::string timeOfDay = "";
+
+    // General parameters
+    std::string parameterName = "";
+    std::string parameterValue = "";
+    std::string description = "";
+
+    // Helper methods for creating different condition types
+
+    static BranchCondition CreateRelationshipRange(RelationshipStatus minRel, RelationshipStatus maxRel) {
+        BranchCondition condition;
+        condition.type = ConditionType::RelationshipStatus;
+        condition.minRelationship = minRel;
+        condition.maxRelationship = maxRel;
+        condition.description = GetRelationshipRangeDescription(minRel, maxRel);
+        return condition;
+    }
+
+    static BranchCondition CreateInventoryRange(const std::string& itemId, int minQty, int maxQty) {
+        BranchCondition condition;
+        condition.type = ConditionType::InventoryCheck;
+        condition.itemId = itemId;
+        condition.minQuantity = minQty;
+        condition.maxQuantity = maxQty;
+        condition.description = GetInventoryRangeDescription(itemId, minQty, maxQty);
+        return condition;
+    }
+
+    static BranchCondition CreateQuestStatus(const std::string& questId, const std::string& status) {
+        BranchCondition condition;
+        condition.type = ConditionType::QuestStatus;
+        condition.questId = questId;
+        condition.questStatus = status;
+        condition.description = "Quest '" + questId + "' is " + status;
+        return condition;
+    }
+
+    static BranchCondition CreateStatRange(const std::string& statName, int minVal, int maxVal) {
+        BranchCondition condition;
+        condition.type = ConditionType::StatCheck;
+        condition.statName = statName;
+        condition.minValue = minVal;
+        condition.maxValue = maxVal;
+        condition.description = GetStatRangeDescription(statName, minVal, maxVal);
+        return condition;
+    }
+
+    static BranchCondition CreateTimeOfDay(const std::string& timeOfDay) {
+        BranchCondition condition;
+        condition.type = ConditionType::TimeOfDay;
+        condition.timeOfDay = timeOfDay;
+        condition.description = "Time is " + timeOfDay;
+        return condition;
+    }
+
+    static BranchCondition CreateCustomCondition(const std::string& name, const std::string& value) {
+        BranchCondition condition;
+        condition.type = ConditionType::Custom;
+        condition.parameterName = name;
+        condition.parameterValue = value;
+        condition.description = "Custom: " + name + " = " + value;
+        return condition;
+    }
+
+    // Description helper methods
+
+    static std::string GetRelationshipRangeDescription(RelationshipStatus minRel, RelationshipStatus maxRel) {
+        std::string minName = GetRelationshipName(minRel);
+        std::string maxName = GetRelationshipName(maxRel);
+
+        if (minRel == maxRel) {
+            return "Relationship = " + minName;
+        }
+        else {
+            return "Relationship: " + minName + " to " + maxName;
+        }
+    }
+
+    static std::string GetInventoryRangeDescription(const std::string& itemId, int minQty, int maxQty) {
+        if (minQty == maxQty) {
+            return "Has exactly " + std::to_string(minQty) + " " + itemId;
+        }
+        else if (maxQty == 9999) {
+            return "Has " + std::to_string(minQty) + "+ " + itemId;
+        }
+        else if (minQty == 0) {
+            return "Has 0-" + std::to_string(maxQty) + " " + itemId;
+        }
+        else {
+            return "Has " + std::to_string(minQty) + "-" + std::to_string(maxQty) + " " + itemId;
+        }
+    }
+
+    static std::string GetStatRangeDescription(const std::string& statName, int minVal, int maxVal) {
+        if (minVal == maxVal) {
+            return statName + " = " + std::to_string(minVal);
+        }
+        else if (maxVal == 9999) {
+            return statName + " ? " + std::to_string(minVal);
+        }
+        else if (minVal == 0) {
+            return statName + " ? " + std::to_string(maxVal);
+        }
+        else {
+            return statName + ": " + std::to_string(minVal) + "-" + std::to_string(maxVal);
+        }
+    }
+
+    static std::string GetRelationshipName(RelationshipStatus status) {
+        switch (status) {
+        case RelationshipStatus::Hostile: return "Hostile";
+        case RelationshipStatus::Unfriendly: return "Unfriendly";
+        case RelationshipStatus::Neutral: return "Neutral";
+        case RelationshipStatus::Friendly: return "Friendly";
+        case RelationshipStatus::Close: return "Close";
+        default: return "Unknown";
+        }
+    }
+};
+
 struct DialogueCondition {
     ConditionType type = ConditionType::None;
     std::string parameterName = "";
@@ -127,6 +269,22 @@ struct DialogueCondition {
         return condition;
     }
 
+    // Helper for time of day conditions
+    static DialogueCondition CreateTimeOfDayCondition(const std::string& timeOfDay) {
+        DialogueCondition condition;
+        condition.type = ConditionType::TimeOfDay;
+        condition.parameterName = timeOfDay;
+        return condition;
+    }
+
+    // Helper for player choice conditions
+    static DialogueCondition CreatePlayerChoiceCondition(const std::string& choiceId) {
+        DialogueCondition condition;
+        condition.type = ConditionType::PlayerChoice;
+        condition.parameterName = choiceId;
+        return condition;
+    }
+
     // Helper for custom conditions
     static DialogueCondition CreateCustomCondition(const std::string& conditionName, const std::string& conditionValue) {
         DialogueCondition condition;
@@ -157,6 +315,118 @@ struct DialogueCondition {
         default:
             return "Unknown condition";
         }
+    }
+
+    std::vector<std::string> GetBranchLabels() const {
+        std::vector<std::string> labels;
+
+        switch (type) {
+        case ConditionType::RelationshipStatus: {
+            // Create labels based on relationship threshold
+            switch (relationshipThreshold) {
+            case RelationshipStatus::Close:
+                labels.push_back("Close");
+                labels.push_back("Less than Close");
+                break;
+            case RelationshipStatus::Friendly:
+                labels.push_back("Friendly+");
+                labels.push_back("Unfriendly/Neutral");
+                break;
+            case RelationshipStatus::Neutral:
+                labels.push_back("Neutral+");
+                labels.push_back("Hostile/Unfriendly");
+                break;
+            case RelationshipStatus::Unfriendly:
+                labels.push_back("Unfriendly+");
+                labels.push_back("Hostile");
+                break;
+            case RelationshipStatus::Hostile:
+                labels.push_back("Hostile");
+                labels.push_back("None"); // Impossible condition
+                break;
+            default:
+                labels.push_back("Success");
+                labels.push_back("Failure");
+                break;
+            }
+            break;
+        }
+
+        case ConditionType::TimeOfDay: {
+            // For time of day, we can have morning, afternoon, evening, night
+            if (parameterName == "Morning") {
+                labels.push_back("Morning");
+                labels.push_back("Not Morning");
+            }
+            else if (parameterName == "Afternoon") {
+                labels.push_back("Afternoon");
+                labels.push_back("Not Afternoon");
+            }
+            else if (parameterName == "Evening") {
+                labels.push_back("Evening");
+                labels.push_back("Not Evening");
+            }
+            else if (parameterName == "Night") {
+                labels.push_back("Night");
+                labels.push_back("Not Night");
+            }
+            else {
+                labels.push_back("Time Match");
+                labels.push_back("Time Mismatch");
+            }
+            break;
+        }
+
+        case ConditionType::QuestStatus: {
+            // For quest status, we can have different states
+            labels.push_back(parameterValue); // The expected state
+            labels.push_back("Other States"); // All other states
+            break;
+        }
+
+        case ConditionType::InventoryCheck: {
+            // For inventory checks, has/doesn't have
+            labels.push_back("Has Item");
+            labels.push_back("Doesn't Have Item");
+            break;
+        }
+
+        case ConditionType::StatCheck: {
+            // For stat checks, passes/fails
+            labels.push_back("Stat ? " + parameterValue);
+            labels.push_back("Stat < " + parameterValue);
+            break;
+        }
+
+        case ConditionType::PlayerChoice: {
+            // For player choice, selected/not selected
+            labels.push_back("Selected");
+            labels.push_back("Not Selected");
+            break;
+        }
+
+        case ConditionType::Custom: {
+            // For custom conditions, true/false or custom labels
+            if (!parameterValue.empty()) {
+                // Use parameter value as success label if provided
+                labels.push_back(parameterValue);
+                labels.push_back("Not " + parameterValue);
+            }
+            else {
+                labels.push_back("True");
+                labels.push_back("False");
+            }
+            break;
+        }
+
+        default:
+            // Default case for None or unknown types
+            labels.push_back("Success");
+            labels.push_back("Failure");
+            break;
+        }
+
+        return labels;
     }
 
 private:
@@ -244,6 +514,20 @@ public:
     void setCondition(const DialogueCondition& condition) { m_condition = condition; }
     DialogueCondition getCondition() const { return m_condition; }
 
+    void setBranchCondition(int branchIndex, const BranchCondition& condition) {
+        m_branchConditions[branchIndex] = condition;
+    }
+
+    BranchCondition getBranchCondition(int branchIndex) const {
+        auto it = m_branchConditions.find(branchIndex);
+        if (it != m_branchConditions.end()) {
+            return it->second;
+        }
+
+        // Return default condition if not found
+        return BranchCondition();
+    }
+
 private:
     static int s_nextId;
 
@@ -253,6 +537,7 @@ private:
     std::vector<std::pair<std::shared_ptr<DialogueNode>, std::string>> m_children;
     std::shared_ptr<DialogueResponse> m_response;
     DialogueCondition m_condition;
+    std::map<int, BranchCondition> m_branchConditions;
 };
 
 // Manages all dialogue responses and provides access to APIs
@@ -269,6 +554,9 @@ public:
 
     // Dialogue response management
     std::shared_ptr<DialogueResponse> createResponse(ResponseType type, const std::string& defaultText);
+    void createConditionBranches(std::shared_ptr<DialogueNode> conditionNode, int numBranches);
+    int evaluateConditionBranchIndex(const DialogueCondition& condition, int npcId, int playerId);
+    std::shared_ptr<DialogueNode> getNodeByBranchIndex(std::shared_ptr<DialogueNode> conditionNode, int branchIndex);
     std::shared_ptr<DialogueResponse> getResponse(ResponseType type);
     std::vector<std::shared_ptr<DialogueResponse>> getAllResponses() const;
 
@@ -297,6 +585,7 @@ public:
     std::shared_ptr<DialogueNode> duplicateNode(int nodeId);
     bool hasParent(int nodeId) const;
     bool updateNodeType(int nodeId, DialogueNode::NodeType newType);
+    bool evaluateBranchCondition(const BranchCondition& branchCond, int npcId, int playerId);
     std::shared_ptr<DialogueNode> findNextNode(std::shared_ptr<DialogueNode> currentNode, int npcId, int playerId);
 
     bool evaluateCondition(const DialogueCondition& condition, int npcId, int playerId);
@@ -316,6 +605,21 @@ public:
     std::string getResponseTypeName(ResponseType type) const;
     std::string getVoiceTypeName(VoiceType type) const;
     RelationshipStatus getRelationshipStatus(int npcId, int playerId);
+    void setInventoryItemForTesting(const std::string& itemId, int quantity) {
+        m_testInventory[itemId] = quantity;
+    }
+
+    void setPlayerStatForTesting(const std::string& statName, int value) {
+        m_testPlayerStats[statName] = value;
+    }
+
+    void setQuestStatusForTesting(const std::string& questId, const std::string& status) {
+        m_testQuestStates[questId] = status;
+    }
+
+    void setTimeOfDayForTesting(const std::string& timeOfDay) {
+        m_testTimeOfDay = timeOfDay;
+    }
 
     //test methods
     void setRelationshipForTesting(int npcId, int playerId, RelationshipStatus status);
@@ -332,9 +636,10 @@ private:
     std::string getPromptForPersonality(ResponseType type, PersonalityType personality, const std::string& defaultText);
     std::string getVoiceIdFromType(VoiceType voice);
 
-    // Test data structures
+    // Test data structures - make sure these are properly declared with types
     std::map<std::pair<int, int>, RelationshipStatus> m_testRelationships;
     std::map<std::string, std::string> m_testQuestStates;
     std::map<std::string, int> m_testInventory;
     std::map<std::string, int> m_testPlayerStats;
+    std::string m_testTimeOfDay = "Morning";
 };

@@ -43,6 +43,8 @@ private:
 
 
     // ImGui rendering helpers
+    void updateInventoryBranchLabel(std::shared_ptr<DialogueNode> node, int childId, const BranchCondition& branchCond);
+    void updateStatBranchLabel(std::shared_ptr<DialogueNode> node, int childId, const BranchCondition& branchCond);
     void renderResponseEditor();
     void renderDialogueTreeEditor();
     void renderAPISettingsWindow();

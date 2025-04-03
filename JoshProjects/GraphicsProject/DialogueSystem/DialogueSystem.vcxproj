@@ -155,6 +155,7 @@
     <ClCompile Include="DialogueApp.cpp" />
     <ClCompile Include="DialogueAudioEngine.cpp" />
     <ClCompile Include="DialogueEditor.cpp" />
+    <ClCompile Include="DialogueScreen.cpp" />
     <ClCompile Include="DialogueSystem.cpp" />
     <ClCompile Include="DialogueTreeView.cpp" />
     <ClCompile Include="imgui_impls.cpp" />

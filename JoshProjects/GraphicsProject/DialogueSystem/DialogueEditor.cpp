@@ -711,203 +711,315 @@ void DialogueEditor::renderBatchGenerationWindow() {
     ImGui::End();
 }
 
-void DialogueEditor::renderNodeTree() {
+void DialogueEditor::renderNodeTree()
+{
     // Get all root nodes (nodes without parents)
     auto allNodes = m_dialogueManager->getAllNodes();
     std::vector<std::shared_ptr<DialogueNode>> rootNodes;
-
-    // Identify root nodes
-    for (const auto& node : allNodes) {
-        if (!m_dialogueManager->hasParent(node->getId())) {
+    for (const auto& node : allNodes)
+    {
+        if (!m_dialogueManager->hasParent(node->getId()))
             rootNodes.push_back(node);
-        }
     }
 
     // If no root nodes, show a message
-    if (rootNodes.empty()) {
-        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No dialogue nodes created yet. Use the buttons above to start.");
+    if (rootNodes.empty())
+    {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f),
+            "No dialogue nodes created yet. Use the buttons above to start.");
         return;
     }
 
-    // Define the recursive rendering function
+    // Recursive lambda to render a node and its children
     std::function<void(std::shared_ptr<DialogueNode>, int)> renderNodeRecursive;
+    renderNodeRecursive = [this, &renderNodeRecursive](std::shared_ptr<DialogueNode> node, int depth)
+        {
+            if (!node) return;
 
-    renderNodeRecursive = [this, &renderNodeRecursive](std::shared_ptr<DialogueNode> node, int depth) {
-        if (!node) return;
+            // Tree flags
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+            if (node->getId() == m_selectedNodeId)
+                flags |= ImGuiTreeNodeFlags_Selected;
 
-        // Set up tree node flags
-        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+            auto children = node->getChildren();
+            if (children.empty())
+                flags |= ImGuiTreeNodeFlags_Leaf;
 
-        // If this is the currently selected node, highlight it
-        if (node->getId() == m_selectedNodeId) {
-            flags |= ImGuiTreeNodeFlags_Selected;
-        }
+            // Build display text
+            std::string nodeText = node->getText();
+            if (nodeText.empty())
+                nodeText = "Node " + std::to_string(node->getId());
 
-        // If no children, make it a leaf node
-        auto children = node->getChildren();
-        if (children.empty()) {
-            flags |= ImGuiTreeNodeFlags_Leaf;
-        }
-
-        // Generate display text for the node
-        std::string nodeText = node->getText();
-        if (nodeText.empty()) {
-            nodeText = "Node " + std::to_string(node->getId());
-        }
-
-        // Add node type and color information
-        ImVec4 nodeColor;
-        std::string typeIndicator;
-
-        switch (node->getType()) {
-        case DialogueNode::NodeType::NPCStatement:
-            nodeColor = ImVec4(0.0f, 0.8f, 0.0f, 1.0f); // Green for NPC dialogue
-            typeIndicator = "[NPC]";
-            break;
-        case DialogueNode::NodeType::PlayerChoice:
-            nodeColor = ImVec4(0.8f, 0.8f, 0.0f, 1.0f); // Yellow for player choices
-            typeIndicator = "[Player]";
-            break;
-        case DialogueNode::NodeType::ConditionCheck:
-            nodeColor = ImVec4(0.8f, 0.4f, 0.0f, 1.0f); // Orange for conditions
-            typeIndicator = "[Condition]";
-            break;
-        case DialogueNode::NodeType::BranchPoint:
-            nodeColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f); // Gray for branch points
-            typeIndicator = "[Branch]";
-            break;
-        }
-
-        // Show condition information for condition nodes
-        if (node->getType() == DialogueNode::NodeType::ConditionCheck) {
-            nodeText += " (" + node->getCondition().GetDescription() + ")";
-        }
-
-        // For NPC statement nodes that have responses, indicate which response is used
-        if (node->getType() == DialogueNode::NodeType::NPCStatement) {
-            auto response = node->getResponse();
-            if (response) {
-                nodeText += " ? " + m_dialogueManager->getResponseTypeName(response->getType());
+            // Append extra info for ConditionCheck or NPCStatement
+            if (node->getType() == DialogueNode::NodeType::ConditionCheck)
+            {
+                nodeText += " (" + node->getCondition().GetDescription() + ")";
             }
-        }
-
-        // Display the tree node with colored text
-        ImGui::PushStyleColor(ImGuiCol_Text, nodeColor);
-        bool nodeOpen = ImGui::TreeNodeEx((void*)(intptr_t)node->getId(), flags, "%s %s",
-            nodeText.c_str(), typeIndicator.c_str());
-        ImGui::PopStyleColor();
-
-        // Handle node selection
-        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-            m_selectedNodeId = node->getId();
-        }
-
-        // Show context menu for node operations
-        if (ImGui::BeginPopupContextItem()) {
-            // Add various child node types
-            if (ImGui::BeginMenu("Add Child Node")) {
-                if (ImGui::MenuItem("NPC Statement")) {
-                    auto childNode = m_dialogueManager->createDialogueNode(
-                        DialogueNode::NodeType::NPCStatement,
-                        "New NPC Statement"
-                    );
-                    node->addChildNode(childNode);
-                }
-
-                if (ImGui::MenuItem("Player Choice")) {
-                    auto childNode = m_dialogueManager->createDialogueNode(
-                        DialogueNode::NodeType::PlayerChoice,
-                        "New Player Choice"
-                    );
-                    node->addChildNode(childNode);
-                }
-
-                if (ImGui::MenuItem("Condition Check")) {
-                    auto childNode = m_dialogueManager->createDialogueNode(
-                        DialogueNode::NodeType::ConditionCheck,
-                        "New Condition Check"
-                    );
-                    node->addChildNode(childNode);
-                }
-
-                if (ImGui::MenuItem("Branch Point")) {
-                    auto childNode = m_dialogueManager->createDialogueNode(
-                        DialogueNode::NodeType::BranchPoint,
-                        "New Branch Point"
-                    );
-                    node->addChildNode(childNode);
-                }
-
-                ImGui::EndMenu();
+            else if (node->getType() == DialogueNode::NodeType::NPCStatement)
+            {
+                auto response = node->getResponse();
+                if (response)
+                    nodeText += " ? " + m_dialogueManager->getResponseTypeName(response->getType());
             }
 
-            // Duplicate node
-            if (ImGui::MenuItem("Duplicate Node")) {
-                auto newNode = m_dialogueManager->duplicateNode(node->getId());
-                if (newNode) {
-                    // If this is a root node, it's already added to the tree
-                    // Otherwise, add it as a sibling to the current node
-                    if (m_dialogueManager->hasParent(node->getId())) {
-                        auto parent = m_dialogueManager->findParentNode(node->getId());
-                        if (parent) {
-                            parent->addChildNode(newNode, "Duplicated");
-                        }
+            // Determine color & type label
+            ImVec4 nodeColor;
+            std::string typeIndicator;
+            switch (node->getType())
+            {
+            case DialogueNode::NodeType::NPCStatement:
+                nodeColor = ImVec4(0.0f, 0.8f, 0.0f, 1.0f);
+                typeIndicator = "[NPC]";
+                break;
+            case DialogueNode::NodeType::PlayerChoice:
+                nodeColor = ImVec4(0.8f, 0.8f, 0.0f, 1.0f);
+                typeIndicator = "[Player]";
+                break;
+            case DialogueNode::NodeType::ConditionCheck:
+                nodeColor = ImVec4(0.8f, 0.4f, 0.0f, 1.0f);
+                typeIndicator = "[Condition]";
+                break;
+            case DialogueNode::NodeType::BranchPoint:
+                nodeColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+                typeIndicator = "[Branch]";
+                break;
+            default:
+                nodeColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                typeIndicator = "[Unknown]";
+                break;
+            }
+
+            //
+            // 1) Render the tree arrow with a unique ID (pointer-based)
+            //
+            ImGui::PushStyleColor(ImGuiCol_Text, nodeColor);
+            // Use the pointer as the ID, pass a trivial label format (non-null).
+            bool nodeOpen = ImGui::TreeNodeEx((void*)node.get(), flags, "%s", " ");
+            ImGui::PopStyleColor();
+
+            // If arrow area clicked, select node
+            if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+                m_selectedNodeId = node->getId();
+
+            //
+            // 2) On the same line, show the actual node text with wrapping
+            //
+            ImGui::SameLine();
+            // Push a separate ID for the text so it can be clicked separately
+            ImGui::PushID(node->getId());
+            {
+                // Wrap to the right edge
+                float wrapPos = ImGui::GetCursorPos().x + ImGui::GetContentRegionAvail().x;
+                ImGui::PushTextWrapPos(wrapPos);
+
+                // Show the text (nodeText + typeIndicator)
+                ImGui::TextWrapped("%s %s", nodeText.c_str(), typeIndicator.c_str());
+
+                // If the user clicks on the text, select node
+                if (ImGui::IsItemClicked())
+                    m_selectedNodeId = node->getId();
+
+                ImGui::PopTextWrapPos();
+            }
+            ImGui::PopID();
+
+            //
+            // 3) Context menu on the arrow area
+            //
+            if (ImGui::BeginPopupContextItem())
+            {
+                if (ImGui::BeginMenu("Add Child Node"))
+                {
+                    if (ImGui::MenuItem("NPC Statement"))
+                    {
+                        auto childNode = m_dialogueManager->createDialogueNode(
+                            DialogueNode::NodeType::NPCStatement, "New NPC Statement");
+                        node->addChildNode(childNode);
                     }
-                    m_selectedNodeId = newNode->getId();
+                    if (ImGui::MenuItem("Player Choice"))
+                    {
+                        auto childNode = m_dialogueManager->createDialogueNode(
+                            DialogueNode::NodeType::PlayerChoice, "New Player Choice");
+                        node->addChildNode(childNode);
+                    }
+                    if (ImGui::MenuItem("Condition Check"))
+                    {
+                        auto childNode = m_dialogueManager->createDialogueNode(
+                            DialogueNode::NodeType::ConditionCheck, "New Condition Check");
+                        node->addChildNode(childNode);
+                    }
+                    if (ImGui::MenuItem("Branch Point"))
+                    {
+                        auto childNode = m_dialogueManager->createDialogueNode(
+                            DialogueNode::NodeType::BranchPoint, "New Branch Point");
+                        node->addChildNode(childNode);
+                    }
+                    ImGui::EndMenu();
                 }
-            }
 
-            ImGui::Separator();
+                if (ImGui::MenuItem("Duplicate Node"))
+                {
+                    auto newNode = m_dialogueManager->duplicateNode(node->getId());
+                    if (newNode)
+                    {
+                        if (m_dialogueManager->hasParent(node->getId()))
+                        {
+                            auto parent = m_dialogueManager->findParentNode(node->getId());
+                            if (parent)
+                                parent->addChildNode(newNode, "Duplicated");
+                        }
+                        m_selectedNodeId = newNode->getId();
+                    }
+                }
 
-            // Delete node
-            if (ImGui::MenuItem("Delete Node")) {
-                m_dialogueManager->deleteNode(node->getId());
-                m_selectedNodeId = -1;
+                ImGui::Separator();
+                if (ImGui::MenuItem("Delete Node"))
+                {
+                    m_dialogueManager->deleteNode(node->getId());
+                    m_selectedNodeId = -1;
+                    ImGui::EndPopup();
+                    if (nodeOpen)
+                        ImGui::TreePop();
+                    return;
+                }
                 ImGui::EndPopup();
-                if (nodeOpen) {
-                    ImGui::TreePop();
-                }
-                return;
             }
 
-            ImGui::EndPopup();
-        }
+            //
+            // 4) Recursively render children if open
+            //
+            if (nodeOpen)
+            {
+                if (node->getType() == DialogueNode::NodeType::ConditionCheck)
+                {
+                    // Color-code child branches
+                    int branchIndex = 0;
+                    for (auto& childPair : children)
+                    {
+                        ImVec4 branchColor;
+                        if (children.size() == 2)
+                        {
+                            // Binary condition: green for success, red for failure
+                            branchColor = (branchIndex == 0)
+                                ? ImVec4(0.0f, 0.8f, 0.0f, 1.0f)
+                                : ImVec4(0.8f, 0.0f, 0.0f, 1.0f);
+                        }
+                        else
+                        {
+                            // Multi-branch: gradient from green to red
+                            float t = static_cast<float>(branchIndex) / (children.size() - 1);
+                            branchColor = ImVec4(t * 0.8f, (1.0f - t) * 0.8f, 0.0f, 1.0f);
+                        }
 
-        // Recursively render child nodes if the node is open
-        if (nodeOpen) {
-            for (auto& childPair : children) {
-                // If there's a condition label, display it before the child
-                if (!childPair.second.empty()) {
-                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "?? [%s] ??", childPair.second.c_str());
+                        // Show branch label if any
+                        if (!childPair.second.empty())
+                            ImGui::TextColored(branchColor, "?? [%s] ??", childPair.second.c_str());
+
+                        // Render child
+                        ImGui::PushStyleColor(ImGuiCol_Text, branchColor);
+                        renderNodeRecursive(childPair.first, depth + 1);
+                        ImGui::PopStyleColor();
+
+                        branchIndex++;
+                    }
                 }
-                renderNodeRecursive(childPair.first, depth + 1);
+                else
+                {
+                    // Normal children
+                    for (auto& childPair : children)
+                    {
+                        if (!childPair.second.empty())
+                            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f),
+                                "?? [%s] ??", childPair.second.c_str());
+                        renderNodeRecursive(childPair.first, depth + 1);
+                    }
+                }
+                ImGui::TreePop();
             }
-            ImGui::TreePop();
-        }
         };
 
     // Render all root nodes
-    for (auto& rootNode : rootNodes) {
+    for (auto& rootNode : rootNodes)
+    {
         renderNodeRecursive(rootNode, 0);
     }
 }
 
+
+void DialogueEditor::updateInventoryBranchLabel(std::shared_ptr<DialogueNode> node, int childId, const BranchCondition& branchCond) {
+    if (!node) return;
+
+    std::string itemId = branchCond.itemId;
+    int minQty = branchCond.minQuantity;
+    int maxQty = branchCond.maxQuantity;
+
+    // Generate appropriate label based on quantity range
+    std::string label = "Has";
+    if (minQty == 0 && maxQty == 0) {
+        label = "No";
+    }
+    else if (minQty == maxQty) {
+        label = "Has exactly " + std::to_string(minQty);
+    }
+    else if (maxQty == 9999) {
+        label = "Has " + std::to_string(minQty) + "+";
+    }
+    else {
+        label = "Has " + std::to_string(minQty) + "-" + std::to_string(maxQty);
+    }
+
+    // Update the child condition with item info
+    node->updateChildCondition(childId, label + " " + itemId);
+}
+
+// Helper function to update stat branch labels
+void DialogueEditor::updateStatBranchLabel(std::shared_ptr<DialogueNode> node, int childId, const BranchCondition& branchCond) {
+    if (!node) return;
+
+    std::string statName = branchCond.statName;
+    int minVal = branchCond.minValue;
+    int maxVal = branchCond.maxValue;
+
+    // Generate appropriate label based on value range
+    std::string label;
+    if (minVal == maxVal) {
+        label = statName + " = " + std::to_string(minVal);
+    }
+    else if (maxVal == 9999) {
+        label = statName + " ? " + std::to_string(minVal);
+    }
+    else if (minVal == 0) {
+        label = statName + " ? " + std::to_string(maxVal);
+    }
+    else {
+        label = statName + ": " + std::to_string(minVal) + "-" + std::to_string(maxVal);
+    }
+
+    // Update the child condition
+    node->updateChildCondition(childId, label);
+}
+
 void DialogueEditor::renderNodeProperties() {
-    // Only show properties if a node is selected
+    // Enable dynamic text wrapping for all UI elements in this window.
+    ImGui::PushTextWrapPos(0.0f);
+
+    // Only show properties if a node is selected.
     if (m_selectedNodeId < 0) {
         ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Select a node to edit its properties");
+        ImGui::PopTextWrapPos();
         return;
     }
 
     auto node = m_dialogueManager->getNodeById(m_selectedNodeId);
     if (!node) {
-        m_selectedNodeId = -1; // Reset selection if node doesn't exist
+        m_selectedNodeId = -1; // Reset selection if node doesn't exist.
+        ImGui::PopTextWrapPos();
         return;
     }
 
-    ImGui::Text("Node Properties (ID: %d)", m_selectedNodeId);
+    ImGui::TextWrapped("Node Properties (ID: %d)", m_selectedNodeId);
 
-    // Node type selector
+    // Node type selector with dynamic width.
     const char* nodeTypes[] = {
         "NPC Statement",
         "Player Choice",
@@ -915,54 +1027,58 @@ void DialogueEditor::renderNodeProperties() {
         "Branch Point"
     };
     int currentType = static_cast<int>(node->getType());
-    if (ImGui::Combo("Node Type", &currentType, nodeTypes, IM_ARRAYSIZE(nodeTypes))) {
-        // Update node type
+    float dropdownWidth = ImGui::GetContentRegionAvail().x * 0.95f;
+    ImGui::TextUnformatted("Node Type:");
+    ImGui::SameLine();
+
+    // Decide on a smaller width for the combo—say 40% of the available region
+    float comboWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+    ImGui::PushItemWidth(comboWidth);
+
+    // Now use a label that’s hidden (##NodeType) so the preceding text is the visible label
+    if (ImGui::Combo("##NodeType", &currentType, nodeTypes, IM_ARRAYSIZE(nodeTypes))) {
         m_dialogueManager->updateNodeType(m_selectedNodeId, static_cast<DialogueNode::NodeType>(currentType));
     }
 
-    // Node text editor
+    ImGui::PopItemWidth();
+
+    // Node text editor.
     std::string nodeText = node->getText();
-    ImGui::Text("Node Text:");
+    ImGui::TextWrapped("Node Text:");
     if (node->getType() == DialogueNode::NodeType::PlayerChoice) {
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.0f, 1.0f), "This is what the player will select");
     }
     else if (node->getType() == DialogueNode::NodeType::NPCStatement) {
         ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "This is what the NPC will say");
     }
-
-    if (ImGui::InputTextMultiline("##NodeText", &nodeText, ImVec2(-1.0f, 60.0f))) {
+    if (ImGui::InputTextMultiline("##NodeText", &nodeText, ImVec2(-FLT_MIN, 60.0f))) {
         node->setText(nodeText);
     }
 
     // Response selector (only for NPC statements)
     if (node->getType() == DialogueNode::NodeType::NPCStatement) {
         ImGui::Separator();
-        ImGui::Text("Associated Response Type:");
+        ImGui::TextWrapped("Associated Response Type:");
 
-        // Get all response types for selection
+        // Get all response types for selection.
         std::vector<ResponseType> responseTypes;
         for (int i = 0; i <= static_cast<int>(ResponseType::AskToFollow); i++) {
             responseTypes.push_back(static_cast<ResponseType>(i));
         }
 
-        // Find current response
         auto currentResponse = node->getResponse();
         ResponseType selectedType = currentResponse ? currentResponse->getType() : ResponseType::EnthusiasticAffirmative;
-
-        // Create a simple combo box for response type selection
         std::string selectedTypeName = m_dialogueManager->getResponseTypeName(selectedType);
         if (ImGui::BeginCombo("Response Type", selectedTypeName.c_str())) {
             for (ResponseType type : responseTypes) {
                 bool isSelected = (selectedType == type);
                 std::string typeName = m_dialogueManager->getResponseTypeName(type);
                 if (ImGui::Selectable(typeName.c_str(), isSelected)) {
-                    // Set the selected response
                     auto response = m_dialogueManager->getResponse(type);
                     if (response) {
                         node->setResponse(response);
                     }
                 }
-
                 if (isSelected) {
                     ImGui::SetItemDefaultFocus();
                 }
@@ -970,39 +1086,39 @@ void DialogueEditor::renderNodeProperties() {
             ImGui::EndCombo();
         }
 
-        // Display personality settings for response
-        ImGui::Text("Personality & Voice Options:");
-
-        // Personality selector
+        ImGui::TextWrapped("Personality & Voice Options:");
         if (currentResponse) {
-            // Helper UI for testing different personalities
+            // Helper UI for testing different personalities.
             static int currentPersonality = static_cast<int>(PersonalityType::Bubbly);
             const char* personalities[] = {
                 "Bubbly", "Grumpy", "Manic", "Shy", "Serious",
                 "Anxious", "Confident", "Intellectual", "Mysterious", "Friendly"
             };
-
+            float personalityDropdownWidth = ImGui::GetContentRegionAvail().x * 0.95f;
+            ImGui::PushItemWidth(personalityDropdownWidth);
             if (ImGui::Combo("Test Personality", &currentPersonality, personalities, IM_ARRAYSIZE(personalities))) {
-                // Just update the UI, doesn't affect the actual dialogue flow
+                // Update UI only.
             }
+            ImGui::PopItemWidth();
 
-            // Show the response text for this personality
             PersonalityType personality = static_cast<PersonalityType>(currentPersonality);
             std::string responseText = currentResponse->getTextForPersonality(personality);
-
-            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f),
-                "Response text: \"%s\"", responseText.c_str());
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "Response text: \"%s\"", responseText.c_str());
         }
     }
 
-    // Condition editor (only for condition nodes)
+    // Enhanced condition editor for condition nodes.
     if (node->getType() == DialogueNode::NodeType::ConditionCheck) {
         ImGui::Separator();
-        ImGui::Text("Condition Properties:");
+        ImGui::TextWrapped("Condition Properties:");
 
         DialogueCondition condition = node->getCondition();
 
-        // Condition type selector
+        // Condition type selector.
+        ImGui::TextUnformatted("Condition Type:");
+        ImGui::SameLine();
+        float condDropdownWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+        ImGui::PushItemWidth(condDropdownWidth);
         const char* conditionTypes[] = {
             "None",
             "Relationship Status",
@@ -1013,75 +1129,903 @@ void DialogueEditor::renderNodeProperties() {
             "Player Choice",
             "Custom"
         };
-
         int currentCondType = static_cast<int>(condition.type);
-        if (ImGui::Combo("Condition Type", &currentCondType, conditionTypes, IM_ARRAYSIZE(conditionTypes))) {
+        bool conditionTypeChanged = false;
+        if (ImGui::Combo("##ConditionType", &currentCondType, conditionTypes, IM_ARRAYSIZE(conditionTypes))) {
             condition.type = static_cast<ConditionType>(currentCondType);
             node->setCondition(condition);
+            conditionTypeChanged = true;
         }
+        ImGui::PopItemWidth();
 
-        // Condition-specific parameters
+        // Condition-specific parameters.
         switch (condition.type) {
         case ConditionType::RelationshipStatus: {
-            const char* relationshipLevels[] = {
-                "Hostile",
-                "Unfriendly",
-                "Neutral",
-                "Friendly",
-                "Close"
-            };
-
+            const char* relationshipLevels[] = { "Hostile", "Unfriendly", "Neutral", "Friendly", "Close" };
             int currentLevel = static_cast<int>(condition.relationshipThreshold);
-            if (ImGui::Combo("Minimum Relationship", &currentLevel, relationshipLevels, IM_ARRAYSIZE(relationshipLevels))) {
+            bool changed = false;
+
+            ImGui::TextUnformatted("Minimum Relationship Level:");
+            ImGui::SameLine();
+            float relDropdownWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+            ImGui::PushItemWidth(relDropdownWidth);
+            if (ImGui::Combo("##RelationshipLevel", &currentLevel, relationshipLevels, IM_ARRAYSIZE(relationshipLevels))) {
                 condition.relationshipThreshold = static_cast<RelationshipStatus>(currentLevel);
                 node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.8f, 1.0f),
+                "This checks if NPC's relationship with player is at least:");
+            ImGui::TextColored(ImVec4(0.0f, 0.9f, 0.0f, 1.0f), "  %s", relationshipLevels[currentLevel]);
+
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.0f, 1.0f), "Branch outcomes:");
+            {
+                auto branchLabels = condition.GetBranchLabels();
+                if (branchLabels.size() >= 1)
+                    ImGui::TextWrapped("1. %s - NPC has this relationship level or better", branchLabels[0].c_str());
+                if (branchLabels.size() >= 2)
+                    ImGui::TextWrapped("2. %s - NPC has a worse relationship", branchLabels[1].c_str());
+            }
+            if (changed || conditionTypeChanged) {
+                int branchCount = static_cast<int>(node->getChildren().size());
+                if (branchCount < 2) branchCount = 2;
+                m_dialogueManager->createConditionBranches(node, branchCount);
             }
             break;
         }
+        case ConditionType::TimeOfDay: {
+            const char* timeOptions[] = { "Morning", "Afternoon", "Evening", "Night" };
+            static int selectedTime = 0;
+            if (!condition.parameterName.empty()) {
+                for (int i = 0; i < IM_ARRAYSIZE(timeOptions); i++) {
+                    if (condition.parameterName == timeOptions[i]) {
+                        selectedTime = i;
+                        break;
+                    }
+                }
+            }
+            bool changed = false;
+            ImGui::TextUnformatted("Time of Day:");
+            ImGui::SameLine();
+            float timeDropdownWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+            ImGui::PushItemWidth(timeDropdownWidth);
+            if (ImGui::Combo("##TimeOfDay", &selectedTime, timeOptions, IM_ARRAYSIZE(timeOptions))) {
+                condition.parameterName = timeOptions[selectedTime];
+                node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
 
-        case ConditionType::QuestStatus:
-        case ConditionType::InventoryCheck:
-        case ConditionType::StatCheck:
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.8f, 1.0f),
+                "This checks if the current game time is:");
+            ImGui::TextColored(ImVec4(0.0f, 0.9f, 0.0f, 1.0f), "  %s", timeOptions[selectedTime]);
+
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.0f, 1.0f), "Branch outcomes:");
+            {
+                auto branchLabels = condition.GetBranchLabels();
+                if (branchLabels.size() >= 1)
+                    ImGui::TextWrapped("1. %s - Current time matches", branchLabels[0].c_str());
+                if (branchLabels.size() >= 2)
+                    ImGui::TextWrapped("2. %s - Current time doesn't match", branchLabels[1].c_str());
+            }
+            if (changed || conditionTypeChanged) {
+                int branchCount = static_cast<int>(node->getChildren().size());
+                if (branchCount < 2) branchCount = 2;
+                m_dialogueManager->createConditionBranches(node, branchCount);
+            }
+            break;
+        }
+        case ConditionType::QuestStatus: {
+            std::string questId = condition.parameterName;
+            std::string questStatus = condition.parameterValue;
+            bool changed = false;
+            ImGui::TextUnformatted("Quest ID:");
+            ImGui::SameLine();
+            float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+            ImGui::PushItemWidth(inputWidth);
+            if (ImGui::InputText("##QuestID", &questId)) {
+                condition.parameterName = questId;
+                node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+
+            ImGui::TextUnformatted("Quest Status:");
+            ImGui::SameLine();
+            ImGui::PushItemWidth(inputWidth);
+            const char* statusOptions[] = { "Not Started", "In Progress", "Completed", "Failed" };
+            static int selectedStatus = 0;
+            if (!questStatus.empty()) {
+                for (int i = 0; i < IM_ARRAYSIZE(statusOptions); i++) {
+                    if (questStatus == statusOptions[i]) {
+                        selectedStatus = i;
+                        break;
+                    }
+                }
+            }
+            if (ImGui::Combo("##QuestStatus", &selectedStatus, statusOptions, IM_ARRAYSIZE(statusOptions))) {
+                condition.parameterValue = statusOptions[selectedStatus];
+                node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.8f, 1.0f),
+                "This checks if quest \"%s\" is:", questId.c_str());
+            ImGui::TextColored(ImVec4(0.0f, 0.9f, 0.0f, 1.0f), "  %s", statusOptions[selectedStatus]);
+
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.0f, 1.0f), "Branch outcomes:");
+            {
+                auto branchLabels = condition.GetBranchLabels();
+                if (branchLabels.size() >= 1)
+                    ImGui::TextWrapped("1. %s - Quest has this status", branchLabels[0].c_str());
+                if (branchLabels.size() >= 2)
+                    ImGui::TextWrapped("2. %s - Quest has a different status", branchLabels[1].c_str());
+            }
+            if (changed || conditionTypeChanged) {
+                int branchCount = static_cast<int>(node->getChildren().size());
+                if (branchCount < 2) branchCount = 2;
+                m_dialogueManager->createConditionBranches(node, branchCount);
+            }
+            break;
+        }
+        case ConditionType::InventoryCheck: {
+            std::string itemId = condition.parameterName;
+            std::string quantity = condition.parameterValue;
+            bool changed = false;
+            ImGui::TextUnformatted("Item ID:");
+            ImGui::SameLine();
+            float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+            ImGui::PushItemWidth(inputWidth);
+            if (ImGui::InputText("##ItemID", &itemId)) {
+                condition.parameterName = itemId;
+                node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+
+            ImGui::TextUnformatted("Minimum Quantity:");
+            ImGui::SameLine();
+            ImGui::PushItemWidth(inputWidth * 0.67f);
+            if (ImGui::InputText("##Quantity", &quantity)) {
+                condition.parameterValue = quantity;
+                node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+
+            int quantityValue = 1;
+            try {
+                quantityValue = std::stoi(quantity);
+            }
+            catch (...) {}
+
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.8f, 1.0f),
+                "This checks if player has at least: %d %s", quantityValue, itemId.c_str());
+
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.0f, 1.0f), "Branch outcomes:");
+            {
+                auto branchLabels = condition.GetBranchLabels();
+                if (branchLabels.size() >= 1)
+                    ImGui::TextWrapped("1. %s - Player has enough items", branchLabels[0].c_str());
+                if (branchLabels.size() >= 2)
+                    ImGui::TextWrapped("2. %s - Player doesn't have enough", branchLabels[1].c_str());
+            }
+            if (changed || conditionTypeChanged) {
+                int branchCount = static_cast<int>(node->getChildren().size());
+                if (branchCount < 2) branchCount = 2;
+                m_dialogueManager->createConditionBranches(node, branchCount);
+            }
+            break;
+        }
+        case ConditionType::StatCheck: {
+            std::string statName = condition.parameterName;
+            std::string threshold = condition.parameterValue;
+            bool changed = false;
+            ImGui::TextUnformatted("Stat Name:");
+            ImGui::SameLine();
+            float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+            ImGui::PushItemWidth(inputWidth);
+            if (ImGui::InputText("##StatName", &statName)) {
+                condition.parameterName = statName;
+                node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+            ImGui::TextUnformatted("Minimum Value:");
+            ImGui::SameLine();
+            ImGui::PushItemWidth(inputWidth);
+            if (ImGui::InputText("##Threshold", &threshold)) {
+                condition.parameterValue = threshold;
+                node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+
+            int thresholdValue = 1;
+            try {
+                thresholdValue = std::stoi(threshold);
+            }
+            catch (...) {}
+
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.8f, 1.0f),
+                "This checks if player's stat is at least: %s >= %d", statName.c_str(), thresholdValue);
+
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.0f, 1.0f), "Branch outcomes:");
+            {
+                auto branchLabels = condition.GetBranchLabels();
+                if (branchLabels.size() >= 1)
+                    ImGui::TextWrapped("1. %s - Stat is high enough", branchLabels[0].c_str());
+                if (branchLabels.size() >= 2)
+                    ImGui::TextWrapped("2. %s - Stat is too low", branchLabels[1].c_str());
+            }
+            if (changed || conditionTypeChanged) {
+                int branchCount = static_cast<int>(node->getChildren().size());
+                if (branchCount < 2) branchCount = 2;
+                m_dialogueManager->createConditionBranches(node, branchCount);
+            }
+            break;
+        }
         case ConditionType::Custom: {
             std::string paramName = condition.parameterName;
             std::string paramValue = condition.parameterValue;
-
-            if (ImGui::InputText("Parameter Name", &paramName)) {
+            bool changed = false;
+            ImGui::TextUnformatted("Parameter Name:");
+            ImGui::SameLine();
+            float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+            ImGui::PushItemWidth(inputWidth);
+            if (ImGui::InputText("##ParamName", &paramName)) {
                 condition.parameterName = paramName;
                 node->setCondition(condition);
+                changed = true;
             }
-
-            if (ImGui::InputText("Parameter Value", &paramValue)) {
+            ImGui::PopItemWidth();
+            ImGui::TextUnformatted("Parameter Value:");
+            ImGui::SameLine();
+            ImGui::PushItemWidth(inputWidth);
+            if (ImGui::InputText("##ParamValue", &paramValue)) {
                 condition.parameterValue = paramValue;
                 node->setCondition(condition);
+                changed = true;
+            }
+            ImGui::PopItemWidth();
+            ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.8f, 1.0f), "This checks custom condition:");
+            ImGui::TextColored(ImVec4(0.0f, 0.9f, 0.0f, 1.0f), "  %s = %s", paramName.c_str(), paramValue.c_str());
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.0f, 1.0f), "Branch outcomes:");
+            {
+                auto branchLabels = condition.GetBranchLabels();
+                if (branchLabels.size() >= 1)
+                    ImGui::TextWrapped("1. %s - Condition is true", branchLabels[0].c_str());
+                if (branchLabels.size() >= 2)
+                    ImGui::TextWrapped("2. %s - Condition is false", branchLabels[1].c_str());
+            }
+            if (changed || conditionTypeChanged) {
+                int branchCount = static_cast<int>(node->getChildren().size());
+                if (branchCount < 2) branchCount = 2;
+                m_dialogueManager->createConditionBranches(node, branchCount);
             }
             break;
         }
+        default:
+            break;
+        } // end switch condition.type
+
+
+        // Branch management section.
+        ImGui::Separator();
+        ImGui::TextWrapped("Branch Management:");
+        int branchCount = static_cast<int>(node->getChildren().size());
+        if (branchCount < 1) branchCount = 2;
+        ImGui::TextWrapped("Current branches: %d", branchCount);
+        if (ImGui::Button("Regenerate Default Branches")) {
+            auto branchLabels = condition.GetBranchLabels();
+            m_dialogueManager->createConditionBranches(node, branchLabels.size());
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Add Extra Branch")) {
+            m_dialogueManager->createConditionBranches(node, branchCount + 1);
+        }
+        ImGui::Separator();
+        ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "Condition: %s", condition.GetDescription().c_str());
+        ImGui::Separator();
+        ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.0f, 1.0f), "Branch-Specific Settings:");
+
+        auto children = node->getChildren();
+        for (int i = 0; i < children.size(); i++) {
+            ImGui::PushID(i);
+
+            std::string branchLabel = children[i].second;
+            ImGui::TextWrapped("Branch %d: %s", i + 1, branchLabel.c_str());
+
+            // Get branch-specific condition and initialize defaults if needed.
+            BranchCondition branchCond = node->getBranchCondition(i);
+            if (branchCond.type != condition.type) {
+                branchCond.type = condition.type;
+                switch (condition.type) {
+                case ConditionType::RelationshipStatus: {
+                    // Declare the levels locally.
+                    const char* relationshipLevels[] = { "Hostile", "Unfriendly", "Neutral", "Friendly", "Close" };
+                    if (i == 0) {
+                        branchCond = BranchCondition::CreateRelationshipRange(
+                            condition.relationshipThreshold, RelationshipStatus::Close
+                        );
+                    }
+                    else if (i == 1 && condition.relationshipThreshold > RelationshipStatus::Hostile) {
+                        RelationshipStatus belowThreshold = static_cast<RelationshipStatus>(
+                            static_cast<int>(condition.relationshipThreshold) - 1
+                            );
+                        branchCond = BranchCondition::CreateRelationshipRange(belowThreshold, belowThreshold);
+                    }
+                    else if (i == 2 && condition.relationshipThreshold > RelationshipStatus::Unfriendly) {
+                        RelationshipStatus evenLower = static_cast<RelationshipStatus>(
+                            std::max(0, static_cast<int>(condition.relationshipThreshold) - 2)
+                            );
+                        branchCond = BranchCondition::CreateRelationshipRange(evenLower, evenLower);
+                    }
+                    else {
+                        branchCond = BranchCondition::CreateRelationshipRange(
+                            RelationshipStatus::Hostile, RelationshipStatus::Hostile
+                        );
+                    }
+                    break;
+                }
+                case ConditionType::InventoryCheck: {
+                    int reqQuantity = 0;
+                    try {
+                        reqQuantity = std::stoi(condition.parameterValue);
+                    }
+                    catch (...) {
+                        reqQuantity = 1;
+                    }
+                    if (i == 0) {
+                        branchCond = BranchCondition::CreateInventoryRange(condition.parameterName, reqQuantity, 9999);
+                    }
+                    else if (i == 1) {
+                        if (reqQuantity > 1)
+                            branchCond = BranchCondition::CreateInventoryRange(condition.parameterName, 1, reqQuantity - 1);
+                        else
+                            branchCond = BranchCondition::CreateInventoryRange(condition.parameterName, 0, 0);
+                    }
+                    else {
+                        branchCond = BranchCondition::CreateInventoryRange(condition.parameterName, 0, 0);
+                    }
+                    break;
+                }
+                case ConditionType::StatCheck: {
+                    int threshold = 0;
+                    try {
+                        threshold = std::stoi(condition.parameterValue);
+                    }
+                    catch (...) {
+                        threshold = 1;
+                    }
+                    if (i == 0) {
+                        branchCond = BranchCondition::CreateStatRange(condition.parameterName, threshold, 9999);
+                    }
+                    else if (i == 1 && threshold > 1) {
+                        int lowerBound = std::max(1, threshold - (threshold / 2));
+                        branchCond = BranchCondition::CreateStatRange(condition.parameterName, lowerBound, threshold - 1);
+                    }
+                    else {
+                        branchCond = BranchCondition::CreateStatRange(condition.parameterName, 0, std::max(0, threshold - 1));
+                    }
+                    break;
+                }
+                case ConditionType::QuestStatus: {
+                    if (i == 0) {
+                        branchCond = BranchCondition::CreateQuestStatus(condition.parameterName, condition.parameterValue);
+                    }
+                    else {
+                        std::string otherStatus = "Other";
+                        const std::vector<std::string> statuses = {
+                            "Not Started", "In Progress", "Completed", "Failed"
+                        };
+                        for (const auto& status : statuses) {
+                            if (status != condition.parameterValue) {
+                                otherStatus = status;
+                                break;
+                            }
+                        }
+                        branchCond = BranchCondition::CreateQuestStatus(condition.parameterName, otherStatus);
+                    }
+                    break;
+                }
+                case ConditionType::TimeOfDay: {
+                    if (i == 0) {
+                        branchCond = BranchCondition::CreateTimeOfDay(condition.parameterName);
+                    }
+                    else {
+                        std::string otherTime = "Other";
+                        const std::vector<std::string> times = { "Morning", "Afternoon", "Evening", "Night" };
+                        for (const auto& time : times) {
+                            if (time != condition.parameterName) {
+                                otherTime = time;
+                                break;
+                            }
+                        }
+                        branchCond = BranchCondition::CreateTimeOfDay(otherTime);
+                    }
+                    break;
+                }
+                case ConditionType::Custom: {
+                    if (i == 0)
+                        branchCond = BranchCondition::CreateCustomCondition(condition.parameterName, "True");
+                    else
+                        branchCond = BranchCondition::CreateCustomCondition(condition.parameterName, "False");
+                    break;
+                }
+                default:
+                    break;
+                }
+                node->setBranchCondition(i, branchCond);
+            }
+
+            // Branch-specific UI based on condition type.
+            switch (condition.type) {
+            case ConditionType::RelationshipStatus: {
+                // Declare relationship levels.
+                const char* relationshipLevels[] = { "Hostile", "Unfriendly", "Neutral", "Friendly", "Close" };
+                // Min Relationship
+                ImGui::TextUnformatted("Min Relationship:");
+                ImGui::SameLine();
+                float relWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                ImGui::PushItemWidth(relWidth);
+                int minLevel = static_cast<int>(branchCond.minRelationship);
+                if (ImGui::Combo("##MinRel", &minLevel, relationshipLevels, IM_ARRAYSIZE(relationshipLevels))) {
+                    if (minLevel > static_cast<int>(branchCond.maxRelationship))
+                        branchCond.maxRelationship = static_cast<RelationshipStatus>(minLevel);
+                    branchCond.minRelationship = static_cast<RelationshipStatus>(minLevel);
+                    branchCond.description = BranchCondition::GetRelationshipRangeDescription(branchCond.minRelationship, branchCond.maxRelationship);
+                    node->setBranchCondition(i, branchCond);
+                    node->updateChildCondition(children[i].first->getId(),
+                        BranchCondition::GetRelationshipName(branchCond.minRelationship) +
+                        (branchCond.minRelationship != branchCond.maxRelationship ? "+" : ""));
+                }
+                ImGui::PopItemWidth();
+
+                // Max Relationship
+                ImGui::TextUnformatted("Max Relationship:");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(relWidth);
+                int maxLevel = static_cast<int>(branchCond.maxRelationship);
+                if (ImGui::Combo("##MaxRel", &maxLevel, relationshipLevels, IM_ARRAYSIZE(relationshipLevels))) {
+                    if (maxLevel < static_cast<int>(branchCond.minRelationship))
+                        branchCond.minRelationship = static_cast<RelationshipStatus>(maxLevel);
+                    branchCond.maxRelationship = static_cast<RelationshipStatus>(maxLevel);
+                    branchCond.description = BranchCondition::GetRelationshipRangeDescription(branchCond.minRelationship, branchCond.maxRelationship);
+                    node->setBranchCondition(i, branchCond);
+                    node->updateChildCondition(children[i].first->getId(),
+                        BranchCondition::GetRelationshipName(branchCond.minRelationship) +
+                        (branchCond.minRelationship != branchCond.maxRelationship ? "+" : ""));
+                }
+                ImGui::PopItemWidth();
+                ImGui::TextColored(ImVec4(0.0f, 0.7f, 0.7f, 1.0f), "This branch is used when: %s", branchCond.description.c_str());
+                break;
+            }
+            case ConditionType::InventoryCheck: {
+                // (No wrapping changes beyond what was already applied.)
+                ImGui::TextUnformatted("Item:");
+                ImGui::SameLine();
+                float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                ImGui::PushItemWidth(inputWidth);
+                std::string itemId = branchCond.itemId.empty() ? condition.parameterName : branchCond.itemId;
+                if (ImGui::InputText("##Item", &itemId)) {
+                    branchCond.itemId = itemId;
+                    node->setBranchCondition(i, branchCond);
+                    updateInventoryBranchLabel(node, children[i].first->getId(), branchCond);
+                }
+                ImGui::PopItemWidth();
+
+                static bool isItemRange[100] = { true };
+                bool isRange = isItemRange[i];
+                if (ImGui::Checkbox("Use Quantity Range##itemrange", &isRange)) {
+                    isItemRange[i] = isRange;
+                    if (!isRange) {
+                        branchCond.maxQuantity = branchCond.minQuantity;
+                        node->setBranchCondition(i, branchCond);
+                        updateInventoryBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                }
+                if (isRange) {
+                    ImGui::TextUnformatted("Min Quantity:");
+                    ImGui::SameLine();
+                    float halfWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                    ImGui::PushItemWidth(halfWidth);
+                    int minQty = branchCond.minQuantity;
+                    if (ImGui::InputInt("##MinQty", &minQty)) {
+                        if (minQty < 0) minQty = 0;
+                        if (minQty > branchCond.maxQuantity) branchCond.maxQuantity = minQty;
+                        branchCond.minQuantity = minQty;
+                        branchCond.description = BranchCondition::GetInventoryRangeDescription(branchCond.itemId, minQty, branchCond.maxQuantity);
+                        node->setBranchCondition(i, branchCond);
+                        updateInventoryBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                    ImGui::PopItemWidth();
+
+                    ImGui::TextUnformatted("Max Quantity:");
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(halfWidth);
+                    int maxQty = branchCond.maxQuantity;
+                    if (ImGui::InputInt("##MaxQty", &maxQty)) {
+                        if (maxQty < branchCond.minQuantity) branchCond.minQuantity = maxQty;
+                        branchCond.maxQuantity = maxQty;
+                        branchCond.description = BranchCondition::GetInventoryRangeDescription(branchCond.itemId, branchCond.minQuantity, maxQty);
+                        node->setBranchCondition(i, branchCond);
+                        updateInventoryBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                    ImGui::PopItemWidth();
+                }
+                else {
+                    ImGui::TextUnformatted("Exact Quantity:");
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(inputWidth * 0.67f);
+                    int exactQty = branchCond.minQuantity;
+                    if (ImGui::InputInt("##ExactQty", &exactQty)) {
+                        if (exactQty < 0) exactQty = 0;
+                        branchCond.minQuantity = exactQty;
+                        branchCond.maxQuantity = exactQty;
+                        branchCond.description = BranchCondition::GetInventoryRangeDescription(branchCond.itemId, exactQty, exactQty);
+                        node->setBranchCondition(i, branchCond);
+                        updateInventoryBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                    ImGui::PopItemWidth();
+                }
+                ImGui::TextColored(ImVec4(0.0f, 0.7f, 0.7f, 1.0f), "This branch is used when: %s", branchCond.description.c_str());
+                bool noItem = (branchCond.minQuantity == 0 && branchCond.maxQuantity == 0);
+                if (ImGui::Checkbox("No item shortcut", &noItem)) {
+                    if (noItem) {
+                        branchCond.minQuantity = 0;
+                        branchCond.maxQuantity = 0;
+                    }
+                    else {
+                        branchCond.minQuantity = 1;
+                        branchCond.maxQuantity = 9999;
+                    }
+                    branchCond.description = BranchCondition::GetInventoryRangeDescription(branchCond.itemId, branchCond.minQuantity, branchCond.maxQuantity);
+                    node->setBranchCondition(i, branchCond);
+                    std::string label = noItem ? "No" : "Has 1+";
+                    node->updateChildCondition(children[i].first->getId(), label + " " + itemId);
+                }
+                break;
+            }
+            case ConditionType::StatCheck: {
+                std::string statName = branchCond.statName.empty() ? condition.parameterName : branchCond.statName;
+                float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                ImGui::TextUnformatted("Stat Name:");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(inputWidth);
+                if (ImGui::InputText("##StatName", &statName)) {
+                    branchCond.statName = statName;
+                    node->setBranchCondition(i, branchCond);
+                    updateStatBranchLabel(node, children[i].first->getId(), branchCond);
+                }
+                ImGui::PopItemWidth();
+
+                static bool isStatRange[100] = { true };
+                bool isRange = isStatRange[i];
+                if (ImGui::Checkbox("Use Stat Range##statrange", &isRange)) {
+                    isStatRange[i] = isRange;
+                    if (!isRange && branchCond.minValue != branchCond.maxValue) {
+                        branchCond.maxValue = branchCond.minValue;
+                        node->setBranchCondition(i, branchCond);
+                        updateStatBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                }
+                if (isRange) {
+                    ImGui::TextUnformatted("Min Value:");
+                    ImGui::SameLine();
+                    float halfWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                    ImGui::PushItemWidth(halfWidth);
+                    int minVal = branchCond.minValue;
+                    if (ImGui::InputInt("##MinVal", &minVal)) {
+                        if (minVal < 0) minVal = 0;
+                        if (minVal > branchCond.maxValue) branchCond.maxValue = minVal;
+                        branchCond.minValue = minVal;
+                        branchCond.description = BranchCondition::GetStatRangeDescription(branchCond.statName, minVal, branchCond.maxValue);
+                        node->setBranchCondition(i, branchCond);
+                        updateStatBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                    ImGui::PopItemWidth();
+
+                    ImGui::TextUnformatted("Max Value:");
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(halfWidth);
+                    int maxVal = branchCond.maxValue;
+                    if (ImGui::InputInt("##MaxVal", &maxVal)) {
+                        if (maxVal < minVal) minVal = maxVal;
+                        branchCond.minValue = minVal;
+                        branchCond.maxValue = maxVal;
+                        branchCond.description = BranchCondition::GetStatRangeDescription(branchCond.statName, minVal, maxVal);
+                        node->setBranchCondition(i, branchCond);
+                        updateStatBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                    ImGui::PopItemWidth();
+                }
+                else {
+                    ImGui::TextUnformatted("Exact Value:");
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(inputWidth);
+                    int exactVal = branchCond.minValue;
+                    if (ImGui::InputInt("##ExactVal", &exactVal)) {
+                        if (exactVal < 0) exactVal = 0;
+                        branchCond.minValue = exactVal;
+                        branchCond.maxValue = exactVal;
+                        branchCond.description = BranchCondition::GetStatRangeDescription(branchCond.statName, exactVal, exactVal);
+                        node->setBranchCondition(i, branchCond);
+                        updateStatBranchLabel(node, children[i].first->getId(), branchCond);
+                    }
+                    ImGui::PopItemWidth();
+                }
+                ImGui::TextColored(ImVec4(0.0f, 0.7f, 0.7f, 1.0f), "This branch is used when: %s", branchCond.description.c_str());
+                if (ImGui::Button("High Stat")) {
+                    int threshold = 0;
+                    try { threshold = std::stoi(condition.parameterValue); }
+                    catch (...) { threshold = 10; }
+                    branchCond.minValue = threshold;
+                    branchCond.maxValue = 9999;
+                    branchCond.description = BranchCondition::GetStatRangeDescription(branchCond.statName, branchCond.minValue, branchCond.maxValue);
+                    node->setBranchCondition(i, branchCond);
+                    node->updateChildCondition(children[i].first->getId(), statName + " ? " + std::to_string(threshold));
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Medium Stat")) {
+                    int threshold = 0;
+                    try { threshold = std::stoi(condition.parameterValue); }
+                    catch (...) { threshold = 10; }
+                    int lower = std::max(1, threshold / 2);
+                    int upper = threshold - 1;
+                    if (lower <= upper) {
+                        branchCond.minValue = lower;
+                        branchCond.maxValue = upper;
+                        branchCond.description = BranchCondition::GetStatRangeDescription(branchCond.statName, branchCond.minValue, branchCond.maxValue);
+                        node->setBranchCondition(i, branchCond);
+                        node->updateChildCondition(children[i].first->getId(), statName + ": " + std::to_string(lower) + "-" + std::to_string(upper));
+                    }
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Low Stat")) {
+                    branchCond.minValue = 0;
+                    branchCond.maxValue = std::max(0, std::stoi(condition.parameterValue) / 2 - 1);
+                    branchCond.description = BranchCondition::GetStatRangeDescription(branchCond.statName, branchCond.minValue, branchCond.maxValue);
+                    node->setBranchCondition(i, branchCond);
+                    node->updateChildCondition(children[i].first->getId(), statName + " ? " + std::to_string(branchCond.maxValue));
+                }
+                break;
+            }
+            case ConditionType::QuestStatus: {
+                ImGui::TextUnformatted("Quest ID:");
+                ImGui::SameLine();
+                float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                ImGui::PushItemWidth(inputWidth);
+                std::string questId = branchCond.questId.empty() ? condition.parameterName : branchCond.questId;
+                if (ImGui::InputText("##QuestID", &questId)) {
+                    branchCond.questId = questId;
+                    node->setBranchCondition(i, branchCond);
+                    std::string updatedLabel = questId + ": " + branchCond.questStatus;
+                    node->updateChildCondition(children[i].first->getId(), updatedLabel);
+                }
+                ImGui::PopItemWidth();
+
+                const char* statusOptions[] = { "Not Started", "In Progress", "Completed", "Failed" };
+                int selectedStatus = 0;
+                std::string questStatus = branchCond.questStatus.empty() ? condition.parameterValue : branchCond.questStatus;
+                for (int s = 0; s < IM_ARRAYSIZE(statusOptions); s++) {
+                    if (questStatus == statusOptions[s]) {
+                        selectedStatus = s;
+                        break;
+                    }
+                }
+                ImGui::TextUnformatted("Quest Status:");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(inputWidth);
+                if (ImGui::Combo("##QuestStatus", &selectedStatus, statusOptions, IM_ARRAYSIZE(statusOptions))) {
+                    branchCond.questStatus = statusOptions[selectedStatus];
+                    branchCond.description = "Quest '" + questId + "' is " + branchCond.questStatus;
+                    node->setBranchCondition(i, branchCond);
+                    std::string updatedLabel = questId + ": " + branchCond.questStatus;
+                    node->updateChildCondition(children[i].first->getId(), updatedLabel);
+                }
+                ImGui::PopItemWidth();
+
+                static bool isMultiStatus[100] = { false };
+                bool isMulti = isMultiStatus[i];
+                if (ImGui::Checkbox("Use Multiple Statuses##multistatus", &isMulti)) {
+                    isMultiStatus[i] = isMulti;
+                    if (isMulti && branchCond.parameterValue.empty()) {
+                        branchCond.parameterValue = branchCond.questStatus;
+                        node->setBranchCondition(i, branchCond);
+                    }
+                }
+                if (isMulti) {
+                    ImGui::TextWrapped("Select additional statuses:");
+                    bool statusSelected[4] = { false, false, false, false };
+                    std::string multiStatus = branchCond.parameterValue;
+                    for (int s = 0; s < IM_ARRAYSIZE(statusOptions); s++) {
+                        if (multiStatus.find(statusOptions[s]) != std::string::npos)
+                            statusSelected[s] = true;
+                    }
+                    bool statusChanged = false;
+                    for (int s = 0; s < IM_ARRAYSIZE(statusOptions); s++) {
+                        if (ImGui::Checkbox(statusOptions[s], &statusSelected[s]))
+                            statusChanged = true;
+                    }
+                    if (statusChanged) {
+                        std::string newMultiStatus;
+                        for (int s = 0; s < IM_ARRAYSIZE(statusOptions); s++) {
+                            if (statusSelected[s]) {
+                                if (!newMultiStatus.empty())
+                                    newMultiStatus += ", ";
+                                newMultiStatus += statusOptions[s];
+                            }
+                        }
+                        if (newMultiStatus.empty())
+                            newMultiStatus = branchCond.questStatus;
+                        branchCond.parameterValue = newMultiStatus;
+                        branchCond.description = "Quest '" + questId + "' is one of: " + newMultiStatus;
+                        node->setBranchCondition(i, branchCond);
+                        std::string updatedLabel = questId + ": " + newMultiStatus;
+                        node->updateChildCondition(children[i].first->getId(), updatedLabel);
+                    }
+                }
+                ImGui::TextColored(ImVec4(0.0f, 0.7f, 0.7f, 1.0f), "This branch is used when: %s", branchCond.description.c_str());
+                break;
+            }
+            case ConditionType::TimeOfDay: {
+                const char* timeOptions[] = { "Morning", "Afternoon", "Evening", "Night" };
+                static bool isTimeRange[100] = { false };
+                bool isRange = isTimeRange[i];
+                if (ImGui::Checkbox("Use Time Range##timerange", &isRange)) {
+                    isTimeRange[i] = isRange;
+                    if (isRange && branchCond.parameterValue.empty()) {
+                        std::string currentTime = branchCond.timeOfDay.empty() ? condition.parameterName : branchCond.timeOfDay;
+                        branchCond.parameterValue = "Night";
+                        for (int t = 0; t < IM_ARRAYSIZE(timeOptions); t++) {
+                            if (currentTime == timeOptions[t]) {
+                                int maxIdx = (t + 1) % IM_ARRAYSIZE(timeOptions);
+                                branchCond.parameterValue = timeOptions[maxIdx];
+                                break;
+                            }
+                        }
+                        node->setBranchCondition(i, branchCond);
+                    }
+                }
+                if (isRange) {
+                    // Start Time
+                    ImGui::TextUnformatted("Start Time:");
+                    ImGui::SameLine();
+                    float timeDropdownWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                    ImGui::PushItemWidth(timeDropdownWidth);
+                    int selectedMinTime = 0;
+                    std::string minTimeOfDay = branchCond.timeOfDay.empty() ? condition.parameterName : branchCond.timeOfDay;
+                    for (int t = 0; t < IM_ARRAYSIZE(timeOptions); t++) {
+                        if (minTimeOfDay == timeOptions[t]) {
+                            selectedMinTime = t;
+                            break;
+                        }
+                    }
+                    if (ImGui::Combo("##StartTime", &selectedMinTime, timeOptions, IM_ARRAYSIZE(timeOptions))) {
+                        branchCond.timeOfDay = timeOptions[selectedMinTime];
+                        if (selectedMinTime > selectedMinTime) {} // dummy check
+                    }
+                    ImGui::PopItemWidth();
+
+                    // End Time
+                    ImGui::TextUnformatted("End Time:");
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(timeDropdownWidth);
+                    int selectedMaxTime = 0;
+                    std::string maxTimeOfDay = branchCond.parameterValue.empty() ? "Night" : branchCond.parameterValue;
+                    for (int t = 0; t < IM_ARRAYSIZE(timeOptions); t++) {
+                        if (maxTimeOfDay == timeOptions[t]) {
+                            selectedMaxTime = t;
+                            break;
+                        }
+                    }
+                    if (ImGui::Combo("##EndTime", &selectedMaxTime, timeOptions, IM_ARRAYSIZE(timeOptions))) {
+                        branchCond.parameterValue = timeOptions[selectedMaxTime];
+                    }
+                    ImGui::PopItemWidth();
+
+                    // Update description.
+                    if (branchCond.timeOfDay == branchCond.parameterValue)
+                        branchCond.description = "Time is " + branchCond.timeOfDay;
+                    else
+                        branchCond.description = "Time between " + branchCond.timeOfDay + " and " + branchCond.parameterValue;
+                    node->setBranchCondition(i, branchCond);
+                    std::string branchLabel;
+                    if (branchCond.timeOfDay == branchCond.parameterValue)
+                        branchLabel = branchCond.timeOfDay;
+                    else
+                        branchLabel = branchCond.timeOfDay + "-" + branchCond.parameterValue;
+                    node->updateChildCondition(children[i].first->getId(), branchLabel);
+                }
+                else {
+                    ImGui::TextUnformatted("Time of Day:");
+                    ImGui::SameLine();
+                    float timeDropdownWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                    ImGui::PushItemWidth(timeDropdownWidth);
+                    int selectedTime = 0;
+                    std::string timeOfDay = branchCond.timeOfDay.empty() ? condition.parameterName : branchCond.timeOfDay;
+                    for (int t = 0; t < IM_ARRAYSIZE(timeOptions); t++) {
+                        if (timeOfDay == timeOptions[t]) {
+                            selectedTime = t;
+                            break;
+                        }
+                    }
+                    if (ImGui::Combo("##Time", &selectedTime, timeOptions, IM_ARRAYSIZE(timeOptions))) {
+                        branchCond.timeOfDay = timeOptions[selectedTime];
+                        branchCond.parameterValue = "";
+                        branchCond.description = "Time is " + branchCond.timeOfDay;
+                        node->setBranchCondition(i, branchCond);
+                        node->updateChildCondition(children[i].first->getId(), branchCond.timeOfDay);
+                    }
+                    ImGui::PopItemWidth();
+                }
+                ImGui::TextColored(ImVec4(0.0f, 0.7f, 0.7f, 1.0f), "This branch is used when: %s", branchCond.description.c_str());
+                break;
+            }
+            case ConditionType::Custom: {
+                ImGui::TextUnformatted("Parameter Name:");
+                ImGui::SameLine();
+                float inputWidth = ImGui::GetContentRegionAvail().x * 0.80f;
+                ImGui::PushItemWidth(inputWidth);
+                std::string paramName = branchCond.parameterName.empty() ? condition.parameterName : branchCond.parameterName;
+                if (ImGui::InputText("##ParamName", &paramName)) {
+                    branchCond.parameterName = paramName;
+                    node->setBranchCondition(i, branchCond);
+                    std::string updatedLabel = paramName + ": " + branchCond.parameterValue;
+                    node->updateChildCondition(children[i].first->getId(), updatedLabel);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::TextUnformatted("Parameter Value:");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(inputWidth);
+                std::string paramValue = branchCond.parameterValue.empty() ? condition.parameterValue : branchCond.parameterValue;
+                if (ImGui::InputText("##ParamValue", &paramValue)) {
+                    branchCond.parameterValue = paramValue;
+                    branchCond.description = "Custom: " + paramName + " = " + paramValue;
+                    node->setBranchCondition(i, branchCond);
+                    std::string updatedLabel = paramName + ": " + paramValue;
+                    node->updateChildCondition(children[i].first->getId(), updatedLabel);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::TextColored(ImVec4(0.0f, 0.7f, 0.7f, 1.0f), "This branch is used when: %s", branchCond.description.c_str());
+                break;
+            }
+            default:
+                break;
+            }
+            ImGui::PopID();
+            ImGui::Separator();
         }
 
-        // Display current condition description
-        ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f),
-            "Condition: %s", condition.GetDescription().c_str());
     }
 
-    // Child node connections
+    // Child node connections.
     if (!node->getChildren().empty()) {
         ImGui::Separator();
-        ImGui::Text("Connected Nodes:");
-
+        ImGui::TextWrapped("Connected Nodes:");
         int i = 0;
         for (auto& childPair : node->getChildren()) {
             ImGui::PushID(i++);
-
             std::string childName = childPair.first->getText();
             if (childName.empty()) {
                 childName = "Node " + std::to_string(childPair.first->getId());
             }
 
-            // Show child node type with appropriate color
+            // Show child node type with appropriate color.
             ImVec4 childColor;
             const char* childTypeStr;
-
             switch (childPair.first->getType()) {
             case DialogueNode::NodeType::NPCStatement:
                 childColor = ImVec4(0.0f, 0.8f, 0.0f, 1.0f);
@@ -1109,32 +2053,28 @@ void DialogueEditor::renderNodeProperties() {
             ImGui::SameLine();
             ImGui::TextColored(childColor, "[%s] %s", childTypeStr, childName.c_str());
 
-            // Connection condition
             std::string condition = childPair.second;
             if (ImGui::InputText("Branch Label", &condition)) {
-                // Update condition
                 node->updateChildCondition(childPair.first->getId(), condition);
             }
 
-            // Button to jump to this child node
             if (ImGui::Button("Select")) {
                 m_selectedNodeId = childPair.first->getId();
             }
-
             ImGui::SameLine();
-
-            // Button to remove this connection
             if (ImGui::Button("Disconnect")) {
                 node->removeChild(childPair.first->getId());
                 ImGui::PopID();
-                break; // Break since we're modifying the collection
+                break; // Break since the collection is modified.
             }
-
             ImGui::PopID();
             ImGui::Separator();
         }
     }
+
+    ImGui::PopTextWrapPos();
 }
+
 
 void DialogueEditor::loadSavedDialogue() {
     // TODO: Implement dialogue loading from JSON or binary format
@@ -1148,37 +2088,150 @@ void DialogueEditor::testDialogueNavigation() {
     // Find a root node to start with
     auto nodes = m_dialogueManager->getAllNodes();
     std::shared_ptr<DialogueNode> startNode = nullptr;
+
     for (auto& node : nodes) {
         if (!m_dialogueManager->hasParent(node->getId())) {
             startNode = node;
             break;
         }
     }
+
     if (!startNode) {
         ImGui::Text("No root nodes found. Create a dialogue tree first.");
         return;
     }
+
     ImGui::Text("Testing dialogue tree navigation");
     ImGui::Text("Starting from node: %s", startNode->getText().c_str());
 
-    // Set up test parameters
-    static int npcId = 1;
-    static int playerId = 1;
-    static int relationshipLevel = static_cast<int>(RelationshipStatus::Friendly);
+    ImGui::Separator();
+    ImGui::Text("Test Parameters:");
 
-    ImGui::SliderInt("NPC ID", &npcId, 1, 10);
-    ImGui::SliderInt("Player ID", &playerId, 1, 10);
+    // Set up test parameters - now with enhanced tabs for all condition types
+    static int currentTab = 0;
+    const char* tabs[] = { "Relationships", "Inventory", "Stats", "Quests", "Time" };
 
-    const char* relationshipLevels[] = {
-        "Hostile", "Unfriendly", "Neutral", "Friendly", "Close"
-    };
+    ImGui::BeginTabBar("TestTabs");
 
-    if (ImGui::Combo("Relationship", &relationshipLevel, relationshipLevels, IM_ARRAYSIZE(relationshipLevels))) {
-        // Update the test relationship
-        m_dialogueManager->setRelationshipForTesting(
-            npcId, playerId, static_cast<RelationshipStatus>(relationshipLevel)
-        );
+    // Relationship settings tab
+    if (ImGui::BeginTabItem(tabs[0])) {
+        static int npcId = 1;
+        static int playerId = 1;
+        static int relationshipLevel = static_cast<int>(RelationshipStatus::Friendly);
+
+        ImGui::SliderInt("NPC ID", &npcId, 1, 10);
+        ImGui::SliderInt("Player ID", &playerId, 1, 10);
+
+        const char* relationshipLevels[] = {
+            "Hostile", "Unfriendly", "Neutral", "Friendly", "Close"
+        };
+
+        if (ImGui::Combo("Relationship", &relationshipLevel, relationshipLevels, IM_ARRAYSIZE(relationshipLevels))) {
+            // Update the test relationship
+            m_dialogueManager->setRelationshipForTesting(
+                npcId, playerId, static_cast<RelationshipStatus>(relationshipLevel)
+            );
+        }
+
+        ImGui::EndTabItem();
     }
+
+    // Inventory settings tab
+    if (ImGui::BeginTabItem(tabs[1])) {
+        static char itemName[128] = "Gold";
+        static int quantity = 10;
+
+        ImGui::InputText("Item Name", itemName, IM_ARRAYSIZE(itemName));
+        ImGui::SliderInt("Quantity", &quantity, 0, 100);
+
+        if (ImGui::Button("Set Item Quantity")) {
+            m_dialogueManager->setInventoryItemForTesting(itemName, quantity);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Remove Item")) {
+            m_dialogueManager->setInventoryItemForTesting(itemName, 0);
+        }
+
+        // Display current inventory
+        ImGui::Separator();
+        ImGui::Text("Test Inventory:");
+
+        // This would need access to the internal m_testInventory map
+        // For now, just display the current setting
+        ImGui::Text("%s: %d", itemName, quantity);
+
+        ImGui::EndTabItem();
+    }
+
+    // Stats settings tab
+    if (ImGui::BeginTabItem(tabs[2])) {
+        static char statName[128] = "Strength";
+        static int statValue = 10;
+
+        ImGui::InputText("Stat Name", statName, IM_ARRAYSIZE(statName));
+        ImGui::SliderInt("Stat Value", &statValue, 0, 100);
+
+        if (ImGui::Button("Set Stat Value")) {
+            m_dialogueManager->setPlayerStatForTesting(statName, statValue);
+        }
+
+        // Display current stats
+        ImGui::Separator();
+        ImGui::Text("Test Stats:");
+
+        // This would need access to the internal m_testPlayerStats map
+        ImGui::Text("%s: %d", statName, statValue);
+
+        ImGui::EndTabItem();
+    }
+
+    // Quest settings tab
+    if (ImGui::BeginTabItem(tabs[3])) {
+        static char questId[128] = "MainQuest";
+        static int questStatus = 0;
+
+        ImGui::InputText("Quest ID", questId, IM_ARRAYSIZE(questId));
+
+        const char* questStatuses[] = {
+            "Not Started", "In Progress", "Completed", "Failed"
+        };
+
+        if (ImGui::Combo("Quest Status", &questStatus, questStatuses, IM_ARRAYSIZE(questStatuses))) {
+            m_dialogueManager->setQuestStatusForTesting(questId, questStatuses[questStatus]);
+        }
+
+        if (ImGui::Button("Set Quest Status")) {
+            m_dialogueManager->setQuestStatusForTesting(questId, questStatuses[questStatus]);
+        }
+
+        // Display current quests
+        ImGui::Separator();
+        ImGui::Text("Test Quests:");
+
+        // This would need access to the internal m_testQuestStates map
+        ImGui::Text("%s: %s", questId, questStatuses[questStatus]);
+
+        ImGui::EndTabItem();
+    }
+
+    // Time settings tab
+    if (ImGui::BeginTabItem(tabs[4])) {
+        static int timeOfDay = 0;
+
+        const char* times[] = {
+            "Morning", "Afternoon", "Evening", "Night"
+        };
+
+        if (ImGui::Combo("Time of Day", &timeOfDay, times, IM_ARRAYSIZE(times))) {
+            m_dialogueManager->setTimeOfDayForTesting(times[timeOfDay]);
+        }
+
+        ImGui::EndTabItem();
+    }
+
+    ImGui::EndTabBar();
 
     ImGui::Separator();
 
@@ -1186,8 +2239,43 @@ void DialogueEditor::testDialogueNavigation() {
     static std::shared_ptr<DialogueNode> currentNode = startNode;
 
     if (currentNode) {
-        // Display current node
-        ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "Current Node: %s", currentNode->getText().c_str());
+        // Show node info
+        ImVec4 nodeColor;
+        switch (currentNode->getType()) {
+        case DialogueNode::NodeType::NPCStatement:
+            nodeColor = ImVec4(0.0f, 0.8f, 0.0f, 1.0f); // Green for NPC
+            break;
+        case DialogueNode::NodeType::PlayerChoice:
+            nodeColor = ImVec4(0.8f, 0.8f, 0.0f, 1.0f); // Yellow for player
+            break;
+        case DialogueNode::NodeType::ConditionCheck:
+            nodeColor = ImVec4(0.8f, 0.4f, 0.0f, 1.0f); // Orange for condition
+            break;
+        default:
+            nodeColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // White for default
+            break;
+        }
+
+        ImGui::TextColored(nodeColor, "Current Node: %s", currentNode->getText().c_str());
+
+        // Display node type
+        const char* nodeTypeStr = "";
+        switch (currentNode->getType()) {
+        case DialogueNode::NodeType::NPCStatement:
+            nodeTypeStr = "NPC Statement";
+            break;
+        case DialogueNode::NodeType::PlayerChoice:
+            nodeTypeStr = "Player Choice";
+            break;
+        case DialogueNode::NodeType::ConditionCheck:
+            nodeTypeStr = "Condition Check";
+            break;
+        case DialogueNode::NodeType::BranchPoint:
+            nodeTypeStr = "Branch Point";
+            break;
+        }
+
+        ImGui::Text("Node Type: %s", nodeTypeStr);
 
         // Display associated response if any
         auto response = currentNode->getResponse();
@@ -1198,20 +2286,47 @@ void DialogueEditor::testDialogueNavigation() {
 
         ImGui::Separator();
 
-        // For condition nodes, show evaluation result
+        // For condition nodes, show evaluation result with branch-specific results
         if (currentNode->getType() == DialogueNode::NodeType::ConditionCheck) {
-            bool result = m_dialogueManager->evaluateCondition(
-                currentNode->getCondition(), npcId, playerId
+            // Main condition description
+            DialogueCondition condition = currentNode->getCondition();
+            ImGui::Text("Condition: %s", condition.GetDescription().c_str());
+
+            // Evaluate condition
+            bool mainResult = m_dialogueManager->evaluateCondition(
+                condition, 1, 1  // Using default NPC/Player IDs
             );
 
             ImGui::TextColored(
-                result ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
-                "Condition result: %s", result ? "SUCCESS" : "FAIL"
+                mainResult ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
+                "Main condition result: %s", mainResult ? "SUCCESS" : "FAIL"
             );
 
-            // Auto-advance for condition nodes
+            // Get children for branch-specific evaluations
+            auto children = currentNode->getChildren();
+            ImGui::Text("Branch evaluations:");
+
+            for (int i = 0; i < children.size(); i++) {
+                BranchCondition branchCond = currentNode->getBranchCondition(i);
+
+                // Evaluate branch condition
+                bool branchResult = m_dialogueManager->evaluateBranchCondition(branchCond, 1, 1);
+
+                // Branch color based on result
+                ImVec4 branchColor = branchResult ?
+                    ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : // Green for success
+                    ImVec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red for failure
+
+                ImGui::TextColored(branchColor, "Branch %d (%s): %s",
+                    i + 1,
+                    children[i].second.c_str(),
+                    branchResult ? "ACTIVE" : "INACTIVE"
+                );
+            }
+
+            // Auto-advance button for condition nodes
             if (ImGui::Button("Evaluate Condition")) {
-                auto nextNode = m_dialogueManager->findNextNode(currentNode, npcId, playerId);
+                auto nextNode = m_dialogueManager->findNextNode(currentNode, 1, 1);
                 if (nextNode) {
                     currentNode = nextNode;
                 }
