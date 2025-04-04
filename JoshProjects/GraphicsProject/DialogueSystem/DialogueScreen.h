@@ -34,10 +34,15 @@ public:
         // Initialize dialogue manager
         m_dialogueManager = std::make_unique<DialogueManager>();
         m_dialogueManager->initialize(m_audioEngine->getWWiseEngine());
+        m_dialogueManager->setGame(m_game);
+        
 
         // Initialize dialogue editor
         m_dialogueEditor = std::make_unique<DialogueEditor>(m_dialogueManager.get());
         m_dialogueEditor->initialize();
+        if (m_game) {
+            m_dialogueEditor->setInputManager(m_game->getInputManager());
+        }
 
         // Create a sample dialogue tree for testing
         testDialogueTreeEditor(m_dialogueManager.get());
@@ -225,7 +230,12 @@ private:
 
     void testDialogueTreeEditor(DialogueManager* manager)
     {
-        // Clear any existing nodes first to avoid duplicate trees.
+        // Only proceed if no tree has been created yet or if we're explicitly recreating
+        if (m_testTreeCreated) {
+            std::cout << "Test tree already exists! Clearing before recreating...\n";
+        }
+
+        // Clear any existing nodes first to avoid duplicate trees
         auto nodes = manager->getAllNodes();
         for (auto& node : nodes)
         {
@@ -369,6 +379,8 @@ private:
         // Optionally, set up testing relationships.
         manager->setRelationshipForTesting(1, 1, RelationshipStatus::Friendly);   // NPC 1 is friendly
         manager->setRelationshipForTesting(2, 1, RelationshipStatus::Hostile);     // NPC 2 is hostile
+
+        m_testTreeCreated = true;
     }
 
 
@@ -592,6 +604,8 @@ private:
             }
         }
     }
+
+    bool m_testTreeCreated = false;
 
     std::unique_ptr<DialogueAudioEngine> m_audioEngine;
     std::unique_ptr<DialogueManager> m_dialogueManager;

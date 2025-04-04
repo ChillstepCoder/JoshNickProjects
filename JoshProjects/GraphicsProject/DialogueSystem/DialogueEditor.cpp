@@ -9,6 +9,7 @@
 #include <chrono>
 #include <thread>
 #include <algorithm> // For std::find, std::remove
+#include <iostream>
 
 // Custom filesystem namespace for directory creation
 namespace fs {
@@ -69,6 +70,10 @@ void DialogueEditor::shutdown() {
 
 void DialogueEditor::update() {
     // This could be used for any background processing or pending API calls
+    // Get the input manager from the game and process inputs
+    if (m_inputManager != nullptr && m_inputManager != reinterpret_cast<JAGEngine::InputManager*>(0x40)) {
+        processInput();
+    }
 }
 
 void DialogueEditor::render() {
@@ -359,6 +364,16 @@ void DialogueEditor::renderDialogueTreeEditor() {
                 DialogueNode::NodeType::NPCStatement,
                 "New NPC Statement"
             );
+
+            // Check if there's a selected node and add the new node as its child
+            if (m_selectedNodeId >= 0) {
+                auto selectedNode = m_dialogueManager->getNodeById(m_selectedNodeId);
+                if (selectedNode) {
+                    selectedNode->addChildNode(newNode, "");
+                }
+            }
+            // If root or nothing is selected (-1), we leave it as a standalone root node
+
             m_selectedNodeId = newNode->getId();
         }
 
@@ -369,6 +384,15 @@ void DialogueEditor::renderDialogueTreeEditor() {
                 DialogueNode::NodeType::PlayerChoice,
                 "New Player Choice"
             );
+
+            // Check if there's a selected node and add the new node as its child
+            if (m_selectedNodeId >= 0) {
+                auto selectedNode = m_dialogueManager->getNodeById(m_selectedNodeId);
+                if (selectedNode) {
+                    selectedNode->addChildNode(newNode, "");
+                }
+            }
+
             m_selectedNodeId = newNode->getId();
         }
 
@@ -379,10 +403,17 @@ void DialogueEditor::renderDialogueTreeEditor() {
                 DialogueNode::NodeType::ConditionCheck,
                 "New Condition Check"
             );
+
+            // Check if there's a selected node and add the new node as its child
+            if (m_selectedNodeId >= 0) {
+                auto selectedNode = m_dialogueManager->getNodeById(m_selectedNodeId);
+                if (selectedNode) {
+                    selectedNode->addChildNode(newNode, "");
+                }
+            }
+
             m_selectedNodeId = newNode->getId();
         }
-
-        ImGui::SameLine();
 
         if (m_dialogueManager->getAllNodes().size() > 0 && ImGui::Button("Delete Selected")) {
             if (m_selectedNodeId >= 0) {
@@ -713,6 +744,7 @@ void DialogueEditor::renderBatchGenerationWindow() {
 
 void DialogueEditor::renderNodeTree()
 {
+
     // Get all root nodes (nodes without parents)
     auto allNodes = m_dialogueManager->getAllNodes();
     std::vector<std::shared_ptr<DialogueNode>> rootNodes;
@@ -794,16 +826,33 @@ void DialogueEditor::renderNodeTree()
             //
             ImGui::PushStyleColor(ImGuiCol_Text, nodeColor);
             // Use the pointer as the ID, pass a trivial label format (non-null).
-            bool nodeOpen = ImGui::TreeNodeEx((void*)node.get(), flags, "%s", " ");
+            bool nodeOpen = ImGui::TreeNodeEx((void*)(intptr_t)node->getId(), flags, "%s", " ");
             ImGui::PopStyleColor();
 
-            // If arrow area clicked, select node
-            if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
-                m_selectedNodeId = node->getId();
+            // If arrow area clicked, toggle selection (select if not selected, deselect if already selected)
+            if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+                if (m_selectedNodeId == node->getId()) {
+                    // Deselect the node if it's already selected
+                    m_selectedNodeId = -1;
+                }
+                else {
+                    // Otherwise select the node
+                    m_selectedNodeId = node->getId();
+                }
+            }
 
-            //
-            // 2) On the same line, show the actual node text with wrapping
-            //
+            // Same for the text area click handler
+            if (ImGui::IsItemClicked()) {
+                if (m_selectedNodeId == node->getId()) {
+                    // Deselect the node if it's already selected
+                    m_selectedNodeId = -1;
+                }
+                else {
+                    // Otherwise select the node
+                    m_selectedNodeId = node->getId();
+                }
+            }
+
             ImGui::SameLine();
             // Push a separate ID for the text so it can be clicked separately
             ImGui::PushID(node->getId());
@@ -938,10 +987,58 @@ void DialogueEditor::renderNodeTree()
             }
         };
 
-    // Render all root nodes
-    for (auto& rootNode : rootNodes)
-    {
-        renderNodeRecursive(rootNode, 0);
+        // Display a special "ROOT" node at the top
+        ImGuiTreeNodeFlags rootFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+        if (m_selectedNodeId == -1)  // Use -1 as the special ID for "ROOT"
+            rootFlags |= ImGuiTreeNodeFlags_Selected;
+
+        // Display the special root node using a unique style
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 1.0f, 1.0f));  // Blue color
+        bool rootOpen = ImGui::TreeNodeEx("##root", rootFlags, "  [ROOT]");
+        ImGui::PopStyleColor();
+
+        // If the root node is clicked, select it (by setting selected ID to -1)
+        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+            m_selectedNodeId = -1;  // Special ID for root
+        }
+
+        if (rootOpen) {
+            // Now render all the actual root nodes as children of this special root
+            for (auto& rootNode : rootNodes) {
+                renderNodeRecursive(rootNode, 0);
+            }
+            ImGui::TreePop();
+        }
+}
+
+void DialogueEditor::handleKeyPress(unsigned int keyID) {
+    if (keyID == 127) {  // Delete key code
+        std::cout << "Delete key handled in DialogueEditor" << std::endl;
+        if (m_selectedNodeId >= 0) {
+            std::cout << "Deleting node: " << m_selectedNodeId << std::endl;
+            m_dialogueManager->deleteNode(m_selectedNodeId);
+            m_selectedNodeId = -1;
+        }
+    }
+}
+
+void DialogueEditor::processInput() {
+    // Safety check
+    if (!m_inputManager) {
+        return;
+    }
+
+    // Add debugging
+    std::cout << "Processing input in DialogueEditor" << std::endl;
+
+    // Check for Delete key with multiple possible key codes
+    // Common key codes: SDLK_DELETE (127), SDL_SCANCODE_DELETE (46)
+    if (m_inputManager->isKeyPressed(127) || m_inputManager->isKeyPressed(46)) {
+        std::cout << "Delete key pressed!" << std::endl;
+        if (m_selectedNodeId >= 0) {
+            m_dialogueManager->deleteNode(m_selectedNodeId);
+            m_selectedNodeId = -1;
+        }
     }
 }
 
@@ -2364,118 +2461,149 @@ void DialogueEditor::testDialogueNavigation() {
 }
 
 void DialogueEditor::createRelationshipTestTree() {
+    // Clear any existing nodes first to avoid duplicate trees
+    auto nodes = m_dialogueManager->getAllNodes();
+    for (auto& node : nodes) {
+        m_dialogueManager->deleteNode(node->getId());
+    }
+
     // Create responses if they don't exist
-    if (!m_dialogueManager->getResponse(ResponseType::EnthusiasticAffirmative)) {
+    if (!m_dialogueManager->getResponse(ResponseType::EnthusiasticAffirmative))
         m_dialogueManager->createResponse(ResponseType::EnthusiasticAffirmative, "Absolutely!");
-    }
-
-    if (!m_dialogueManager->getResponse(ResponseType::IndifferentAffirmative)) {
+    if (!m_dialogueManager->getResponse(ResponseType::IndifferentAffirmative))
         m_dialogueManager->createResponse(ResponseType::IndifferentAffirmative, "Yeah, sure.");
-    }
+    if (!m_dialogueManager->getResponse(ResponseType::UntrustworthyResponse))
+        m_dialogueManager->createResponse(ResponseType::UntrustworthyResponse, "Why should I help you?");
+    if (!m_dialogueManager->getResponse(ResponseType::Farewell))
+        m_dialogueManager->createResponse(ResponseType::Farewell, "Goodbye!");
+    if (!m_dialogueManager->getResponse(ResponseType::MarkOnMap))
+        m_dialogueManager->createResponse(ResponseType::MarkOnMap, "I'll mark that on your map.");
 
-    if (!m_dialogueManager->getResponse(ResponseType::MarkOnMap)) {
-        m_dialogueManager->createResponse(ResponseType::MarkOnMap, "Let me mark that on your map.");
-    }
-
-    if (!m_dialogueManager->getResponse(ResponseType::Farewell)) {
-        m_dialogueManager->createResponse(ResponseType::Farewell, "See you around!");
-    }
-
-    // 1. Create initial player choice (question)
+    // 1. Root node: Player asks for help.
     auto rootNode = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::PlayerChoice,
-        "Do you know where John is?"
+        "Can you help me find John?"
     );
 
-    // 2. Create a condition check for NPC relationship
+    // 2. Create a condition check node for NPC relationship.
     auto relationshipNode = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::ConditionCheck,
-        "Check relationship with NPC"
+        "Check NPC's friendliness"
     );
-
-    // Set the relationship condition to check if NPC is friendly or better
+    // Set the condition to check if the NPC is at least Neutral.
     relationshipNode->setCondition(
-        DialogueCondition::CreateRelationshipCondition(RelationshipStatus::Friendly)
+        DialogueCondition::CreateRelationshipCondition(RelationshipStatus::Neutral)
     );
 
-    // 3. Create NPC responses based on relationship
-    // Friendly response (if relationship is good)
-    auto friendlyResponse = m_dialogueManager->createDialogueNode(
+    // 3. Create NPC responses based on relationship.
+    // Friendly branch: NPC readily helps.
+    auto friendlyNPC = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "Of course I know John! We're good friends."
+        "Sure, follow me. John is at the tavern by the market square."
     );
-    friendlyResponse->setResponse(m_dialogueManager->getResponse(ResponseType::EnthusiasticAffirmative));
+    friendlyNPC->setResponse(m_dialogueManager->getResponse(ResponseType::EnthusiasticAffirmative));
 
-    // Neutral/unfriendly response
-    auto neutralResponse = m_dialogueManager->createDialogueNode(
+    // Neutral branch: NPC is hesitant.
+    auto neutralNPC = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "Yeah, I know where he is."
+        "I know where John is, but I'm not sure if I should help you."
     );
-    neutralResponse->setResponse(m_dialogueManager->getResponse(ResponseType::IndifferentAffirmative));
+    neutralNPC->setResponse(m_dialogueManager->getResponse(ResponseType::IndifferentAffirmative));
 
-    // 4. Create the map marking response (both paths lead here)
-    auto mapNode = m_dialogueManager->createDialogueNode(
+    // Hostile branch: NPC is openly unhelpful.
+    auto hostileNPC = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "He's at the tavern by the market square."
+        "Why should I help you?"
     );
-    mapNode->setResponse(m_dialogueManager->getResponse(ResponseType::MarkOnMap));
+    hostileNPC->setResponse(m_dialogueManager->getResponse(ResponseType::UntrustworthyResponse));
 
-    // 5. NPC asks follow-up question
-    auto npcQuestion = m_dialogueManager->createDialogueNode(
+    // Connect relationship node with its three branches.
+    relationshipNode->addChildNode(friendlyNPC, "Friendly+");
+    relationshipNode->addChildNode(neutralNPC, "Neutral");
+    relationshipNode->addChildNode(hostileNPC, "Hostile");
+
+    // Set branch conditions for the relationship node.
+    BranchCondition friendlyBranch = BranchCondition::CreateRelationshipRange(
+        RelationshipStatus::Friendly, RelationshipStatus::Close
+    );
+    relationshipNode->setBranchCondition(0, friendlyBranch);
+    BranchCondition neutralBranch = BranchCondition::CreateRelationshipRange(
+        RelationshipStatus::Neutral, RelationshipStatus::Neutral
+    );
+    relationshipNode->setBranchCondition(1, neutralBranch);
+    BranchCondition hostileBranch = BranchCondition::CreateRelationshipRange(
+        RelationshipStatus::Hostile, RelationshipStatus::Unfriendly
+    );
+    relationshipNode->setBranchCondition(2, hostileBranch);
+
+    // 4. Friendly branch goes directly to a directions node.
+    auto directionsNode = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "Can I help you with anything else?"
+        "The tavern is by the market square."
     );
+    directionsNode->setResponse(m_dialogueManager->getResponse(ResponseType::MarkOnMap));
+    friendlyNPC->addChildNode(directionsNode);
 
-    // 6. Player choices for follow-up
-    auto yesChoice = m_dialogueManager->createDialogueNode(
+    // 5. Neutral branch: Directly attach two player choice options.
+    auto neutralPersuade = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::PlayerChoice,
-        "Yes, I have more questions"
+        "Please help me. I really need your help."
     );
-
-    auto noChoice = m_dialogueManager->createDialogueNode(
+    auto neutralDecline = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::PlayerChoice,
-        "No, that's all I needed"
+        "Never mind. I'll manage on my own."
     );
+    neutralNPC->addChildNode(neutralPersuade, "Persuade");
+    neutralNPC->addChildNode(neutralDecline, "Decline");
 
-    // 7. Final NPC responses
-    auto moreDialogue = m_dialogueManager->createDialogueNode(
+    // NPC responses for neutral branch.
+    auto neutralResponseA = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "What else would you like to know?"
+        "Alright, then follow me."
     );
+    neutralResponseA->setResponse(m_dialogueManager->getResponse(ResponseType::EnthusiasticAffirmative));
+    neutralPersuade->addChildNode(neutralResponseA);
 
-    auto endDialogue = m_dialogueManager->createDialogueNode(
+    auto neutralResponseB = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "Good luck finding John then."
+        "Then I won't help you."
     );
-    endDialogue->setResponse(m_dialogueManager->getResponse(ResponseType::Farewell));
+    neutralResponseB->setResponse(m_dialogueManager->getResponse(ResponseType::Farewell));
+    neutralDecline->addChildNode(neutralResponseB);
 
-    // Connect all the nodes together
+    // 6. Hostile branch: Directly attach two player choice options.
+    auto hostilePersuade = m_dialogueManager->createDialogueNode(
+        DialogueNode::NodeType::PlayerChoice,
+        "I'm your friend—trust me!"
+    );
+    auto hostileRebuff = m_dialogueManager->createDialogueNode(
+        DialogueNode::NodeType::PlayerChoice,
+        "Get lost!"
+    );
+    hostileNPC->addChildNode(hostilePersuade, "Persuade");
+    hostileNPC->addChildNode(hostileRebuff, "Rebuff");
 
-    // Player question leads to relationship check
+    // NPC responses for hostile branch.
+    auto hostileResponseA = m_dialogueManager->createDialogueNode(
+        DialogueNode::NodeType::NPCStatement,
+        "Fine, I'll help you out."
+    );
+    hostileResponseA->setResponse(m_dialogueManager->getResponse(ResponseType::EnthusiasticAffirmative));
+    hostilePersuade->addChildNode(hostileResponseA);
+
+    auto hostileResponseB = m_dialogueManager->createDialogueNode(
+        DialogueNode::NodeType::NPCStatement,
+        "Good, I won't waste my time."
+    );
+    hostileResponseB->setResponse(m_dialogueManager->getResponse(ResponseType::Farewell));
+    hostileRebuff->addChildNode(hostileResponseB);
+
+    // 7. Connect the root node to the relationship check.
     rootNode->addChildNode(relationshipNode);
 
-    // Relationship check branches based on relationship status
-    relationshipNode->addChildNode(friendlyResponse, "Friendly");
-    relationshipNode->addChildNode(neutralResponse, "Neutral/Unfriendly");
-
-    // Both NPC responses lead to map marker statement
-    friendlyResponse->addChildNode(mapNode);
-    neutralResponse->addChildNode(mapNode);
-
-    // After map marker, NPC asks follow-up question
-    mapNode->addChildNode(npcQuestion);
-
-    // NPC question offers player choices
-    npcQuestion->addChildNode(yesChoice);
-    npcQuestion->addChildNode(noChoice);
-
-    // Player choices lead to different NPC responses
-    yesChoice->addChildNode(moreDialogue);
-    noChoice->addChildNode(endDialogue);
-
-    // For testing, set up a relationship
-    m_dialogueManager->setRelationshipForTesting(1, 1, RelationshipStatus::Friendly); // NPC 1 likes player 1
-    m_dialogueManager->setRelationshipForTesting(2, 1, RelationshipStatus::Unfriendly); // NPC 2 dislikes player 1
+    // Optionally, set up testing relationships.
+    m_dialogueManager->setRelationshipForTesting(1, 1, RelationshipStatus::Friendly);   // NPC 1 is friendly
+    m_dialogueManager->setRelationshipForTesting(2, 1, RelationshipStatus::Hostile);     // NPC 2 is hostile
 
     // Select the root node
     m_selectedNodeId = rootNode->getId();

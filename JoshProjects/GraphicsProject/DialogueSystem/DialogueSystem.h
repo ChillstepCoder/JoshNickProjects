@@ -8,6 +8,7 @@
 #include <memory>
 #include <functional>
 #include <unordered_map>
+#include "JAGEngine/IMainGame.h"
 
 // Forward declaration of Wwise Audio Engine from JAGEngine
 namespace JAGEngine {
@@ -592,6 +593,8 @@ public:
     bool checkQuestStatus(const std::string& questId, const std::string& status);
     bool checkInventoryItem(const std::string& itemId, int quantity);
     bool checkPlayerStat(const std::string& statName, int threshold);
+    void clearAllNodes();
+
 
     // Helper methods
     std::string buildAudioFilePath(ResponseType type, PersonalityType personality, VoiceType voice);
@@ -599,6 +602,9 @@ public:
 
     std::shared_ptr<DialogueNode> findParentNode(int childId) const;
     bool removeChildFromParent(int childId);
+
+    void setGame(JAGEngine::IMainGame* game) { m_game = game; }
+    JAGEngine::IMainGame* getGame() const { return m_game; }
 
     // Helper methods for DialogueManager class
     std::string getPersonalityName(PersonalityType type) const;
@@ -621,10 +627,12 @@ public:
         m_testTimeOfDay = timeOfDay;
     }
 
+
     //test methods
     void setRelationshipForTesting(int npcId, int playerId, RelationshipStatus status);
 
 private:
+    JAGEngine::IMainGame* m_game;
     JAGEngine::WWiseAudioEngine* m_audioEngine;
     std::string m_gptApiKey;
     std::string m_elevenLabsKey;

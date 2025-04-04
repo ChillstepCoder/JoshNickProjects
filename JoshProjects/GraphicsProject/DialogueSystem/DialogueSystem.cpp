@@ -791,6 +791,12 @@ bool DialogueManager::deleteNode(int nodeId) {
     // Get the node to delete
     auto nodeToDelete = it->second;
 
+    // First, recursively delete all child nodes
+    auto children = nodeToDelete->getChildren();
+    for (const auto& childPair : children) {
+        deleteNode(childPair.first->getId());
+    }
+
     // Remove this node from any parent nodes
     removeChildFromParent(nodeId);
 
@@ -1108,6 +1114,18 @@ bool DialogueManager::checkPlayerStat(const std::string& statName, int threshold
     return false;
 }
 
+void DialogueManager::clearAllNodes() {
+    // Get a copy of all node IDs since we'll be modifying the collection
+    std::vector<int> nodeIds;
+    for (const auto& pair : m_nodes) {
+        nodeIds.push_back(pair.first);
+    }
+
+    // Delete nodes in reverse order (children before parents)
+    for (auto it = nodeIds.rbegin(); it != nodeIds.rend(); ++it) {
+        m_nodes.erase(*it);
+    }
+}
 
 std::string DialogueManager::buildAudioFilePath(ResponseType type, PersonalityType personality, VoiceType voice) {
     std::string responseType = std::to_string(static_cast<int>(type));

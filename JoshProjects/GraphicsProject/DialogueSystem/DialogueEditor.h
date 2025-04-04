@@ -4,6 +4,7 @@
 #include "DialogueSystem.h"
 #include <vector>
 #include <string>
+#include "JAGEngine/InputManager.h"
 
 // Forward declarations for ImGui - you don't need full ImGui.h here
 struct ImVec2;
@@ -24,11 +25,20 @@ public:
     void setActiveResponse(ResponseType type);
     void showBatchGenerationWindow(bool show);
 
+    // Inputs
+    void handleKeyPress(unsigned int keyID);
+
+    // Input Manager
+    void setInputManager(JAGEngine::InputManager& inputManager) {
+        m_inputManager = &inputManager;
+    }
+
     // Test Methods
     void testDialogueNavigation();
     void createRelationshipTestTree();
 
 private:
+    JAGEngine::InputManager* m_inputManager = nullptr;
     DialogueManager* m_dialogueManager;
     ResponseType m_activeResponseType;
     PersonalityType m_selectedPersonality;
@@ -36,6 +46,8 @@ private:
     bool m_showBatchGenerationWindow;
     bool m_showApiConfigWindow = false;
     int m_selectedNodeId = -1;
+ 
+
 
     std::vector<ResponseType> m_batchGenerationTypes;
     std::vector<PersonalityType> m_batchGenerationPersonalities;
@@ -43,6 +55,8 @@ private:
 
 
     // ImGui rendering helpers
+    
+    void processInput();
     void updateInventoryBranchLabel(std::shared_ptr<DialogueNode> node, int childId, const BranchCondition& branchCond);
     void updateStatBranchLabel(std::shared_ptr<DialogueNode> node, int childId, const BranchCondition& branchCond);
     void renderResponseEditor();

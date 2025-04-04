@@ -175,6 +175,22 @@ bool DialogueApp::handleEvents() {
             std::cout << "  ImGui WantCaptureMouse: " << (io.WantCaptureMouse ? "YES" : "NO") << std::endl;
         }
 
+        if (event.type == SDL_KEYDOWN) {
+            // Existing code
+            m_inputManager.pressKey(event.key.keysym.sym);
+            std::cout << "Key pressed: " << event.key.keysym.sym << std::endl;
+
+            // Direct call to dialogue editor for delete key
+            if (event.key.keysym.sym == 127 && m_dialogueScreen && m_dialogueScreen->getDialogueEditor()) {
+                m_dialogueScreen->getDialogueEditor()->handleKeyPress(event.key.keysym.sym);
+            }
+        }
+
+        else if (event.type == SDL_KEYUP) {
+            // Pass to input manager
+            m_inputManager.releaseKey(event.key.keysym.sym);
+        }
+
         // Handle quit events
         if (event.type == SDL_QUIT) {
             return false;
