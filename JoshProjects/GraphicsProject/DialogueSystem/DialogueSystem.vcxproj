@@ -118,7 +118,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2dd.lib;glu32.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSoundEngine.lib;AkAudioInputSource.lib;CommunicationCentral.lib;AkImpacterSource.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2dd.lib;glu32.lib;yaml-cppd.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSoundEngine.lib;AkAudioInputSource.lib;CommunicationCentral.lib;AkImpacterSource.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Debug\lib;$(SolutionDir)deps\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -137,7 +137,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2d.lib;glu32.lib;CommunicationCentral.lib;AkSoundEngine.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSpatialAudio.lib;AkAudioInputSource.lib;AkImpacterSource.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freetype.lib;freetype-gl.lib;SDL2main.lib;SDL2.lib;opengl32.lib;glew32.lib;SDL2_ttf.lib;SDL2_mixer.lib;JAGEngine.lib;box2d.lib;glu32.lib;yaml-cpp.lib;CommunicationCentral.lib;AkSoundEngine.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;AkSpatialAudio.lib;AkAudioInputSource.lib;AkImpacterSource.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Profile\lib;C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726\SDK\x64_vc170\Release\lib;$(SolutionDir)deps\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

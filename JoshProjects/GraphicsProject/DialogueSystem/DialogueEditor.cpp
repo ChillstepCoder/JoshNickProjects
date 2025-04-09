@@ -10,6 +10,8 @@
 #include <thread>
 #include <algorithm> // For std::find, std::remove
 #include <iostream>
+#include "yaml-cpp/yaml.h"
+
 
 // Custom filesystem namespace for directory creation
 namespace fs {
@@ -119,6 +121,8 @@ void DialogueEditor::render() {
             }
             ImGui::EndMenu();
         }
+
+        renderParameterTester();
 
         ImGui::EndMainMenuBar();
     }
@@ -778,7 +782,7 @@ void DialogueEditor::renderNodeTree()
                 flags |= ImGuiTreeNodeFlags_Leaf;
 
             // Build display text
-            std::string nodeText = node->getText();
+            std::string nodeText = m_dialogueManager->processTextWithTreeParameters(node->getId(), node->getText());
             if (nodeText.empty())
                 nodeText = "Node " + std::to_string(node->getId());
 
@@ -1114,6 +1118,8 @@ void DialogueEditor::renderNodeProperties() {
         return;
     }
 
+    int rootNodeId = m_dialogueManager->findRootNodeId(m_selectedNodeId);
+
     ImGui::TextWrapped("Node Properties (ID: %d)", m_selectedNodeId);
 
     // Node type selector with dynamic width.
@@ -1141,6 +1147,7 @@ void DialogueEditor::renderNodeProperties() {
 
     // Node text editor.
     std::string nodeText = node->getText();
+
     ImGui::TextWrapped("Node Text:");
     if (node->getType() == DialogueNode::NodeType::PlayerChoice) {
         ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.0f, 1.0f), "This is what the player will select");
@@ -1150,6 +1157,98 @@ void DialogueEditor::renderNodeProperties() {
     }
     if (ImGui::InputTextMultiline("##NodeText", &nodeText, ImVec2(-FLT_MIN, 60.0f))) {
         node->setText(nodeText);
+    }
+
+    if (rootNodeId >= 0) {
+
+        // Get tree parameters
+        const auto& parameters = m_dialogueManager->getTreeParameters(rootNodeId);
+
+        // Display and edit all parameters
+        ImGui::Separator();
+        ImGui::Text("Current Parameters:");
+
+        // Use a separate vector to avoid iterator invalidation when removing items
+        std::vector<std::string> keysToRemove;
+
+        for (const auto& param : parameters) {
+            ImGui::PushID(param.first.c_str());
+
+            // Display parameter with appropriate color based on type
+            ParameterType type = m_dialogueManager->getTreeParameterType(rootNodeId, param.first);
+            ImVec4 labelColor;
+
+            switch (type) {
+            case ParameterType::NPCName:
+                labelColor = ImVec4(0.2f, 0.8f, 0.2f, 1.0f); // Green
+                break;
+            case ParameterType::ItemName:
+                labelColor = ImVec4(0.8f, 0.7f, 0.2f, 1.0f); // Gold
+                break;
+            case ParameterType::LocationName:
+                labelColor = ImVec4(0.2f, 0.6f, 0.8f, 1.0f); // Blue
+                break;
+            default:
+                labelColor = ImVec4(0.8f, 0.8f, 0.8f, 1.0f); // Light gray
+                break;
+            }
+
+            ImGui::TextColored(labelColor, "%s:", param.first.c_str());
+
+            // Input field for parameter value
+            std::string value = param.second;
+            ImGui::SameLine();
+            ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 50); // Make room for remove button
+            if (ImGui::InputText(("##" + param.first).c_str(), &value)) {
+                m_dialogueManager->setTreeParameter(rootNodeId, param.first, value);
+            }
+            ImGui::PopItemWidth();
+
+            // Remove button
+            ImGui::SameLine();
+            if (ImGui::Button((std::string("X##") + param.first).c_str())) {
+                keysToRemove.push_back(param.first);
+            }
+
+            ImGui::PopID();
+        }
+
+        // Remove any parameters marked for deletion
+        for (const auto& key : keysToRemove) {
+            m_dialogueManager->setTreeParameter(rootNodeId, key, ""); // Clear the parameter
+        }
+
+        // Custom parameter section
+        ImGui::Separator();
+        ImGui::Text("Add Custom Parameter:");
+
+        static char customKey[64] = "";
+        static char customValue[128] = "";
+
+        ImGui::InputText("Parameter Name", customKey, IM_ARRAYSIZE(customKey));
+        ImGui::InputText("Parameter Value", customValue, IM_ARRAYSIZE(customValue));
+
+        // Type selector for custom parameters
+        static int customParamType = 0;
+        const char* paramTypes[] = { "NPC Name", "Item Name", "Location Name", "Quest Name", "Stat Name", "Time Value", "Custom" };
+        ImGui::Combo("Parameter Type", &customParamType, paramTypes, IM_ARRAYSIZE(paramTypes));
+
+        if (ImGui::Button("Add Parameter") && strlen(customKey) > 0) {
+            m_dialogueManager->setTreeParameterWithType(rootNodeId, customKey, customValue,
+                static_cast<ParameterType>(customParamType));
+            customKey[0] = '\0';  // Clear after adding
+            customValue[0] = '\0';
+        }
+
+        // Preview sections
+        ImGui::Separator();
+        ImGui::TextWrapped("Preview Text with Parameters:");
+        ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "%s",
+            m_dialogueManager->processTextWithTreeParameters(m_selectedNodeId, node->getText()).c_str());
+
+        ImGui::TextWrapped("Generic Text (for voice):");
+        ImGui::TextColored(ImVec4(0.8f, 0.5f, 0.2f, 1.0f), "%s",
+            m_dialogueManager->generateGenericText(m_selectedNodeId, node->getText()).c_str());
     }
 
     // Response selector (only for NPC statements)
@@ -2172,13 +2271,181 @@ void DialogueEditor::renderNodeProperties() {
     ImGui::PopTextWrapPos();
 }
 
+void DialogueEditor::renderParameterTester() {
+    static bool showTester = false;
+
+    if (ImGui::Button("Test Parameters")) {
+        showTester = !showTester;
+    }
+
+    if (!showTester) return;
+
+    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Parameter Tester", &showTester)) {
+        // Get selected node (or first node if none selected)
+        std::shared_ptr<DialogueNode> testNode = nullptr;
+
+        if (m_selectedNodeId >= 0) {
+            testNode = m_dialogueManager->getNodeById(m_selectedNodeId);
+        }
+
+        if (!testNode && !m_dialogueManager->getAllNodes().empty()) {
+            testNode = m_dialogueManager->getAllNodes()[0];
+        }
+
+        if (testNode) {
+            ImGui::Text("Testing Parameters for Node: %s", testNode->getText().c_str());
+            ImGui::Separator();
+
+            // Show current parameters
+            auto params = testNode->getAllParameters();
+            ImGui::Text("Current Parameters:");
+            for (const auto& param : params) {
+                ImGui::BulletText("%s: %s", param.first.c_str(), param.second.c_str());
+            }
+
+            // Runtime parameter testing
+            static char runtimeKey[64] = "";
+            static char runtimeValue[128] = "";
+            static std::map<std::string, std::string> runtimeParams;
+
+            ImGui::Separator();
+            ImGui::Text("Runtime Parameters:");
+            ImGui::InputText("Parameter", runtimeKey, IM_ARRAYSIZE(runtimeKey));
+            ImGui::InputText("Value", runtimeValue, IM_ARRAYSIZE(runtimeValue));
+
+            if (ImGui::Button("Add Runtime Parameter") && strlen(runtimeKey) > 0) {
+                runtimeParams[runtimeKey] = runtimeValue;
+                runtimeKey[0] = '\0';
+                runtimeValue[0] = '\0';
+            }
+
+            // Show runtime parameters
+            for (auto it = runtimeParams.begin(); it != runtimeParams.end(); ) {
+                ImGui::BulletText("%s: %s", it->first.c_str(), it->second.c_str());
+                ImGui::SameLine();
+                if (ImGui::Button(("Remove##rt" + it->first).c_str())) {
+                    it = runtimeParams.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+
+            // Show results
+            ImGui::Separator();
+            ImGui::Text("Original Text:");
+            ImGui::TextWrapped("%s", testNode->getText().c_str());
+
+            ImGui::Text("With Node Parameters:");
+            ImGui::TextWrapped("%s", testNode->getProcessedText().c_str());
+
+            ImGui::Text("With Runtime Parameters:");
+            ImGui::TextWrapped("%s", m_dialogueManager->processNodeTextWithParameters(
+                testNode, runtimeParams).c_str());
+
+            ImGui::Text("Generic Text (for voice):");
+            ImGui::TextWrapped("%s", testNode->getGenericText().c_str());
+        }
+        else {
+            ImGui::Text("No node selected or available.");
+        }
+    }
+    ImGui::End();
+}
+
 
 void DialogueEditor::loadSavedDialogue() {
-    // TODO: Implement dialogue loading from JSON or binary format
+    try {
+        YAML::Node rootNode = YAML::LoadFile("dialogue_data.yaml");
+        if (rootNode["nodes"]) {
+            for (const auto& nodeData : rootNode["nodes"]) {
+                int id = nodeData["id"].as<int>();
+                DialogueNode::NodeType type = static_cast<DialogueNode::NodeType>(
+                    nodeData["type"].as<int>());
+                std::string text = nodeData["text"].as<std::string>();
+                auto node = m_dialogueManager->createDialogueNode(type, text);
+
+                // Load parameters
+                if (nodeData["parameters"]) {
+                    const YAML::Node& params = nodeData["parameters"];
+                    for (YAML::const_iterator it = params.begin(); it != params.end(); ++it) {
+                        std::string key = it->first.as<std::string>();
+
+                        if (it->second.IsMap()) {
+                            // New format with type info
+                            std::string value = it->second["value"].as<std::string>();
+                            ParameterType type = static_cast<ParameterType>(it->second["type"].as<int>());
+                            node->setParameterWithType(key, value, type);
+                        }
+                        else {
+                            // Legacy format (just value)
+                            std::string value = it->second.as<std::string>();
+                            // Default to NPCName for NPC parameters, Custom for others
+                            ParameterType type = ParameterType::Custom;
+                            if (key.substr(0, 3) == "NPC") {
+                                type = ParameterType::NPCName;
+                            }
+                            else if (key.substr(0, 4) == "ITEM") {
+                                type = ParameterType::ItemName;
+                            }
+                            else if (key.substr(0, 8) == "LOCATION") {
+                                type = ParameterType::LocationName;
+                            }
+                            node->setParameterWithType(key, value, type);
+                        }
+                    }
+                }
+
+                // Load other node properties like children, response, etc.
+                // ...
+            }
+        }
+        std::cout << "Dialogue data loaded successfully." << std::endl;
+    }
+    catch (const YAML::Exception& e) {
+        std::cerr << "Error loading dialogue data: " << e.what() << std::endl;
+    }
 }
 
 void DialogueEditor::saveDialogue() {
-    // TODO: Implement dialogue saving to JSON or binary format
+    // Create YAML node
+    YAML::Node rootNode;
+    YAML::Node nodesNode;
+
+    for (const auto& node : m_dialogueManager->getAllNodes()) {
+        YAML::Node nodeData;
+        nodeData["id"] = node->getId();
+        nodeData["type"] = static_cast<int>(node->getType());
+        nodeData["text"] = node->getText();
+
+        // Save parameters with type information
+        YAML::Node paramsNode;
+        for (const auto& param : node->getAllParameters()) {
+            YAML::Node paramData;
+            paramData["value"] = param.second;
+            paramData["type"] = static_cast<int>(node->getParameterType(param.first));
+            paramsNode[param.first] = paramData;
+        }
+        nodeData["parameters"] = paramsNode;
+
+        // Save other node properties
+        // ...
+
+        nodesNode.push_back(nodeData);
+    }
+
+    rootNode["nodes"] = nodesNode;
+
+    // Write to file
+    std::ofstream file("dialogue_data.yaml");
+    if (file.is_open()) {
+        file << rootNode;
+        std::cout << "Dialogue data saved successfully." << std::endl;
+    }
+    else {
+        std::cerr << "Failed to save dialogue data." << std::endl;
+    }
 }
 
 void DialogueEditor::testDialogueNavigation() {
@@ -2199,7 +2466,8 @@ void DialogueEditor::testDialogueNavigation() {
     }
 
     ImGui::Text("Testing dialogue tree navigation");
-    ImGui::Text("Starting from node: %s", startNode->getText().c_str());
+    std::string processedStartText = m_dialogueManager->processTextWithTreeParameters(startNode->getId(), startNode->getText());
+    ImGui::Text("Starting from node: %s", processedStartText.c_str());
 
     ImGui::Separator();
     ImGui::Text("Test Parameters:");
@@ -2353,7 +2621,8 @@ void DialogueEditor::testDialogueNavigation() {
             break;
         }
 
-        ImGui::TextColored(nodeColor, "Current Node: %s", currentNode->getText().c_str());
+        std::string processedCurrentText = m_dialogueManager->processTextWithTreeParameters(currentNode->getId(), currentNode->getText());
+        ImGui::TextColored(nodeColor, "Current Node: %s", processedCurrentText.c_str());
 
         // Display node type
         const char* nodeTypeStr = "";
@@ -2444,8 +2713,15 @@ void DialogueEditor::testDialogueNavigation() {
                     buttonText += " [" + childPair.second + "]";
                 }
 
-                if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-                    currentNode = childPair.first;
+                for (const auto& childPair : currentNode->getChildren()) {
+                    std::string childProcessedText = m_dialogueManager->processTextWithTreeParameters(childPair.first->getId(), childPair.first->getText());
+                    std::string buttonText = childProcessedText;
+                    if (!childPair.second.empty()) {
+                        buttonText += " [" + childPair.second + "]";
+                    }
+                    if (ImGui::Button(buttonText.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+                        currentNode = childPair.first;
+                    }
                 }
             }
         }
@@ -2479,10 +2755,10 @@ void DialogueEditor::createRelationshipTestTree() {
     if (!m_dialogueManager->getResponse(ResponseType::MarkOnMap))
         m_dialogueManager->createResponse(ResponseType::MarkOnMap, "I'll mark that on your map.");
 
-    // 1. Root node: Player asks for help.
+    // 1. Root node: The player asks for help, using a parameter placeholder instead of "John"
     auto rootNode = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::PlayerChoice,
-        "Can you help me find John?"
+        "Can you help me find [NPC1]?"
     );
 
     // 2. Create a condition check node for NPC relationship.
@@ -2495,18 +2771,18 @@ void DialogueEditor::createRelationshipTestTree() {
         DialogueCondition::CreateRelationshipCondition(RelationshipStatus::Neutral)
     );
 
-    // 3. Create NPC responses based on relationship.
-    // Friendly branch: NPC readily helps.
+    // 3. Create NPC response nodes using placeholders in the text.
+    // Friendly branch: NPC readily helps using the placeholders for both NPC and location.
     auto friendlyNPC = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "Sure, follow me. John is at the tavern by the market square."
+        "Sure, follow me. [NPC1] is at the [LOC1]."
     );
     friendlyNPC->setResponse(m_dialogueManager->getResponse(ResponseType::EnthusiasticAffirmative));
 
     // Neutral branch: NPC is hesitant.
     auto neutralNPC = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "I know where John is, but I'm not sure if I should help you."
+        "I know where [NPC1] is, but I'm not sure if I should help you."
     );
     neutralNPC->setResponse(m_dialogueManager->getResponse(ResponseType::IndifferentAffirmative));
 
@@ -2527,24 +2803,26 @@ void DialogueEditor::createRelationshipTestTree() {
         RelationshipStatus::Friendly, RelationshipStatus::Close
     );
     relationshipNode->setBranchCondition(0, friendlyBranch);
+
     BranchCondition neutralBranch = BranchCondition::CreateRelationshipRange(
         RelationshipStatus::Neutral, RelationshipStatus::Neutral
     );
     relationshipNode->setBranchCondition(1, neutralBranch);
+
     BranchCondition hostileBranch = BranchCondition::CreateRelationshipRange(
         RelationshipStatus::Hostile, RelationshipStatus::Unfriendly
     );
     relationshipNode->setBranchCondition(2, hostileBranch);
 
-    // 4. Friendly branch goes directly to a directions node.
+    // 4. For the friendly branch, create a directions node that uses two location parameters.
     auto directionsNode = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
-        "The tavern is by the market square."
+        "The [LOC1] is by the [LOC2]."
     );
     directionsNode->setResponse(m_dialogueManager->getResponse(ResponseType::MarkOnMap));
     friendlyNPC->addChildNode(directionsNode);
 
-    // 5. Neutral branch: Directly attach two player choice options.
+    // 5. For the neutral branch, attach two player choice options.
     auto neutralPersuade = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::PlayerChoice,
         "Please help me. I really need your help."
@@ -2556,7 +2834,7 @@ void DialogueEditor::createRelationshipTestTree() {
     neutralNPC->addChildNode(neutralPersuade, "Persuade");
     neutralNPC->addChildNode(neutralDecline, "Decline");
 
-    // NPC responses for neutral branch.
+    // NPC responses for the neutral branch.
     auto neutralResponseA = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
         "Alright, then follow me."
@@ -2571,7 +2849,7 @@ void DialogueEditor::createRelationshipTestTree() {
     neutralResponseB->setResponse(m_dialogueManager->getResponse(ResponseType::Farewell));
     neutralDecline->addChildNode(neutralResponseB);
 
-    // 6. Hostile branch: Directly attach two player choice options.
+    // 6. For the hostile branch, attach two player choice options.
     auto hostilePersuade = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::PlayerChoice,
         "I'm your friend—trust me!"
@@ -2583,7 +2861,6 @@ void DialogueEditor::createRelationshipTestTree() {
     hostileNPC->addChildNode(hostilePersuade, "Persuade");
     hostileNPC->addChildNode(hostileRebuff, "Rebuff");
 
-    // NPC responses for hostile branch.
     auto hostileResponseA = m_dialogueManager->createDialogueNode(
         DialogueNode::NodeType::NPCStatement,
         "Fine, I'll help you out."
@@ -2602,9 +2879,18 @@ void DialogueEditor::createRelationshipTestTree() {
     rootNode->addChildNode(relationshipNode);
 
     // Optionally, set up testing relationships.
-    m_dialogueManager->setRelationshipForTesting(1, 1, RelationshipStatus::Friendly);   // NPC 1 is friendly
+    m_dialogueManager->setRelationshipForTesting(1, 1, RelationshipStatus::Friendly);   // For example: NPC 1 is friendly
     m_dialogueManager->setRelationshipForTesting(2, 1, RelationshipStatus::Hostile);     // NPC 2 is hostile
 
-    // Select the root node
+    // *** Set the tree parameters using the new parameter system ***
+    int rootId = rootNode->getId();
+    // Replace all occurrences of [NPC1] with "John"
+    m_dialogueManager->setTreeParameterWithType(rootId, "NPC1", "John", ParameterType::NPCName);
+    // Replace all occurrences of [LOC1] with "tavern"
+    m_dialogueManager->setTreeParameterWithType(rootId, "LOC1", "tavern", ParameterType::LocationName);
+    // Replace all occurrences of [LOC2] with "market square"
+    m_dialogueManager->setTreeParameterWithType(rootId, "LOC2", "market square", ParameterType::LocationName);
+
+    // Finally, select the root node so the dialogue tree editor shows it.
     m_selectedNodeId = rootNode->getId();
 }

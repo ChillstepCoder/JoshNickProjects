@@ -121,14 +121,14 @@ void renderDialogueTreeView(DialogueManager* manager, std::shared_ptr<DialogueNo
         // Display function for recursive tree rendering
         std::function<void(std::shared_ptr<DialogueNode>, int)> displayNode;
 
-        displayNode = [&displayNode](std::shared_ptr<DialogueNode> node, int depth) {
+        displayNode = [&displayNode, manager](std::shared_ptr<DialogueNode> node, int depth) {
             if (!node) return;
 
             // Create indentation based on depth
             ImGui::Indent(depth * 20.0f);
 
-            // Display node text and type
-            std::string nodeText = node->getText();
+            // Process text using the dialogue manager so placeholders (like [NPC1]) are replaced
+            std::string nodeText = manager->processTextWithTreeParameters(node->getId(), node->getText());
             std::string typeText;
 
             switch (node->getType()) {
@@ -147,13 +147,12 @@ void renderDialogueTreeView(DialogueManager* manager, std::shared_ptr<DialogueNo
             std::string responseText;
             auto response = node->getResponse();
             if (response) {
-                // For simplicity, we'll use the default text
                 responseText = " -> \"" + response->getTextForPersonality(PersonalityType::Bubbly) + "\"";
             }
 
             ImGui::Text("%s %s%s", nodeText.c_str(), typeText.c_str(), responseText.c_str());
 
-            // Display children
+            // Display children nodes
             for (const auto& childPair : node->getChildren()) {
                 std::string condition = childPair.second;
                 if (!condition.empty()) {
@@ -161,12 +160,12 @@ void renderDialogueTreeView(DialogueManager* manager, std::shared_ptr<DialogueNo
                     ImGui::Text("(Condition: %s)", condition.c_str());
                     ImGui::Unindent(depth * 20.0f + 10.0f);
                 }
-
                 displayNode(childPair.first, depth + 1);
             }
 
             ImGui::Unindent(depth * 20.0f);
-            };
+        };
+
 
         // Start rendering from the root
         ImGui::Text("Dialogue Tree Structure:");

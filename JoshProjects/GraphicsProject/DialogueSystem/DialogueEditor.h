@@ -66,6 +66,7 @@ private:
     void renderMenuBar();
     void renderNodeTree();
     void renderNodeProperties();
+    void renderParameterTester();
 
     // Helper methods
     void loadSavedDialogue();

@@ -12,6 +12,8 @@ set(JAGENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JAGEngine" CACHE PATH "Path to
 find_package(OpenGL REQUIRED)
 find_package(CURL REQUIRED)
 find_package(ImGui REQUIRED)
+find_package(yaml-cpp REQUIRED)
+target_link_libraries(YourTarget PRIVATE yaml-cpp)
 
 # Find nlohmann_json (optional - can be added as submodule if needed)
 find_package(nlohmann_json CONFIG)

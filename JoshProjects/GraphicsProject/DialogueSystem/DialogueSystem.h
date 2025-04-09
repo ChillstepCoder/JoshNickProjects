@@ -87,6 +87,16 @@ enum class RelationshipStatus {
     Close          // NPC likes player strongly
 };
 
+enum class ParameterType {
+    NPCName,
+    ItemName,
+    LocationName,
+    QuestName,
+    StatName,
+    TimeValue,
+    Custom
+};
+
 struct BranchCondition {
     ConditionType type = ConditionType::None;
 
@@ -473,6 +483,10 @@ public:
     void generateAllPersonalityVariants();
     void regeneratePersonalityVariant(PersonalityType personality);
 
+    bool generateVoiceWithGenericText(PersonalityType personality, VoiceType voice,
+        const std::string& outputPath,
+        DialogueManager* manager);
+
 private:
     ResponseType m_type;
     std::string m_name;
@@ -519,6 +533,38 @@ public:
         m_branchConditions[branchIndex] = condition;
     }
 
+    void setParameter(const std::string& key, const std::string& value) {
+        m_parameters[key] = value;
+    }
+
+    void setParameterWithType(const std::string& key, const std::string& value, ParameterType type) {
+        m_parameters[key] = value;
+        m_parameterTypes[key] = type;
+    }
+
+    std::string getParameter(const std::string& key) const {
+        auto it = m_parameters.find(key);
+        return (it != m_parameters.end()) ? it->second : "";
+    }
+
+    ParameterType getParameterType(const std::string& key) const {
+        auto it = m_parameterTypes.find(key);
+        return (it != m_parameterTypes.end()) ? it->second : ParameterType::Custom;
+    }
+
+    std::map<std::string, std::string> getAllParameters() const {
+        return m_parameters;
+    }
+
+    // Method to process text with parameters
+    std::string getProcessedText() const {
+        return m_text;
+    }
+
+    std::string getGenericText() const {
+        return m_text;
+    }
+
     BranchCondition getBranchCondition(int branchIndex) const {
         auto it = m_branchConditions.find(branchIndex);
         if (it != m_branchConditions.end()) {
@@ -539,6 +585,8 @@ private:
     std::shared_ptr<DialogueResponse> m_response;
     DialogueCondition m_condition;
     std::map<int, BranchCondition> m_branchConditions;
+    std::map<std::string, std::string> m_parameters;
+    std::map<std::string, ParameterType> m_parameterTypes;
 };
 
 // Manages all dialogue responses and provides access to APIs
@@ -563,7 +611,7 @@ public:
 
     // Dialogue tree management
     std::shared_ptr<DialogueNode> createDialogueNode(DialogueNode::NodeType type, const std::string& text);
-    std::shared_ptr<DialogueNode> getNodeById(int id);
+    std::shared_ptr<DialogueNode> getNodeById(int id) const;
 
     // API integrations
     void setAPIKeys(const std::string& gptKey, const std::string& elevenLabsKey);
@@ -574,6 +622,10 @@ public:
     void generateAllTextVariants();
     void generateAllVoiceVariants(VoiceType defaultVoice = VoiceType::Male1);
     void generatePersonalityVariants(std::shared_ptr<DialogueResponse> response);
+
+    // Parameters
+    std::string processNodeTextWithParameters(std::shared_ptr<DialogueNode> node,
+        const std::map<std::string, std::string>& runtimeParams);
 
     // Wwise integration
     using AkUniqueID = unsigned int; // Define AkUniqueID as a typedef
@@ -627,9 +679,34 @@ public:
         m_testTimeOfDay = timeOfDay;
     }
 
+    void setTreeParameter(int rootNodeId, const std::string& key, const std::string& value) {
+        m_treeParameters[rootNodeId][key] = value;
+    }
+
+    void setTreeParameterWithType(int rootNodeId, const std::string& key, const std::string& value, ParameterType type) {
+        m_treeParameters[rootNodeId][key] = value;
+        m_treeParameterTypes[rootNodeId][key] = type;
+    }
+
+    std::string getTreeParameter(int rootNodeId, const std::string& key) const;
+
+    ParameterType getTreeParameterType(int rootNodeId, const std::string& key) const;
+
+    const std::map<std::string, std::string>& getTreeParameters(int rootNodeId) const;
+
+    // Method to find the root node for a given node
+    int findRootNodeId(int nodeId) const;
+
+    // Method to process text with tree parameters
+    std::string processTextWithTreeParameters(int nodeId, const std::string& text) const;
+
+    // Method to generate generic text (for voice generation)
+    std::string generateGenericText(int nodeId, const std::string& text) const;
+
 
     //test methods
     void setRelationshipForTesting(int npcId, int playerId, RelationshipStatus status);
+    void testDialogueWithParameters();
 
 private:
     JAGEngine::IMainGame* m_game;
@@ -639,6 +716,8 @@ private:
     std::string m_elevenLabsApiKey;
     std::unordered_map<ResponseType, std::shared_ptr<DialogueResponse>> m_responses;
     std::unordered_map<int, std::shared_ptr<DialogueNode>> m_nodes;
+    std::map<int, std::map<std::string, std::string>> m_treeParameters;
+    std::map<int, std::map<std::string, ParameterType>> m_treeParameterTypes;
 
     // Helper methods
     std::string getPromptForPersonality(ResponseType type, PersonalityType personality, const std::string& defaultText);

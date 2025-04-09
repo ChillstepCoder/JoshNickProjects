@@ -99,6 +99,30 @@ void DialogueResponse::regeneratePersonalityVariant(PersonalityType personality)
     setTextForPersonality(personality, m_defaultText + " [Regenerated " + personalityStr + " version]", false);
 }
 
+bool DialogueResponse::generateVoiceWithGenericText(PersonalityType personality, VoiceType voice,
+    const std::string& outputPath,
+    DialogueManager* manager) {
+    // Get the text for the personality but with generic placeholders
+    std::string text = getTextForPersonality(personality);
+
+    // Process the text to replace [NPC1], etc. with generic terms
+    // This is a simplified version - you might need a more sophisticated approach
+    std::string genericText = text;
+    std::vector<std::string> placeholders = { "[NPC1]", "[NPC2]", "[LOCATION]", "[ITEM]" };
+    std::vector<std::string> replacements = { "someone", "someone", "somewhere", "something" };
+
+    for (size_t i = 0; i < placeholders.size(); i++) {
+        size_t pos = 0;
+        while ((pos = genericText.find(placeholders[i], pos)) != std::string::npos) {
+            genericText.replace(pos, placeholders[i].length(), replacements[i]);
+            pos += replacements[i].length();
+        }
+    }
+
+    // Now generate the voice with the generic text
+    return manager->generateVoiceWithElevenLabs(genericText, personality, voice, outputPath);
+}
+
 // ==========================================================
 // DialogueNode Implementation
 // ==========================================================
@@ -491,6 +515,26 @@ void DialogueManager::generatePersonalityVariants(std::shared_ptr<DialogueRespon
     }
 }
 
+std::string DialogueManager::processNodeTextWithParameters(std::shared_ptr<DialogueNode> node,
+    const std::map<std::string, std::string>& runtimeParams) {
+    if (!node) return "";
+
+    // Start with node's processed text (applying built-in parameters)
+    std::string result = node->getProcessedText();
+
+    // Apply runtime parameters
+    for (const auto& param : runtimeParams) {
+        std::string placeholder = "[" + param.first + "]";
+        size_t pos = 0;
+        while ((pos = result.find(placeholder, pos)) != std::string::npos) {
+            result.replace(pos, placeholder.length(), param.second);
+            pos += param.second.length();
+        }
+    }
+
+    return result;
+}
+
 std::string DialogueManager::generateTextWithGPT(ResponseType type, PersonalityType personality, const std::string& defaultText) {
     if (m_gptApiKey.empty()) {
         std::cerr << "No GPT API key set. Using mock responses." << std::endl;
@@ -555,7 +599,7 @@ std::shared_ptr<DialogueNode> DialogueManager::createDialogueNode(DialogueNode::
     return node;
 }
 
-std::shared_ptr<DialogueNode> DialogueManager::getNodeById(int id) {
+std::shared_ptr<DialogueNode> DialogueManager::getNodeById(int id) const {
     auto it = m_nodes.find(id);
     if (it != m_nodes.end()) {
         return it->second;
@@ -689,6 +733,122 @@ RelationshipStatus DialogueManager::getRelationshipStatus(int npcId, int playerI
 
     // Default is neutral
     return RelationshipStatus::Neutral;
+}
+
+std::string DialogueManager::getTreeParameter(int rootNodeId, const std::string& key) const {
+    auto treeIt = m_treeParameters.find(rootNodeId);
+    if (treeIt != m_treeParameters.end()) {
+        auto paramIt = treeIt->second.find(key);
+        if (paramIt != treeIt->second.end()) {
+            return paramIt->second;
+        }
+    }
+    return "";
+}
+
+ParameterType DialogueManager::getTreeParameterType(int rootNodeId, const std::string& key) const {
+    auto treeIt = m_treeParameterTypes.find(rootNodeId);
+    if (treeIt != m_treeParameterTypes.end()) {
+        auto typeIt = treeIt->second.find(key);
+        if (typeIt != treeIt->second.end()) {
+            return typeIt->second;
+        }
+    }
+    return ParameterType::Custom;
+}
+
+const std::map<std::string, std::string>& DialogueManager::getTreeParameters(int rootNodeId) const {
+    static const std::map<std::string, std::string> emptyMap;
+    auto it = m_treeParameters.find(rootNodeId);
+    return it != m_treeParameters.end() ? it->second : emptyMap;
+}
+
+// Method to find the root node for a given node
+int DialogueManager::findRootNodeId(int nodeId) const {
+    auto node = getNodeById(nodeId);
+    if (!node) return -1;
+
+    // If this node has no parent, it's a root
+    if (!hasParent(nodeId)) return nodeId;
+
+    // Otherwise, recursively find the root
+    auto parent = findParentNode(nodeId);
+    if (!parent) return -1;
+
+    return findRootNodeId(parent->getId());
+}
+
+// Method to process text with tree parameters
+std::string DialogueManager::processTextWithTreeParameters(int nodeId, const std::string& text) const {
+    int rootId = findRootNodeId(nodeId);
+    if (rootId < 0) return text;
+
+    const auto& params = getTreeParameters(rootId);
+    std::string processedText = text;
+
+    for (const auto& param : params) {
+        std::string placeholder = "[" + param.first + "]";
+        size_t pos = 0;
+        while ((pos = processedText.find(placeholder, pos)) != std::string::npos) {
+            processedText.replace(pos, placeholder.length(), param.second);
+            pos += param.second.length();
+        }
+    }
+
+    return processedText;
+}
+
+// Method to generate generic text (for voice generation)
+std::string DialogueManager::generateGenericText(int nodeId, const std::string& text) const {
+    int rootId = findRootNodeId(nodeId);
+    if (rootId < 0) return text;
+
+    const auto& params = getTreeParameters(rootId);
+    const auto& types = m_treeParameterTypes.find(rootId) != m_treeParameterTypes.end()
+        ? m_treeParameterTypes.at(rootId) : std::map<std::string, ParameterType>();
+
+    std::string genericText = text;
+
+    for (const auto& param : params) {
+        std::string placeholder = "[" + param.first + "]";
+        std::string replacement = "something";
+
+        auto typeIt = types.find(param.first);
+        ParameterType type = typeIt != types.end() ? typeIt->second : ParameterType::Custom;
+
+        // Choose appropriate generic term based on parameter type
+        switch (type) {
+        case ParameterType::NPCName:
+            replacement = "someone";
+            break;
+        case ParameterType::ItemName:
+            replacement = "something";
+            break;
+        case ParameterType::LocationName:
+            replacement = "somewhere";
+            break;
+        case ParameterType::QuestName:
+            replacement = "some quest";
+            break;
+        case ParameterType::StatName:
+            replacement = "some stat";
+            break;
+        case ParameterType::TimeValue:
+            replacement = "some time";
+            break;
+        default:
+            replacement = "something";
+            break;
+        }
+
+        size_t pos = 0;
+        while ((pos = genericText.find(placeholder, pos)) != std::string::npos) {
+            genericText.replace(pos, placeholder.length(), replacement);
+            pos += replacement.length();
+        }
+    }
+
+    return genericText;
 }
 
 bool DialogueManager::registerWithWwise() {
@@ -1204,4 +1364,34 @@ std::string DialogueManager::getPromptForPersonality(ResponseType type, Personal
 
 void DialogueManager::setRelationshipForTesting(int npcId, int playerId, RelationshipStatus status) {
     m_testRelationships[std::make_pair(npcId, playerId)] = status;
+}
+
+void DialogueManager::testDialogueWithParameters() {
+    // Get first node (for testing)
+    auto nodes = getAllNodes();
+    if (nodes.empty()) return;
+
+    std::shared_ptr<DialogueNode> testNode = nodes[0];
+
+    // Add some test parameters
+    testNode->setParameter("NPC1", "Guard");
+    testNode->setParameter("NPC2", "Merchant");
+    testNode->setParameter("LOCATION", "Castle");
+
+    // Test text: "The [NPC1] told me that [NPC2] can be found at the [LOCATION]."
+    testNode->setText("The [NPC1] told me that [NPC2] can be found at the [LOCATION].");
+
+    // Display processed and generic versions
+    std::cout << "Original: " << testNode->getText() << std::endl;
+    std::cout << "Processed: " << testNode->getProcessedText() << std::endl;
+    std::cout << "Generic: " << testNode->getGenericText() << std::endl;
+
+    // Test with runtime parameters
+    std::map<std::string, std::string> runtimeParams = {
+        {"NPC1", "Captain"},
+        {"QUEST", "Find the Treasure"}
+    };
+
+    std::cout << "With runtime params: "
+        << processNodeTextWithParameters(testNode, runtimeParams) << std::endl;
 }
